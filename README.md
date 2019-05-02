@@ -4,4 +4,5 @@ pyTEMlib is a package to read and process various kind of data acquired with a (
 
 The package is written in pure python and depends on various other libraries.
 
-All data are stored as [pyUSID-type](https://github.com/pycroscopy/pyUSID) files.
+All data, user input, and results are stored as [pyUSID-type](https://github.com/pycroscopy/pyUSID) files.
+
