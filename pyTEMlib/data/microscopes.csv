@@ -1,0 +1,7 @@
+Microscope,E0,alpha,beta,pppc,correlation_factor,VOA_conv,EELS_b1,EELS_b2,EELS_b100,MADF_offset,MADF_slope,HADF_offset,HADF_slope,BF_offset,BF_slope
+Default,1.00E+05,20,13,1,1,0,0,0,0,0,0,0,0,0,0
+501,1.00E+05,20,13,1,1,1.58E+06,0.05,0.1,0.2,0,0,0,0,0,0
+UltraSTEM 60,6.00E+04,30,50,1,1,1.79E+07,0.2,0.45,0.9,0.001383,4.04E-06,0,0,0,0
+UltraSTEM 100,1.00E+05,30,50,1,1,6.24E+06,0.45,1,2,0,0,0,0,0,0
+Libra 200,2.00E+05,10,15,1,1,6241509.647,0.0634,0.0634,0.0634,0,0,0,0,0,0
+UltraSTEM 200,2.00E+05,30,50,1,1,6.24E+06,0.45,1,2,0,0,0,0,0,0
