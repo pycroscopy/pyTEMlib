@@ -225,7 +225,7 @@ def h5open_file(filename = None):
     """
     Opens a file if the extension is .hf5, .dm3 or .dm4
     If no filename is provided the qt5 open_file windows opens
-    if you used the magic comand: "% gui qt"
+    if you used the magic comand: "%gui qt"
 
     Everything will be stored in a pyUSID style hf5 file.
 
@@ -447,14 +447,17 @@ def dm_to_pyUSID(filename = None):
 	# Write additional important metadata and original_metadata to current_channel attributes
     ###
     current_channel_tags = current_channel.attrs
+    original_group = current_channel.create_group('original_metadata')
+    original_group_tags = original_group.attrs
     for key in meta_tags:
         #print(key,meta_tags[key])
         if 'DM' in key:
             pass
+        elif 'original_meta' in key:
+            original_group_tags[key]= meta_tags[key]
         else:
             current_channel_tags[key]= meta_tags[key]
             
-    
     h5_file.flush()
     return h5_file
     
