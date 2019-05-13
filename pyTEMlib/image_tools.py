@@ -213,6 +213,78 @@ def histogram_plot(image_tags):
     cid = fig2.canvas.mpl_connect('button_press_event', onclick)
     return span
 
+def Fourier_Transform(current_channel):
+    """
+        Reads information into dictionary 'tags', performs 'FFT', and provides a smoothed FT and reciprocal and intensity
+        limits for visualization. All information is stored in the 'fft' sub-dictionary of tags.
+        
+        Input
+        -----
+        current_channel: data group of pyUSID file
+        
+        Usage
+        -----
+        
+        tags = Fourier_Transform(current_channel)
+        fft = tags['fft']    
+        fig = plt.figure()
+        plt.imshow(np.log2(1+ 0.5*fft['magnitude_smooth']).T, extent=fft['extend'], origin = 'upper',
+                   vmin=fft['minimum_intensity'], vmax=fft['maximum_intensity'])
+        plt.xlabel('spatial frequency [1/nm]');
+        
+    """
+    
+    tags = ft.get_dictionary_from_pyUSID(current_channel)
+    
+    sizeX
+    image = tags['data']- tags['data'].min()
+    fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
+    
+    tags['fft'] = {}
+    fft = tags['fft']
+    fft['magnitude'] = fft_mag
+
+    fft['spatial_scale_x'] = 1/tags['FOV_x'] 
+    fft['spatial_scale_y'] = 1/tags['FOV_y']  
+    fft['spatial_offset_x'] = -1/tags['FOV_x']  * tags['data'].shape[0] /2.
+    fft['spatial_offset_y'] = -1/tags['FOV_y']  * tags['data'].shape[1] /2.
+      
+    ## Field of View (FOV) in recipical space please note: rec_FOV_x = 1/(scaleX*2)
+    fft['rec_FOV_x'] = 1/tags['FOV_x']  * sizeX /2.
+    fft['rec_FOV_y'] = 1/tags['FOV_y']  * sizeY /2.
+
+    ## Field ofView (FOV) in recipical space
+    fft['extend'] = (fft['spatial_offset_x'],-fft['spatial_offset_x'],-fft['rec_FOV_y'],fft['rec_FOV_y'])
+    
+    # We need some smoothing (here with a Gaussian)
+    smoothing = 3
+    fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
+
+
+    #prepare mask for low and high frequencies
+    pixels = (np.linspace(0,image.shape[0]-1,image.shape[0])-image.shape[0]/2)* rec_scale_x
+    x,y = np.meshgrid(pixels,pixels);
+    mask = np.zeros(image.shape)
+
+    mask_spot = x**2+y**2 > 2**2 
+    mask = mask + mask_spot
+    mask_spot = x**2+y**2 < 10**2 
+    mask = mask + mask_spot
+
+    mask[np.where(mask==1)]=0 # just in case of overlapping disks
+
+    fft_mag3 = fft_mag2*mask
+    
+    fft['magnitude_smooth'] = fft_mag2
+    fft['minimum_intensity'] = np.log2(1+fft_mag2)[np.where(mask==2)].min()*0.95
+    #minimum_intensity = np.mean(fft_mag3)-np.std(fft_mag3)
+    fft['maximum_intensity'] = np.log2(1+fft_mag2)[np.where(mask==2)].max()*1.05
+    #maximum_intensity =  np.mean(fft_mag3)+np.std(fft_mag3)*2
+    
+    return tags 
+
+
+
 def find_atoms(im, tags, verbose = False):
     from skimage.feature import  blob_log #blob_dog, blob_doh
     if 'rel_blob_size' not in tags:

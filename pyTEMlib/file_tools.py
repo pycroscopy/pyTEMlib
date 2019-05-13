@@ -225,7 +225,7 @@ def h5open_file(filename = None):
     """
     Opens a file if the extension is .hf5, .dm3 or .dm4
     If no filename is provided the qt5 open_file windows opens
-    if you used the magic comand: "%gui qt"
+    if you used the magic comand: "% gui qt"
 
     Everything will be stored in a pyUSID style hf5 file.
 
@@ -374,7 +374,7 @@ def h5add_channel(h5_file,current_channel,title,filename=None):
     h5_file.flush()
     return current_channel
 
-def h5_add_Data2Log(log_group, name, info_dictionary):
+def h5_add_Data2Log(log_group, info_dictionary):
     for key in info_dictionary:
         log_group[key] = info_dictionary[key]
 def h5_add_Log(current_channel, name):
@@ -458,6 +458,7 @@ def dm_to_pyUSID(filename = None):
         else:
             current_channel_tags[key]= meta_tags[key]
             
+    
     h5_file.flush()
     return h5_file
     
