@@ -48,6 +48,11 @@ from sklearn.feature_extraction import image
 from sklearn.utils.extmath import randomized_svd
 from sklearn.cluster import KMeans
 
+
+
+from pyTEMlib.dftregistration import *  # sup-pixel rigid registration
+
+
 _SimpleITK_present = True
 try:
     import SimpleITK as sitk

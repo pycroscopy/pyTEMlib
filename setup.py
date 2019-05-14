@@ -18,10 +18,10 @@ with open(os.path.join(here, 'pyTEMlib/__version__.py')) as f:
     
 setuptools.setup(
     name="pyTEMlib",
-    version="0.5.2019",
+    version="0.6.2019.1",
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
-    description="pyTEMlib: TEM Data Quantification library through a Model Based Approach",
+    description="pyTEM: TEM Data Quantification library through a Model Based Approach",
     #long_description=open("README.rst").read(),
     url="https://web.utk.edu/~gduscher/Quantifit/",
     packages=["pyTEMlib"],

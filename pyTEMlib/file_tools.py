@@ -417,6 +417,12 @@ def dm_to_pyUSID(filename = None):
     tran = usid.NumpyTranslator()
 
     h5_file_name = filename[:-4]+'.hf5'
+    if os.path.exists(os.path.abspath(h5_file_name)):
+        count = 1
+        h5_file_name = filename[:-4]+'-'+str(count)+'.hf5'
+        while os.path.exists(os.path.abspath(h5_file_name)):
+            count+=1
+            h5_file_name = filename[:-4]+'-'+str(count)+'.hf5'
     
     quantity = 'distance'
     units = 'nm'
