@@ -159,7 +159,7 @@ def save_file(tags):
     f.close()
 
 def get_dictionary_from_pyUSID(current_channel):
-    return h5_getDictionary(current_channel)
+    return h5_get_dictionary(current_channel)
 
 def h5_get_dictionary(current_channel):
     tags = {}
