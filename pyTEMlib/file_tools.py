@@ -360,6 +360,7 @@ def h5_add_channel(h5_file,current_channel,title,filename=None):
             print('no data to add')
             return
         '''
+        measurement_group = h5_file[current_channel.name.split('/')[1]]
         name = usid.io.hdf_utils.assign_group_index(measurement_group,'Channel')
         
         current_channel = measurement_group.create_group(name)
