@@ -158,14 +158,20 @@ def save_file(tags):
     pickle.dump(tags, f)
     f.close()
 
-
-
 def get_dictionary_from_pyUSID(current_channel):
+    return h5_getDictionary(current_channel)
+
+def h5_get_dictionary(current_channel):
     tags = {}
+    tags['aberrations'] = {}
     current_channel_tags = dict(current_channel.attrs)
-    for key in current_channel_tags:
+    for key in current_channel_tags: ## Legacy Lines, original metadat should be in its own group
         if 'original' not in key:
-            tags[key]=current_channel_tags[key]
+            if 'aberration' in key:
+                tags['aberrations'][key]=current_channel_tags[key]
+            else:
+                tags[key]=current_channel_tags[key]
+            
     tags['data_type'] = current_channel['data_type'][()]
     if tags['data_type']== 'EELS_spectrum':
         tags['data'] = current_channel['Raw_Data'][0,:]
@@ -223,6 +229,12 @@ def get_dictionary_from_pyUSID(current_channel):
 
 def h5open_file(filename = None):
     """
+    Legacy; use h5_open_file(filename)
+    """
+    return h5_open_file(filename)
+    
+def h5_open_file(filename = None):
+    """
     Opens a file if the extension is .hf5, .dm3 or .dm4
     If no filename is provided the qt5 open_file windows opens
     if you used the magic comand: "% gui qt"
@@ -254,8 +266,9 @@ def h5open_file(filename = None):
         print('file type not handled yet.')
         return
 
-
 def h5log_calculation(h5_file,current_channel,tags):
+    return h5_log_calculation(h5_file,current_channel,tags)
+def h5_log_calculation(h5_file,current_channel,tags):
     measurement_group = h5_file[current_channel.name.split('/')[1]]
     i = 0
     for key in measurement_group:
@@ -273,16 +286,19 @@ def h5log_calculation(h5_file,current_channel,tags):
 
     h5_file.flush()
     return calc_grp
-
 def h5add_measurement(h5_file,current_channel,title):
+    return h5_add_measurement(h5_file,current_channel,title)
+def h5_add_measurement(h5_file,current_channel,title):
     new_measurement_group = usid.io.hdf_utils.create_indexed_group(h5_file,'Measurement')
-
+    
     return new_measurement_group
 
 
 
-
 def h5add_channels(h5_file,current_channel,title):
+    return h5_add_channels(h5_file,current_channel,title)
+
+def h5_add_channels(h5_file,current_channel,title):
     file_filters = 'TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;pyUSID files (*.hf5);;QF files ( *.qf3);;DM files (*.dm3);;Nion files (*.ndata *.h5);;All files (*)'
     filenames = openfile_dialog(file_filters, multiple_files=True)
     if len(filenames) == 0:
@@ -293,8 +309,10 @@ def h5add_channels(h5_file,current_channel,title):
 
      
 
-    
 def h5add_channel(h5_file,current_channel,title,filename=None):
+    return h5_add_channel(h5_file,current_channel,title,filename)
+
+def h5_add_channel(h5_file,current_channel,title,filename=None):
 
     #Open file
    
