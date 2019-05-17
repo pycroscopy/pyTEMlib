@@ -171,57 +171,57 @@ def h5_get_dictionary(current_channel):
                 tags['aberrations'][key]=current_channel_tags[key]
             else:
                 tags[key]=current_channel_tags[key]
-            
+    tags['title'] = current_channel['title'][()]        
     tags['data_type'] = current_channel['data_type'][()]
     if tags['data_type']== 'EELS_spectrum':
         tags['data'] = current_channel['Raw_Data'][0,:]
-        tags['dispersion'] = current_channel['spectral_scale_x'][()]
-        tags['units'] = current_channel['spectral_units_x'][()]
-        tags['offset'] = current_channel['spectral_origin_x'][()]
-        tags['spectrum_length'] = float(current_channel['spectral_size_x'][()])
-        tags['energy_scale'] = np.arange(tags['spectrum_length'])*tags['dispersion']+tags['offset']
+        tags['spectral_scale_x'] = current_channel['spectral_scale_x'][()]
+        tags['spectral_units_x'] = current_channel['spectral_units_x'][()]
+        tags['spectral_origin_x'] = current_channel['spectral_origin_x'][()]
+        tags['spectral_size_x'] = float(current_channel['spectral_size_x'][()])
+        tags['energy_scale'] = np.arange(tags['spectral_size_x'])*tags['spectral_scale_x']+tags['spectral_origin_x']
     elif tags['data_type']== 'image':
         tags['data'] = np.reshape(current_channel['Raw_Data'][:, 0], (current_channel['spatial_size_x'][()],current_channel['spatial_size_y'][()]))
-        tags['image_size_x'] = current_channel['spatial_size_x'][()]
-        tags['image_size_y'] = current_channel['spatial_size_y'][()]
-        tags['pixel_size_x'] = current_channel['spatial_scale_x'][()]
-        tags['pixel_size_y'] = current_channel['spatial_scale_y'][()]
-        tags['FOV_x'] = tags['pixel_size_y'][()] * tags['image_size_x'][()]
-        tags['FOV_y'] = tags['pixel_size_y'][()] * tags['image_size_y'][()]
+        tags['spatial_size_x'] = current_channel['spatial_size_x'][()]
+        tags['spatial_size_y'] = current_channel['spatial_size_y'][()]
+        tags['spatial_scale_x'] = current_channel['spatial_scale_x'][()]
+        tags['spatial_scale_y'] = current_channel['spatial_scale_y'][()]
+        tags['FOV_x'] = tags['spatial_scale_x'][()] * tags['spatial_size_x'][()]
+        tags['FOV_y'] = tags['spatial_scale_y'][()] * tags['spatial_size_y'][()]
         tags['extent']=(0,tags['FOV_x'],tags['FOV_y'],0)
-        tags['units']=current_channel['spatial_units'][()]
+        tags['spatial_units']=current_channel['spatial_units'][()]
         
         
                         
     elif tags['data_type']== 'spectrum_image':
         tags['cube'] = np.reshape(current_channel['Raw_Data'][:, :], (current_channel['spatial_size_x'][()],current_channel['spatial_size_y'][()],current_channel['spectral_size_x'][()]))
         tags['data'] = tags['cube'].sum(axis=2)
-        tags['image_size_x'] = current_channel['spatial_size_x'][()]
-        tags['image_size_y'] = current_channel['spatial_size_y'][()]
-        tags['pixel_size_x'] = current_channel['spatial_scale_x'][()]
-        tags['pixel_size_y'] = current_channel['spatial_scale_y'][()]
-        tags['FOV_x'] = tags['pixel_size_y'][()] * tags['image_size_x'][()]
-        tags['FOV_y'] = tags['pixel_size_y'][()] * tags['image_size_y'][()]
+        tags['spatial_size_x'] = current_channel['spatial_size_x'][()]
+        tags['spatial_size_y'] = current_channel['spatial_size_y'][()]
+        tags['spatial_scale_x'] = current_channel['spatial_scale_x'][()]
+        tags['spatial_scale_y'] = current_channel['spatial_scale_y'][()]
+        tags['FOV_x'] = tags['spatial_scale_x'][()] * tags['spatial_size_x'][()]
+        tags['FOV_y'] = tags['spatial_scale_y'][()] * tags['spatial_size_y'][()]
         tags['extent']=(0,tags['FOV_x'],tags['FOV_y'],0)
         if current_channel['spatial_units'][()] == '':
             tags['units']='nm'
         else:
             tags['units']=current_channel['spatial_units'][()]
         
-        tags['dispersion'] = current_channel['spectral_scale_x'][()]
-        tags['spectral_units'] = current_channel['spectral_units_x'][()]
-        tags['offset'] = current_channel['spectral_origin_x'][()]
-        tags['spectrum_length'] = float(current_channel['spectral_size_x'][()])
-        tags['energy_scale'] = np.arange(tags['spectrum_length'])*tags['dispersion']+tags['offset']
+        tags['spectral_scale_x'] = current_channel['spectral_scale_x'][()]
+        tags['spectral_units_x'] = current_channel['spectral_units_x'][()]
+        tags['spectral_origin_x'] = current_channel['spectral_origin_x'][()]
+        tags['spectral_size_x'] = float(current_channel['spectral_size_x'][()])
+        tags['energy_scale'] = np.arange(tags['spectral_size_x'])*tags['spectral_scale_x']+tags['spectral_origin_x']
     elif tags['data_type']== 'image_stack':
         tags['image_stack'] = np.array(current_channel['image_stack'][()])#[:, ], (current_channel['spatial_size_x'][()],current_channel['spatial_size_y'][()],current_channel['spatial_size_y'][()]))
         tags['data'] = np.reshape(current_channel['Raw_Data'][:, 0], (current_channel['spatial_size_x'][()],current_channel['spatial_size_y'][()]))
-        tags['image_size_x'] = current_channel['spatial_size_x'][()]
-        tags['image_size_y'] = current_channel['spatial_size_y'][()]
-        tags['pixel_size_x'] = current_channel['spatial_scale_x'][()]
-        tags['pixel_size_y'] = current_channel['spatial_scale_y'][()]
-        tags['FOV_x'] = tags['pixel_size_y'][()] * tags['image_size_x'][()]
-        tags['FOV_y'] = tags['pixel_size_y'][()] * tags['image_size_y'][()]
+        tags['spatial_size_x'] = current_channel['spatial_size_x'][()]
+        tags['spatial_size_y'] = current_channel['spatial_size_y'][()]
+        tags['spatial_scale_x'] = current_channel['spatial_scale_x'][()]
+        tags['spatial_scale_y'] = current_channel['spatial_scale_y'][()]
+        tags['FOV_x'] = tags['spatial_scale_x'][()] * tags['spatial_size_x'][()]
+        tags['FOV_y'] = tags['spatial_scale_y'][()] * tags['spatial_size_y'][()]
         tags['extent']=(0,tags['FOV_x'],tags['FOV_y'],0)
         tags['units']=current_channel['spatial_units'][()]
         
@@ -485,9 +485,10 @@ def dm_to_pyUSID(filename = None):
     
     h5_file.flush()
     return h5_file
-    
-	
 def plt_pyUSID(current_channel,ax=None, ax2=None):
+    h5_plot(current_channel,ax, ax2)
+	
+def h5_plot(current_channel,ax=None, ax2=None):
     ## Start plotting
     tags = dict(current_channel.attrs)
     basename = current_channel['title'][()]
