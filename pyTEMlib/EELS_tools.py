@@ -1,7 +1,8 @@
 import numpy as np
 
 from scipy import integrate
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,splev,splrep,splint
+
 from scipy.signal import find_peaks, peak_prominences
 from scipy.ndimage.filters import gaussian_filter
 
