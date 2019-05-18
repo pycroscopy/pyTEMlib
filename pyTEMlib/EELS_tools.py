@@ -8,6 +8,8 @@ from scipy.ndimage.filters import gaussian_filter
 
 from scipy import constants
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from matplotlib.widgets import SpanSelector
 
 from scipy.optimize import leastsq  ## leastsqure fitting routine fo scipy
 
