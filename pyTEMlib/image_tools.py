@@ -780,7 +780,7 @@ def DemonReg(cube, verbose = False):
 
     fixed_np = np.sum(cube, axis=2)/float(nimages)
 
-    fixed = sitk.GetImageFromArray(fixed_np, sitk.sitkFloat32)
+    fixed = sitk.GetImageFromArray(fixed_np, sitk.sitkFloat64)
     fixed = sitk.DiscreteGaussian(fixed, 2.0)
 
     #demons = sitk.SymmetricForcesDemonsRegistrationFilter()
@@ -795,7 +795,7 @@ def DemonReg(cube, verbose = False):
     resampler.SetDefaultPixelValue(0)
 
     for i in range(nimages):
-        moving = sitk.GetImageFromArray(cube[:,:,i], sitk.sitkFloat32)
+        moving = sitk.GetImageFromArray(cube[:,:,i], sitk.sitkFloat64)
         movingf = sitk.DiscreteGaussian(moving, 2.0)
         displacementField = demons.Execute(fixed,movingf)
         outTx = sitk.DisplacementFieldTransform( displacementField )
@@ -1192,25 +1192,25 @@ def DeconLR2(  Oimage, probe, tags, verbose = False):
         print('Wierdness ',Oimage.shape,' != ',probe.shape)
     ## Input Image ###
     # read the input image
-    img = sitk.GetImageFromArray(Oimage, sitk.sitkFloat32)
+    img = sitk.GetImageFromArray(Oimage, sitk.sitkFloat64)
     img = sitk.MirrorPad( img, [128] *2, [128]*2)
     
     size = img.GetSize();
     # perform the FFT
-    source = sitk.ForwardFFT( sitk.Cast( img, sitk.sitkFloat32 ) )
+    source = sitk.ForwardFFT( sitk.Cast( img, sitk.sitkFloat64 ) )
 
     
 
     ### Kernel Image ###
     # Read the kernel image file
-    kernel= sitk.GetImageFromArray(probe, sitk.sitkFloat32)
+    kernel= sitk.GetImageFromArray(probe, sitk.sitkFloat64)
     # flip kernel about all axis
     #kernel = sitk.Flip( kernel, [1]*2 )
 
     # normalize the kernel to sum to ~1
     stats = sitk.StatisticsImageFilter();
     stats.Execute( kernel )
-    kernel = sitk.Cast( kernel / stats.GetSum(), sitk.sitkFloat32 )
+    kernel = sitk.Cast( kernel / stats.GetSum(), sitk.sitkFloat64 )
 
     upadding = [0]*2
     upadding[0] = int( math.floor( (size[0] - kernel.GetSize()[0])/2.0 ) )
@@ -1227,8 +1227,8 @@ def DeconLR2(  Oimage, probe, tags, verbose = False):
     responseFT = sitk.ForwardFFT( sitk.FFTShift( kernel ) )
     
 
-    error = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat32 )
-    est = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat32 )
+    error = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat64 )
+    est = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat64 )
     
 
     verbose = True
