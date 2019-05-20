@@ -360,6 +360,7 @@ def h5_add_channel(h5_file,current_channel,title,filename=None):
             print('no data to add')
             return
         '''
+        measurement_group = h5_file[current_channel.name.split('/')[1]]
         name = usid.io.hdf_utils.assign_group_index(measurement_group,'Channel')
         
         current_channel = measurement_group.create_group(name)
@@ -452,9 +453,10 @@ def dm_to_pyUSID(filename = None):
     for key in main_tags:
         h5_file.attrs[key] =  main_tags[key]
 
+
+
     current_channel = h5_file['Measurement_000/Channel_000']
-        
-    
+          
     current_channel.create_dataset('title', data = basename)
     current_channel.create_dataset('data_type', data = data_tags['data_type'])
     for key in channel_tags:
@@ -485,6 +487,40 @@ def dm_to_pyUSID(filename = None):
     
     h5_file.flush()
     return h5_file
+	
+def h5_write( current_channel, basename, data_tags, channel_tags, meta_tags):
+
+    current_channel.create_dataset('title', data = basename)
+    current_channel.create_dataset('data_type', data = data_tags['data_type'])
+    for key in channel_tags:
+        current_channel.create_dataset(key, data=channel_tags[key])
+    
+    ###
+    # Read Additional Meta_Data
+    ###
+    channel_tags['data_type'] = data_tags['data_type']
+    meta_tags = get_additional_tags(si,channel_tags)
+    meta_tags['time_last_modified'] = time_last_modified
+    
+	###
+	# Write additional important metadata and original_metadata to current_channel attributes
+    ###
+    current_channel_tags = current_channel.attrs
+    original_group = current_channel.create_group('original_metadata')
+    original_group_tags = original_group.attrs
+    for key in meta_tags:
+        #print(key,meta_tags[key])
+        if 'DM' in key:
+            pass
+        elif 'original_meta' in key:
+            original_group_tags[key]= meta_tags[key]
+        else:
+            current_channel_tags[key]= meta_tags[key]
+            
+    
+    h5_file.flush()
+	
+
 def plt_pyUSID(current_channel,ax=None, ax2=None):
     h5_plot(current_channel,ax, ax2)
 	

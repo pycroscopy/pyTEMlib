@@ -1,12 +1,15 @@
 import numpy as np
 
 from scipy import integrate
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,splev,splrep,splint
+
 from scipy.signal import find_peaks, peak_prominences
 from scipy.ndimage.filters import gaussian_filter
 
 from scipy import constants
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+from matplotlib.widgets import SpanSelector
 
 from scipy.optimize import leastsq  ## leastsqure fitting routine fo scipy
 
@@ -1176,4 +1179,49 @@ def drude(tags, e, ep, ew, tnm, eb):
         
         
     return ssd#/np.pi
+
+
+
+def xsecXRPA(energy_scale, E0, Z, beta, shift=0 ):
+    """
+    Calculate momentum-integrated cross-section for EELS from X-ray photoaborption  cross-sections.
     
+    Input:
+    ------
+    energy_scale: energyscale of spectrum to be analyzed
+    E0: acceleration voltage in keV
+    Z: atomic number of element
+    beta: effective collection angle in mrad
+    shift: chemical shift of edge in eV
+    """
+    beta = beta * 0.001;     #% collection half angle theta [rad]
+    #thetamax = self.parent.spec[0].convAngle * 0.001;  #% collection half angle theta [rad]
+    dispersion = energy_scale[1]-energy_scale[0]
+    
+    Xsections = get_Xsections(Z)
+    enexs = Xsections['ene']
+    datxs = Xsections['dat']
+        
+    #####
+    ## Cross Section according to Egerton Ultramicroscopy 50 (1993) 13-28 equation (4)
+    #####
+
+    # Relativistic correction factors
+    T = 511060.0*(1.0-1.0/(1.0+E0/(511.06))**2)/2.0;
+    gamma=1+E0/511.06;
+    A = 6.5#e-14 *10**14
+    b = beta
+
+    thetaE = enexs/(2*gamma*T)
+
+    G = 2*np.log(gamma)-np.log((b**2+thetaE**2)/(b**2+thetaE**2/gamma**2))-(gamma-1)*b**2/(b**2+thetaE**2/gamma**2)
+    datxs = datxs*(A/enexs/T)*(np.log(1+b**2/thetaE**2)+G)/1e8
+
+    datxs = datxs * dispersion # from per eV to per dispersion
+    coeff = splrep(enexs,datxs,s=0) # now in areal density atoms / m^2
+    xsec = np.zeros(len(energy_scale ))
+    #shift = 0# int(ek -onsetXRPS)#/dispersion
+    lin = interp1d(enexs,datxs,kind='linear') # Linear instead of spline interpolation to avoid oscillations.
+    xsec = lin(energy_scale-shift)
+    
+    return xsec
