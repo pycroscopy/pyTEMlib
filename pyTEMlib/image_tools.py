@@ -773,8 +773,7 @@ def DemonReg(cube, verbose = False):
     The Insight Journal, http://hdl.handle.net/1926/510 2007
     """
     
-    
-    DDemReg =  np.zeros_like(cube)
+    DemReg =  np.zeros_like(cube)
     nimages = cube.shape[2]
     # create fixed image by summing over rigid registration
 
@@ -783,8 +782,8 @@ def DemonReg(cube, verbose = False):
     fixed = sitk.GetImageFromArray(fixed_np)
     fixed = sitk.DiscreteGaussian(fixed, 2.0)
 
-    #demons = sitk.SymmetricForcesDemonsRegistrationFilter()
-    demons = sitk.DiffeomorphicDemonsRegistrationFilter()
+    demons = sitk.SymmetricForcesDemonsRegistrationFilter()
+    #demons = sitk.DiffeomorphicDemonsRegistrationFilter()
 
     demons.SetNumberOfIterations(200)
     demons.SetStandardDeviations(1.0)
