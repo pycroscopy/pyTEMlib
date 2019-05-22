@@ -600,7 +600,7 @@ def h5_plot(current_channel,ax=None, ax2=None):
             ax = fig.add_subplot(1,2,1)
 
             ax2 = fig.add_subplot(1,2,2)
-        ax.set_title('spectrum image: '+basename])
+        ax.set_title('spectrum image: ' + current_channel['title'][()]])
         sizeX = current_channel['spatial_size_x'][()]
         sizeY = current_channel['spatial_size_y'][()]
         scaleX = current_channel['spatial_scale_x'][()]
