@@ -774,13 +774,13 @@ def DemonReg(cube, verbose = False):
     """
     
     
-    DemReg =  np.zeros_like(cube)
+    DDemReg =  np.zeros_like(cube)
     nimages = cube.shape[2]
     # create fixed image by summing over rigid registration
 
     fixed_np = np.sum(cube, axis=2)/float(nimages)
 
-    fixed = sitk.GetImageFromArray(fixed_np, sitk.sitkFloat64)
+    fixed = sitk.GetImageFromArray(fixed_np)
     fixed = sitk.DiscreteGaussian(fixed, 2.0)
 
     #demons = sitk.SymmetricForcesDemonsRegistrationFilter()
@@ -795,7 +795,7 @@ def DemonReg(cube, verbose = False):
     resampler.SetDefaultPixelValue(0)
 
     for i in range(nimages):
-        moving = sitk.GetImageFromArray(cube[:,:,i], sitk.sitkFloat64)
+        moving = sitk.GetImageFromArray(cube[:,:,i])
         movingf = sitk.DiscreteGaussian(moving, 2.0)
         displacementField = demons.Execute(fixed,movingf)
         outTx = sitk.DisplacementFieldTransform( displacementField )
