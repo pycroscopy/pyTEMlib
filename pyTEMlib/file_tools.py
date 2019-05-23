@@ -520,7 +520,14 @@ def h5_write( current_channel, basename, data_tags, channel_tags, meta_tags):
     
     h5_file.flush()
 	
+def h5_tree(h5_file):
+    """
+    Just a wrapper for the usid function print_tree,
+    so that usid does not have to be loaded in notebook
+    """
+    usid.hdf_utils.print_tree(h5_file)
 
+    
 def plt_pyUSID(current_channel,ax=None, ax2=None):
     h5_plot(current_channel,ax, ax2)
 	
