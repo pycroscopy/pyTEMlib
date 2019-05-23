@@ -2158,7 +2158,7 @@ def find_Bragg(fft_tags, spot_threshold = 0 ):
         spot_threshold = (fft_tags['maximum_intensity']*10)
     center = np.array([int(fft_tags['spatial_origin_x']), int(fft_tags['spatial_origin_y']),1] )
     rec_scale = np.array([fft_tags['spatial_scale_x'], fft_tags['spatial_scale_y'],1])
-    spots_random =  (blob_log(fft_tags['data'],  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
+    spots_random =  (blob_log(fft_tags['data'].T,  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
     print(f'found {len(spots_random)} Bragg spots with threshold of {spot_threshold}')
     spots_random[:,2] = np.linalg.norm(spots_random[:,0:2], axis=1)
     spots_index = np.argsort(spots_random[:,2])
