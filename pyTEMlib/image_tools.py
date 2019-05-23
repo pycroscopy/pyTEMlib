@@ -2075,3 +2075,95 @@ def atomRefine(image, atoms, tags, maxDist = 2):
     tags2['sym'] = sym
     return tags2
 
+def Fourier_transform(current_channel,data):# = image_channel
+    # spatial data
+    tags = dict(current_channel.attrs)
+    out_tags = {}
+    basename = current_channel['title'][()]
+    
+    sizeX = current_channel['spatial_size_x'][()]
+    sizeY = current_channel['spatial_size_y'][()]
+    scaleX = current_channel['spatial_scale_x'][()]
+    scaleY = current_channel['spatial_scale_y'][()]
+    basename = current_channel['title'][()]
+
+    FOV_x = sizeX*scaleX
+    FOV_y = sizeY*scaleY
+    
+    
+    
+        
+    image = data- data.min()
+    fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
+    
+    out_tags['Magnitude']=fft_mag
+
+    ## pixel_size in recipical space
+    rec_scale_x = 1/FOV_x  
+    rec_scale_y = 1/FOV_y 
+
+    ## Field of View (FOV) in recipical space please note: rec_FOV_x = 1/(scaleX*2)
+    rec_FOV_x = rec_scale_x * sizeX /2.
+    rec_FOV_y = rec_scale_y * sizeY /2.
+    print(rec_FOV_x , 1/(scaleX*2))
+
+
+    ## Field ofView (FOV) in recipical space
+    rec_extend = (-rec_FOV_x,rec_FOV_x,rec_FOV_y,-rec_FOV_y)
+
+    out_tags['spatial_size_x']=sizeX
+    out_tags['spatial_size_y']=sizeY
+    out_tags['spatial_scale_x']=rec_scale_x
+    out_tags['spatial_scale_y']=rec_scale_y
+    out_tags['spatial_origin_x']=sizeX/2.
+    out_tags['spatial_origin_y']=sizeY/2.
+    out_tags['title']=out_tags['basename']=basename
+    out_tags['FOV_x']=rec_FOV_x
+    out_tags['FOV_y']=rec_FOV_y
+    out_tags['extent']=rec_extend
+    
+    
+    # We need some smoothing (here with a Gaussian)
+    smoothing = 3
+    fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
+    #fft_mag2 = np.log2(1+fft_mag2)
+
+    out_tags['data'] = out_tags['Magnitude_smoothed']=fft_mag2
+    #prepare mask
+    pixelsy = (np.linspace(0,image.shape[0]-1,image.shape[0])-image.shape[0]/2)* rec_scale_x
+    pixelsx = (np.linspace(0,image.shape[1]-1,image.shape[1])-image.shape[1]/2)* rec_scale_y
+    x,y = np.meshgrid(pixelsx,pixelsy);
+    mask = np.zeros(image.shape)
+
+    mask_spot = x**2+y**2 > 1**2 
+    mask = mask + mask_spot
+    mask_spot = x**2+y**2 < 11**2 
+    mask = mask + mask_spot
+
+    mask[np.where(mask==1)]=0 # just in case of overlapping disks
+
+    minimum_intensity = np.log2(1+fft_mag2)[np.where(mask==2)].min()*0.95
+    #minimum_intensity = np.mean(fft_mag3)-np.std(fft_mag3)
+    maximum_intensity = np.log2(1+fft_mag2)[np.where(mask==2)].max()*1.05
+    #maximum_intensity =  np.mean(fft_mag3)+np.std(fft_mag3)*2
+    out_tags['minimum_intensity']=minimum_intensity
+    out_tags['maximum_intensity']=maximum_intensity
+    
+    return out_tags
+
+
+
+def find_Bragg(fft_tags, spot_threshold = 0 ):
+    if spot_threshold ==0:
+        spot_threshold = (fft_tags['maximum_intensity']*10)
+    center = np.array([int(fft_tags['spatial_origin_x']), int(fft_tags['spatial_origin_y']),1] )
+    rec_scale = np.array([fft_tags['spatial_scale_x'], fft_tags['spatial_scale_y'],1])
+    spots_random =  (blob_log(fft_tags['data'],  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
+    print(f'found {len(spots_random)} Bragg spots with threshold of {spot_threshold}')
+    spots_random[:,2] = np.linalg.norm(spots_random[:,0:2], axis=1)
+    spots_index = np.argsort(spots_random[:,2])
+    
+    spots = spots_random[spots_index]
+    spots[:,2] = np.angle(spots[:,0]+ spots[:,1]*1j, deg=True)
+    return spots
+
