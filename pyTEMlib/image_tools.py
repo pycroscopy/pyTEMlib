@@ -426,15 +426,14 @@ def rebin(im,binning=2):
 
 
 
-def power_spectrum(image, FOV_x, FOV_y):
+def power_spectrum(channel):
     """
     Calculate power spectrum
 
     Input:
     ======
-            image:
-            FOV_x: field ofView in x direction
-            FOV_x: field ofView in x direction
+            channel: channnel in h5f file with image content
+            
     Output:
     =======
             tags: dictionary with
@@ -446,64 +445,74 @@ def power_spectrum(image, FOV_x, FOV_y):
                 ['maximum_intensity']: suggested maximum intensity for plotting
 
     """
-    image = image-image.min()
-    fft = np.fft.fftshift(np.fft.fft2(image))
-    fft_mag = np.abs(fft)
-    tags ={}
-    tags['data'] = fft
+    ## fft
+    data = channel['data'][()]
+    image = data- data.min()
+    fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
     
-    tags['axis']={}
-    tags['axis']['0']={}
-    tags['axis']['1']={}
+    out_tags = {}
+    out_tags['power_spectrum'] = fft_mag
 
-    tags['axis']['0']['scale'] = 1/FOV_x  
-    tags['axis']['1']['scale'] = 1/FOV_y
-    tags['axis']['0']['unit'] = '1/nm'  
-    tags['axis']['1']['unit'] = '1/nm'  
-    tags['axis']['0']['pixels'] = image.shape[0]
-    tags['axis']['1']['pixels'] = image.shape[1]
-    tags['axis']['0']['origin'] = image.shape[0] /2.
-    tags['axis']['1']['origin'] = image.shape[1] /2.
+    sizeX =  channel['spatial_size_x'][()]
+    sizeY =  channel['spatial_size_y'][()]
+    scaleX = channel['spatial_scale_x'][()]
+    scaleY = channel['spatial_scale_y'][()]
+    basename = channel['title'][()]
+
+    FOV_x = sizeX*scaleX
+    FOV_y = sizeY*scaleY
+
+    ## pixel_size in recipical space
+    rec_scale_x = 1/FOV_x  
+    rec_scale_y = 1/FOV_y 
+
+    ## Field of View (FOV) in recipical space please note: rec_FOV_x = 1/(scaleX*2)
+    rec_FOV_x = rec_scale_x * sizeX /2.
+    rec_FOV_y = rec_scale_y * sizeY /2.
     
-    rev_FOV_x = tags['axis']['0']['scale'] * tags['axis']['0']['pixels'] /2.
-    rev_FOV_y = tags['axis']['1']['scale'] * tags['axis']['1']['pixels'] /2.
-    tags['axis']['FOV'] = (-rev_FOV_x,rev_FOV_x,rev_FOV_y,-rev_FOV_y)
+    ## Field ofView (FOV) in recipical space
+    rec_extent = (-rec_FOV_x,rec_FOV_x,rec_FOV_y,-rec_FOV_y)
+
+
+    out_tags['spatial_size_x']=sizeX
+    out_tags['spatial_size_y']=sizeY
+    out_tags['spatial_scale_x']=rec_scale_x
+    out_tags['spatial_scale_y']=rec_scale_y
+    out_tags['spatial_origin_x']=sizeX/2.
+    out_tags['spatial_origin_y']=sizeY/2.
+    out_tags['title']=out_tags['basename']=basename
+    out_tags['FOV_x']=rec_FOV_x
+    out_tags['FOV_y']=rec_FOV_y
+    out_tags['extent']=rec_extent
+    out_tags['spatial_unit'] = '1/nm' 
     
+       
     # We need some smoothing (here with a Gaussian)
     smoothing = 3
     fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
-    fft_mag2 = np.log2(1+fft_mag2)
-    tags['power_spectrum'] = fft_mag2
-    
+    #fft_mag2 = np.log2(1+fft_mag2)
+
+    out_tags['data'] = out_tags['Magnitude_smoothed']=fft_mag2
+
     #prepare mask
-    pixels = (np.linspace(0,2047,2048)-1023.5)* tags['axis']['0']['scale']
-    x,y = np.meshgrid(pixels,pixels);
+    pixelsy = (np.linspace(0,image.shape[0]-1,image.shape[0])-image.shape[0]/2)* rec_scale_x
+    pixelsx = (np.linspace(0,image.shape[1]-1,image.shape[1])-image.shape[1]/2)* rec_scale_y
+    x,y = np.meshgrid(pixelsx,pixelsy);
     mask = np.zeros(image.shape)
 
-    mask_spot = x**2+y**2 > 2**2 
+    mask_spot = x**2+y**2 > 1**2 
     mask = mask + mask_spot
-    mask_spot = x**2+y**2 < 8**2 
+    mask_spot = x**2+y**2 < 11**2 
     mask = mask + mask_spot
+
+    mask[np.where(mask==1)]=0 # just in case of overlapping disks
+
+    minimum_intensity = np.log2(1+fft_mag2)[np.where(mask==2)].min()*0.95
+    maximum_intensity = np.log2(1+fft_mag2)[np.where(mask==2)].max()*1.05
+    out_tags['minimum_intensity']=minimum_intensity
+    out_tags['maximum_intensity']=maximum_intensity
     
-    tags['minimum_intensity'] = fft_mag2[np.where(mask==2)].min()*0.95
-    tags['maximum_intensity'] = fft_mag2[np.where(mask==2)].max()*1.05
-
-    # calculate angular averaged profile
-    cent = [tags['axis']['0']['origin'], tags['axis']['1']['origin']]
-    polar_projection = warp(tags['data'],cent)
-    below_zero = polar_projection<0.
-    polar_projection[below_zero]=0.
-
-    # Sum over all angles (axis 1)
-    profile = polar_projection.sum(axis=1)
-
-    u =np.linspace(1,len(profile),len(profile))*tags['axis']['0']['scale']
-
-    tags['polar_projection'] = polar_projection
-    tags['polar_projection_profile'] = profile
-    tags['polar_projection_frequencies'] = u
-
-    return tags
+    return out_tags
 
 def diffractogram_spots(fft_tags, spot_threshold):
     """
@@ -539,7 +548,7 @@ def diffractogram_spots(fft_tags, spot_threshold):
     spots[:,2] = np.arctan2(spots[:,0], spots[:,1])
     return spots
 
-def adaptive_Fourier_filter(image, spots, low_pass = 3, reflection_radius = 0.3):
+def adaptive_Fourier_filter(image, tags, low_pass = 3, reflection_radius = 0.3):
     """
     Use spots in diffractogram for a Fourier Filter
 
@@ -557,8 +566,9 @@ def adaptive_Fourier_filter(image, spots, low_pass = 3, reflection_radius = 0.3)
     """
     #prepare mask
     
-    pixelsy = (np.linspace(0,image.shape[0]-1,image.shape[0])-image.shape[0]/2)* rec_scale_x
-    pixelsx = (np.linspace(0,image.shape[1]-1,image.shape[1])-image.shape[1]/2)* rec_scale_y
+    
+    pixelsy = (np.linspace(0,image.shape[0]-1,image.shape[0])-image.shape[0]/2)* tags['spatial_scale_x']
+    pixelsx = (np.linspace(0,image.shape[1]-1,image.shape[1])-image.shape[1]/2)* tags['spatial_scale_y']
     x,y = np.meshgrid(pixelsx,pixelsy);
     mask = np.zeros(image.shape)
 
