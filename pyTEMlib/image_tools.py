@@ -512,8 +512,8 @@ def diffractogram_spots(fft_tags, spot_threshold):
     Input:
     ======
             fft_tags: dictionary with
-                ['axis']: scale of reciprocal image
-                ['power_spectrum']: power_spectrum
+                ['spatial_***']: information of scale of fourier pattern
+                ['data']: power_spectrum
             spot_threshold: threshold for blob finder
     Output:
     =======
@@ -521,29 +521,34 @@ def diffractogram_spots(fft_tags, spot_threshold):
     
     """
     ## Needed for conversion from pixel to Reciprocal space
-    rev_scale = np.array([fft_tags['axis']['0']['scale'],  fft_tags['axis']['1']['scale'],1])
-    center    = np.array([fft_tags['axis']['0']['origin'], fft_tags['axis']['1']['origin'],1] )
+    # we'll have to switch x- and y-coordinates due to the differences in numpy and matrix
+    center = np.array([int(fft_tags['spatial_origin_y']), int(fft_tags['spatial_origin_x']),1] )
+    rec_scale = np.array([fft_tags['spatial_scale_y'], fft_tags['spatial_scale_x'],1])
 
     ## spot detection ( for future referece there is no symmetry assumed here)
-
-    spots_random =  (blob_dog(fft_tags['power_spectrum'],  max_sigma= 5 , threshold=spot_threshold)-center)*rev_scale
+    data = fft_tags['data'].T
+    data = (data-data.min())/data.max()
+    spots_random =  (blob_log(data,  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
     print(f'Found {spots_random.shape[0]} reflections')
+
+    ##sort reflections
     spots_random[:,2] = np.linalg.norm(spots_random[:,0:2], axis=1)
     spots_index = np.argsort(spots_random[:,2])
     spots = spots_random[spots_index]
-    
+    # third row is angles
+    spots[:,2] = np.arctan2(spots[:,0], spots[:,1])
     return spots
 
-def adaptive_Fourier_filter(tags, low_pass = 3, reflection_radius = 0.3):
+def adaptive_Fourier_filter(image, spots, low_pass = 3, reflection_radius = 0.3):
     """
     Use spots in diffractogram for a Fourier Filter
 
     Input:
     ======
+            image:  image to be filtered
             tags: dictionary with
-                ['axis']: scale of reciprocal image
-                ['data']: Fourier transformed image
-                ['diffractogram_spots']: sorted spots in diffractogram in 1/nm
+                ['spatial_***']: information of scale of fourier pattern
+                ['spots']: sorted spots in diffractogram in 1/nm
             low_pass: low pass filter in center of diffractogrm
             
     Output:
@@ -551,24 +556,28 @@ def adaptive_Fourier_filter(tags, low_pass = 3, reflection_radius = 0.3):
             Fourier filtered image
     """
     #prepare mask
-    size = tags['axis']['0']['pixels']
-    pixels = (np.linspace(0,size-1,size)-tags['axis']['0']['origin'])* tags['axis']['0']['scale']
-    x,y = np.meshgrid(pixels,pixels);
-    mask = np.zeros(tags['data'].shape)
+    
+    pixelsy = (np.linspace(0,image.shape[0]-1,image.shape[0])-image.shape[0]/2)* rec_scale_x
+    pixelsx = (np.linspace(0,image.shape[1]-1,image.shape[1])-image.shape[1]/2)* rec_scale_y
+    x,y = np.meshgrid(pixelsx,pixelsy);
+    mask = np.zeros(image.shape)
 
 
     # mask reflections
     #reflection_radius = 0.3 # in 1/nm
-    for spot in tags['diffractogram_spots']:
+    for spot in spots:
         mask_spot = (x-spot[0])**2+(y-spot[1])**2 < reflection_radius**2 # make a spot 
         mask = mask + mask_spot# add spot to mask
+
     
     # mask zero region larger (low-pass filter = intensity variations)
     #low_pass = 3 # in 1/nm
     mask_spot = x**2+y**2 < low_pass**2 
     mask = mask + mask_spot
     mask[np.where(mask>1)]=1    
-    return (tags['data'])*mask.T
+    fft_filtered = np.fft.fftshift(np.fft.fft2(image))*mask
+    
+    return np.fft.ifft2(np.fft.fftshift(fft_filtered)).real
 
 
 def rotational_symmetry_diffractogram(spots):
