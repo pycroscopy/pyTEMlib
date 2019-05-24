@@ -565,8 +565,6 @@ def adaptive_Fourier_filter(image, tags, low_pass = 3, reflection_radius = 0.3):
             Fourier filtered image
     """
     #prepare mask
-    
-    
     pixelsy = (np.linspace(0,image.shape[0]-1,image.shape[0])-image.shape[0]/2)* tags['spatial_scale_x']
     pixelsx = (np.linspace(0,image.shape[1]-1,image.shape[1])-image.shape[1]/2)* tags['spatial_scale_y']
     x,y = np.meshgrid(pixelsx,pixelsy);
@@ -575,6 +573,7 @@ def adaptive_Fourier_filter(image, tags, low_pass = 3, reflection_radius = 0.3):
 
     # mask reflections
     #reflection_radius = 0.3 # in 1/nm
+    spots = fft_tags['spots']
     for spot in spots:
         mask_spot = (x-spot[0])**2+(y-spot[1])**2 < reflection_radius**2 # make a spot 
         mask = mask + mask_spot# add spot to mask
@@ -588,6 +587,7 @@ def adaptive_Fourier_filter(image, tags, low_pass = 3, reflection_radius = 0.3):
     fft_filtered = np.fft.fftshift(np.fft.fft2(image))*mask
     
     return np.fft.ifft2(np.fft.fftshift(fft_filtered)).real
+
 
 
 def rotational_symmetry_diffractogram(spots):
