@@ -445,7 +445,7 @@ def power_spectrum(channel):
                 ['maximum_intensity']: suggested maximum intensity for plotting
 
     """
-    ## fft
+    ## fft kkl
     data = channel['data'][()]
     image = data- data.min()
     fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
