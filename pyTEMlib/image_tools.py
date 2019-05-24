@@ -678,8 +678,8 @@ def calculateScherzer(waveLength, Cs):
     return scherzer
 
 def calibrate_imageScale(fft_tags,spots_reference,spots_experiment):
-    gx = fft_tags['axis']['0']['scale']
-    gy = fft_tags['axis']['1']['scale']
+    gx = fft_tags['spatial_scale_x']
+    gy = fft_tags['spatial_scale_y']
 
     dist_reference = np.linalg.norm(spots_reference, axis=1)
     distance_experiment = np.linalg.norm(spots_experiment, axis=1)
@@ -693,7 +693,7 @@ def calibrate_imageScale(fft_tags,spots_reference,spots_experiment):
         dgx , dgy = params
         return (np.sqrt((xdata*dgx)**2 + (ydata*dgy)**2 ) - dist_reference.min())
 
-    x0 = [1.,0.999]
+    x0 = [1.001,0.999]
     dg, sig = optimization.leastsq(func, x0, args=(closest_exp_reflections[:,0], closest_exp_reflections[:,1]))
     return dg
 
@@ -2155,15 +2155,21 @@ def Fourier_transform(current_channel,data):# = image_channel
 
 def find_Bragg(fft_tags, spot_threshold = 0 ):
     if spot_threshold ==0:
-        spot_threshold = (fft_tags['maximum_intensity']*10)
-    center = np.array([int(fft_tags['spatial_origin_x']), int(fft_tags['spatial_origin_y']),1] )
-    rec_scale = np.array([fft_tags['spatial_scale_x'], fft_tags['spatial_scale_y'],1])
-    spots_random =  (blob_log(fft_tags['data'],  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
+        spot_threshold = 0.05#(fft_tags['maximum_intensity']*10)
+    
+    # we'll have to switch x and ycoordonates
+    center = np.array([int(fft_tags['spatial_origin_y']), int(fft_tags['spatial_origin_x']),1] )
+    rec_scale = np.array([fft_tags['spatial_scale_y'], fft_tags['spatial_scale_x'],1])
+    data = fft_tags['data'].T
+    data = (data-data.min())/data.max()
+    spots_random =  (blob_log(data,  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
+    
     print(f'found {len(spots_random)} Bragg spots with threshold of {spot_threshold}')
     spots_random[:,2] = np.linalg.norm(spots_random[:,0:2], axis=1)
     spots_index = np.argsort(spots_random[:,2])
     
     spots = spots_random[spots_index]
-    spots[:,2] = np.angle(spots[:,0]+ spots[:,1]*1j, deg=True)
+    spots[:,2] = np.arctan2(spots[:,0], spots[:,1])
+    return spots
     return spots
 
