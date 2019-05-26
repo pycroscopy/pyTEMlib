@@ -645,6 +645,21 @@ def h5_plot(current_channel,ax=None, ax2=None):
         ax.imshow(data,extent= extent)
         ax.set_xlabel('distance ['+current_channel['spatial_units'][()]+']');
 
+def h5_add_crystal_structure(h5_file, crystal_tags):
+    structure_group = usid.io.hdf_utils.create_indexed_group(h5_file,'Structure')
+    
+    structure_group['unit_cell'] = crystal_tags['unit_cell']
+    structure_group['relative_positions'] = crystal_tags['base']
+    structure_group['title'] = str(crystal_tags['crystal_name'])
+    structure_group['_'+crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
+    structure_group['elements'] = np.array(crystal_tags['elements'],dtype='S')
+    if 'zone_axis' in structure_group:
+        structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
+    else:
+        structure_group['zone_axis'] = np.array([1.,0.,0.], dtype=float)
+    return structure_group
+
+
 
     
 def open_file(file_name = None):
