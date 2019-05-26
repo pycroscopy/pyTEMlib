@@ -445,7 +445,7 @@ def power_spectrum(channel):
                 ['maximum_intensity']: suggested maximum intensity for plotting
 
     """
-    ## fft kkl
+    ## fft
     data = channel['data'][()]
     image = data- data.min()
     fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
@@ -573,7 +573,7 @@ def adaptive_Fourier_filter(image, tags, low_pass = 3, reflection_radius = 0.3):
 
     # mask reflections
     #reflection_radius = 0.3 # in 1/nm
-    spots = tags['spots']
+    spots = fft_tags['spots']
     for spot in spots:
         mask_spot = (x-spot[0])**2+(y-spot[1])**2 < reflection_radius**2 # make a spot 
         mask = mask + mask_spot# add spot to mask
@@ -703,7 +703,7 @@ def calibrate_imageScale(fft_tags,spots_reference,spots_experiment):
     dist_reference = np.linalg.norm(spots_reference, axis=1)
     distance_experiment = np.linalg.norm(spots_experiment, axis=1)
 
-    first_reflections = abs(distance_experiment - dist_reference.min()) < .2
+    first_reflections = abs(distance_experiment - dist_reference.min()) < .1
     print('Evaluate ', first_reflections.sum(), 'reflections')
     closest_exp_reflections = spots_experiment[first_reflections]
 
@@ -719,29 +719,35 @@ def calibrate_imageScale(fft_tags,spots_reference,spots_experiment):
 def align_crystal_reflections(spots,crystals):
     crystal_reflections_polar=[]
     angles = []
+    mask = np.ones(spots.shape[0], dtype=bool)
     exp_r, exp_phi = cart2pol(spots) # just in polar coordinates
     spots_polar= np.array([exp_r, exp_phi])
+    number_spots_remain = len(mask)
         
     for i in range(len(crystals)):
         tags = crystals[i]
         r,phi,indices = xy2polar(tags['allowed']['g']) #sorted by r and phi , only positive angles
         ## we mask the experimental values that are found already
         angle = 0.
-        
-        angleI = np.argmin(np.abs(exp_r - r[1]) )
-        angle = exp_phi[angleI] - phi[0]
+        if mask.sum()>1:
+            angleI = np.argmin(np.abs((exp_r[mask])-r[0]) )
+            angle = (exp_phi[mask])[angleI] - phi[0]
         angles.append(angle) ## Determine rotation angle
-
-        crystal_reflections_polar.append([r, angle + phi, indices])
+        crystal_reflections_polar.append([r, angle - phi, indices])
         tags['allowed']['g_rotated'] = pol2cart(r, angle + phi)
         for spot in tags['allowed']['g']:
             dif = np.linalg.norm(spots[:,0:2]-spot[0:2],axis=1)
             #print(dif.min())
             if dif.min() < 1.5:
                 ind = np.argmin(dif)
-    
+                if mask[ind]:
+                    mask[ind] = 0
+
+        print(f'found {(number_spots_remain-mask.sum()):.0f} refletions in crystal {i}')         
+        number_spots_remain -= (number_spots_remain-mask.sum())
+        print(mask.sum())
         
-    return crystal_reflections_polar, angles
+    return crystal_reflections_polar, angles, mask
 
 
 
