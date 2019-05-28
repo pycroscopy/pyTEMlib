@@ -657,8 +657,47 @@ def h5_add_crystal_structure(h5_file, crystal_tags):
         structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
     else:
         structure_group['zone_axis'] = np.array([1.,0.,0.], dtype=float)
+    h5_file.flush()
     return structure_group
 
+def h5_get_crystal_structure(structure_group):
+    crystal_tags = {}
+    crystal_tags['unit_cell'] = structure_group['unit_cell'][()]
+    crystal_tags['base'] = structure_group['relative_positions'][()]
+    crystal_tags['crystal_name'] = structure_group['title'][()]
+    elements = structure_group['elements'][()]
+    crystal_tags['elements'] = []
+    for e in elements:
+        crystal_tags['elements'].append( e.astype(str, copy=False))
+    
+    if 'zone_axis' in structure_group:
+        crystal_tags['zone_axis'] = structure_group['zone_axis'] [()]
+    return crystal_tags
+
+def h5_add_diffraction(current_channel, crystal_tags):
+    out_tags = {}
+    out_tags['analysis']='diffraction'
+    for key in crystal_tags:
+        
+        if not isinstance(crystal_tags[key],dict):
+            if key == 'elements':
+                out_tags['elements'] = np.array(crystal_tags['elements'],dtype='S')
+            elif key in ['crystal_name','symmetry','reference','link']:
+                out_tags[key] = str(crystal_tags[key])
+            elif key in ['label']:
+                pass # don't know how to write that format
+            else:
+                if key == 'label':
+                    pass# don't know how to write that format
+                out_tags[key] = np.array(crystal_tags[key])
+        else:
+            if key == 'allowed':
+                for key2 in crystal_tags['allowed']:
+                    if key2 != 'label':
+                        out_tags[key2] = np.array(crystal_tags['allowed'][key2])
+    log_group = h5_add_Log(current_channel, 'Diffraction-WS2')
+    h5_add_Data2Log(log_group, out_tags)
+    return log_group
 
 
     
