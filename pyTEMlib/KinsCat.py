@@ -269,6 +269,7 @@ def dichalcogenide(a,c,u, elements):
     base = [(1/3., 2/3. , 1/4.),(2/3., 1/3. , 3/4.),
             (2/3., 1/3. , 1/4.+u),(2/3., 1/3. , 1/4.-u),
             (1/3., 2/3. , 3/4.+u), (1/3., 2/3. , 3/4.-u)]
+    
     if len(elements) >1:
         atoms = [elements[0]]*2 + [elements[1]]*4
     else:
@@ -339,7 +340,6 @@ def zone_mistilt (zone, angles):
 
     return np.dot(np.dot(np.dot(zone,rotx),roty),rotz)
 
-
 def structure_by_name(crystal):
     """
         Provides unit cell as a structure matrix, the list of elements and the atom base
@@ -363,12 +363,13 @@ def structure_by_name(crystal):
     """
 
     ## Check whether name is in the crystal_data_base
+    
     if crystal in cdb:
-        tags  = cdb[crystal]
+        tags = cdb[crystal].copy()
     else:
         print('Crystal name not defined')
         return {}   
-
+    print(tags['elements'])
     ## Make crystal structure dictionary based on symmetry 
     if 'symmetry' in tags:
         if tags['symmetry'] == 'BCC':
@@ -397,6 +398,7 @@ def structure_by_name(crystal):
         tags['base'] =base
     
     return tags
+
 
 def get_Symmetry(unit_cell,base, atoms):
     if _spglib_present:
