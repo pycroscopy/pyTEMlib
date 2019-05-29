@@ -1948,51 +1948,64 @@ def voronoi2(tags, atoms):
 
     #print ('average corners', np.median(cornersHist))
 
-
-
-def atomRefine(image, atoms, tags, maxDist = 2):
-    
-    rr = int(tags['radius']+0.5) # atom radius
+def intensity_area(image,atoms, radius):
+    rr = int(radius+0.5) # atom radius
     print('using radius ',rr, 'pixels')
     
     pixels = np.linspace(0,2*rr,2*rr+1)-rr
     x,y = np.meshgrid(pixels,pixels);
     mask = (x**2+y**2) < rr**2 #
+    intensity_area = []
+    for i in range(len( atoms)):
+        
+        x = int(atoms[i][1]   ) 
+        y = int(atoms[i][0]   ) 
+        area = image[x-rr:x+rr+1,y-rr:y+rr+1]
+        if area.shape == mask.shape:
+            intensity_area.append((area*mask).sum() )
+        else:
+            intensity_area.append(-1)
+    return intensity_area
+
+def Gauss_2D(params, ydata):
+    width = int(ydata.shape[0]/2)
+    Gauss_width = params[0]
+    x0 = params[1]
+    y0 = params[2]
+    inten = params[3]
+
+    x, y = np.mgrid[-width:width+1, -width:width+1]
+
+
+    return np.exp(-((x-x0)**2 + (y-y0)**2) /2./ Gauss_width**2)*inten
+def Gauss_difference (params,  xdata, ydata):
+    #self.img1b.setImage(gauss)
+    gauss = Gauss_2D(params, ydata)
+    return (ydata - gauss).flatten()
+
+def atomRefine(image, atoms, radius, MaxInt = 0,MinInt = 0, maxDist = 4):
     
-    def func(params,  xdata, ydata):
-        width = ydata.shape[0]/2
-        Gauss_width = params[0]
-        x0 = params[1]
-        y0 = params[2]
-        inten = params[3]
+    rr = int(radius+0.5) # atom radius
+    print('using radius ',rr, 'pixels')
+    
+    pixels = np.linspace(0,2*rr,2*rr+1)-rr
+    x,y = np.meshgrid(pixels,pixels);
+    mask = (x**2+y**2) < rr**2 #
 
-        x, y = np.mgrid[-width:width, -width:width]
-
-        gauss = np.exp(-4*np.log(2) * ((x-x0)**2 + (y-y0)**2) / Gauss_width**2)*inten
-        #self.img1b.setImage(gauss)
-        return (ydata - gauss).flatten()
-
-
-    ###
-    # Determine sub pixel position and intensity  of all atoms within intensity range
-    ###
-    guess  = [rr, 0.0, 0.0 , 1]
-    pout = [0.0, 0.0, 0.0 , 0.0]
-    newatoms = []
-
-    #tags['symmetry'] = {}
+    guess  = [rr*2, 0.0, 0.0 , 1]    
+    
     sym = {}
     sym['number_of_atoms'] = len(atoms)
-    Z=[]
-    Name = []
-    Column = []
+    
+    volume = []
     position = []
     intensity_area = []
     maximum_area = []
+    newatoms = []
     Gauss_width = []
     Gauss_amplitude = []
-    Gauss_volume = []
-
+    Gauss_intensity = []
+    
     for i in range(len( atoms)):
         
         y,x = atoms[i][0:2]
@@ -2002,91 +2015,56 @@ def atomRefine(image, atoms, tags, maxDist = 2):
         
         
         area = image[x-rr:x+rr+1,y-rr:y+rr+1]
-                
-        sym[str(i)] = {}
-        sym[str(i)]['index']= i
-        sym[str(i)]['x'] = x
-        sym[str(i)]['y'] = y
-        sym[str(i)]['Z'] = 0
-        sym[str(i)]['Name'] = 'undefined'
-        sym[str(i)]['Column'] = -1
-
+       
         append = False
         
         if (x-rr) < 0 or y-rr <0 or x+rr+1 > image.shape[0] or y+rr+1 > image.shape[1]:
-            sym[str(i)]['position'] = 'outside'
-            sym[str(i)]['intensity area'] = 0 
-            sym[str(i)]['maximum area'] = 0
+            position.append(-1)
+            intensity_area.append(0) 
+            maximum_area.append(0)
         else:
-            sym[str(i)]['position'] = 'inside'
-            sym[str(i)]['intensity area'] = (area*mask).sum()
-            sym[str(i)]['maximum area'] = (area*mask).max()
-        
-        if tags['MaxInt']>0:
-            if area.sum()< tags['MaxInt']:                    
-                if area.sum() > tags['MinInt']:
+            position.append(1)
+            intensity_area.append((area*mask).sum() )
+            maximum_area.append((area*mask).max())
+            
+        if MaxInt>0:
+            if area.sum()< MaxInt:                    
+                if area.sum() > MinInt:
                     append = True
-        elif area.sum()> tags['MinInt']:
+        elif area.sum()> MinInt:
             append = True
         
-        if append: ## If possible do a Gaussian fit and update the x and y 
+        pout = [0,0,0,0]
+        if append:
             if (x-rr) < 0 or y-rr <0 or x+rr+1 > image.shape[0] or y+rr+1 > image.shape[1]:
-                pout[0] = 0 # width
-                pout[1] = 0 # dx
-                pout[2] = 0 # dy
-                pout[3] = 0 # amplitude
+                pass
             else:
-                pout, res =  leastsq(func, guess, args=(area, area))
-            # shift cannot be larger than two pixels
+                pout, res =  leastsq(Gauss_difference, guess, args=(area, area))
+                
             if (abs(pout[1])> maxDist) or (abs(pout[2])> maxDist):
-                #print(i,x,y,pout[1],pout[2])
-                pout[0] = 0 # width
-                pout[1] = 0 # dx
-                pout[2] = 0 # dy
-                pout[3] = 0 # amplitude
-
-            sym[str(i)]['x'] = x+pout[1]
-            sym[str(i)]['y'] = y+pout[2]
-
-            volume = 2* np.pi * pout[3] * pout[0]*pout[0]
-
-            newatoms.append([y+pout[2]+1, x+pout[1]+1])# ,pout[0],  volume)) #,pout[3]))
-
-            sym[str(i)]['Gauss width'] =  pout[0]
-            sym[str(i)]['Gauss amplitude'] = pout[3]
-            sym[str(i)]['Gauss volume'] = volume
-            
-        #x.append(sym[str(i)]['x'])
-        #y.append(sym[str(i)]['y'])
-        Z.append(sym[str(i)]['Z'])
-        Name.append(str(sym[str(i)]['Name']))
-        Column.append(sym[str(i)]['Column'])
-        if sym[str(i)]['position'] == 'inside':
-            position.append(1)
-        else:
-            position.append(0)
-
-        intensity_area.append(sym[str(i)]['intensity area'])
-        maximum_area.append(sym[str(i)]['maximum area'])
-        Gauss_width.append(sym[str(i)]['Gauss width'])
-        Gauss_amplitude.append(sym[str(i)]['Gauss amplitude'])
-        Gauss_volume.append(sym[str(i)]['Gauss volume'])
-    tags2 = {}
-    tags2['number_of_atoms'] = len(atoms)
+                pout = [0,0,0,0]
     
-    tags2['Z'] = np.array(Z)
-    #out_tags2['Name'] = np.array(Name)
-    tags2['Column'] = np.array(Column)
-    tags2['position'] = np.array(position)
-    tags2['intensity_area'] = np.array(intensity_area)
-    tags2['maximum_area'] = np.array(maximum_area)
+        volume.append(2* np.pi * pout[3] * pout[0]*pout[0])
 
-    tags2['Gauss_width'] = np.array(Gauss_width)
-    tags2['Gauss_amplitude'] = np.array(Gauss_amplitude)
-    tags2['Gauss_volume'] = np.array(Gauss_volume)        
-    tags2['atoms'] = newatoms
-    tags2['sym'] = sym
-    return tags2
+        newatoms.append([y+pout[2], x+pout[1]])# ,pout[0],  volume)) #,pout[3]))
+        if (all(v == 0 for v in pout)):
+            Gauss_intensity.append(0.)
+        else:
+            Gauss_intensity.append((Gauss_2D(pout, area)*mask).sum() )
+        Gauss_width.append(pout[0])
+        Gauss_amplitude.append(pout[3])
+    
+    
+    sym['inside'] = position
+    sym['intensity_area'] = intensity_area 
+    sym['maximum_area'] = maximum_area
+    sym['atoms'] = newatoms
+    sym['Gauss_width'] = Gauss_width
+    sym['Gauss_amplitude'] = Gauss_amplitude
+    sym['Gauss_intensity'] = Gauss_intensity
+    sym['Gauss_volume'] = volume
+    
+    return sym
 
 def Fourier_transform(current_channel,data):# = image_channel
     # spatial data
