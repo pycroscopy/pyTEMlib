@@ -1984,7 +1984,9 @@ def Gauss_difference (params,  xdata, ydata):
     return (ydata - gauss).flatten()
 
 def atomRefine(image, atoms, radius, MaxInt = 0,MinInt = 0, maxDist = 4):
-    
+    """
+        fits a Gaussian in a blob
+    """
     rr = int(radius+0.5) # atom radius
     print('using radius ',rr, 'pixels')
     
