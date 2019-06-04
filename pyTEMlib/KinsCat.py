@@ -797,7 +797,7 @@ def get_waveLength(E0):
         acceleration voltage in volt
     Output:
     -------
-        wave length in nm
+        wave length in 1/nm
     """
 
     eV = const.e * E0 

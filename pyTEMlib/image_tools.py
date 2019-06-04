@@ -63,7 +63,22 @@ except:
 if _SimpleITK_present == False:
     print('SimpleITK not installed; Registration Functions for Image Stacks not available')
 
+# Wavelength in 1/nm
+def get_waveLength(E0):
+    """
+    Calculates the relativistic corrected de Broglie wave length of an electron
 
+    Input:
+    ------
+        acceleration voltage in volt
+    Output:
+    -------
+        wave length in 1/nm
+    """
+
+    eV = const.e * E0 
+    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
+    
 
 def plot_image2(image_tags,fig, axes):
     if 'color_map' not in image_tags: 
