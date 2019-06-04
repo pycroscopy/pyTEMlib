@@ -795,8 +795,8 @@ def DemonReg(cube, verbose = False):
     fixed = sitk.GetImageFromArray(fixed_np)
     fixed = sitk.DiscreteGaussian(fixed, 2.0)
 
-    demons = sitk.SymmetricForcesDemonsRegistrationFilter()
-    #demons = sitk.DiffeomorphicDemonsRegistrationFilter()
+    #demons = sitk.SymmetricForcesDemonsRegistrationFilter()
+    demons = sitk.DiffeomorphicDemonsRegistrationFilter()
 
     demons.SetNumberOfIterations(200)
     demons.SetStandardDeviations(1.0)

@@ -702,25 +702,37 @@ def plot_unitcell(tags):
 
     corners,balls, Z, bonds = ball_and_stick(tags,extend=extend, max_bond_length = max_bond_length)
     
-    fig = plt.figure();ax = fig.add_subplot(111, projection='3d')
+    
 
+    maximum_position = balls.max()*1.05
+    maximum_x = balls[:,0].max()
+    maximum_y = balls[:,1].max()
+    maximum_z = balls[:,2].max()
+
+    balls = balls - [maximum_x/2,maximum_y/2,maximum_z/2]
+
+    fig = plt.figure();ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
     for x, y, z in corners:
-        ax.plot3D( x,y,z, color="blue")
+        ax.plot3D( x-maximum_x/2,y-maximum_y/2,z-maximum_z/2, color="blue")
 
     # draw bonds
     for x, y, z in bonds:
-        ax.plot3D( x,y,z, color="black", linewidth = 4)#, tube_radius=0.02)
+
+        ax.plot3D( x-maximum_x/2,y-maximum_y/2,z-maximum_z/2, color="black", linewidth = 4)#, tube_radius=0.02)
+
 
     # draw atoms
     for i,atom in enumerate(balls):
         ax.scatter(atom[0],atom[1],atom[2],
                   color=tuple(jmol_colors [Z[i]]),
-                  alpha = 1.0, s=200)
+                  alpha = 1.0, s=50)
+    maximum_position = balls.max()*1.05
+    ax.set_proj_type('ortho')
 
-    ax.axis('equal')
-    ax.set_aspect("equal")
-    plt.show()
+    ax.set_zlim( -maximum_position/2,maximum_position/2)
+    ax.set_ylim( -maximum_position/2,maximum_position/2)
+    ax.set_xlim( -maximum_position/2,maximum_position/2)
 
     
 # The metric tensor of the lattice.
