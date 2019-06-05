@@ -71,7 +71,28 @@ import matplotlib.pylab as plt # basic plotting
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D # 3D plotting
 
+from ase.io import read, write
+import pyTEMlib.file_tools as ft
+import os
+def Read_POSCAR(): # open file dialog to select poscar file
+    file_name = ft.openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
+    #use ase package to read file
+    
+    base=os.path.basename(file_name)
+    base_name = os.path.splitext(base)[0]
+    crystal = read(file_name,format='vasp', parallel=False)
+    
 
+    ## make dictionary and plot structure (not essential for further notebook)
+    tags = {}
+    tags['unit_cell'] = crystal.cell*1e-1
+    tags['elements'] = crystal.get_chemical_symbols()
+    tags['base'] = crystal.get_scaled_positions()
+
+    tags['max_bond_length'] = 0.23
+    tags['name'] = base_name
+
+    return tags
 
 ### Some Structure Determination Routines
 
@@ -734,6 +755,12 @@ def plot_unitcell(tags):
     ax.set_ylim( -maximum_position/2,maximum_position/2)
     ax.set_xlim( -maximum_position/2,maximum_position/2)
 
+    if 'name' in tags:
+        ax.set_title(tags['name'])
+
+    ax.set_xlabel('x [nm]')
+    ax.set_ylabel('y [nm]')
+    ax.set_zlabel('z [nm]')
     
 # The metric tensor of the lattice.
 def metric_tensor( matrix):
@@ -797,7 +824,7 @@ def get_waveLength(E0):
         acceleration voltage in volt
     Output:
     -------
-        wave length in 1/nm
+        wave length in nm
     """
 
     eV = const.e * E0 
