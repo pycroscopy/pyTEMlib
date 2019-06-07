@@ -8,7 +8,8 @@ from scipy.ndimage.filters import gaussian_filter
 
 from scipy import constants
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+import matplotlib.patches as patches
+
 from matplotlib.widgets import SpanSelector
 
 from scipy.optimize import leastsq  ## leastsqure fitting routine fo scipy
@@ -33,6 +34,176 @@ first_close_edges = ['K1', 'L3', 'M5', 'M3', 'N5', 'N3']
 # Drude(Ep, Eb, gamma, e)
 # DrudeLorentz(epsInf,leng, Ep, Eb, gamma, e, Amplitude)
 # ZLfunc( p,  x)
+
+################################################################
+# plotting routines
+#################################################################
+
+class interactive_spectrum_image(object):
+    def __init__(self, cube, energy_scale, horizontal = True):
+        self.figure = plt.figure()
+        self.horizontal = horizontal
+        self.x = 0
+        self.y = 0
+        self.extent = [0,cube.shape[1],cube.shape[0],0]
+        self.rectangle = [0,cube.shape[1],0, cube.shape[0]]
+        self.scaleX = 1.0
+        self.scaleY = 1.0
+        
+        self.SI = False
+        
+        if horizontal:
+            self.ax1=plt.subplot(1, 2, 1)
+            self.ax2=plt.subplot(1, 2, 2)
+        else:
+            self.ax1=plt.subplot(2, 1, 1)
+            self.ax2=plt.subplot(2, 1, 2)
+            
+        self.cube = cube
+        self.image = cube.sum(axis=2)
+        
+        self.energy_scale = energy_scale
+        self.ax1.imshow(self.image, extent = self.extent)
+        if horizontal:
+            self.ax1.set_xlabel('distance [pixels]')
+        else:
+            self.ax1.set_ylabel('distance [pixels]')
+        self.ax1.set_aspect('equal')
+        
+        self.rect = patches.Rectangle((0,0),1,1,linewidth=1,edgecolor='r',facecolor='red', alpha = 0.2)
+        self.ax1.add_patch(self.rect)
+        
+        self.ax2.plot(self.energy_scale,self.cube[self.x,self.y,:])
+        self.ax2.set_title(f' spectrum {self.x},{self.y} ')
+        self.ax2.set_xlabel('energy_loss [eV]')
+        self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
+        plt.tight_layout()
+
+    def onclick(self,event):
+        x = int(event.xdata)
+        y = int(event.ydata)
+        
+        print(x,y)
+        if x >= self.rectangle[0] and x < self.rectangle[0]+self.rectangle[1]:
+            if y >= self.rectangle[2] and y < self.rectangle[2]+self.rectangle[3]:
+                self.x = int((x - self.rectangle[0])/ self.rectangle[1]*self.cube.shape[1])
+                self.y = int((y - self.rectangle[2])/ self.rectangle[3]*self.cube.shape[0])
+            else:
+                return
+        else:
+            return
+        
+        
+        if event.inaxes in [self.ax1]:
+            x = (self.x * self.rectangle[1]/self.cube.shape[1]+ self.rectangle[0])
+            y = (self.y * self.rectangle[3]/self.cube.shape[0]+ self.rectangle[2])
+            
+            self.rect.set_xy([x,y]) 
+            xlim = self.ax2.get_xlim()
+            ylim = self.ax2.get_ylim()
+            self.ax2.clear()
+            self.ax2.plot(self.energy_scale,self.cube[self.y,self.x,:])
+
+            self.ax2.set_title(f' spectrum {self.x},{self.y} ')
+            self.ax2.set_xlim(xlim)
+            self.ax2.set_ylim(ylim)
+            
+        self.ax2.draw()
+    def get_xy(self):
+        return [self.x,self.y]
+    
+    def get_current_spectrum(self):
+        return self.cube[self.y,self.x,:]
+    
+    def set_Zcontrast_image(self,Z_channel):
+        
+        # get dictionary from current channel in pyUSID file
+        Z_tags = ft.h5_get_dictionary(Z_channel)
+        Z_file.close()
+        self.ax1.imshow(Z_tags['data'], extent = self.extent, cmap='gray')
+        
+    def overlay_Zcontrast_image(self,Z_channel):
+        
+        if self.SI:
+        
+            Z_tags = ft.h5_get_dictionary(Z_channel)
+
+            xlim = self.ax1.get_xlim()
+            ylim = self.ax1.get_ylim()
+            extent = [self.rectangle[0],self.rectangle[0]+self.rectangle[1],
+                      self.rectangle[2]+self.rectangle[3],self.rectangle[2]]
+            self.ax1.imshow(Z_tags['data'], extent = extent, cmap='viridis',alpha = 0.5)
+            self.ax1.set_ylim(ylim)
+            self.ax1.set_xlim(xlim)
+            
+    def overlay_data(self,data= None):
+    
+        if self.SI:
+            if data ==None:
+                data = self.cube.sum(axis=2)
+        
+            xlim = self.ax1.get_xlim()
+            ylim = self.ax1.get_ylim()
+            extent = [self.rectangle[0],self.rectangle[0]+self.rectangle[1],
+                      self.rectangle[2]+self.rectangle[3],self.rectangle[2]]
+            self.ax1.imshow(data, extent = extent,alpha = 0.7, cmap = 'viridis')
+            self.ax1.set_ylim(ylim)
+            self.ax1.set_xlim(xlim)
+        
+        
+    def set_Survey_image(self, SI_channel):
+        
+        # get dictionary from current channel in pyUSID file
+        SI_tags = ft.h5_get_dictionary(SI_channel)
+        tags2 = dict(SI_channel.attrs)
+        
+        self.ax1.set_aspect('equal')
+        self.scaleX = SI_channel['spatial_scale_x'][()]
+        self.scaleY = SI_channel['spatial_scale_y'][()]
+        
+        self.ax1.imshow(SI_tags['data'], extent = SI_tags['extent'], cmap = 'gray')
+        if self.horizontal:
+            self.ax1.set_xlabel('distance [nm]')
+        else:
+            self.ax1.set_ylabel('distance [nm]')
+        
+        annotation_done = []
+        for key in tags2:
+            if 'annotations' in key:
+                annotation_number = key[12]
+                if annotation_number not in annotation_done:
+                    annotation_done.append(annotation_number)
+                    
+                    if tags2['annotations_'+annotation_number+'_type'] == 'text':
+                        x =tags2['annotations_'+annotation_number+'_x'] 
+                        y = tags2['annotations_'+annotation_number+'_y']
+                        text = tags2['annotations_'+annotation_number+'_text'] 
+                        self.ax1.text(x,y,text,color='r')
+
+                    elif tags2['annotations_'+annotation_number+'_type'] == 'circle':
+                        radius = 20 * scaleX#tags['annotations'][key]['radius']
+                        xy = tags2['annotations_'+annotation_number+'_position']
+                        circle = patches.Circle(xy, radius, color='r',fill = False)
+                        self.ax1.add_artist(circle)
+
+                    elif tags2['annotations_'+annotation_number+'_type'] == 'spectrum image':
+                        width = tags2['annotations_'+annotation_number+'_width'] 
+                        height = tags2['annotations_'+annotation_number+'_height']
+                        position = tags2['annotations_'+annotation_number+'_position']
+                        rectangle = patches.Rectangle(position, width, height, color='r',fill = False)
+                        self.rectangle = [position[0], width, position[1], height]
+                        self.ax1.add_artist(rectangle)
+                        self.ax1.text(position[0],position[1],'Spectrum Image',color='r')
+                        self.rect.set_width(width/self.cube.shape[1])
+                        self.rect.set_height(height/self.cube.shape[0])
+        self.SI = True
+        
+
+
+#################################################################
+# CORE - LOSS functions
+#################################################################
+
 
 def get_Xsections(Z=0):
     """
@@ -210,7 +381,7 @@ class Region_Selector(object):
             height = y_max-y_min 
             alpha = self.regions[key]['alpha']
             color = self.regions[key]['color']
-            self.regions[key]['Rect'] =  Rectangle((xmin,y_min), width,height, 
+            self.regions[key]['Rect'] =  patches.Rectangle((xmin,y_min), width,height, 
                                                     edgecolor=color,alpha=alpha, facecolor=color)
             self.ax.add_patch(self.regions[key]['Rect'])
 
@@ -425,10 +596,169 @@ def find_all_edges(edge_onset, maximal_chemical_shift = 5):
                         text = text+ f"\n {Xsections[element]['name']:2s}-{key}: {Xsections[element][key]['onset']:8.1f} eV "
                     
     return text
+def make_edges(edges_present, energy_scale,E_0,coll_angle):
+    
+    """
+    Makes the edges dictiononary
+    """
+    Xsections = get_Xsections()
+    edges = {}
+    for i in range(len(edges_present)):
+        element, symmetry = edges_present[i].split('-')
+        Z = 0
+        for key in Xsections:
+            if element == Xsections[key]['name']:
+                Z = int(key)
+        edges[str(i+1)] = {}
+        edges[str(i+1)]['Z'] = Z
+        edges[str(i+1)]['symmetry'] = symmetry
+        edges[str(i+1)]['element'] = element
+        
+    for key in edges:
+        
+        xsec =  Xsections[str(edges[key]['Z'])]
+        if 'chemcial_shift' not in edges[key]:
+            edges[key]['chemcial_shift'] = 0
+        if 'symmetry' not in edges[key]:
+            edges[key]['symmetry'] = 'K1'
+        if 'K' in edges[key]['symmetry']:
+            edges[key]['symmetry'] = 'K1'
+        elif 'L' in edges[key]['symmetry']:
+            edges[key]['symmetry'] = 'L3'
+        elif 'M' in edges[key]['symmetry']:
+            edges[key]['symmetry'] = 'M5'
+        else:
+            edges[key]['symmetry']= edges[key]['symmetry'][0:2]
+            
+        edges[key]['original_onset'] = xsec[edges[key]['symmetry']]['onset']
+        edges[key]['onset'] = edges[key]['original_onset']+ edges[key]['chemcial_shift']
+        edges[key]['start_exclude'] = xsec[edges[key]['symmetry']]['excl before']
+        edges[key]['end_exclude']   = xsec[edges[key]['symmetry']]['excl after']
+        
+    edges = make_cross_sections(edges, energy_scale, E_0, coll_angle)
+    
+    return edges
+    
+
+def make_cross_sections(edges, energy_scale, E_0, coll_angle):
+    """
+    Updates the edges dictiononary with the appropriate cross-sections
+    """
+    for key in edges:
+        if key.isdigit():
+            edges[key]['data'] = xsecXRPA(energy_scale, E_0/1000., edges[key]['Z'], coll_angle , edges[key]['chemcial_shift'] )/1e10  
+            edges[key]['onset'] = edges[key]['original_onset']+ edges[key]['chemcial_shift']
+        
+    
+    return edges
 
 
-                    
-                    
+def power_law( energy, A, r):
+    return A* np.power(energy,-r)
+
+def power_law_background(spectrum, energy_scale, fit_area, verbose = False):
+    # Determine energy window  for backround fit in pixels
+
+    startx = np.searchsorted(energy_scale,fit_area[0])
+    endx = np.searchsorted(energy_scale,fit_area[1])
+
+    x = np.array(energy_scale)[startx:endx]
+
+    y = np.array(spectrum)[startx:endx].flatten()
+
+    # Initial values of parameters
+    p0 = np.array([1.0E+20,3])
+
+    ## background fitting 
+    def bgdfit(p, y, x):
+        err = y - power_law(x,p[0],p[1])
+        return err
+    p, lsq = leastsq(bgdfit, p0, args=(y, x), maxfev=2000)
+    
+    background_difference = y - power_law(x,p[0],p[1])
+    background_noise_level = std_dev = np.std(background_difference)
+    if verbose:
+        print(f'Power-law background with amplitude A: {p[0]:.1f} and exponent -r: {p[1]:.2f}')
+        print( background_difference.max()/background_noise_level)
+
+        print(f'Noise level in spectrum {std_dev:.3f} counts')
+
+    #Calculate background over the whole energy scale
+    background = power_law(energy_scale,p[0],p[1])
+    return background, p
+
+def CL_model(x, p):  
+    y = (p[9]* np.power(x,(-p[10]))) +p[7]*x+p[8]*x*x
+    for i in range(numberOfEdges):
+        y = y + p[i] * xsec[i,:]
+    return y
+    
+    
+def fit_edges(spectrum, energy_scale, region_tags, edges):
+             
+    mask = np.ones(len(spectrum))
+
+    for key in region_tags:
+        end = region_tags[key]['start_x']+region_tags[key]['width_x']
+        startx = np.searchsorted(energy_scale,region_tags[key]['start_x'])
+        endx   = np.searchsorted(energy_scale,end)
+        if key == 'fit_area':
+            mask[0:startx] = 0.0
+            mask[endx:-1] = 0.0
+        else:
+            mask[startx:endx] = 0.0
+
+
+
+    pin = np.array([1.0,1.0,.0,0.0,0.0,0.0, 1.0,1.0,0.001,5,3])
+    x = energy_scale
+
+    blurred = gaussian_filter(spectrum, sigma=5)
+
+    y = blurred*1e-6 ## now in probability
+    y[np.where(y<1e-8)]=1e-8
+
+    xsec = []
+    numberOfEdges = 0
+    for key in edges:
+        if key.isdigit():
+            xsec.append(edges[key]['data'])
+            numberOfEdges+=1
+    xsec = np.array(xsec)
+    
+    def model(x, p):  
+        y = (p[9]* np.power(x,(-p[10]))) +p[7]*x+p[8]*x*x
+        for i in range(numberOfEdges):
+            y = y + p[i] * xsec[i,:]
+        return y
+    
+    def residuals(p,  x, y ):
+        err = (y - model(x,p)) * mask / np.sqrt(np.abs(y))
+        return err        
+
+    p, cov = leastsq(residuals, pin,  args = (x,y) )
+
+    for key in edges:
+        if key.isdigit():
+            edges[key]['areal_density'] = p[int(key)-1]
+            
+    edges['model'] = {}
+    edges['model']['background'] = ((p[9]* np.power(x,-p[10])) +p[7]*x+p[8]*x*x)
+    edges['model']['background-poly_1'] = p[7]
+    edges['model']['background-poly_2'] = p[8]
+    edges['model']['background-A'] = p[9]
+    edges['model']['background-r'] = p[10]          
+    edges['model']['spectrum'] = model(x, p)
+    edges['model']['blurred'] = blurred
+    edges['model']['mask'] = mask
+    edges['model']['fit_parameter'] = p           
+    edges['model']['fit_area_start'] = region_tags['fit_area']['start_x']
+    edges['model']['fit_area_end'] = region_tags['fit_area']['start_x']+region_tags['fit_area']['width_x']
+
+    return edges
+
+
+
 def find_maxima(y,number_of_peaks):
     """
     find the first most prominent peaks 
