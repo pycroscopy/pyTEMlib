@@ -71,7 +71,28 @@ import matplotlib.pylab as plt # basic plotting
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D # 3D plotting
 
+from ase.io import read, write
+import pyTEMlib.file_tools as ft
+import os
+def Read_POSCAR(): # open file dialog to select poscar file
+    file_name = ft.openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
+    #use ase package to read file
+    
+    base=os.path.basename(file_name)
+    base_name = os.path.splitext(base)[0]
+    crystal = read(file_name,format='vasp', parallel=False)
+    
 
+    ## make dictionary and plot structure (not essential for further notebook)
+    tags = {}
+    tags['unit_cell'] = crystal.cell*1e-1
+    tags['elements'] = crystal.get_chemical_symbols()
+    tags['base'] = crystal.get_scaled_positions()
+
+    tags['max_bond_length'] = 0.23
+    tags['name'] = base_name
+
+    return tags
 
 ### Some Structure Determination Routines
 
@@ -702,26 +723,44 @@ def plot_unitcell(tags):
 
     corners,balls, Z, bonds = ball_and_stick(tags,extend=extend, max_bond_length = max_bond_length)
     
-    fig = plt.figure();ax = fig.add_subplot(111, projection='3d')
+    
 
+    maximum_position = balls.max()*1.05
+    maximum_x = balls[:,0].max()
+    maximum_y = balls[:,1].max()
+    maximum_z = balls[:,2].max()
+
+    balls = balls - [maximum_x/2,maximum_y/2,maximum_z/2]
+
+    fig = plt.figure();ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
     for x, y, z in corners:
-        ax.plot3D( x,y,z, color="blue")
+        ax.plot3D( x-maximum_x/2,y-maximum_y/2,z-maximum_z/2, color="blue")
 
     # draw bonds
     for x, y, z in bonds:
-        ax.plot3D( x,y,z, color="black", linewidth = 4)#, tube_radius=0.02)
+
+        ax.plot3D( x-maximum_x/2,y-maximum_y/2,z-maximum_z/2, color="black", linewidth = 4)#, tube_radius=0.02)
+
 
     # draw atoms
     for i,atom in enumerate(balls):
         ax.scatter(atom[0],atom[1],atom[2],
                   color=tuple(jmol_colors [Z[i]]),
-                  alpha = 1.0, s=200)
+                  alpha = 1.0, s=50)
+    maximum_position = balls.max()*1.05
+    ax.set_proj_type('ortho')
 
-    ax.axis('equal')
-    ax.set_aspect("equal")
-    plt.show()
+    ax.set_zlim( -maximum_position/2,maximum_position/2)
+    ax.set_ylim( -maximum_position/2,maximum_position/2)
+    ax.set_xlim( -maximum_position/2,maximum_position/2)
 
+    if 'name' in tags:
+        ax.set_title(tags['name'])
+
+    ax.set_xlabel('x [nm]')
+    ax.set_ylabel('y [nm]')
+    ax.set_zlabel('z [nm]')
     
 # The metric tensor of the lattice.
 def metric_tensor( matrix):
@@ -785,7 +824,7 @@ def get_waveLength(E0):
         acceleration voltage in volt
     Output:
     -------
-        wave length in 1/nm
+        wave length in nm
     """
 
     eV = const.e * E0 
