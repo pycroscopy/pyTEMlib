@@ -8,6 +8,7 @@ import pickle
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 try:
     import h5py
 except:
@@ -303,10 +304,13 @@ def h5add_channels(h5_file,current_channel,title):
 def h5_add_channels(h5_file,current_channel,title):
     file_filters = 'TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;pyUSID files (*.hf5);;QF files ( *.qf3);;DM files (*.dm3);;Nion files (*.ndata *.h5);;All files (*)'
     filenames = openfile_dialog(file_filters, multiple_files=True)
+    if filenames== None:
+        print('File Selection canceled')
+        return current_channel
     if len(filenames) == 0:
         return current_channel
     for file in filenames:
-        current_channel = h5add_channel(h5_file,current_channel,title,filename = file)
+        current_channel = h5_add_channel(h5_file,current_channel,title,filename = file)
     return current_channel    
 
      
@@ -321,6 +325,9 @@ def h5_add_channel(h5_file,current_channel,title,filename=None):
     if filename == None:
         file_filters = 'TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;pyUSID files (*.hf5);;QF files ( *.qf3);;DM files (*.dm3);;Nion files (*.ndata *.h5);;All files (*)'
         filename = openfile_dialog(file_filters)
+        if filename== None:
+            print('File Selection canceled')
+            return
         if filename == '':
             return
     path, file_name = os.path.split(filename)
@@ -594,14 +601,14 @@ def h5_plot(current_channel,ax=None, ax2=None):
                     elif tags['annotations_'+annotation_number+'_type'] == 'circle':
                         radius = 20 * scaleX#tags['annotations'][key]['radius']
                         xy = tags['annotations_'+annotation_number+'_position']
-                        circle = plt.patches.Circle(xy, radius, color='r',fill = False)
+                        circle = patches.Circle(xy, radius, color='r',fill = False)
                         ax.add_artist(circle)
 
                     elif tags['annotations_'+annotation_number+'_type'] == 'spectrum image':
                         width = tags['annotations_'+annotation_number+'_width'] 
                         height = tags['annotations_'+annotation_number+'_height']
                         position = tags['annotations_'+annotation_number+'_position']
-                        rectangle = plt.patches.Rectangle(position, width, height, color='r',fill = False)
+                        rectangle = patches.Rectangle(position, width, height, color='r',fill = False)
                         ax.add_artist(rectangle)
                         ax.text(position[0],position[1],'Spectrum Image',color='r')
     elif  current_channel['data_type'][()] == 'spectrum_image':
@@ -625,9 +632,9 @@ def h5_plot(current_channel,ax=None, ax2=None):
         extent = (0,sizeX*scaleX,sizeY*scaleY,0)
 
 
-        ax.imshow(data.sum(axis=2),extent= extent)
-        ax.set_xlabel('distance ['+current_channel['spatial_units'][()]+']');
-
+        ax.imshow(data.sum(axis=2))#,extent= extent)
+        ax.set_xlabel('distance [pixel]')#+current_channel['spatial_units'][()]+']');
+        ax.set_aspect('equal')
         if ax2 != None:
             ax2.set_title('Spectrum 0, 0')
             ax2.plot(energy_scale,data[0,0,:])
