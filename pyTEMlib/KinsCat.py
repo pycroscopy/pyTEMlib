@@ -2655,6 +2655,18 @@ cdb['MgO']['a'] = 0.4256483   #nm
 cdb['MgO']['reference'] =  ''
 cdb['MgO']['link'] = ''
 
+cdb['TiN'] = {}
+cdb['TiN']['crystal_name'] = 'TiN'
+cdb['TiN']['symmetry'] = 'rocksalt'
+cdb['TiN']['elements'] = ['Ti','N']
+cdb['TiN']['a'] = 0.425353445   #nm 
+cdb['TiN']['reference'] =  ''
+cdb['TiN']['link'] = ''
+cdb['TiN']['space_group'] =  225
+cdb['TiN']['symmetry_name'] =  'Fm-3m'
+
+
+
 cdb['MoS2'] = {}
 cdb['MoS2']['crystal_name'] = 'MoS2'
 cdb['MoS2']['symmetry'] = 'dichalcogenide'
@@ -2740,6 +2752,8 @@ cdb['CsCl']['elements'] =  ['Cs','Cl']
 cdb['CsCl']['base'] = np.array([[0, 0, 0], [0.5, 0.5, 0.5]])
 cdb['CsCl']['reference'] = ''
 cdb['CsCl']['link'] = ''
+
+
 
 cdb['PdSe2'] = {}
     # Create CsCl structure
