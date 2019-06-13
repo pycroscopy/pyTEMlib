@@ -394,7 +394,7 @@ class Region_Selector(object):
             text = 'exclude \nedge ' + key
             alpha = 0.5
             color = 'red'
-        elif str(event.key) in ['a', 'A', 'b', 'B']:
+        elif str(event.key) in ['a', 'A', 'b', 'B','f','F']:
             key = '0'
             color = 'blue'
             alpha = 0.2
@@ -696,26 +696,37 @@ def CL_model(x, p):
     
 def fit_edges(spectrum, energy_scale, region_tags, edges):
              
+    ## Determine fitting ranges and masks to exclude ranges
     mask = np.ones(len(spectrum))
 
+    background_fit_end = energy_scale[-1]
     for key in region_tags:
         end = region_tags[key]['start_x']+region_tags[key]['width_x']
+        
         startx = np.searchsorted(energy_scale,region_tags[key]['start_x'])
         endx   = np.searchsorted(energy_scale,end)
+        
         if key == 'fit_area':
             mask[0:startx] = 0.0
             mask[endx:-1] = 0.0
         else:
             mask[startx:endx] = 0.0
+            if region_tags[key]['start_x'] < background_fit_end: ## Which is the onset of the first edge?
+                background_fit_end = region_tags[key]['start_x']
+            
+    ########################
+    # Background Fit
+    ########################
+    bgd_fit_area = [region_tags['fit_area']['start_x'], background_fit_end]
+    background, [A,r] = power_law_background(spectrum, energy_scale, bgd_fit_area, verbose = False)
 
-
-
-    pin = np.array([1.0,1.0,.0,0.0,0.0,0.0, 1.0,1.0,0.001,5,3])
+    #######################
+    # Edge Fit
+    #######################
     x = energy_scale
-
     blurred = gaussian_filter(spectrum, sigma=5)
 
-    y = blurred*1e-6 ## now in probability
+    y = blurred ## now in probability
     y[np.where(y<1e-8)]=1e-8
 
     xsec = []
@@ -725,17 +736,21 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
             xsec.append(edges[key]['data'])
             numberOfEdges+=1
     xsec = np.array(xsec)
-    
+
     def model(x, p):  
-        y = (p[9]* np.power(x,(-p[10]))) +p[7]*x+p[8]*x*x
+        y = background + p[6]+p[7]*x+p[8]*x*x
         for i in range(numberOfEdges):
-            y = y + p[i] * xsec[i,:]
+            y = y + np.abs(p[i]) * xsec[i,:]
         return y
-    
+
     def residuals(p,  x, y ):
-        err = (y - model(x,p)) * mask / np.sqrt(np.abs(y))
+        err = np.abs((y - model(x,p)) * mask )#/ np.sqrt(np.abs(y))
         return err        
 
+
+    scale = y[0]
+    pin = np.array([1.0* scale/2,1.0* scale/2,.0,0.0,0.0,0.0, -scale/10,1.0,0.001])
+    p, cov = leastsq(residuals, pin,  args = (x,y) )
     p, cov = leastsq(residuals, pin,  args = (x,y) )
 
     for key in edges:
@@ -743,11 +758,12 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
             edges[key]['areal_density'] = p[int(key)-1]
             
     edges['model'] = {}
-    edges['model']['background'] = ((p[9]* np.power(x,-p[10])) +p[7]*x+p[8]*x*x)
+    edges['model']['background'] = (background + p[6]+p[7]*x+p[8]*x*x)
+    edges['model']['background-poly_0'] = p[6]
     edges['model']['background-poly_1'] = p[7]
     edges['model']['background-poly_2'] = p[8]
-    edges['model']['background-A'] = p[9]
-    edges['model']['background-r'] = p[10]          
+    edges['model']['background-A'] = A
+    edges['model']['background-r'] = r          
     edges['model']['spectrum'] = model(x, p)
     edges['model']['blurred'] = blurred
     edges['model']['mask'] = mask
