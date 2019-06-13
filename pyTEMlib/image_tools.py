@@ -1210,94 +1210,31 @@ def Probe2( ab, sizeX, sizeY, tags, verbose= False):
 
     
 
-def DeconLR2(  Oimage, probe, tags, verbose = False):
-
-    if len(Oimage) < 1:
-        return Oimage
-    print(Oimage.shape)
-    if Oimage.shape != probe.shape:
-        print('Wierdness ',Oimage.shape,' != ',probe.shape)
-    ## Input Image ###
-    # read the input image
-    img = sitk.GetImageFromArray(Oimage, sitk.sitkFloat64)
-    img = sitk.MirrorPad( img, [128] *2, [128]*2)
-    
-    size = img.GetSize();
-    # perform the FFT
-    source = sitk.ForwardFFT( sitk.Cast( img, sitk.sitkFloat64 ) )
-
-    
-
-    ### Kernel Image ###
-    # Read the kernel image file
-    kernel= sitk.GetImageFromArray(probe, sitk.sitkFloat64)
-    # flip kernel about all axis
-    #kernel = sitk.Flip( kernel, [1]*2 )
-
-    # normalize the kernel to sum to ~1
-    stats = sitk.StatisticsImageFilter();
-    stats.Execute( kernel )
-    kernel = sitk.Cast( kernel / stats.GetSum(), sitk.sitkFloat64 )
-
-    upadding = [0]*2
-    upadding[0] = int( math.floor( (size[0] - kernel.GetSize()[0])/2.0 ) )
-    upadding[1] = int( math.floor( (size[1] - kernel.GetSize()[1])/2.0 ) )
-
-    lpadding = [0]*2
-    lpadding[0] = int( math.ceil( (size[0] - kernel.GetSize()[0])/2.0 ) )
-    lpadding[1] = int( math.ceil( (size[1] - kernel.GetSize()[1])/2.0 ) )
-    
-    # pad the kernel to prevent edge artifacts
-    kernel = sitk.ConstantPad( kernel, upadding, lpadding, 0.0 )
-    
-    # perform FFT on kernel
-    responseFT = sitk.ForwardFFT( sitk.FFTShift( kernel ) )
-    
-
-    error = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat64 )
-    est = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat64 )
-    
-
-    verbose = True
-    dE = 100
-    dest = 100
-    i=0
-    while abs(dest) > 0.0001 :#or abs(dE)  > .025:
-        i += 1
-
-        error = source / sitk.InverseFFT( est*responseFT )
-        est = est * sitk.InverseFFT( error*responseFT )
-
-        #dest = np.sum(np.power((est - est_old).real,2))/np.sum(est)*100
-        #print(np.sum((est.real - est_old.real)* (est.real - est_old.real) )/np.sum(est.real)*100 )
-
-        
-        print(' LR Deconvolution - Iteration: {0:d} Error: {1:.2f} = change: {2:.5f}%, {3:.5f}%'.format(i,error_new,dE,abs(dest)))
-    
-        if i > 10:
-            dE = dest =  0.0
-            print('terminate')
-    
-# This task generates a restored image from an input image and point spread function (PSF) using the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson (1972, J. Opt. Soc. Am. 62, 55) and adapted for HST imagery by Snyder (1990, in Restoration of HST Images and Spectra, ST ScI Workshop Proceedings; see also Snyder, Hammoud, & White, JOSA, v. 10, no. 5, May 1993, in press). Additional options developed by Rick White (STScI) are also included.
-#
-# The Lucy-Richardson method can be derived from the maximum likelihood expression for data with a Poisson noise distribution. Thus, it naturally applies to optical imaging data such as HST. The method forces the restored image to be positive, in accord with photon-counting statistics.
-#
-# The Lucy-Richardson algorithm generates a restored image through an iterative method. The essence of the iteration is as follows: the (n+1)th estimate of the restored image is given by the nth estimate of the restored image multiplied by a correction image. That is,
-#
-#                            original data
-#       image    = image    ---------------  * reflect(PSF) 
-#            n+1        n     image * PSF
-#                                  n
-
-# where the *'s represent convolution operators and reflect(PSF) is the reflection of the PSF, i.e. reflect((PSF)(x,y)) = PSF(-x,-y). When the convolutions are carried out using fast Fourier transforms (FFTs), one can use the fact that FFT(reflect(PSF)) = conj(FFT(PSF)), where conj is the complex conjugate operator. 
 
 def DeconLR(  Oimage, probe, tags, verbose = False):
+    """
+    
+    
+    # This task generates a restored image from an input image and point spread function (PSF) using the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson (1972, J. Opt. Soc. Am. 62, 55) and adapted for HST imagery by Snyder (1990, in Restoration of HST Images and Spectra, ST ScI Workshop Proceedings; see also Snyder, Hammoud, & White, JOSA, v. 10, no. 5, May 1993, in press). Additional options developed by Rick White (STScI) are also included.
+    #
+    # The Lucy-Richardson method can be derived from the maximum likelihood expression for data with a Poisson noise distribution. Thus, it naturally applies to optical imaging data such as HST. The method forces the restored image to be positive, in accord with photon-counting statistics.
+    #
+    # The Lucy-Richardson algorithm generates a restored image through an iterative method. The essence of the iteration is as follows: the (n+1)th estimate of the restored image is given by the nth estimate of the restored image multiplied by a correction image. That is,
+    #
+    #                            original data
+    #       image    = image    ---------------  * reflect(PSF) 
+    #            n+1        n     image * PSF
+    #                                  n
 
+    # where the *'s represent convolution operators and reflect(PSF) is the reflection of the PSF, i.e. reflect((PSF)(x,y)) = PSF(-x,-y). When the convolutions are carried out using fast Fourier transforms (FFTs), one can use the fact that FFT(reflect(PSF)) = conj(FFT(PSF)), where conj is the complex conjugate operator. 
+    """
+    
     if len(Oimage) < 1:
         return Oimage
-    print(Oimage.shape)
+    
     if Oimage.shape != probe.shape:
-        print('Wierdness ',Oimage.shape,' != ',probe.shape)
+        print('Weirdness ',Oimage.shape,' != ',probe.shape)
+
     probeC = np.ones((probe.shape), dtype = np.complex64)
     probeC.real = probe
 
