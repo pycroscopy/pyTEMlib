@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from matplotlib.widgets import SpanSelector
+from ipywidgets import widgets
 
 from scipy.optimize import leastsq  ## leastsqure fitting routine fo scipy
 
@@ -39,17 +40,64 @@ first_close_edges = ['K1', 'L3', 'M5', 'M3', 'N5', 'N3']
 # plotting routines
 #################################################################
 
+
 class interactive_spectrum_image(object):
-    def __init__(self, cube, energy_scale, horizontal = True):
+    """    
+    ### Interactive spectrum imaging plot
+    
+    Input tags: dictionary with a minumum of the following keys:
+        ['image']: displayed image  
+        ['data']:  data cube
+        [if ]'intentsity_scale_ppm']: intensity scale         
+        ['ylabel']: intensity label
+        ['spectra'] dictionary which contains dictionaries for each spectrum style ['1-2']:
+            ['spectrum'] = tags['cube'][y,x,:]
+            ['spectra'][f'{x}-{y}']['energy_scale'] = tags['energy_scale']
+            ['intensity_scale'] = 1/tags['cube'][y,x,:].sum()*1e6
+    
+    Please note the possibility to load any image for the selection of the spectrum
+    Also there is the possibilty to display the survey image.
+    
+    For analysis we have the following options:
+        'fix_energy': set zero-loss peak maximum to zero !! Low loss spectra only!!
+        'fit_zero_loss': fit zero-loss peak with model function !! Low loss spectra only!!
+        'fit_low_loss': fit low-loss spectrum with model peaks !! Low loss spectra only!!
+        
+        
+        'fit_composition': fit core-loss spectrum with background and cross sections!! Core loss spectra only!!
+        'fit_ELNES': fit core-loss edge with model peaks  !! Core loss spectra only!!
+    """
+    
+    def __init__(self, tags, horizontal = True):
+        
+        box_layout = widgets.Layout(display='flex',
+                    flex_flow='row',
+                    align_items='stretch',
+                    width='100%')
+
+        words = ['fix_energy','fit_zero_loss','fit_low_loss','fit_composition','fit_ELNES']
+        
+        self.buttons = [widgets.ToggleButton(value=False, description=word, disabled=False) for word in words]
+        box = widgets.Box(children=self.buttons, layout=box_layout)
+        display(box)
+        
+        #Button(description='edge_quantification')
+        for button in self.buttons:
+            button.observe(self.onButtonClicked, 'value')#on_click(self.onButtonClicked)
+        
         self.figure = plt.figure()
         self.horizontal = horizontal
         self.x = 0
         self.y = 0
-        self.extent = [0,cube.shape[1],cube.shape[0],0]
-        self.rectangle = [0,cube.shape[1],0, cube.shape[0]]
+        self.tags = tags
+        self.extent = [0,tags['cube'].shape[1],tags['cube'].shape[0],0]
+        self.rectangle = [0,tags['cube'].shape[1],0, tags['cube'].shape[0]]
         self.scaleX = 1.0
         self.scaleY = 1.0
-        
+        self.analysis = []
+        self.plot_legend = False
+        if 'ylabel' not in tags:
+            tags['ylabel'] = 'intensity [a.u.]'
         self.SI = False
         
         if horizontal:
@@ -59,10 +107,9 @@ class interactive_spectrum_image(object):
             self.ax1=plt.subplot(2, 1, 1)
             self.ax2=plt.subplot(2, 1, 2)
             
-        self.cube = cube
-        self.image = cube.sum(axis=2)
+        self.cube = tags['cube']
+        self.image = tags['cube'].sum(axis=2)
         
-        self.energy_scale = energy_scale
         self.ax1.imshow(self.image, extent = self.extent)
         if horizontal:
             self.ax1.set_xlabel('distance [pixels]')
@@ -72,13 +119,40 @@ class interactive_spectrum_image(object):
         
         self.rect = patches.Rectangle((0,0),1,1,linewidth=1,edgecolor='r',facecolor='red', alpha = 0.2)
         self.ax1.add_patch(self.rect)
+        self.intensity_scale = tags['spectra'][f'{self.x}-{self.y}']['intensity_scale']
+        self.spectrum = tags['spectra'][f'{self.x}-{self.y}']['spectrum']* self.intensity_scale
+        self.energy_scale = tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
         
-        self.ax2.plot(self.energy_scale,self.cube[self.x,self.y,:])
+        self.ax2.plot(self.energy_scale,self.spectrum)
         self.ax2.set_title(f' spectrum {self.x},{self.y} ')
-        self.ax2.set_xlabel('energy_loss [eV]')
+        self.ax2.set_xlabel('energy loss [eV]')
+        self.ax2.set_ylabel(tags['ylabel'])
         self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
+        
+        
         plt.tight_layout()
-
+    def onButtonClicked(self,b):
+        #print(b['owner'].description)
+        if b['owner'].description == 'fit_composition':
+            if b['new']:
+                if 'region_tags' in self.tags and 'edges_present' in self.tags: 
+                    self.analysis.append('fit_composition')
+                else:
+                    self.buttons[3].value = False
+            else:
+                if 'fit_composition' in self.analysis:
+                    self.analysis.remove('fit_composition')
+        elif b['owner'].description == 'fix_energy':
+            if b['new']:
+                if self.energy_scale[0]<0: 
+                    self.analysis.append('fix_energy')
+                else:
+                    self.buttons[0].value = False
+            else:
+                if 'fix_energy' in self.analysis:
+                    self.analysis.remove('fix_energy')
+                
+                
     def onclick(self,event):
         x = int(event.xdata)
         y = int(event.ydata)
@@ -102,31 +176,72 @@ class interactive_spectrum_image(object):
             xlim = self.ax2.get_xlim()
             ylim = self.ax2.get_ylim()
             self.ax2.clear()
-            self.ax2.plot(self.energy_scale,self.cube[self.y,self.x,:])
-
-            self.ax2.set_title(f' spectrum {self.x},{self.y} ')
+            self.intensity_scale = self.tags['spectra'][f'{self.x}-{self.y}']['intensity_scale']
+            self.spectrum = self.tags['spectra'][f'{self.x}-{self.y}']['spectrum']* self.intensity_scale
+            self.energy_scale = self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
+           
+            
+            self.ax2.plot(self.energy_scale,self.spectrum, label = 'experiment')
+            if 'fit_composition' in self.analysis:
+                title = self.fit_quantification()
+                self.ax2.set_title(title)
+            else:
+                self.ax2.set_title(f' spectrum {self.x},{self.y} ')
+                
+            if self.plot_legend:
+                self.ax2.legend(shadow=True);
             self.ax2.set_xlim(xlim)
             self.ax2.set_ylim(ylim)
+            self.ax2.set_xlabel('energy loss [eV]')
+            self.ax2.set_ylabel(tags['ylabel'])
             
         self.ax2.draw()
+        
+    def fit_quantification(self):
+        edges = eels.make_edges(self.tags['edges_present'], self.energy_scale, self.tags['acceleration_voltage'], self.tags['collection_angle'])
+        edges = eels.fit_edges(self.spectrum, self.energy_scale, self.tags['region_tags'], edges)
+        self.tags['spectra'][f'{self.x}-{self.y}']['edges'] = edges
+        self.ax2.plot(self.energy_scale,edges['model']['spectrum'], label = 'model')
+        self.ax2.plot(self.energy_scale,self.spectrum-edges['model']['spectrum'], label = 'difference')
+        self.ax2.axhline(linewidth = 0.5, color= 'black');
+        
+        title = f'spectrum {self.x},{self.y} '
+        
+        for key in edges:
+            if key.isdigit():
+                title = title +f"{edges[key]['element']}:  {edges[key]['areal_density']:.2e};  "
+        return title
+    
+    def set_legend(self, setLegend):
+        self.plot_legend = setLegend
+    
     def get_xy(self):
         return [self.x,self.y]
     
     def get_current_spectrum(self):
         return self.cube[self.y,self.x,:]
     
-    def set_Zcontrast_image(self,Z_channel):
-        
+    def set_Zcontrast_image(self,Z_channel=None):
+        if Z_channel != None:
+            tags['survey_channel']=Z_channel
+        if 'Zcontrast_channel' not in tags:
+            print('add Z contrast channel group to dictionary first!')
+            return
         # get dictionary from current channel in pyUSID file
         Z_tags = ft.h5_get_dictionary(Z_channel)
         Z_file.close()
         self.ax1.imshow(Z_tags['data'], extent = self.extent, cmap='gray')
         
-    def overlay_Zcontrast_image(self,Z_channel):
+    def overlay_Zcontrast_image(self,Z_channel=None):
         
         if self.SI:
-        
-            Z_tags = ft.h5_get_dictionary(Z_channel)
+            if Z_channel != None:
+                tags['survey_channel']=Z_channel
+            if 'Zcontrast_channel' not in tags:
+                print('add survey channel group to dictionary first!')
+                return
+
+            Z_tags = ft.h5_get_dictionary(tags['Z-contrast_channel'])
 
             xlim = self.ax1.get_xlim()
             ylim = self.ax1.get_ylim()
@@ -151,9 +266,15 @@ class interactive_spectrum_image(object):
             self.ax1.set_xlim(xlim)
         
         
-    def set_Survey_image(self, SI_channel):
+    def set_Survey_image(self, SI_channel = None):
         
         # get dictionary from current channel in pyUSID file
+        if SI_channel != None:
+            tags['survey_channel']=SI_channel
+        if 'survey_channel' not in tags:
+            print('add survey channel group to dictionary first!')
+            return
+        SI_channel = tags['survey_channel'] 
         SI_tags = ft.h5_get_dictionary(SI_channel)
         tags2 = dict(SI_channel.attrs)
         
@@ -198,6 +319,7 @@ class interactive_spectrum_image(object):
                         self.rect.set_height(height/self.cube.shape[0])
         self.SI = True
         
+
 
 
 #################################################################
@@ -394,7 +516,7 @@ class Region_Selector(object):
             text = 'exclude \nedge ' + key
             alpha = 0.5
             color = 'red'
-        elif str(event.key) in ['a', 'A', 'b', 'B']:
+        elif str(event.key) in ['a', 'A', 'b', 'B','f','F']:
             key = '0'
             color = 'blue'
             alpha = 0.2
@@ -453,6 +575,10 @@ class Region_Selector(object):
         return tags
     
     def disconnect(self):
+        for key in self.regions:
+            if 'Rect' in self.regions[key]:
+                self.regions[key]['Rect'].remove()
+                self.regions[key]['Text'].remove()
         del(self.span)
         self.ax.figure.canvas.mpl_disconnect(self.cid)
         #self.ax.figure.canvas.mpl_disconnect(self.draw)
@@ -696,26 +822,37 @@ def CL_model(x, p):
     
 def fit_edges(spectrum, energy_scale, region_tags, edges):
              
+    ## Determine fitting ranges and masks to exclude ranges
     mask = np.ones(len(spectrum))
 
+    background_fit_end = energy_scale[-1]
     for key in region_tags:
         end = region_tags[key]['start_x']+region_tags[key]['width_x']
+        
         startx = np.searchsorted(energy_scale,region_tags[key]['start_x'])
         endx   = np.searchsorted(energy_scale,end)
+        
         if key == 'fit_area':
             mask[0:startx] = 0.0
             mask[endx:-1] = 0.0
         else:
             mask[startx:endx] = 0.0
+            if region_tags[key]['start_x'] < background_fit_end: ## Which is the onset of the first edge?
+                background_fit_end = region_tags[key]['start_x']
+            
+    ########################
+    # Background Fit
+    ########################
+    bgd_fit_area = [region_tags['fit_area']['start_x'], background_fit_end]
+    background, [A,r] = power_law_background(spectrum, energy_scale, bgd_fit_area, verbose = False)
 
-
-
-    pin = np.array([1.0,1.0,.0,0.0,0.0,0.0, 1.0,1.0,0.001,5,3])
+    #######################
+    # Edge Fit
+    #######################
     x = energy_scale
-
     blurred = gaussian_filter(spectrum, sigma=5)
 
-    y = blurred*1e-6 ## now in probability
+    y = blurred ## now in probability
     y[np.where(y<1e-8)]=1e-8
 
     xsec = []
@@ -725,17 +862,21 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
             xsec.append(edges[key]['data'])
             numberOfEdges+=1
     xsec = np.array(xsec)
-    
+
     def model(x, p):  
-        y = (p[9]* np.power(x,(-p[10]))) +p[7]*x+p[8]*x*x
+        y = background + p[6]+p[7]*x+p[8]*x*x
         for i in range(numberOfEdges):
-            y = y + p[i] * xsec[i,:]
+            y = y + np.abs(p[i]) * xsec[i,:]
         return y
-    
+
     def residuals(p,  x, y ):
-        err = (y - model(x,p)) * mask / np.sqrt(np.abs(y))
+        err = np.abs((y - model(x,p)) * mask )#/ np.sqrt(np.abs(y))
         return err        
 
+
+    scale = y[0]
+    pin = np.array([1.0* scale/2,1.0* scale/2,.0,0.0,0.0,0.0, -scale/10,1.0,0.001])
+    p, cov = leastsq(residuals, pin,  args = (x,y) )
     p, cov = leastsq(residuals, pin,  args = (x,y) )
 
     for key in edges:
@@ -743,11 +884,12 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
             edges[key]['areal_density'] = p[int(key)-1]
             
     edges['model'] = {}
-    edges['model']['background'] = ((p[9]* np.power(x,-p[10])) +p[7]*x+p[8]*x*x)
+    edges['model']['background'] = (background + p[6]+p[7]*x+p[8]*x*x)
+    edges['model']['background-poly_0'] = p[6]
     edges['model']['background-poly_1'] = p[7]
     edges['model']['background-poly_2'] = p[8]
-    edges['model']['background-A'] = p[9]
-    edges['model']['background-r'] = p[10]          
+    edges['model']['background-A'] = A
+    edges['model']['background-r'] = r          
     edges['model']['spectrum'] = model(x, p)
     edges['model']['blurred'] = blurred
     edges['model']['mask'] = mask
