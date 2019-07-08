@@ -821,7 +821,16 @@ def DemonReg(cube, verbose = False):
     resampler.SetInterpolator(sitk.sitkGaussian)
     resampler.SetDefaultPixelValue(0)
 
+    done = 0
+        
     for i in range(nimages):
+        if done < int((i+1)/nimages*50):
+            done = int((i+1)/nimages*50)
+            sys.stdout.write('\r')
+            # progress output :
+            sys.stdout.write("[%-50s] %d%%" % ('='*done, 2*done))
+            sys.stdout.flush()
+        
         moving = sitk.GetImageFromArray(cube[:,:,i])
         movingf = sitk.DiscreteGaussian(moving, 2.0)
         displacementField = demons.Execute(fixed,movingf)
@@ -829,7 +838,7 @@ def DemonReg(cube, verbose = False):
         resampler.SetTransform(outTx)
         out = resampler.Execute(moving)
         DemReg[:,:,i] = sitk.GetArrayFromImage(out)
-        print('image ', i)
+        #print('image ', i)
         
     
     print(':-)')
@@ -1960,7 +1969,14 @@ def atomRefine(image, atoms, radius, MaxInt = 0,MinInt = 0, maxDist = 4):
     Gauss_amplitude = []
     Gauss_intensity = []
     
-    for i in range(len( atoms)):
+    done = 0
+    for i in range(len(atoms)):
+        if done < int((i+1)/len(atoms)*50):
+            done = int((i+1)/len(atoms)*50)
+            sys.stdout.write('\r')
+            # progress output :
+            sys.stdout.write("[%-50s] %d%%" % ('='*done, 2*done))
+            sys.stdout.flush()
         
         y,x = atoms[i][0:2]
         x = int(x)

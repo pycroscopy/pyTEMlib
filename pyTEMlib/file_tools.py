@@ -704,7 +704,7 @@ def h5_add_diffraction(current_channel, crystal_tags):
                 for key2 in crystal_tags['allowed']:
                     if key2 != 'label':
                         out_tags[key2] = np.array(crystal_tags['allowed'][key2])
-    log_group = h5_add_Log(current_channel, 'Diffraction-WS2')
+    log_group = h5_add_Log(current_channel, crystal_tags['crystal_name']+' - '+str(crystal_tags['zone_hkl']))
     h5_add_Data2Log(log_group, out_tags)
     return log_group
 
