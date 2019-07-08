@@ -12,6 +12,7 @@ import matplotlib.patches as patches
 
 from matplotlib.widgets import SpanSelector
 from ipywidgets import widgets
+import h5py
 
 from scipy.optimize import leastsq  ## leastsqure fitting routine fo scipy
 
@@ -68,7 +69,7 @@ class interactive_spectrum_image(object):
         'fit_ELNES': fit core-loss edge with model peaks  !! Core loss spectra only!!
     """
     
-    def __init__(self, tags, horizontal = True):
+    def __init__(self, data_source, horizontal = True):
         
         box_layout = widgets.Layout(display='flex',
                     flex_flow='row',
@@ -80,7 +81,17 @@ class interactive_spectrum_image(object):
         self.buttons = [widgets.ToggleButton(value=False, description=word, disabled=False) for word in words]
         box = widgets.Box(children=self.buttons, layout=box_layout)
         display(box)
+
+        ## MAKE Dictionary
         
+        if isinstance(data_source,dict):
+            self.tags = data_source
+        elif isinstance(data_source, h5py.Group):  
+            self.tags = self.set_tags(data_source)
+        else: 
+            print('Data source must be a dictionary or channel')
+            return
+
         #Button(description='edge_quantification')
         for button in self.buttons:
             button.observe(self.onButtonClicked, 'value')#on_click(self.onButtonClicked)
@@ -89,14 +100,14 @@ class interactive_spectrum_image(object):
         self.horizontal = horizontal
         self.x = 0
         self.y = 0
-        self.tags = tags
-        self.extent = [0,tags['cube'].shape[1],tags['cube'].shape[0],0]
-        self.rectangle = [0,tags['cube'].shape[1],0, tags['cube'].shape[0]]
+        
+        self.extent = [0,self.tags['cube'].shape[1],self.tags['cube'].shape[0],0]
+        self.rectangle = [0,self.tags['cube'].shape[1],0, self.tags['cube'].shape[0]]
         self.scaleX = 1.0
         self.scaleY = 1.0
         self.analysis = []
         self.plot_legend = False
-        if 'ylabel' not in tags:
+        if 'ylabel' not in self.tags:
             tags['ylabel'] = 'intensity [a.u.]'
         self.SI = False
         
@@ -107,8 +118,8 @@ class interactive_spectrum_image(object):
             self.ax1=plt.subplot(2, 1, 1)
             self.ax2=plt.subplot(2, 1, 2)
             
-        self.cube = tags['cube']
-        self.image = tags['cube'].sum(axis=2)
+        self.cube = self.tags['cube']
+        self.image = self.tags['cube'].sum(axis=2)
         
         self.ax1.imshow(self.image, extent = self.extent)
         if horizontal:
@@ -119,45 +130,69 @@ class interactive_spectrum_image(object):
         
         self.rect = patches.Rectangle((0,0),1,1,linewidth=1,edgecolor='r',facecolor='red', alpha = 0.2)
         self.ax1.add_patch(self.rect)
-        self.intensity_scale = tags['spectra'][f'{self.x}-{self.y}']['intensity_scale']
-        self.spectrum = tags['spectra'][f'{self.x}-{self.y}']['spectrum']* self.intensity_scale
-        self.energy_scale = tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
+        self.intensity_scale = self.tags['spectra'][f'{self.x}-{self.y}']['intensity_scale']
+        self.spectrum = self.tags['spectra'][f'{self.x}-{self.y}']['spectrum']* self.intensity_scale
+        self.energy_scale = self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
         
         self.ax2.plot(self.energy_scale,self.spectrum)
         self.ax2.set_title(f' spectrum {self.x},{self.y} ')
         self.ax2.set_xlabel('energy loss [eV]')
-        self.ax2.set_ylabel(tags['ylabel'])
+        self.ax2.set_ylabel(self.tags['ylabel'])
         self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
         
         
         plt.tight_layout()
     def onButtonClicked(self,b):
         #print(b['owner'].description)
-        if b['owner'].description == 'fit_composition':
-            if b['new']:
-                if 'region_tags' in self.tags and 'edges_present' in self.tags: 
-                    self.analysis.append('fit_composition')
+        selection = b['owner'].description
+        if b['new']:
+            if selection == 'fit_composition':
+                if 'region_tags' in self.tags and 'edges_present' in self.tags and 'acceleration_voltage' in self.tags and 'collection_angle' in self.tags:
+                    pass
                 else:
                     self.buttons[3].value = False
-            else:
-                if 'fit_composition' in self.analysis:
-                    self.analysis.remove('fit_composition')
-        elif b['owner'].description == 'fix_energy':
-            if b['new']:
-                if self.energy_scale[0]<0: 
-                    self.analysis.append('fix_energy')
-                else:
-                    self.buttons[0].value = False
-            else:
-                if 'fix_energy' in self.analysis:
-                    self.analysis.remove('fix_energy')
+                    return
+            elif selection in  ['fix_energy', 'fit_zero_loss']:
+                if self.energy_scale[0] > 0:
+                    button_index = ['fix_energy', 'fit_zero_loss'].index(selection)
+                    self.buttons[button_index].value = False
+                    return
+            self.analysis.append(selection)
+            self.update()
+        else:
+               
+            if selection in self.analysis:
+                self.analysis.remove(selection)
+
                 
+    def do_All(self, selection= None, verbose = True):
+        x = self.x
+        y = self.y 
+        if selection==None:
+            selection = self.analysis
+        for self.x in range(self.cube.shape[0]):
+            if verbose:
+                print(f' row: {self.x}')
+            for self.y in range(self.cube.shape[1]):
                 
+                if 'fit_zero_loss' in selection:
+                    title = self.fit_zero_loss(plot_this = False)
+                    
+                elif 'fix_energy' in selection:
+                    self.ax2.set_title('bn')
+                    title = self.fix_energy()
+                    
+                elif 'fit_composition' in selection:
+                    title = self.fit_quantification(plot_this = False)
+                    
+        self.x = x
+        self.y = y          
+        
     def onclick(self,event):
         x = int(event.xdata)
         y = int(event.ydata)
         
-        print(x,y)
+        #print(x,y)
         if x >= self.rectangle[0] and x < self.rectangle[0]+self.rectangle[1]:
             if y >= self.rectangle[2] and y < self.rectangle[2]+self.rectangle[3]:
                 self.x = int((x - self.rectangle[0])/ self.rectangle[1]*self.cube.shape[1])
@@ -173,43 +208,119 @@ class interactive_spectrum_image(object):
             y = (self.y * self.rectangle[3]/self.cube.shape[0]+ self.rectangle[2])
             
             self.rect.set_xy([x,y]) 
-            xlim = self.ax2.get_xlim()
-            ylim = self.ax2.get_ylim()
-            self.ax2.clear()
-            self.intensity_scale = self.tags['spectra'][f'{self.x}-{self.y}']['intensity_scale']
-            self.spectrum = self.tags['spectra'][f'{self.x}-{self.y}']['spectrum']* self.intensity_scale
-            self.energy_scale = self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
-           
+            self.update()
             
-            self.ax2.plot(self.energy_scale,self.spectrum, label = 'experiment')
-            if 'fit_composition' in self.analysis:
-                title = self.fit_quantification()
-                self.ax2.set_title(title)
-            else:
-                self.ax2.set_title(f' spectrum {self.x},{self.y} ')
                 
-            if self.plot_legend:
-                self.ax2.legend(shadow=True);
-            self.ax2.set_xlim(xlim)
-            self.ax2.set_ylim(ylim)
-            self.ax2.set_xlabel('energy loss [eV]')
-            self.ax2.set_ylabel(tags['ylabel'])
+    def update(self):
+        xlim = self.ax2.get_xlim()
+        ylim = self.ax2.get_ylim()
+        self.ax2.clear()
+        self.intensity_scale = self.tags['spectra'][f'{self.x}-{self.y}']['intensity_scale']
+        self.spectrum = self.tags['spectra'][f'{self.x}-{self.y}']['spectrum']* self.intensity_scale
+        self.energy_scale = self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
+        
+        
+        
+        if 'fit_zero_loss' in self.analysis:
+            title = self.fit_zero_loss()
+            self.ax2.set_title(title)
+        elif 'fix_energy' in self.analysis:
+            self.ax2.set_title('bn')
+            title = self.fix_energy()
+            self.ax2.set_title(title)
+
+        elif 'fit_composition' in self.analysis:
+            title = self.fit_quantification()
+            self.ax2.set_title(title)
+
+        else:
+            self.ax2.set_title(f' spectrum {self.x},{self.y} ')
+        self.ax2.plot(self.energy_scale,self.spectrum, color= '#1f77b4', label = 'experiment')
             
-        self.ax2.draw()
+        if self.plot_legend:
+            self.ax2.legend(shadow=True);
+        self.ax2.set_xlim(xlim)
+        self.ax2.set_ylim(ylim)
+        self.ax2.set_xlabel('energy loss [eV]')
+        self.ax2.set_ylabel(self.tags['ylabel'])
+        self.ax2.set_xlim(xlim)
+            
+        #self.ax2.draw()
+    def set_tags(self, channel):
+        tags = ft.h5_get_dictionary(channel)
+        if tags['data_type']== 'spectrum_image':
+            tags['image'] = tags['data']
+            tags['data'] = tags['cube'][0,0,:]
+            if 'intentsity_scale_ppm' not  in channel:
+                channel['intentsity_scale_ppm'] = 1
+                
+            tags['ylabel'] = 'intensity [a.u.]'
+            tags['spectra'] = {}
+            for x in range(tags['spatial_size_y']):
+                for y in range(tags['spatial_size_x']):
+                    tags['spectra'][f'{x}-{y}'] ={}
+                    tags['spectra'][f'{x}-{y}']['spectrum'] = tags['cube'][y,x,:]
+                    tags['spectra'][f'{x}-{y}']['energy_scale'] = tags['energy_scale']
+                    tags['spectra'][f'{x}-{y}']['intensity_scale'] = 1/tags['cube'][y,x,:].sum()*1e6
+            tags['ylabel'] = 'inel. scat. int.  [ppm]'
+
+        return tags
+    def fix_energy(self):
         
-    def fit_quantification(self):
-        edges = eels.make_edges(self.tags['edges_present'], self.energy_scale, self.tags['acceleration_voltage'], self.tags['collection_angle'])
-        edges = eels.fit_edges(self.spectrum, self.energy_scale, self.tags['region_tags'], edges)
-        self.tags['spectra'][f'{self.x}-{self.y}']['edges'] = edges
-        self.ax2.plot(self.energy_scale,edges['model']['spectrum'], label = 'model')
-        self.ax2.plot(self.energy_scale,self.spectrum-edges['model']['spectrum'], label = 'difference')
-        self.ax2.axhline(linewidth = 0.5, color= 'black');
+        energy_scale = self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
+        spectrum = self.tags['spectra'][f'{self.x}-{self.y}']['spectrum'] * self.intensity_scale
+        FWHM,deltaE = fixE( spectrum, energy_scale)
+        self.tags['spectra'][f'{self.x}-{self.y}']['deltaE'] = deltaE
+        self.tags['spectra'][f'{self.x}-{self.y}']['FWHM'] = FWHM
+        self.energy_scale = energy_scale-deltaE
+        title =f'spectrum {self.x},{self.y} FWHM: {FWHM:.2f}, dE: {deltaE:.3f}'
+        return title
         
+    def fit_zero_loss(self, plot_this = True):
+        
+        energy_scale = self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
+        spectrum = self.tags['spectra'][f'{self.x}-{self.y}']['spectrum'] * self.intensity_scale
+        if 'zero_loss_fit_width' not in self.tags:
+            self.tags['zero_loss_fit_width'] = .5
+        if self.tags['zero_loss_fit_width']/(energy_scale[1]-energy_scale[0]) < 6:
+            self.tags['zero_loss_fit_width']= (energy_scale[1]-energy_scale[0]) *6
+        FWHM,deltaE = fixE( spectrum, energy_scale)
+        energy_scale = energy_scale -deltaE
+        zLoss, pZL = resolution_function(energy_scale, spectrum, self.tags['zero_loss_fit_width'])
+        FWHM2,deltaE2 = fixE( zLoss, energy_scale)
+        
+        self.tags['spectra'][f'{self.x}-{self.y}']['resolution_function'] = zLoss
+        self.tags['spectra'][f'{self.x}-{self.y}']['pZL'] = pZL
+        self.tags['spectra'][f'{self.x}-{self.y}']['deltaE'] = deltaE
+        self.tags['spectra'][f'{self.x}-{self.y}']['FWHM_resolution'] = FWHM2
+        self.tags['spectra'][f'{self.x}-{self.y}']['FWHM'] = FWHM
+        
+        if plot_this:
+            self.ax2.plot(energy_scale,zLoss, label = 'resolution function', color = 'black')
+            self.ax2.plot(energy_scale,self.spectrum-zLoss, label = 'difference', color = 'orange')
+            self.ax2.axhline(linewidth = 0.5, color= 'black');
+        self.energy_scale = energy_scale
+        title =f'spectrum {self.x},{self.y} FWHM: {FWHM:.2f}'#', dE: {deltaE2:.5e}'
+        return title
+
+    def fit_quantification(self, plot_this = True):
+        energy_scale = self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
+        spectrum = self.tags['spectra'][f'{self.x}-{self.y}']['spectrum'] * self.intensity_scale
+        edges = make_edges(self.tags['edges_present'], energy_scale, self.tags['acceleration_voltage'], self.tags['collection_angle'])
+        edges = fit_edges(spectrum, self.tags['spectra'][f'{self.x}-{self.y}']['energy_scale'], self.tags['region_tags'], edges)
+        self.tags['spectra'][f'{self.x}-{self.y}']['edges'] = edges.copy()
+        if plot_this:
+            self.ax2.plot(energy_scale,edges['model']['spectrum'], label = 'model')
+            self.ax2.plot(energy_scale,self.spectrum-edges['model']['spectrum'], label = 'difference')
+            self.ax2.axhline(linewidth = 0.5, color= 'black');
+        else:
+            self.tags['spectra'][f'{self.x}-{self.y}']['do_All'] = 'done'
         title = f'spectrum {self.x},{self.y} '
         
         for key in edges:
             if key.isdigit():
                 title = title +f"{edges[key]['element']}:  {edges[key]['areal_density']:.2e};  "
+        
         return title
     
     def set_legend(self, setLegend):
@@ -223,25 +334,27 @@ class interactive_spectrum_image(object):
     
     def set_Zcontrast_image(self,Z_channel=None):
         if Z_channel != None:
-            tags['survey_channel']=Z_channel
-        if 'Zcontrast_channel' not in tags:
+             self.tags['Zcontrast_channel']=Z_channel
+        if 'Zcontrast_channel' not in self.tags:
             print('add Z contrast channel group to dictionary first!')
             return
         # get dictionary from current channel in pyUSID file
         Z_tags = ft.h5_get_dictionary(Z_channel)
-        Z_file.close()
-        self.ax1.imshow(Z_tags['data'], extent = self.extent, cmap='gray')
+        extent = [self.rectangle[0],self.rectangle[0]+self.rectangle[1],
+                      self.rectangle[2]+self.rectangle[3],self.rectangle[2]]
+        self.ax1.imshow(Z_tags['data'], extent = extent, cmap='gray')
         
     def overlay_Zcontrast_image(self,Z_channel=None):
         
         if self.SI:
             if Z_channel != None:
-                tags['survey_channel']=Z_channel
-            if 'Zcontrast_channel' not in tags:
+                self.tags['Zcontrast_channel']=Z_channel
+            if 'Zcontrast_channel' not in self.tags:
                 print('add survey channel group to dictionary first!')
                 return
+            
 
-            Z_tags = ft.h5_get_dictionary(tags['Z-contrast_channel'])
+            Z_tags = ft.h5_get_dictionary(self.tags['Zcontrast_channel'])
 
             xlim = self.ax1.get_xlim()
             ylim = self.ax1.get_ylim()
@@ -270,11 +383,11 @@ class interactive_spectrum_image(object):
         
         # get dictionary from current channel in pyUSID file
         if SI_channel != None:
-            tags['survey_channel']=SI_channel
-        if 'survey_channel' not in tags:
+            self.tags['survey_channel']=SI_channel
+        if 'survey_channel' not in self.tags:
             print('add survey channel group to dictionary first!')
             return
-        SI_channel = tags['survey_channel'] 
+        SI_channel = self.tags['survey_channel'] 
         SI_tags = ft.h5_get_dictionary(SI_channel)
         tags2 = dict(SI_channel.attrs)
         
@@ -760,7 +873,7 @@ def make_edges(edges_present, energy_scale,E_0,coll_angle):
         edges[key]['onset'] = edges[key]['original_onset']+ edges[key]['chemcial_shift']
         edges[key]['start_exclude'] = xsec[edges[key]['symmetry']]['excl before']
         edges[key]['end_exclude']   = xsec[edges[key]['symmetry']]['excl after']
-        
+    
     edges = make_cross_sections(edges, energy_scale, E_0, coll_angle)
     
     return edges
@@ -866,7 +979,8 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
     def model(x, p):  
         y = background + p[6]+p[7]*x+p[8]*x*x
         for i in range(numberOfEdges):
-            y = y + np.abs(p[i]) * xsec[i,:]
+            p[i] = np.abs(p[i])
+            y = y + p[i] * xsec[i,:]
         return y
 
     def residuals(p,  x, y ):
@@ -874,11 +988,11 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
         return err        
 
 
-    scale = y[0]
-    pin = np.array([1.0* scale/2,1.0* scale/2,.0,0.0,0.0,0.0, -scale/10,1.0,0.001])
+    scale = y[100]
+    pin = np.array([scale/5,scale/5,scale/5,scale/5,scale/5,scale/5, -scale/10,1.0,0.001])
     p, cov = leastsq(residuals, pin,  args = (x,y) )
-    p, cov = leastsq(residuals, pin,  args = (x,y) )
-
+    
+    
     for key in edges:
         if key.isdigit():
             edges[key]['areal_density'] = p[int(key)-1]
@@ -1106,7 +1220,7 @@ def fixE( spec, energy):
     
     return FWHM, fit_mu
 
-def resolution_function(energy_scale, spectrum, width):
+def resolution_function(energy_scale, spectrum, width, verbose = False):
     guess = [ 0.2, 1000,0.02,0.2, 1000,0.2 ]
     p0 = np.array(guess)
 
@@ -1153,12 +1267,13 @@ def resolution_function(energy_scale, spectrum, width):
             return err
 
     pZL, lsq = leastsq(ZL2, p0, args=(y, x), maxfev=2000)
-    print('Fit of a Product of two Lorentzians')
-    print('Positions: ',pZL[2],pZL[5], 'Distance: ',pZL[2]-pZL[5])
-    print('Width: ', pZL[0],pZL[3])
-    print('Areas: ', pZL[1],pZL[4])
-    err = (y - ZLfunc(pZL,  x))/np.sqrt(y)
-    print (f'Goodness of Fit: {sum(err**2)/len(y)/sum(y)*1e2:.5}%')
+    if verbose:
+        print('Fit of a Product of two Lorentzians')
+        print('Positions: ',pZL[2],pZL[5], 'Distance: ',pZL[2]-pZL[5])
+        print('Width: ', pZL[0],pZL[3])
+        print('Areas: ', pZL[1],pZL[4])
+        err = (y - ZLfunc(pZL,  x))/np.sqrt(y)
+        print (f'Goodness of Fit: {sum(err**2)/len(y)/sum(y)*1e2:.5}%')
 
     zLoss = ZLfunc(pZL,  energy_scale)
     
