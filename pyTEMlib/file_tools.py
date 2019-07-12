@@ -9,6 +9,8 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from matplotlib.widgets import Slider
+
 try:
     import h5py
 except:
@@ -544,11 +546,12 @@ def h5_plot(current_channel,ax=None, ax2=None):
     ## Start plotting
     tags = dict(current_channel.attrs)
     basename = current_channel['title'][()]
+    tracker = None
     if ax == None:
-        if  current_channel['data_type'][()] == 'spectrum_image':
-            fig, [ax, ax2] = plt.subplots(nrows=1, ncols=2)          
+        if  current_channel['data_type'][()] in ['spectrum_image','image_stack']:   
+            fig = plt.figure()       
         else:
-            fig, ax, = plt.subplots(nrows=1, ncols=1)
+            fig, ax = plt.subplots(nrows=1, ncols=1)
 
             
     # plot according to what data type is in your file
@@ -612,7 +615,8 @@ def h5_plot(current_channel,ax=None, ax2=None):
                         ax.add_artist(rectangle)
                         ax.text(position[0],position[1],'Spectrum Image',color='r')
     elif  current_channel['data_type'][()] == 'spectrum_image':
-        if ax == None:
+        tracker = h5_spectrum_image(current_channel, horizontal = True)
+        """if ax == None:
             ax = fig.add_subplot(1,2,1)
 
             ax2 = fig.add_subplot(1,2,2)
@@ -639,11 +643,14 @@ def h5_plot(current_channel,ax=None, ax2=None):
             ax2.set_title('Spectrum 0, 0')
             ax2.plot(energy_scale,data[0,0,:])
             ax2.set_xlabel('energy loss [eV]')
+        """
     elif current_channel['data_type'][()] == 'image_stack':
         ## spatial data
-        if ax == None:
-            ax = fig.add_subplot(1,1,1)
-        sizeX = current_channel['spatial_size_x'][()]
+        #if ax == None:
+        #    ax = fig.add_subplot(1,1,1)
+
+        tracker = h5_slice_viewer(current_channel)
+        """sizeX = current_channel['spatial_size_x'][()]
         sizeY = current_channel['spatial_size_y'][()]
         scaleX = current_channel['spatial_scale_x'][()]
         scaleY = current_channel['spatial_scale_y'][()]
@@ -653,6 +660,188 @@ def h5_plot(current_channel,ax=None, ax2=None):
         ax.set_title('image stack: '+basename)
         ax.imshow(data,extent= extent)
         ax.set_xlabel('distance ['+current_channel['spatial_units'][()]+']');
+        """
+    return tracker
+
+class h5_slice_viewer(object):
+    def __init__(self,  current_channel):
+        if current_channel['data_type'][()] != 'image_stack':
+            return
+        
+        self.X = current_channel['image_stack'][()]
+        if len(self.X) !=3:
+            return
+        
+        rows, cols, self.slices = self.X.shape
+        
+        sizeX = current_channel['spatial_size_x'][()]
+        sizeY = current_channel['spatial_size_y'][()]
+        scaleX = current_channel['spatial_scale_x'][()]
+        scaleY = current_channel['spatial_scale_y'][()]
+        extent = (0,sizeX*scaleX,sizeY*scaleY,0)
+
+        
+        self.ax = plt.axes([0.0, 0.15, .8, .8])
+        self.ind = 0
+        self.im = self.ax.imshow(self.X[:, :, self.ind], extent = extent)
+        
+        axidx = plt.axes([0.1, 0.05, 0.6, 0.03])
+        self.slider = Slider(axidx, 'image', 0, self.X.shape[2]-1, valinit=self.ind, valfmt='%d')
+        self.slider.on_changed(self.onSlider)
+        
+        self.ax.set_title('image stack: '+current_channel['title'][()]+'\n use scroll wheel to navigate images')
+        self.im.axes.figure.canvas.mpl_connect('scroll_event', self.onscroll)
+        self.update()
+    def onSlider(self, val):
+        self.ind = self.slider.val
+        self.update()
+        
+    def onscroll(self, event):
+        print("%s %s" % (event.button, event.step))
+        if event.button == 'up':
+            self.ind = (self.ind + 1) % self.slices
+        else:
+            self.ind = (self.ind - 1) % self.slices
+        self.slider.set_val(self.ind)
+        #self.update()
+
+    def update(self):
+        self.im.set_data(self.X[:, :, int(self.ind)])
+        self.ax.set_ylabel('slice %s' % self.ind)
+        self.im.axes.figure.canvas.draw_idle()
+
+class h5_spectrum_image(object):
+    """    
+    ### Interactive spectrum imaging plot
+    
+    
+    
+    """
+    
+    def __init__(self, current_channel, horizontal = True):
+        
+        
+        if current_channel['data_type'][()] != 'spectrum_image':
+            return
+        
+        box_layout = widgets.Layout(display='flex',
+                    flex_flow='row',
+                    align_items='stretch',
+                    width='100%')
+
+        self.figure = plt.gcf()
+        self.horizontal = horizontal
+        self.x = 0
+        self.y = 0
+        
+        sizeX = current_channel['spatial_size_x'][()]
+        sizeY = current_channel['spatial_size_y'][()]
+        
+        spec_sizeX = current_channel['spectral_size_x'][()]
+        spec_scaleX = current_channel['spectral_scale_x'][()]
+        spec_offsetX = current_channel['spectral_origin_x'][()]
+
+        self.energy_scale = np.arange(spec_sizeX)*spec_scaleX+spec_offsetX
+
+        
+        
+        self.extent = [0,sizeY,sizeX,0]
+        self.rectangle = [0,sizeY,0,sizeX]
+        self.scaleX = 1.0
+        self.scaleY = 1.0
+        self.analysis = []
+        self.plot_legend = False
+        
+        self.SI = False
+        
+        if horizontal:
+            self.ax1=plt.subplot(1, 2, 1)
+            self.ax2=plt.subplot(1, 2, 2)
+        else:
+            self.ax1=plt.subplot(2, 1, 1)
+            self.ax2=plt.subplot(2, 1, 2)
+            
+        self.cube =  np.reshape(current_channel['Raw_Data'][:,:],(sizeX,sizeY,spec_sizeX))
+        self.image = self.cube.sum(axis=2)
+        
+        self.ax1.imshow(self.image, extent = self.extent)
+        if horizontal:
+            self.ax1.set_xlabel('distance [pixels]')
+        else:
+            self.ax1.set_ylabel('distance [pixels]')
+        self.ax1.set_aspect('equal')
+        
+        self.rect = patches.Rectangle((0,0),1,1,linewidth=1,edgecolor='r',facecolor='red', alpha = 0.2)
+        self.ax1.add_patch(self.rect)
+        self.intensity_scale = 1.
+        self.spectrum = self.cube[self.x, self.y, :]* self.intensity_scale
+        
+        
+        self.ax2.plot(self.energy_scale,self.spectrum)
+        self.ax2.set_title(f' spectrum {self.x},{self.y} ')
+        self.ax2.set_xlabel('energy loss [eV]')
+        self.ax2.set_ylabel('intensity [a.u.]')
+        self.cid = self.ax2.figure.canvas.mpl_connect('button_press_event', self.onclick)
+        
+        
+        plt.tight_layout()
+    
+                
+                
+    def onclick(self,event):
+        x = int(event.xdata)
+        y = int(event.ydata)
+        
+        if x >= self.rectangle[0] and x < self.rectangle[0]+self.rectangle[1]:
+            if y >= self.rectangle[2] and y < self.rectangle[2]+self.rectangle[3]:
+                self.x = int((x - self.rectangle[0])/ self.rectangle[1]*self.cube.shape[1])
+                self.y = int((y - self.rectangle[2])/ self.rectangle[3]*self.cube.shape[0])
+            else:
+                return
+        else:
+            return
+        
+        
+        self.ax2.set_xlabel(f' {x}, self {self.y}')
+        self.ax2.set_xlabel(f' {x}, - {y}')
+        if event.inaxes in [self.ax1]:
+            self.ax2.set_xlabel(f'in axis, {x}, {y}')
+            x = (self.x * self.rectangle[1]/self.cube.shape[1]+ self.rectangle[0])
+            y = (self.y * self.rectangle[3]/self.cube.shape[0]+ self.rectangle[2])
+            
+            self.rect.set_xy([x,y]) 
+            xlim = self.ax2.get_xlim()
+            ylim = self.ax2.get_ylim()
+            self.ax2.clear()
+            self.intensity_scale = 1.
+            self.spectrum = self.spectrum = self.cube[self.y, self.x, :]* self.intensity_scale
+            #self.energy_scale = tags['spectra'][f'{self.x}-{self.y}']['energy_scale']
+           
+            
+            self.ax2.plot(self.energy_scale,self.spectrum, label = 'experiment')
+            self.ax2.set_title(f' spectrum {self.x},{self.y} ')
+                
+            if self.plot_legend:
+                self.ax2.legend(shadow=True);
+            self.ax2.set_xlim(xlim)
+            self.ax2.set_ylim(ylim)
+            self.ax2.set_xlabel('energy loss [eV]')
+            self.ax2.set_ylabel('intensity [a.u.]')
+            
+            
+        self.ax2.draw()
+        
+   
+    
+    def set_legend(self, setLegend):
+        self.plot_legend = setLegend
+    
+    def get_xy(self):
+        return [self.x,self.y]
+    
+    def get_current_spectrum(self):
+        return self.cube[self.y,self.x,:]
+    
 
 def h5_add_crystal_structure(h5_file, crystal_tags):
     structure_group = usid.io.hdf_utils.create_indexed_group(h5_file,'Structure')
