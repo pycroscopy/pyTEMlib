@@ -669,7 +669,7 @@ class h5_slice_viewer(object):
             return
         
         self.X = current_channel['image_stack'][()]
-        if len(self.X) !=3:
+        if len(self.X.shape) !=3:
             return
         
         rows, cols, self.slices = self.X.shape
