@@ -693,7 +693,8 @@ class h5_slice_viewer(object):
         self.im.axes.figure.canvas.mpl_connect('scroll_event', self.onscroll)
         self.update()
     def onSlider(self, val):
-        self.ind = self.slider.val
+        self.ind = int(self.slider.val+0.5)
+        self.slider.valtext.set_text(f'{self.ind}')
         self.update()
         
     def onscroll(self, event):
@@ -702,6 +703,7 @@ class h5_slice_viewer(object):
             self.ind = (self.ind + 1) % self.slices
         else:
             self.ind = (self.ind - 1) % self.slices
+        self.ind = int(self.ind)
         self.slider.set_val(self.ind)
         #self.update()
 
