@@ -104,88 +104,75 @@ def dftregistration1(buf1ft,buf2ft,usfac):
     col_shift = 0
    elif usfac == 1:
     # Single pixel registration
+#    CC = ifft2(buf1ft.*conj(buf2ft));
     CC = np.fft.ifft2(buf1ft*np.conjugate(buf2ft))
     CCabs = abs(CC)
     x = np.argmax(CCabs)
     dims = CCabs.shape
     [row_shift, col_shift] = np.unravel_index(x,dims)
+#    [row_shift, col_shift] = find(CCabs == max(CCabs(:)));
     CCmax = CC[row_shift,col_shift]*nr*nc
     # Now change shifts so that they represent relative shifts and not indices
     row_shift = Nr[row_shift]
     col_shift = Nc[col_shift]
    elif usfac > 1:
-      # Start with usfac == 2
-   #   CC = ifft2(FTpad(buf1ft.*conj(buf2ft),[2*nr,2*nc]));
-      outsize = np.array((1,2),np.int32)
-      outsize[0] = 2*nr
-      outsize[1] = 2*nc
+    # Start with usfac == 2
+ #   CC = ifft2(FTpad(buf1ft.*conj(buf2ft),[2*nr,2*nc]));
+    outsize = np.array((1,2),np.int32)
+    outsize[0] = 2*nr
+    outsize[1] = 2*nc
 
-      CC = np.fft.ifft2(FTpad(buf1ft*np.conjugate(buf2ft),outsize))
-   #    CCabs = abs(CC);
-      CCabs = abs(CC)
-      ## changed by Gerd TO GET CLOSEST OF 5 MAXIMA
-
-      #x = np.argmax(CCabs)
-      #dims = CCabs.shape
-      #[row_shift, col_shift] = np.unravel_index(x,dims)
-
-      x = np.argsort(CCabs, axis=None)
-      dims = CCabs.shape
-      [row_shift, col_shift] = np.array(np.unravel_index(x,dims))[:,-5:]
-
-      ## end changed by Gerd 
-      #
-      CCmax = CC[row_shift,col_shift]*nr*nc
-      # Now change shifts so that they represent relative shifts and not indices
-      Nr2 = np.arange(-np.floor(nr), np.ceil(nr),1.0 )
-      Nc2 = np.arange(-np.floor(nc), np.ceil(nc),1.0 )
-      Nr2 = np.fft.ifftshift(Nr2)
-      Nc2= np.fft.ifftshift(Nc2)
-      
-      row_shift = Nr2[row_shift]/2;
-      col_shift = Nc2[col_shift]/2;
-
-      ## changed by GerdTO GET CLOSEST OF 5 MAXIMA
-      maxima_cc = np.array(list(zip(row_shift, col_shift)))
-      
-      closest_maximum = np.argmin(np.linalg.norm(maxima_cc, axis=1))
-      row_shift = maxima_cc[closest_maximum,0]
-      col_shift = maxima_cc[closest_maximum,1]
-      CCmax = CCmax[closest_maximum]
-
-      ## end changed by Gerd
+    CC = np.fft.ifft2(FTpad(buf1ft*np.conjugate(buf2ft),outsize))
+#    CCabs = abs(CC);
+    CCabs = abs(CC)
+    x = np.argmax(CCabs)
+    dims = CCabs.shape
+    [row_shift, col_shift] = np.unravel_index(x,dims)
+#
+#    [row_shift, col_shift] = find(CCabs == max(CCabs(:)),1,'first');
+    CCmax = CC[row_shift,col_shift]*nr*nc
+    # Now change shifts so that they represent relative shifts and not indices
+    Nr2 = np.arange(-np.floor(nr), np.ceil(nr),1.0 )
+    Nc2 = np.arange(-np.floor(nc), np.ceil(nc),1.0 )
+    Nr2 = np.fft.ifftshift(Nr2)
+    Nc2= np.fft.ifftshift(Nc2)
+    
+#    Nr2 = ifftshift(-fix(nr):ceil(nr)-1);
+#    Nc2 = ifftshift(-fix(nc):ceil(nc)-1);
+    row_shift = Nr2[row_shift]/2;
+    col_shift = Nc2[col_shift]/2;
 # If upsampling > 2, then refine estimate with matrix multiply DFT
-   if usfac > 2:
-      ### DFT computation ###
-      # Initial shift estimate in upsampled grid
-      row_shift = np.round(row_shift*usfac)/usfac; 
-      col_shift = np.round(col_shift*usfac)/usfac;     
-      dftshift = np.fix(np.ceil(usfac*1.5)/2); ## Center of output array at dftshift+1
-      # Matrix multiply DFT around the current shift estimate
-      CC = np.conjugate(dftups(buf2ft*np.conjugate(buf1ft),np.int(np.ceil(usfac*1.5)),np.int(np.ceil(usfac*1.5)),usfac, dftshift-row_shift*usfac,dftshift-col_shift*usfac))
-         # Locate maximum and map back to original pixel grid 
-      CCabs = abs(CC)
-      x = np.argmax(CCabs)
-      dims = CCabs.shape
-      [rloc, cloc] = np.unravel_index(x,dims)
-      #
-      #        [rloc, cloc] = find(CCabs == max(CCabs(:)),1,'first');
-      CCmax = CC[rloc,cloc]
-      rloc = rloc - dftshift - 1
-      cloc = cloc - dftshift - 1
-      row_shift = row_shift + rloc/usfac
-      col_shift = col_shift + cloc/usfac
-      
-      
-      #    end
+    if usfac > 2:
+        ### DFT computation ###
+        # Initial shift estimate in upsampled grid
+     row_shift = np.round(row_shift*usfac)/usfac; 
+     col_shift = np.round(col_shift*usfac)/usfac;     
+     dftshift = np.fix(np.ceil(usfac*1.5)/2); ## Center of output array at dftshift+1
+     # Matrix multiply DFT around the current shift estimate
+     CC = np.conjugate(dftups(buf2ft*np.conjugate(buf1ft),np.int(np.ceil(usfac*1.5)),np.int(np.ceil(usfac*1.5)),usfac, dftshift-row_shift*usfac,dftshift-col_shift*usfac))
+        # Locate maximum and map back to original pixel grid 
+     CCabs = abs(CC)
+     x = np.argmax(CCabs)
+     dims = CCabs.shape
+     [rloc, cloc] = np.unravel_index(x,dims)
+#
+#        [rloc, cloc] = find(CCabs == max(CCabs(:)),1,'first');
+     CCmax = CC[rloc,cloc]
+     rloc = rloc - dftshift - 1
+     cloc = cloc - dftshift - 1
+     row_shift = row_shift + rloc/usfac
+     col_shift = col_shift + cloc/usfac
+   
+    
+#    end
 
-      # If its only one row or column the shift along that dimension has no
-      # effect. Set to zero.
-      if nr == 1:
-         row_shift = 0
-      
-      if nc == 1:
-         col_shift = 0
+    # If its only one row or column the shift along that dimension has no
+    # effect. Set to zero.
+    if nr == 1:
+        row_shift = 0
+    
+    if nc == 1:
+        col_shift = 0
     
     
 #end  

@@ -880,7 +880,7 @@ def dftRigReg(cube, verbose = False):
     # select central image as fixed image 
     icent = int(nimages/2)
     fixed = cube[:,:,icent]
-
+    fft_fixed = np.fft.fft2(fixed)
     # determine maximum shifts 
     xshift = []
     yshift = []
@@ -889,7 +889,7 @@ def dftRigReg(cube, verbose = False):
     usfac = 1000
     for i in range(nimages) :
         moving = cube[:,:,i]
-        output, Greg = dftregistration1(np.fft.fft2(fixed),np.fft.fft2(moving),usfac)
+        output, Greg = dftregistration1(fft_fixed,np.fft.fft2(moving),usfac)
         Greg= np.fft.ifft2(Greg)
         RigReg[:,:,i] = abs(Greg)
         xshift.append(output[3])
