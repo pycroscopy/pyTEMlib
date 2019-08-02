@@ -214,6 +214,47 @@ def dftregistration1(buf1ft,buf2ft,usfac):
 #    Greg = buf2ft*exp(1i*diffphase);
 #end
    return output, Greg
+def shift_image(image, reference_image, row_shift, col_shift):
+   """ shift image by adding to the phase of the Fourier transform
+
+   INPUT:
+      image to be shifted 
+      reference image ususally the middle image of stack
+      row_shift shift of rows 
+      col_shift shift of columns
+
+
+   """ 
+   buf2ft = np.fft.fft2(image)
+   buf1ft = np.fft.fft2(reference_image)
+   [nr, nc] = buf2ft.shape
+   Nr = np.arange(-np.floor(nr/2), np.ceil(nr/2),1.0 )
+   Nc = np.arange(-np.floor(nc/2), np.ceil(nc/2),1.0 )
+   Nr = np.fft.ifftshift(Nr)
+   Nc = np.fft.ifftshift(Nc)
+
+   usfac = 1000
+   dftshift = np.fix(np.ceil(usfac*1.5)/2);
+
+
+   CC = np.conjugate(dftups(buf2ft*np.conjugate(buf1ft),np.int(np.ceil(usfac*1.5)),np.int(np.ceil(usfac*1.5)),usfac, dftshift-row_shift*usfac,dftshift-col_shift*usfac))
+   # Locate maximum and map back to original pixel grid 
+   CCabs = abs(CC)
+
+   rloc= int((row_shift-int(row_shift))*usfac)
+   cloc= int((col_shift-int(col_shift))*usfac)
+
+   CCmax = CC[rloc,cloc]
+
+   diffphase = np.angle(CCmax)
+
+   Nc, Nr = np.meshgrid(Nc,Nr)
+   Greg = buf2ft*np.exp(1j*2*np.pi*(-row_shift*Nr/nr-col_shift*Nc/nc))
+
+   Greg = Greg.dot(np.exp(1j*diffphase))
+
+   return np.abs(np.fft.ifft2(Greg))
+
 
 def dftups(inp,nor,noc,usfac,roff,coff):
 # function out=dftups(in,nor,noc,usfac,roff,coff);

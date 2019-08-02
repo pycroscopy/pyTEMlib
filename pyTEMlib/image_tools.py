@@ -918,18 +918,12 @@ def CropImage(drift, image_shape, verbose = False):
     -------
         [xpmin,xpmax,ypmin,ypmax]: list of image boundaries
     """
-    
-    xmax = max(np.array(drift)[:,0])
-    xmin = min(np.array(drift)[:,0])
-    ymax = max(np.array(drift)[:,1])
-    ymin = min(np.array(drift)[:,1])
 
     # Round up or down as appropriate
-    round_i = lambda x: (int(x+1), int(x-1))[x < 0]
-    ixmin = round_i(xmin)
-    ixmax = round_i(xmax)
-    iymin = round_i(ymin)
-    iymax = round_i(ymax)
+    ixmin = np.floor(np.min(np.array(drift)[:,0]))
+    ixmax = np.ceil(np.max(np.array(drift)[:,0]))
+    iymin = np.floor()np.min(np.array(drift)[:,0]) 
+    iymax = np.ceil(np.max(np.array(drift)[:,0]))
 
     # Now determine the cropped area
 
