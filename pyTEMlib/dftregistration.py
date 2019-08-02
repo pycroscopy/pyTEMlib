@@ -97,23 +97,42 @@ def dftregistration1(buf1ft,buf2ft,usfac):
 #Nc = ifftshift(-fix(nc/2):ceil(nc/2)-1);
 
    if usfac == 0:
-    # Simple computation of error and phase difference without registration
-    CCmax = sum(buf1ft*np.conjugate(buf2ft))
-#    CCmax = sum(buf1ft(:).*conj(buf2ft(:)));
-    row_shift = 0
-    col_shift = 0
-   elif usfac == 1:
-    # Single pixel registration
-    CC = np.fft.ifft2(buf1ft*np.conjugate(buf2ft))
-    CCabs = abs(CC)
-    x = np.argmax(CCabs)
-    dims = CCabs.shape
-    [row_shift, col_shift] = np.unravel_index(x,dims)
-    CCmax = CC[row_shift,col_shift]*nr*nc
-    # Now change shifts so that they represent relative shifts and not indices
-    row_shift = Nr[row_shift]
-    col_shift = Nc[col_shift]
-   elif usfac > 1:
+      # Simple computation of error and phase difference without registration
+      CCmax = sum(buf1ft*np.conjugate(buf2ft))
+   #    CCmax = sum(buf1ft(:).*conj(buf2ft(:)));
+      row_shift = 0
+      col_shift = 0
+   elif usfac >0:#  == 1: # changed by gerd
+      # Single pixel registration
+      CC = np.fft.ifft2(buf1ft*np.conjugate(buf2ft))
+      CCabs = abs(CC)
+      ## changed by Gerd TO GET CLOSEST OF 5 MAXIMA
+
+      #x = np.argmax(CCabs)
+      #dims = CCabs.shape
+      #[row_shift, col_shift] = np.unravel_index(x,dims)
+
+      x = np.argsort(CCabs, axis=None)
+      dims = CCabs.shape
+      [row_shift, col_shift] = np.array(np.unravel_index(x,dims))[:,-10:]
+
+      ## end changed by Gerd 
+      
+      CCmax = CC[row_shift,col_shift]*nr*nc
+      # Now change shifts so that they represent relative shifts and not indices
+      row_shift = Nr[row_shift]
+      col_shift = Nc[col_shift]
+      ## changed by GerdTO GET CLOSEST OF 5 MAXIMA
+      maxima_cc = np.array(list(zip(row_shift, col_shift)))
+      #print(maxima_cc)
+      closest_maximum = np.argmin(np.linalg.norm(maxima_cc, axis=1))
+      row_shift = maxima_cc[closest_maximum,0]
+      col_shift = maxima_cc[closest_maximum,1]
+      CCmax = CCmax[closest_maximum]
+
+      ## end changed by Gerd
+   """
+      elif usfac > 1:
       # Start with usfac == 2
    #   CC = ifft2(FTpad(buf1ft.*conj(buf2ft),[2*nr,2*nc]));
       outsize = np.array((1,2),np.int32)
@@ -154,6 +173,7 @@ def dftregistration1(buf1ft,buf2ft,usfac):
       CCmax = CCmax[closest_maximum]
 
       ## end changed by Gerd
+   """
 # If upsampling > 2, then refine estimate with matrix multiply DFT
    if usfac > 2:
       ### DFT computation ###
@@ -196,7 +216,7 @@ def dftregistration1(buf1ft,buf2ft,usfac):
    error = sqrt(abs(error))
    diffphase = np.angle(CCmax)
 
-   output = [error,diffphase,row_shift,col_shift]
+   output = [error,diffphase,row_shift,col_shift,maxima_cc]
 
 # Compute registered version of buf2ft
 #if (nargout > 1)&&(usfac > 0),
