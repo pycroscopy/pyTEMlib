@@ -922,7 +922,7 @@ def CropImage(drift, image_shape, verbose = False):
     # Round up or down as appropriate
     ixmin = np.floor(np.min(np.array(drift)[:,0]))
     ixmax = np.ceil(np.max(np.array(drift)[:,0]))
-    iymin = np.floor()np.min(np.array(drift)[:,0]) 
+    iymin = np.floor(np.min(np.array(drift)[:,0]) 
     iymax = np.ceil(np.max(np.array(drift)[:,0]))
 
     # Now determine the cropped area
