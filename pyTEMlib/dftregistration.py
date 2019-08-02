@@ -235,16 +235,16 @@ def dftregistration1(buf1ft,buf2ft,usfac):
 #end
    return output, Greg
 def shift_image(image, reference_image, row_shift, col_shift):
-   """ shift image by adding to the phase of the Fourier transform
+   """shift image by adding to the phase of the Fourier transform
 
    INPUT:
       image to be shifted 
       reference image ususally the middle image of stack
       row_shift shift of rows 
       col_shift shift of columns
+   """
 
-
-   """ 
+ 
    buf2ft = np.fft.fft2(image)
    buf1ft = np.fft.fft2(reference_image)
    [nr, nc] = buf2ft.shape
