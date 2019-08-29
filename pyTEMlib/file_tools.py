@@ -21,8 +21,10 @@ import pyUSID as usid
 import json
 import struct
 import ipywidgets as ipyw
+import ipywidgets as widgets
+from IPython.display import display, clear_output
 import sys, os
-
+from PyQt5 import QtGui, QtWidgets
 # =============================================================
 #   Include Quantifit Libraries                                      #
 # =============================================================
@@ -921,11 +923,8 @@ def open_file(file_name = None):
         if 'file_type' not in tags:
             tags['file_type'] = 'image'
     elif tags['extension'] == '.h5':
-        if h5py_installed:
-            open_h5_nion_file(file_name,tags)
-        else:
-            print(' You need to install h5py the HDF5 package for python to open Nion data files')
-            print(' type "pip install h5py" in the command window')
+        open_h5_nion_file(file_name,tags)
+        
     elif tags['extension'] == '.dm3':
         open_dm3_file(file_name,tags)
     elif tags['extension'] == '.qf3':
@@ -961,7 +960,7 @@ def open_h5_nion_file(file_name,tags):
         data = fp['data'][:]
         tags['shape'] = data.shape
         dic = json.loads(json_properties)
-
+        tags['data'] = data
         tags['original_metadata'] = dic
         tags.update(get_nion_tags(dic,data))
 
@@ -969,19 +968,25 @@ def open_h5_nion_file(file_name,tags):
 def get_nion_tags(dic,data):
 
     tags={}
-    tags['original_name'] = dic['description']['title']
+    tags['data'] = data
+    if 'description' in dic:
+        tags['original_name'] = dic['description']['title']
+    else:
+        tags['original_name'] = dic['title']
     tags['created_date'] = dic['created'][0:10]
     tags['created_time'] = dic['created'][11:19]
-    tags['shape'] = dic['data_source']['data_shape']
+    if 'data_source' in dic:
+         dic = dic['data_source']
+    tags['shape'] = dic['data_shape']
     
     spectrum = -1
-    if 'dimensional_calibrations' in dic['data_source']:
+    if 'dimensional_calibrations' in dic:
         tags['axis'] = {}
-        for i in range(len(dic['data_source']['dimensional_calibrations'])):
+        for i in range(len(dic['dimensional_calibrations'])):
             tags['axis'][str(i)]= {}
-            tags['axis'][str(i)]['offset'] = dic['data_source']['dimensional_calibrations'][i]['offset']
-            tags['axis'][str(i)]['scale']  = dic['data_source']['dimensional_calibrations'][i]['scale']
-            tags['axis'][str(i)]['units']  = dic['data_source']['dimensional_calibrations'][i]['units']
+            tags['axis'][str(i)]['offset'] = dic['dimensional_calibrations'][i]['offset']
+            tags['axis'][str(i)]['scale']  = dic['dimensional_calibrations'][i]['scale']
+            tags['axis'][str(i)]['units']  = dic['dimensional_calibrations'][i]['units']
             tags['axis'][str(i)]['pixels']  = tags['shape'][i]
             if tags['axis'][str(i)]['units'] == 'nm':
                 tags['axis'][str(i)]['offset'] = 0.0
@@ -1005,15 +1010,15 @@ def get_nion_tags(dic,data):
                 tags['spec'] = data[0,0,:]
                 tags['SI'] = {}
                 tags['SI']['data'] = data
-                tags['cube'] = data
+                tags['cf.ndaube'] = data
         else:    
             if tags['axis']['0']['units'] == tags['axis']['1']['units']:
                 tags['data_type'] = 'image'
         tags['pixel_size'] = tags['axis']['0']['scale']
         tags['FOV'] = tags['shape'][0] * tags['pixel_size']
-    if 'metadata' in  dic['data_source']:
-        if 'hardware_source' in dic['data_source']['metadata']:
-            hs = dic['data_source']['metadata']['hardware_source']
+    if 'metadata' in  dic:
+        if 'hardware_source' in dic['metadata']:
+            hs = dic['metadata']['hardware_source']
     
             tags['pixel_size'] = tags['axis']['0']['scale']
     
@@ -1884,6 +1889,371 @@ def open_qf3_file(file_name,tags):
    
     return tags
 
+def sort_nion_tags(tags, data):
+    main_tags = {}
+    #tags.copy()
+    main_tags['instrument']=''
+    channel_tags = {}
+    data_tags = {}
+    
+    
+   
+    shape = data.shape
+    
+    
+    if 'dimensional_calibrations' in tags:
+        for i, key in  enumerate(tags['dimensional_calibrations']):
+            if 'units' in key:
+                if key['units'] == 'eV':
+                    channel_tags['spectral_dimension_x'] = i
+                    channel_tags['spectral_scale_x'] = key['scale']
+                    channel_tags['spectral_origin_x'] = key['offset']
+                    channel_tags['spectral_units_x'] = key['units']
+                    channel_tags['spectral_size_x'] = shape[i]
+                elif key['units'] == 'rad':
+                    channel_tags['spectral_dimension_y'] = i
+                    channel_tags['spectral_scale_y'] = key['scale']
+                    channel_tags['spectral_origin_y'] = key['offset']
+                    channel_tags['spectral_units_y'] = key['units']
+                    channel_tags['spectral_size_y'] = shape[i]
+
+                elif key['units'] in ['frame','']:
+                    channel_tags['time_dimension'] = i
+                    channel_tags['time_scale'] = key['scale']
+                    channel_tags['time_origin'] = key['offset']
+                    channel_tags['time_units'] = 'frame'
+                    channel_tags['time_size'] = shape[i]
+                elif key['units'] == 'nm':
+                    if 'spatial_scale_x' in channel_tags:
+                        channel_tags['spatial_scale_y'] = key['scale']
+                        channel_tags['spatial_dimension_y'] = i
+                        channel_tags['spatial_origin_y'] = key['offset']
+                        channel_tags['spatial_size_y'] = shape[i]
+                    else:
+                        channel_tags['spatial_scale_x'] = key['scale']
+                        channel_tags['spatial_dimension_x'] = i
+                        channel_tags['spatial_offset_x'] = key['offset']
+                        channel_tags['spatial_units'] = key['units']
+                        channel_tags['spatial_size_x'] = shape[i]
+
+
+            
+    number_of_dimensions = len(shape)
+    data_tags['data_type'] = 'unknown'
+    if 'spectral_scale_x' in channel_tags:  # something with an energy scale
+        if 'spatial_scale_x' in channel_tags:
+            if channel_tags['spectral_dimension'] != number_of_dimensions: # This should never happen
+                data = np.swapaxes(data, tags['spectral_dimension'], 2)
+            else:
+                data = cube
+            if 'spatial_scale_y' in channel_tags:
+                data_tags['data_type'] = 'spectrum_image'
+                data = np.swapaxes(data, 0, 1)  # Make fast moving axis the Oth order
+                rawData = np.reshape(data,(data.shape[0]*data.shape[1],data.shape[2]),order='C' )
+                pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
+                    usid.write_utils.Dimension('Y', 'nm', data.shape[1])]
+
+                spec_dims = usid.write_utils.Dimension('energy loss', 'eV', data.shape[2])
+
+            else:
+                data_tags['data_type'] = 'EELS_linescan'
+                rawData = data
+
+                pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
+                        usid.write_utils.Dimension('Y', 'nm', 1)]
+
+                spec_dims = usid.write_utils.Dimension('energy loss', 'eV', data.shape[1])    
+
+
+        elif 'time_scale' in channel_tags:
+            data_tags['data_type'] = 'EELS_spectrum_stack'
+            if tags['spectral_dimension_x'] != number_of_dimensions: # This should never happen
+                data = np.swapaxes(cube, tags['spectral_dimension_x'], 2)
+            else:
+                data = cube
+            rawData = data
+
+            pos_dims = [usid.write_utils.Dimension('X', 'frame', data.shape[0]),
+                    usid.write_utils.Dimension('Y', 'nm', 1)]
+
+            spec_dims = usid.write_utils.Dimension('energy loss', 'eV', data.shape[1])    
+
+
+        else:
+            data_tags['data_type'] = 'EELS_spectrum'
+            pos_dims = [usid.write_utils.Dimension('X', 'a. u.', 1),
+                    usid.write_utils.Dimension('Y', 'a. u.', 1)]
+            spec_dims = usid.write_utils.Dimension('energy loss', 'eV', data.shape[0])
+            rawData =  np.reshape(data,(1,data.shape[0]),order='C' )
+
+
+        if 'spectral_scale_y' in channel_tags:
+            data_tags['spectrum_type'] = '2D'
+
+            print('2D spectra not supported yet')
+        else:
+            data_tags['spectrum_type'] = '1D'
+        print(data_tags['spectrum_type'])
+    else:
+        if 'spatial_scale_x' in channel_tags:
+            if 'spatial_scale_y' in channel_tags:
+                channel_tags['image_mode'] = 'STEM'
+
+                if 'time_scale' in channel_tags:
+                    data_tags['data_type'] = 'image_stack'
+                    channel_tags['image_stack'] = np.swapaxes(data,0,2)
+                    data = data.sum(axis=0)
+                    pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
+                            usid.write_utils.Dimension('Y', 'nm', data.shape[1])]
+                    spec_dims = usid.write_utils.Dimension('none', 'none',1)
+
+
+                    rawData = np.reshape(data,(data.shape[0]*data.shape[1],1),order='F' )
+
+                else:
+                    data_tags['data_type'] = 'image'
+
+                    rawData = np.reshape(data,(data.shape[0]*data.shape[1],1),order='F' )
+                    pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
+                            usid.write_utils.Dimension('Y', 'nm', data.shape[1])]
+                    spec_dims = usid.write_utils.Dimension('none', 'none', 1)
+
+
+        if data_tags['data_type']== 'unknown':
+            if 'metadata' in tags:
+                if 'hardware_source' in tags['metadata']:
+                    print('here')
+                    for key in tags['metadata']['hardware_source']:
+                        if 'Ronchi' in key:
+                            tags['data_type'] = 'ronchigram'
+                            rawData = np.reshape(data,(data.shape[0]*data.shape[1],1),order='F' )
+                            pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
+                                    usid.write_utils.Dimension('Y', 'nm', data.shape[1])]
+                            spec_dims = usid.write_utils.Dimension('none', 'none', 1)
+                
+        if data_tags['data_type']== 'unknown':
+            rawData = np.reshape(data,(data.shape[0]*data.shape[1],1),order='F' )
+            pos_dims = [usid.write_utils.Dimension('X', '', data.shape[0]),
+                    usid.write_utils.Dimension('Y', '', data.shape[1])]
+            spec_dims = usid.write_utils.Dimension('none', 'none', 1)
+
+                     
+        if 'metadata' in tags:
+            if 'hardware_source' in tags['metadata']:
+                hs = tags['metadata']['hardware_source']
+                if data_tags['data_type'] == 'image':             
+                    if 'channel_name' in hs:
+                        channel_tags['image_type'] =  hs['channel_name']
+                        channel_tags['detector_type'] = hs['channel_name']
+                               
+                    if 'pixel_time_us' in hs:
+                        channel_tags['seconds_per_pixel'] = hs['pixel_time_us'] *1e-6
+                    if 'rotation' in key:
+                        channel_tags['rotation'] = hs['rotation'] *1e-6
+                    
+    print(data_tags['data_type'])
+    data_tags['rawData'] = rawData
+    data_tags['pos_dims'] = pos_dims
+    data_tags['spec_dims'] = spec_dims
+    
+    if 'spatial_scale_x' not in channel_tags:
+        channel_tags['spatial_scale_x'] = 1
+        channel_tags['spatial_origin_x'] = 0
+        channel_tags['spatial_units'] = ''
+        
+        
+        if data_tags['data_type'] in ['image', 'image_stack', 'spectrum_image']:
+            channel_tags['spatial_scale_y'] = 1
+            channel_tags['spatial_origin_y'] = 0
+    
+    
+    main_tags['pyUSID_version'] =  usid.__version__
+    #main_tags['instrument']#'Nion US200'
+    main_tags['user_name'] = 'Gerd'
+    main_tags['sample_name'] = ''
+    main_tags['sample_description'] = ''
+    main_tags['project_name'] = 'STEM-FWP'
+    main_tags['project_id'] = ''
+    main_tags['data_tool'] = 'pyTEM-0.983'
+    main_tags['experiment_date'] = ''
+    main_tags['experiment_time'] = ''
+    main_tags['data_type'] = data_tags['data_type']
+    main_tags['comments'] = ''
+    
+    main_tags['translator'] = 'pyTEM'
+    
+    return main_tags, channel_tags, data_tags
+
+def nion_to_pyUSID(tags):
+    
+    #Parse Tags
+    path, filename = os.path.split(tags['filename'])
+    main_tags, channel_tags, data_tags  = sort_nion_tags(tags['original_metadata'], tags['data'])
+    
+    ###2
+    # Open pyUSID file and write data and main meta-data
+    ###
+    
+    tran = usid.NumpyTranslator()
+    h5_file_name = os.path.join(path,tags['original_metadata']['title']+'.hf5')
+    print(h5_file_name)
+    basename, extension = os.path.splitext(tags['original_metadata']['title'])
+    time_last_modified = os.path.getmtime(tags['filename'])
+    
+    
+   
+    if os.path.exists(os.path.abspath(h5_file_name)):
+        count = 1
+        h5_file_name = h5_file_name[:-4]+'-'+str(count)+'.hf5'
+        while os.path.exists(os.path.abspath(h5_file_name)):
+            count+=1
+            h5_file_name = h5_file_name[:-4]+'-'+str(count)+'.hf5'
+    
+    quantity = 'distance'
+    units = 'nm'
+    
+    h5_path = tran.translate(h5_file_name, data_tags['data_type'], data_tags['rawData'],  quantity, units,
+                             data_tags['pos_dims'], data_tags['spec_dims'], translator_name='pyTEMlib', parm_dict={})#parm_dict})
+
+    h5_file =  h5py.File(h5_path, mode='r+')
+
+    for key in main_tags:
+        h5_file.attrs[key] =  main_tags[key]
+
+        
+    current_channel = h5_file['Measurement_000/Channel_000']
+          
+    current_channel.create_dataset('title', data = basename)
+    current_channel.create_dataset('data_type', data = data_tags['data_type'])
+    for key in channel_tags:
+        current_channel.create_dataset(key, data=channel_tags[key])
+    
+    ###
+    # Read Additional Meta_Data
+    ###
+    channel_tags['data_type'] = data_tags['data_type']
+    meta_tags = get_additional_nion_tags(tags)
+    meta_tags['time_last_modified'] = time_last_modified
+       
+    ###
+    # Write additional important metadata and original_metadata to current_channel attributes
+    ###
+    current_channel_tags = current_channel.attrs
+    for key in meta_tags:
+        current_channel_tags[key]= meta_tags[key]
+        
+        
+    def flatten(d, parent_key='', sep='.'):
+        items = []
+        
+        for k, v in d.items():
+            new_key = parent_key + sep + k if parent_key else k
+            if isinstance(v, dict):
+                items.extend(flatten(v, new_key, sep=sep).items())
+            else:
+                if new_key == 'dimensional_calibrations':
+                    for i in range(len(v)):
+                        for kk in v[i]:
+                            items.append(('dim-'+kk+'-'+str(i), v[i][kk]))
+                else:
+                    items.append((new_key, v))
+                        
+        return dict(items)
+
+    original_group = current_channel.create_group('original_metadata')
+    original_group_tags = original_group.attrs
+    #del(tags['original_metadata']['data_source'])
+    original_tags = flatten(tags['original_metadata'])
+    for key in original_tags:
+        original_group_tags[key]= original_tags[key]
+        
+    h5_file.flush()
+    return h5_file
+
+def get_additional_nion_tags(tags):
+    add_tags = {}
+    if 'metadata' in tags['original_metadata']:
+        if 'hardware_source' in tags['original_metadata']['metadata']:
+            hs = tags['original_metadata']['metadata']['hardware_source']
+            if 'autostem' in hs:
+                if 'high_tension_v' in hs['autostem']:
+                    add_tags['acceleration_voltage'] = hs['autostem']['high_tension_v']
+    return add_tags
+
+def open_nion_meta(file_name):
+    fp = open(file_name, "rb")
+    local_files, dir_files, eocd = parse_zip(fp)
+   
+    json_pos = local_files[dir_files[b"metadata.json"][1]][1]
+    json_len = local_files[dir_files[b"metadata.json"][1]][2]
+    fp.seek(json_pos)
+    json_properties = fp.read(json_len)
+    fp.close()
+    dic = json.loads(json_properties.decode("utf-8"))
+    
+    return dic
+def open_h5_nion_meta(file_name):
+    fp = h5py.File(file_name)
+    dic ={}
+    if 'data' in fp:
+        json_properties = fp['data'].attrs.get("properties", "")
+        dic = json.loads(json_properties)
+    return dic
+
+
+class nion_directory(object):
+    
+    def __init__(self):
+        
+        self.get_dictionary()
+        self.select_Nion_files = widgets.Dropdown(
+                                        options=self.dir_list,
+                                        value=self.dir_list[0],
+                                        description='Select file:',
+                                        disabled=False,
+                                        button_style=''
+                                    )
+        display(self.select_Nion_files)
+        self.select_Nion_files.observe(self.get_and_open, names='value')
+    
+    def get_dictionary(self):
+        directory = str(QtWidgets.QFileDialog.getExistingDirectory( None, "Select Directory"))
+        
+
+        self.dir_dictionary ={}
+        self.dir_list = []
+        i = 0
+        for filename in os.listdir(directory):
+            if os.path.isfile(os.path.join(directory, filename)):
+                basename, extension = os.path.splitext(filename)
+                if extension == '.ndata':
+                    i+=1
+                    meta_tags = open_nion_meta(os.path.join(directory, filename))
+
+                    self.dir_dictionary[str(i)+'-'+meta_tags['title']] = os.path.join(directory, filename)
+                    self.dir_list.append(str(i)+'-'+meta_tags['title'])
+                if extension == '.h5':
+                    i+=1
+                    meta_tags = open_h5_nion_meta(os.path.join(directory, filename))
+
+                    self.dir_dictionary[str(i)+'-'+meta_tags['title']] = os.path.join(directory, filename)
+                    self.dir_list.append(str(i)+'-'+meta_tags['title'])
+        
+    
+    def get_and_open(self,b):
+        global h5_file, current_channel
+        #clear_output
+        #print(select_Nion_files.value, dir_dictionary[select_Nion_files.value])
+        
+            
+        tags = open_file(self.dir_dictionary[self.select_Nion_files.value])
+        try:
+            self.h5_file.close()
+        except:
+            pass
+        self.h5_file = nion_to_pyUSID(tags)
+        print('loaded ', self.select_Nion_files.value, self.dir_dictionary[self.select_Nion_files.value])
+        self.current_channel = self.h5_file['Measurement_000/Channel_000']
 
 
 def plot_tags(tags, which = 'All'):
