@@ -2,7 +2,7 @@
 #
 # 2018 01 31 Included Nion Swift files to be opened
 #
-###############################
+##################################
 
 import pickle
 import numpy as np
@@ -1333,7 +1333,7 @@ def get_main_tags(si):
 
 
    
-    data_tags['rawData'] = rawData
+    data_tags['rawData'] = np.array(rawData)
     data_tags['pos_dims'] = pos_dims
     data_tags['spec_dims'] = spec_dims
     

@@ -534,16 +534,25 @@ class DM3(object):
                 # get relevant Tags
 
                 data_dim = 0 # 1 = spectrum, 2 = image, 3 = SI
-                if 'root.ImageList.1.ImageData.Data.Offset' in self.tags:
-                        data_offset = int( self.tags['root.ImageList.1.ImageData.Data.Offset'] )
-                if 'root.ImageList.1.ImageData.Data.Size' in self.tags:
-                        data_size = int( self.tags['root.ImageList.1.ImageData.Data.Size'] )
-                if 'root.ImageList.1.ImageData.Data.DataType' in self.tags:
-                        data_type = int( self.tags['root.ImageList.1.ImageData.DataType'] )
-                if 'root.ImageList.1.ImageData.Dimensions.0' in self.tags:
-                        im_width = int( self.tags['root.ImageList.1.ImageData.Dimensions.0'] )
+                image_root = 'root.ImageList.1.'
+                
+                if image_root+'ImageData.Data.Offset' in self.tags:
+                        data_offset = int( self.tags[image_root+'ImageData.Data.Offset'] )
+                elif 'root.ImageList.0.ImageData.Data.Offset' in self.tags:
+                        image_root = 'root.ImageList.0.'
+                        data_offset = int( self.tags[image_root+'ImageData.Data.Offset'] )
+                        print('not original image')
+                else: 
+                        print('no offset')
+
+                if image_root+'ImageData.Data.Size' in self.tags:
+                        data_size = int( self.tags[image_root+'ImageData.Data.Size'] )
+                if image_root+'ImageData.Data.DataType' in self.tags:
+                        data_type = int( self.tags[image_root+'ImageData.DataType'] )
+                if image_root+'ImageData.Dimensions.0' in self.tags:
+                        im_width = int( self.tags[image_root+'ImageData.Dimensions.0'] )
                 try:
-                        im_height = int( self.tags['root.ImageList.1.ImageData.Dimensions.1'] )
+                        im_height = int( self.tags[image_root+'ImageData.Dimensions.1'] )
                         #if self.debug>0:
                         #       print "Notice: image  data with dimesnions %s x %s"%(im_width,im_height)
                         data_dim = 2
@@ -553,7 +562,7 @@ class DM3(object):
                         im_height = 1
                         data_dim = 1
                 try:
-                        im_length = int( self.tags['root.ImageList.1.ImageData.Dimensions.2'] )
+                        im_length = int( self.tags[image_root+'ImageData.Dimensions.2'] )
                         #if self.debug>0:
                         #       print "Notice: spectrum image data with spectra of length %s channels"%(im_length)
                         data_dim = 3
@@ -568,7 +577,10 @@ class DM3(object):
                         #print "Notice: image size: %sx%s px"%(im_width,im_height)
 
                 # check if DataType is implemented, then read
-                dt = data_types[str(self.tags['root.ImageList.1.ImageData.DataType'])]
+                if image_root+'ImageData.DataType' in self.tags:
+                        dt = data_types[str(self.tags[image_root+'ImageData.DataType'])]
+                else:
+                        dt = data_types[str(self.tags['root.ImageList.0.ImageData.DataType'])]
                 if dt == '':
                 #       print('The datatype is not supported')
                         return

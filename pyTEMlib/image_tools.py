@@ -2108,7 +2108,7 @@ def Fourier_transform(current_channel,data):# = image_channel
 
 
 
-def find_Bragg(fft_tags, spot_threshold = 0 ):
+def find_Bragg(fft_tags, spot_threshold = 0 , verbose = False):
     if spot_threshold ==0:
         spot_threshold = 0.05#(fft_tags['maximum_intensity']*10)
     
@@ -2119,12 +2119,13 @@ def find_Bragg(fft_tags, spot_threshold = 0 ):
     data = (data-data.min())/data.max()
     spots_random =  (blob_log(data,  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
     
-    print(f'found {len(spots_random)} Bragg spots with threshold of {spot_threshold}')
+    if verbose:
+        print(f'found {len(spots_random)} Bragg spots with threshold of {spot_threshold}')
     spots_random[:,2] = np.linalg.norm(spots_random[:,0:2], axis=1)
     spots_index = np.argsort(spots_random[:,2])
     
     spots = spots_random[spots_index]
     spots[:,2] = np.arctan2(spots[:,0], spots[:,1])
     return spots
-    return spots
+   
 
