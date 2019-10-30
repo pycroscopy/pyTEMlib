@@ -63,22 +63,7 @@ except:
 if _SimpleITK_present == False:
     print('SimpleITK not installed; Registration Functions for Image Stacks not available')
 
-# Wavelength in 1/nm
-def get_waveLength(E0):
-    """
-    Calculates the relativistic corrected de Broglie wave length of an electron
 
-    Input:
-    ------
-        acceleration voltage in volt
-    Output:
-    -------
-        wave length in 1/nm
-    """
-
-    eV = const.e * E0 
-    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
-    
 
 def plot_image2(image_tags,fig, axes):
     if 'color_map' not in image_tags: 
@@ -460,7 +445,7 @@ def power_spectrum(channel):
                 ['maximum_intensity']: suggested maximum intensity for plotting
 
     """
-    ## fft kkl
+    ## fft
     data = channel['data'][()]
     image = data- data.min()
     fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
@@ -588,7 +573,7 @@ def adaptive_Fourier_filter(image, tags, low_pass = 3, reflection_radius = 0.3):
 
     # mask reflections
     #reflection_radius = 0.3 # in 1/nm
-    spots = tags['spots']
+    spots = fft_tags['spots']
     for spot in spots:
         mask_spot = (x-spot[0])**2+(y-spot[1])**2 < reflection_radius**2 # make a spot 
         mask = mask + mask_spot# add spot to mask
@@ -718,7 +703,7 @@ def calibrate_imageScale(fft_tags,spots_reference,spots_experiment):
     dist_reference = np.linalg.norm(spots_reference, axis=1)
     distance_experiment = np.linalg.norm(spots_experiment, axis=1)
 
-    first_reflections = abs(distance_experiment - dist_reference.min()) < .2
+    first_reflections = abs(distance_experiment - dist_reference.min()) < .1
     print('Evaluate ', first_reflections.sum(), 'reflections')
     closest_exp_reflections = spots_experiment[first_reflections]
 
@@ -734,29 +719,35 @@ def calibrate_imageScale(fft_tags,spots_reference,spots_experiment):
 def align_crystal_reflections(spots,crystals):
     crystal_reflections_polar=[]
     angles = []
+    mask = np.ones(spots.shape[0], dtype=bool)
     exp_r, exp_phi = cart2pol(spots) # just in polar coordinates
     spots_polar= np.array([exp_r, exp_phi])
+    number_spots_remain = len(mask)
         
     for i in range(len(crystals)):
         tags = crystals[i]
         r,phi,indices = xy2polar(tags['allowed']['g']) #sorted by r and phi , only positive angles
         ## we mask the experimental values that are found already
         angle = 0.
-        
-        angleI = np.argmin(np.abs(exp_r - r[1]) )
-        angle = exp_phi[angleI] - phi[0]
+        if mask.sum()>1:
+            angleI = np.argmin(np.abs((exp_r[mask])-r[0]) )
+            angle = (exp_phi[mask])[angleI] - phi[0]
         angles.append(angle) ## Determine rotation angle
-
-        crystal_reflections_polar.append([r, angle + phi, indices])
+        crystal_reflections_polar.append([r, angle - phi, indices])
         tags['allowed']['g_rotated'] = pol2cart(r, angle + phi)
         for spot in tags['allowed']['g']:
             dif = np.linalg.norm(spots[:,0:2]-spot[0:2],axis=1)
             #print(dif.min())
             if dif.min() < 1.5:
                 ind = np.argmin(dif)
-    
+                if mask[ind]:
+                    mask[ind] = 0
+
+        print(f'found {(number_spots_remain-mask.sum()):.0f} refletions in crystal {i}')         
+        number_spots_remain -= (number_spots_remain-mask.sum())
+        print(mask.sum())
         
-    return crystal_reflections_polar, angles
+    return crystal_reflections_polar, angles, mask
 
 
 
@@ -810,8 +801,8 @@ def DemonReg(cube, verbose = False):
     fixed = sitk.GetImageFromArray(fixed_np)
     fixed = sitk.DiscreteGaussian(fixed, 2.0)
 
-    #demons = sitk.SymmetricForcesDemonsRegistrationFilter()
-    demons = sitk.DiffeomorphicDemonsRegistrationFilter()
+    demons = sitk.SymmetricForcesDemonsRegistrationFilter()
+    #demons = sitk.DiffeomorphicDemonsRegistrationFilter()
 
     demons.SetNumberOfIterations(200)
     demons.SetStandardDeviations(1.0)
@@ -821,16 +812,7 @@ def DemonReg(cube, verbose = False):
     resampler.SetInterpolator(sitk.sitkGaussian)
     resampler.SetDefaultPixelValue(0)
 
-    done = 0
-        
     for i in range(nimages):
-        if done < int((i+1)/nimages*50):
-            done = int((i+1)/nimages*50)
-            sys.stdout.write('\r')
-            # progress output :
-            sys.stdout.write("[%-50s] %d%%" % ('='*done, 2*done))
-            sys.stdout.flush()
-        
         moving = sitk.GetImageFromArray(cube[:,:,i])
         movingf = sitk.DiscreteGaussian(moving, 2.0)
         displacementField = demons.Execute(fixed,movingf)
@@ -838,7 +820,7 @@ def DemonReg(cube, verbose = False):
         resampler.SetTransform(outTx)
         out = resampler.Execute(moving)
         DemReg[:,:,i] = sitk.GetArrayFromImage(out)
-        #print('image ', i)
+        print('image ', i)
         
     
     print(':-)')
@@ -880,7 +862,7 @@ def dftRigReg(cube, verbose = False):
     # select central image as fixed image 
     icent = int(nimages/2)
     fixed = cube[:,:,icent]
-    fft_fixed = np.fft.fft2(fixed)
+
     # determine maximum shifts 
     xshift = []
     yshift = []
@@ -889,7 +871,7 @@ def dftRigReg(cube, verbose = False):
     usfac = 1000
     for i in range(nimages) :
         moving = cube[:,:,i]
-        output, Greg = dftregistration1(fft_fixed,np.fft.fft2(moving),usfac)
+        output, Greg = dftregistration1(np.fft.fft2(fixed),np.fft.fft2(moving),usfac)
         Greg= np.fft.ifft2(Greg)
         RigReg[:,:,i] = abs(Greg)
         xshift.append(output[3])
@@ -918,12 +900,18 @@ def CropImage(drift, image_shape, verbose = False):
     -------
         [xpmin,xpmax,ypmin,ypmax]: list of image boundaries
     """
+    
+    xmax = max(np.array(drift)[:,0])
+    xmin = min(np.array(drift)[:,0])
+    ymax = max(np.array(drift)[:,1])
+    ymin = min(np.array(drift)[:,1])
 
     # Round up or down as appropriate
-    ixmin = np.floor(np.min(np.array(drift)[:,0]))
-    ixmax = np.ceil(np.max(np.array(drift)[:,0]))
-    iymin = np.floor(np.min(np.array(drift)[:,0])) 
-    iymax = np.ceil(np.max(np.array(drift)[:,0]))
+    round_i = lambda x: (int(x+1), int(x-1))[x < 0]
+    ixmin = round_i(xmin)
+    ixmax = round_i(xmax)
+    iymin = round_i(ymin)
+    iymax = round_i(ymax)
 
     # Now determine the cropped area
 
@@ -1213,31 +1201,94 @@ def Probe2( ab, sizeX, sizeY, tags, verbose= False):
 
     
 
+def DeconLR2(  Oimage, probe, tags, verbose = False):
 
-def DeconLR(  Oimage, probe, tags, verbose = False):
-    """
-    
-    
-    # This task generates a restored image from an input image and point spread function (PSF) using the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson (1972, J. Opt. Soc. Am. 62, 55) and adapted for HST imagery by Snyder (1990, in Restoration of HST Images and Spectra, ST ScI Workshop Proceedings; see also Snyder, Hammoud, & White, JOSA, v. 10, no. 5, May 1993, in press). Additional options developed by Rick White (STScI) are also included.
-    #
-    # The Lucy-Richardson method can be derived from the maximum likelihood expression for data with a Poisson noise distribution. Thus, it naturally applies to optical imaging data such as HST. The method forces the restored image to be positive, in accord with photon-counting statistics.
-    #
-    # The Lucy-Richardson algorithm generates a restored image through an iterative method. The essence of the iteration is as follows: the (n+1)th estimate of the restored image is given by the nth estimate of the restored image multiplied by a correction image. That is,
-    #
-    #                            original data
-    #       image    = image    ---------------  * reflect(PSF) 
-    #            n+1        n     image * PSF
-    #                                  n
-
-    # where the *'s represent convolution operators and reflect(PSF) is the reflection of the PSF, i.e. reflect((PSF)(x,y)) = PSF(-x,-y). When the convolutions are carried out using fast Fourier transforms (FFTs), one can use the fact that FFT(reflect(PSF)) = conj(FFT(PSF)), where conj is the complex conjugate operator. 
-    """
-    
     if len(Oimage) < 1:
         return Oimage
-    
+    print(Oimage.shape)
     if Oimage.shape != probe.shape:
-        print('Weirdness ',Oimage.shape,' != ',probe.shape)
+        print('Wierdness ',Oimage.shape,' != ',probe.shape)
+    ## Input Image ###
+    # read the input image
+    img = sitk.GetImageFromArray(Oimage, sitk.sitkFloat64)
+    img = sitk.MirrorPad( img, [128] *2, [128]*2)
+    
+    size = img.GetSize();
+    # perform the FFT
+    source = sitk.ForwardFFT( sitk.Cast( img, sitk.sitkFloat64 ) )
 
+    
+
+    ### Kernel Image ###
+    # Read the kernel image file
+    kernel= sitk.GetImageFromArray(probe, sitk.sitkFloat64)
+    # flip kernel about all axis
+    #kernel = sitk.Flip( kernel, [1]*2 )
+
+    # normalize the kernel to sum to ~1
+    stats = sitk.StatisticsImageFilter();
+    stats.Execute( kernel )
+    kernel = sitk.Cast( kernel / stats.GetSum(), sitk.sitkFloat64 )
+
+    upadding = [0]*2
+    upadding[0] = int( math.floor( (size[0] - kernel.GetSize()[0])/2.0 ) )
+    upadding[1] = int( math.floor( (size[1] - kernel.GetSize()[1])/2.0 ) )
+
+    lpadding = [0]*2
+    lpadding[0] = int( math.ceil( (size[0] - kernel.GetSize()[0])/2.0 ) )
+    lpadding[1] = int( math.ceil( (size[1] - kernel.GetSize()[1])/2.0 ) )
+    
+    # pad the kernel to prevent edge artifacts
+    kernel = sitk.ConstantPad( kernel, upadding, lpadding, 0.0 )
+    
+    # perform FFT on kernel
+    responseFT = sitk.ForwardFFT( sitk.FFTShift( kernel ) )
+    
+
+    error = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat64 )
+    est = sitk.GetImageFromArray(np.ones(size), sitk.sitkFloat64 )
+    
+
+    verbose = True
+    dE = 100
+    dest = 100
+    i=0
+    while abs(dest) > 0.0001 :#or abs(dE)  > .025:
+        i += 1
+
+        error = source / sitk.InverseFFT( est*responseFT )
+        est = est * sitk.InverseFFT( error*responseFT )
+
+        #dest = np.sum(np.power((est - est_old).real,2))/np.sum(est)*100
+        #print(np.sum((est.real - est_old.real)* (est.real - est_old.real) )/np.sum(est.real)*100 )
+
+        
+        print(' LR Deconvolution - Iteration: {0:d} Error: {1:.2f} = change: {2:.5f}%, {3:.5f}%'.format(i,error_new,dE,abs(dest)))
+    
+        if i > 10:
+            dE = dest =  0.0
+            print('terminate')
+    
+# This task generates a restored image from an input image and point spread function (PSF) using the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson (1972, J. Opt. Soc. Am. 62, 55) and adapted for HST imagery by Snyder (1990, in Restoration of HST Images and Spectra, ST ScI Workshop Proceedings; see also Snyder, Hammoud, & White, JOSA, v. 10, no. 5, May 1993, in press). Additional options developed by Rick White (STScI) are also included.
+#
+# The Lucy-Richardson method can be derived from the maximum likelihood expression for data with a Poisson noise distribution. Thus, it naturally applies to optical imaging data such as HST. The method forces the restored image to be positive, in accord with photon-counting statistics.
+#
+# The Lucy-Richardson algorithm generates a restored image through an iterative method. The essence of the iteration is as follows: the (n+1)th estimate of the restored image is given by the nth estimate of the restored image multiplied by a correction image. That is,
+#
+#                            original data
+#       image    = image    ---------------  * reflect(PSF) 
+#            n+1        n     image * PSF
+#                                  n
+
+# where the *'s represent convolution operators and reflect(PSF) is the reflection of the PSF, i.e. reflect((PSF)(x,y)) = PSF(-x,-y). When the convolutions are carried out using fast Fourier transforms (FFTs), one can use the fact that FFT(reflect(PSF)) = conj(FFT(PSF)), where conj is the complex conjugate operator. 
+
+def DeconLR(  Oimage, probe, tags, verbose = False):
+
+    if len(Oimage) < 1:
+        return Oimage
+    print(Oimage.shape)
+    if Oimage.shape != probe.shape:
+        print('Wierdness ',Oimage.shape,' != ',probe.shape)
     probeC = np.ones((probe.shape), dtype = np.complex64)
     probeC.real = probe
 
@@ -1903,74 +1954,52 @@ def voronoi2(tags, atoms):
 
     #print ('average corners', np.median(cornersHist))
 
-def intensity_area(image,atoms, radius):
-    rr = int(radius+0.5) # atom radius
+
+
+def atomRefine(image, atoms, tags, maxDist = 2):
+    
+    rr = int(tags['radius']+0.5) # atom radius
     print('using radius ',rr, 'pixels')
     
     pixels = np.linspace(0,2*rr,2*rr+1)-rr
     x,y = np.meshgrid(pixels,pixels);
     mask = (x**2+y**2) < rr**2 #
-    intensity_area = []
-    for i in range(len( atoms)):
-        
-        x = int(atoms[i][1]   ) 
-        y = int(atoms[i][0]   ) 
-        area = image[x-rr:x+rr+1,y-rr:y+rr+1]
-        if area.shape == mask.shape:
-            intensity_area.append((area*mask).sum() )
-        else:
-            intensity_area.append(-1)
-    return intensity_area
-
-def Gauss_2D(params, ydata):
-    width = int(ydata.shape[0]/2)
-    Gauss_width = params[0]
-    x0 = params[1]
-    y0 = params[2]
-    inten = params[3]
-
-    x, y = np.mgrid[-width:width+1, -width:width+1]
-
-
-    return np.exp(-((x-x0)**2 + (y-y0)**2) /2./ Gauss_width**2)*inten
-def Gauss_difference (params,  xdata, ydata):
-    #self.img1b.setImage(gauss)
-    gauss = Gauss_2D(params, ydata)
-    return (ydata - gauss).flatten()
-
-def atomRefine(image, atoms, radius, MaxInt = 0,MinInt = 0, maxDist = 4):
-    """
-        fits a Gaussian in a blob
-    """
-    rr = int(radius+0.5) # atom radius
-    print('using radius ',rr, 'pixels')
     
-    pixels = np.linspace(0,2*rr,2*rr+1)-rr
-    x,y = np.meshgrid(pixels,pixels);
-    mask = (x**2+y**2) < rr**2 #
+    def func(params,  xdata, ydata):
+        width = ydata.shape[0]/2
+        Gauss_width = params[0]
+        x0 = params[1]
+        y0 = params[2]
+        inten = params[3]
 
-    guess  = [rr*2, 0.0, 0.0 , 1]    
-    
+        x, y = np.mgrid[-width:width, -width:width]
+
+        gauss = np.exp(-4*np.log(2) * ((x-x0)**2 + (y-y0)**2) / Gauss_width**2)*inten
+        #self.img1b.setImage(gauss)
+        return (ydata - gauss).flatten()
+
+
+    ###
+    # Determine sub pixel position and intensity  of all atoms within intensity range
+    ###
+    guess  = [rr, 0.0, 0.0 , 1]
+    pout = [0.0, 0.0, 0.0 , 0.0]
+    newatoms = []
+
+    #tags['symmetry'] = {}
     sym = {}
     sym['number_of_atoms'] = len(atoms)
-    
-    volume = []
+    Z=[]
+    Name = []
+    Column = []
     position = []
     intensity_area = []
     maximum_area = []
-    newatoms = []
     Gauss_width = []
     Gauss_amplitude = []
-    Gauss_intensity = []
-    
-    done = 0
-    for i in range(len(atoms)):
-        if done < int((i+1)/len(atoms)*50):
-            done = int((i+1)/len(atoms)*50)
-            sys.stdout.write('\r')
-            # progress output :
-            sys.stdout.write("[%-50s] %d%%" % ('='*done, 2*done))
-            sys.stdout.flush()
+    Gauss_volume = []
+
+    for i in range(len( atoms)):
         
         y,x = atoms[i][0:2]
         x = int(x)
@@ -1979,56 +2008,91 @@ def atomRefine(image, atoms, radius, MaxInt = 0,MinInt = 0, maxDist = 4):
         
         
         area = image[x-rr:x+rr+1,y-rr:y+rr+1]
-       
+                
+        sym[str(i)] = {}
+        sym[str(i)]['index']= i
+        sym[str(i)]['x'] = x
+        sym[str(i)]['y'] = y
+        sym[str(i)]['Z'] = 0
+        sym[str(i)]['Name'] = 'undefined'
+        sym[str(i)]['Column'] = -1
+
         append = False
         
         if (x-rr) < 0 or y-rr <0 or x+rr+1 > image.shape[0] or y+rr+1 > image.shape[1]:
-            position.append(-1)
-            intensity_area.append(0) 
-            maximum_area.append(0)
+            sym[str(i)]['position'] = 'outside'
+            sym[str(i)]['intensity area'] = 0 
+            sym[str(i)]['maximum area'] = 0
         else:
-            position.append(1)
-            intensity_area.append((area*mask).sum() )
-            maximum_area.append((area*mask).max())
-            
-        if MaxInt>0:
-            if area.sum()< MaxInt:                    
-                if area.sum() > MinInt:
+            sym[str(i)]['position'] = 'inside'
+            sym[str(i)]['intensity area'] = (area*mask).sum()
+            sym[str(i)]['maximum area'] = (area*mask).max()
+        
+        if tags['MaxInt']>0:
+            if area.sum()< tags['MaxInt']:                    
+                if area.sum() > tags['MinInt']:
                     append = True
-        elif area.sum()> MinInt:
+        elif area.sum()> tags['MinInt']:
             append = True
         
-        pout = [0,0,0,0]
-        if append:
+        if append: ## If possible do a Gaussian fit and update the x and y 
             if (x-rr) < 0 or y-rr <0 or x+rr+1 > image.shape[0] or y+rr+1 > image.shape[1]:
-                pass
+                pout[0] = 0 # width
+                pout[1] = 0 # dx
+                pout[2] = 0 # dy
+                pout[3] = 0 # amplitude
             else:
-                pout, res =  leastsq(Gauss_difference, guess, args=(area, area))
-                
+                pout, res =  leastsq(func, guess, args=(area, area))
+            # shift cannot be larger than two pixels
             if (abs(pout[1])> maxDist) or (abs(pout[2])> maxDist):
-                pout = [0,0,0,0]
-    
-        volume.append(2* np.pi * pout[3] * pout[0]*pout[0])
+                #print(i,x,y,pout[1],pout[2])
+                pout[0] = 0 # width
+                pout[1] = 0 # dx
+                pout[2] = 0 # dy
+                pout[3] = 0 # amplitude
 
-        newatoms.append([y+pout[2], x+pout[1]])# ,pout[0],  volume)) #,pout[3]))
-        if (all(v == 0 for v in pout)):
-            Gauss_intensity.append(0.)
+            sym[str(i)]['x'] = x+pout[1]
+            sym[str(i)]['y'] = y+pout[2]
+
+            volume = 2* np.pi * pout[3] * pout[0]*pout[0]
+
+            newatoms.append([y+pout[2]+1, x+pout[1]+1])# ,pout[0],  volume)) #,pout[3]))
+
+            sym[str(i)]['Gauss width'] =  pout[0]
+            sym[str(i)]['Gauss amplitude'] = pout[3]
+            sym[str(i)]['Gauss volume'] = volume
+            
+        #x.append(sym[str(i)]['x'])
+        #y.append(sym[str(i)]['y'])
+        Z.append(sym[str(i)]['Z'])
+        Name.append(str(sym[str(i)]['Name']))
+        Column.append(sym[str(i)]['Column'])
+        if sym[str(i)]['position'] == 'inside':
+            position.append(1)
         else:
-            Gauss_intensity.append((Gauss_2D(pout, area)*mask).sum() )
-        Gauss_width.append(pout[0])
-        Gauss_amplitude.append(pout[3])
+            position.append(0)
+
+        intensity_area.append(sym[str(i)]['intensity area'])
+        maximum_area.append(sym[str(i)]['maximum area'])
+        Gauss_width.append(sym[str(i)]['Gauss width'])
+        Gauss_amplitude.append(sym[str(i)]['Gauss amplitude'])
+        Gauss_volume.append(sym[str(i)]['Gauss volume'])
+    tags2 = {}
+    tags2['number_of_atoms'] = len(atoms)
     
-    
-    sym['inside'] = position
-    sym['intensity_area'] = intensity_area 
-    sym['maximum_area'] = maximum_area
-    sym['atoms'] = newatoms
-    sym['Gauss_width'] = Gauss_width
-    sym['Gauss_amplitude'] = Gauss_amplitude
-    sym['Gauss_intensity'] = Gauss_intensity
-    sym['Gauss_volume'] = volume
-    
-    return sym
+    tags2['Z'] = np.array(Z)
+    #out_tags2['Name'] = np.array(Name)
+    tags2['Column'] = np.array(Column)
+    tags2['position'] = np.array(position)
+    tags2['intensity_area'] = np.array(intensity_area)
+    tags2['maximum_area'] = np.array(maximum_area)
+
+    tags2['Gauss_width'] = np.array(Gauss_width)
+    tags2['Gauss_amplitude'] = np.array(Gauss_amplitude)
+    tags2['Gauss_volume'] = np.array(Gauss_volume)        
+    tags2['atoms'] = newatoms
+    tags2['sym'] = sym
+    return tags2
 
 def Fourier_transform(current_channel,data):# = image_channel
     # spatial data
@@ -2108,7 +2172,7 @@ def Fourier_transform(current_channel,data):# = image_channel
 
 
 
-def find_Bragg(fft_tags, spot_threshold = 0 , verbose = False):
+def find_Bragg(fft_tags, spot_threshold = 0 ):
     if spot_threshold ==0:
         spot_threshold = 0.05#(fft_tags['maximum_intensity']*10)
     
@@ -2119,13 +2183,12 @@ def find_Bragg(fft_tags, spot_threshold = 0 , verbose = False):
     data = (data-data.min())/data.max()
     spots_random =  (blob_log(data,  max_sigma= 5 , threshold=spot_threshold)-center)*rec_scale
     
-    if verbose:
-        print(f'found {len(spots_random)} Bragg spots with threshold of {spot_threshold}')
+    print(f'found {len(spots_random)} Bragg spots with threshold of {spot_threshold}')
     spots_random[:,2] = np.linalg.norm(spots_random[:,0:2], axis=1)
     spots_index = np.argsort(spots_random[:,2])
     
     spots = spots_random[spots_index]
     spots[:,2] = np.arctan2(spots[:,0], spots[:,1])
     return spots
-   
+    return spots
 

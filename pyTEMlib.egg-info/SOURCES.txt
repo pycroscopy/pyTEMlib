@@ -8,10 +8,12 @@ pyTEMlib/chksanity.py
 pyTEMlib/config_dir.py
 pyTEMlib/defaults_parser.py
 pyTEMlib/dftregistration.py
+pyTEMlib/dftregistration2.py
 pyTEMlib/dm3lib_v1_0b.py
 pyTEMlib/edges_db.py
 pyTEMlib/file_tools.py
 pyTEMlib/image_tools.py
+pyTEMlib/image_tools1.py
 pyTEMlib/structure_tools.py
 pyTEMlib.egg-info/PKG-INFO
 pyTEMlib.egg-info/SOURCES.txt

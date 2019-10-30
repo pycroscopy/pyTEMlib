@@ -1,0 +1,11 @@
+Metadata-Version: 1.1
+Name: pyTEMlib
+Version: 0.7.2019.9
+Summary: pyTEM: TEM Data Quantification library through a Model Based Approach
+Home-page: https://web.utk.edu/~gduscher/Quantifit/
+Author: Gerd Duscher
+Author-email: gduscher@utk.edu
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Development Status :: 2 - Pre-Alpha

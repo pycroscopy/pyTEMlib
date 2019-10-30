@@ -1405,13 +1405,12 @@ def get_additional_tags(si, channel_tags):
                     out_tags['microscope'] = 'UltraSTEM 200'
                 else:
                     out_tags['microscope'] = 'UltraSTEM 100'
-            if 'detector_type' in channel_tags:
-                if 'HAADF' in channel_tags['detector_type']:
-                    if 'PMTDF_gain' in key:
-                        out_tags['detector_gain'] = si.tags[key]
-                else:
-                    if 'PMTBF_gain' in key:
-                        out_tags['detector_gain'] = si.tags[key]
+            if 'HAADF' in channel_tags['detector_type']:
+                if 'PMTDF_gain' in key:
+                    out_tags['detector_gain'] = si.tags[key]
+            else:
+                if 'PMTBF_gain' in key:
+                    out_tags['detector_gain'] = si.tags[key]
             if 'StageOutX' in key:
                 out_tags['stage_x'] =  si.tags[key]
             if 'StageOutY' in key:
