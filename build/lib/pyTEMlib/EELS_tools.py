@@ -170,10 +170,10 @@ class interactive_spectrum_image(object):
         y = self.y 
         if selection==None:
             selection = self.analysis
-        for self.x in range(self.cube.shape[0]):
+        for self.x in range(self.cube.shape[1]):
             if verbose:
                 print(f' row: {self.x}')
-            for self.y in range(self.cube.shape[1]):
+            for self.y in range(self.cube.shape[0]):
                 
                 if 'fit_zero_loss' in selection:
                     title = self.fit_zero_loss(plot_this = False)
