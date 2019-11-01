@@ -380,7 +380,8 @@ def h5_add_channel(h5_file,current_channel,title,filename=None):
         _ = usid.io.hdf_utils.write_main_dataset(current_channel, data_tags['rawData'], 'Raw_Data', 
                                                  'distance', 'nm',  data_tags['pos_dims'], data_tags['spec_dims'])
     
-    current_channel.create_dataset('title', data = basename)
+    current_channel.create_dataset('title',title)
+    current_channel.create_dataset('filename', data = basename)
     current_channel.create_dataset('data_type', data = data_tags['data_type'])
     for key in channel_tags:
         current_channel.create_dataset(key, data=channel_tags[key])
