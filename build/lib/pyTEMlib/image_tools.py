@@ -2043,9 +2043,6 @@ def Fourier_transform(current_channel,data):# = image_channel
     FOV_x = sizeX*scaleX
     FOV_y = sizeY*scaleY
     
-    
-    
-        
     image = data- data.min()
     fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
     
@@ -2062,7 +2059,7 @@ def Fourier_transform(current_channel,data):# = image_channel
 
 
     ## Field ofView (FOV) in recipical space
-    rec_extend = (-rec_FOV_x,rec_FOV_x,rec_FOV_y,-rec_FOV_y)
+    rec_extend = (-rec_FOV_x,rec_FOV_x-rec_scale_x,rec_FOV_y-rec_scale_y,-rec_FOV_y)
 
     out_tags['spatial_size_x']=sizeX
     out_tags['spatial_size_y']=sizeY

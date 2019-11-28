@@ -1,7 +1,6 @@
 scipy
 numpy
 pillow
-pyqtgraph
 simpleITK
 ase
 pyUSID
