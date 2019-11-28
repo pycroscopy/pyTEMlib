@@ -24,7 +24,11 @@ import ipywidgets as ipyw
 import ipywidgets as widgets
 from IPython.display import display, clear_output
 import sys, os
-from PyQt5 import QtGui, QtWidgets
+try:
+    from PyQt5 import QtGui, QtWidgets
+    QT_available = True
+except:
+    QT_available = False
 # =============================================================
 #   Include Quantifit Libraries                                      #
 # =============================================================
@@ -37,7 +41,10 @@ from pyTEMlib.config_dir import config_path
 
 
 def savefile_dialog(ftype ="All files (*)"):
-    from PyQt5 import QtGui, QtWidgets
+    if QT_available == False:
+        print('No QT dialog')
+        return None
+    #from PyQt5 import QtGui, QtWidgets
     # Determine last path used
     try:
         fp = open(config_path+'\path.txt','r')
@@ -60,8 +67,7 @@ def savefile_dialog(ftype ="All files (*)"):
     return str(fname)
 
 def openfile_dialog(ftype ="All files (*)", multiple_files = False):
-    from PyQt5 import QtGui, QtWidgets
-
+    
     """
     Opens a File dialog which is used in open_file() function
     This functon uses QWidgets from PyQt5.
@@ -81,9 +87,7 @@ def openfile_dialog(ftype ="All files (*)", multiple_files = False):
 
     Examples
     --------
-    >>> from PyQt5 import QtGui, QtWidgets
-    >>> import sys, os
-    >>> sys.path.append('../libQF')
+    
     >>> from config_dir import config_path
     >>> import file_tools as ft
     >>>
@@ -93,6 +97,9 @@ def openfile_dialog(ftype ="All files (*)", multiple_files = False):
     >>> print(filename)
 
     """
+    if QT_available == False:
+        print('No QT dialog')
+        return None
     
     
     # Determine last path used
@@ -266,9 +273,18 @@ def h5_open_file(filename = None):
      
     if extension ==  '.hf5':
         return h5py.File(filename, 'a')
-    if extension  in ['.dm3','.dm4']:
+    elif extension  in ['.dm3','.dm4']:
         h5_file = dm_to_pyUSID(filename)
         return h5_file
+
+    elif extension in ['.ndata', '.h5']:
+        tags = open_file(filename)  
+        if 'file_type' not in tags:
+            tags['file_type'] = 'image'
+        h5_file = nion_to_pyUSID(tags)
+        
+        return h5_file
+
     else:
         print('file type not handled yet.')
         return
@@ -380,7 +396,7 @@ def h5_add_channel(h5_file,current_channel,title,filename=None):
         _ = usid.io.hdf_utils.write_main_dataset(current_channel, data_tags['rawData'], 'Raw_Data', 
                                                  'distance', 'nm',  data_tags['pos_dims'], data_tags['spec_dims'])
     
-    current_channel.create_dataset('title',title)
+    current_channel.create_dataset('title',data = title)
     current_channel.create_dataset('filename', data = basename)
     current_channel.create_dataset('data_type', data = data_tags['data_type'])
     for key in channel_tags:
@@ -1104,7 +1120,7 @@ def open_dm3_file(file_name,tags):
     
     si = dm3.DM3(file_name)
     data = si.data_cube
-    dm = si.getDictionary()
+    dm = getDictionary(si.getTags())
     
     dmtags = getTagsFromDM3(dm)
     tags.update(dmtags)
@@ -2205,9 +2221,28 @@ def open_h5_nion_meta(file_name):
 
 class nion_directory(object):
     
-    def __init__(self):
+    def __init__(self, dir_name = None):
         
-        self.get_dictionary()
+        
+        if dir_name == None:
+            if QT_available == False:
+                self.dir_name = '.'
+                self.get_dictionary(self.dir_name)
+            else:
+                self.get_dictionary()
+        elif os.path.isdir(dir_name):
+            self.get_dictionary(dir_name)
+            self.dir_name = dir_name
+
+        else:
+            self.dir_name = '.'
+            self.get_dictionary(self.dir_name)
+
+        if self.dir_list==None:
+            self.dir_list = ['None']
+        if len(self.dir_list) <1:
+            self.dir_list = ['None']
+        
         self.select_Nion_files = widgets.Dropdown(
                                         options=self.dir_list,
                                         value=self.dir_list[0],
@@ -2216,47 +2251,61 @@ class nion_directory(object):
                                         button_style=''
                                     )
         display(self.select_Nion_files)
+        self.set_options()
         self.select_Nion_files.observe(self.get_and_open, names='value')
     
-    def get_dictionary(self):
-        directory = str(QtWidgets.QFileDialog.getExistingDirectory( None, "Select Directory"))
+    def get_dictionary(self, directory = None):
+        if directory == None:
+            directory = str(QtWidgets.QFileDialog.getExistingDirectory( None, "Select Directory"))
         
-
+        self.dir_name = directory
         self.dir_dictionary ={}
         self.dir_list = []
         i = 0
-        for filename in os.listdir(directory):
-            if os.path.isfile(os.path.join(directory, filename)):
-                basename, extension = os.path.splitext(filename)
-                if extension == '.ndata':
-                    i+=1
-                    meta_tags = open_nion_meta(os.path.join(directory, filename))
+        self.dir_list =  ['.','..']+os.listdir(directory)
+            
+    def set_options(self):
+        self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.select_Nion_files.value))
+        self.dir_list = ['.','..']+os.listdir(self.dir_name)
+        self.hidden_list= self.dir_list.copy()
+        for i in range(len(self.dir_list)):
 
-                    self.dir_dictionary[str(i)+'-'+meta_tags['title']] = os.path.join(directory, filename)
-                    self.dir_list.append(str(i)+'-'+meta_tags['title'])
-                if extension == '.h5':
-                    i+=1
-                    meta_tags = open_h5_nion_meta(os.path.join(directory, filename))
+            name = self.dir_list[i]
+            if os.path.isfile(os.path.join(self.dir_name,name)):
+                basename, extension = os.path.splitext(name)
+                if extension in ['.h5', '.ndata']:
+                    tags = open_file(os.path.join(self.dir_name,name))
+                    name = '-'+tags['original_name']
+                    self.dir_list[i] = f"{i} {tags['original_name']}{extension}"
+                else:
+                    self.dir_list[i] = f'{i} {name}'
 
-                    self.dir_dictionary[str(i)+'-'+meta_tags['title']] = os.path.join(directory, filename)
-                    self.dir_list.append(str(i)+'-'+meta_tags['title'])
-        
-    
+        self.dir_label = os.path.split(self.dir_name)[-1]+':'
+        self.select_Nion_files.options = self.dir_list
+
+
     def get_and_open(self,b):
         global h5_file, current_channel
         #clear_output
         #print(select_Nion_files.value, dir_dictionary[select_Nion_files.value])
         
+        
+        if os.path.isdir(os.path.join(self.dir_name, self.select_Nion_files.value)):
+             self.set_options()
             
-        tags = open_file(self.dir_dictionary[self.select_Nion_files.value])
-        try:
-            self.h5_file.close()
-        except:
-            pass
-        self.h5_file = nion_to_pyUSID(tags)
-        print('loaded ', self.select_Nion_files.value, self.dir_dictionary[self.select_Nion_files.value])
-        self.current_channel = self.h5_file['Measurement_000/Channel_000']
+            
+        elif  os.path.isfile(os.path.join(self.dir_name, self.hidden_list[self.select_Nion_files.index])):
+            
+            file_name = os.path.join(self.dir_name, self.hidden_list[self.select_Nion_files.index])      
 
+            tags = open_file(file_name)
+            try:
+                self.h5_file.close()
+            except:
+                pass
+            self.h5_file = nion_to_pyUSID(tags)
+            self.current_channel = self.h5_file['Measurement_000/Channel_000']
+            print('loaded ', self.select_Nion_files.value, self.current_channel['title'][()] )
 
 def plot_tags(tags, which = 'All'):
 

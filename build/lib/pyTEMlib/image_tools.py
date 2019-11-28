@@ -16,8 +16,6 @@ import matplotlib.widgets as mwidgets
 from matplotlib.widgets import RectangleSelector
 
 
-
-from PyQt5 import QtGui, QtWidgets
 import pickle
 
 import json
@@ -341,7 +339,7 @@ def find_atoms(im, tags, verbose = False):
     plot_image = im[int(patch_size/2):,int(patch_size/2):]
 
     atoms = []
-    from skimage.feature import blob_log
+    
     for blob in blobs:
         y, x, r = blob
         if r > patch_size*rel_blob_size:

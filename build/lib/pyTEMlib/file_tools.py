@@ -24,7 +24,11 @@ import ipywidgets as ipyw
 import ipywidgets as widgets
 from IPython.display import display, clear_output
 import sys, os
-from PyQt5 import QtGui, QtWidgets
+try:
+    from PyQt5 import QtGui, QtWidgets
+    QT_available = True
+except:
+    QT_available = False
 # =============================================================
 #   Include Quantifit Libraries                                      #
 # =============================================================
@@ -37,7 +41,10 @@ from pyTEMlib.config_dir import config_path
 
 
 def savefile_dialog(ftype ="All files (*)"):
-    from PyQt5 import QtGui, QtWidgets
+    if QT_available == False:
+        print('No QT dialog')
+        return None
+    #from PyQt5 import QtGui, QtWidgets
     # Determine last path used
     try:
         fp = open(config_path+'\path.txt','r')
@@ -60,8 +67,7 @@ def savefile_dialog(ftype ="All files (*)"):
     return str(fname)
 
 def openfile_dialog(ftype ="All files (*)", multiple_files = False):
-    from PyQt5 import QtGui, QtWidgets
-
+    
     """
     Opens a File dialog which is used in open_file() function
     This functon uses QWidgets from PyQt5.
@@ -93,6 +99,9 @@ def openfile_dialog(ftype ="All files (*)", multiple_files = False):
     >>> print(filename)
 
     """
+    if QT_available == False:
+        print('No QT dialog')
+        return None
     
     
     # Determine last path used
@@ -380,7 +389,8 @@ def h5_add_channel(h5_file,current_channel,title,filename=None):
         _ = usid.io.hdf_utils.write_main_dataset(current_channel, data_tags['rawData'], 'Raw_Data', 
                                                  'distance', 'nm',  data_tags['pos_dims'], data_tags['spec_dims'])
     
-    current_channel.create_dataset('title', data = basename)
+    current_channel.create_dataset('title',title)
+    current_channel.create_dataset('filename', data = basename)
     current_channel.create_dataset('data_type', data = data_tags['data_type'])
     for key in channel_tags:
         current_channel.create_dataset(key, data=channel_tags[key])
@@ -1103,7 +1113,7 @@ def open_dm3_file(file_name,tags):
     
     si = dm3.DM3(file_name)
     data = si.data_cube
-    dm = si.getDictionary()
+    dm = getDictionary(si.getTags())
     
     dmtags = getTagsFromDM3(dm)
     tags.update(dmtags)
@@ -2205,6 +2215,10 @@ def open_h5_nion_meta(file_name):
 class nion_directory(object):
     
     def __init__(self):
+        if QT_available == False:
+            print('Opening of Nion files works only with QT installed')
+            return None
+    
         
         self.get_dictionary()
         self.select_Nion_files = widgets.Dropdown(

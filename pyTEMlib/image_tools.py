@@ -16,8 +16,6 @@ import matplotlib.widgets as mwidgets
 from matplotlib.widgets import RectangleSelector
 
 
-
-from PyQt5 import QtGui, QtWidgets
 import pickle
 
 import json
@@ -341,7 +339,7 @@ def find_atoms(im, tags, verbose = False):
     plot_image = im[int(patch_size/2):,int(patch_size/2):]
 
     atoms = []
-    from skimage.feature import blob_log
+    
     for blob in blobs:
         y, x, r = blob
         if r > patch_size*rel_blob_size:
@@ -2045,9 +2043,6 @@ def Fourier_transform(current_channel,data):# = image_channel
     FOV_x = sizeX*scaleX
     FOV_y = sizeY*scaleY
     
-    
-    
-        
     image = data- data.min()
     fft_mag = (np.abs((np.fft.fftshift(np.fft.fft2(image)))))
     
@@ -2064,7 +2059,7 @@ def Fourier_transform(current_channel,data):# = image_channel
 
 
     ## Field ofView (FOV) in recipical space
-    rec_extend = (-rec_FOV_x,rec_FOV_x,rec_FOV_y,-rec_FOV_y)
+    rec_extend = (-rec_FOV_x,rec_FOV_x-rec_scale_x,rec_FOV_y-rec_scale_y,-rec_FOV_y)
 
     out_tags['spatial_size_x']=sizeX
     out_tags['spatial_size_y']=sizeY
