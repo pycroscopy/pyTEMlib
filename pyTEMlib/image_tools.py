@@ -918,8 +918,8 @@ def CropImage(drift, image_shape, verbose = False):
     """
 
     # Round up or down as appropriate
-    ixmin = np.floor(np.min(np.array(drift)[:,0]))
-    ixmax = np.ceil(np.max(np.array(drift)[:,0]))
+    ixmin = np.floor(np.min(np.array(drift)[:,1]))
+    ixmax = np.ceil(np.max(np.array(drift)[:,1]))
     iymin = np.floor(np.min(np.array(drift)[:,0])) 
     iymax = np.ceil(np.max(np.array(drift)[:,0]))
 
@@ -954,7 +954,97 @@ def CropImage(drift, image_shape, verbose = False):
         print('Which results in a cropped image',ixrange,' pixels in the x direction and',iyrange, 'pixel in the y-direction' )
 
     return [xpmin,xpmax,ypmin,ypmax]        
+def Rigid_Registration(cube, verbose = False):
+    relative_drift = dft_relative_RigReg(cube, verbose)
+    
+    RigReg, drift = Rig_Reg_Drift(cube, relative_drift)
+    return RigReg, drift
+def dft_relative_RigReg(cube, verbose = False):
+    """
+    Implementation of sub-pixel rigid registration
+    
+    usage:
+    import image_tools as it
+    it.dftRigReg(cube, verbose = False)
 
+    input:
+        stack of images as 3dimensional numpy array with x,y as image axes.
+
+    output:
+        aligned stack
+        drift
+
+    For copyright information use:
+    from dftregistration import *
+    help(dftregistration1)
+    """
+
+    #help(dftregistration1)
+    if len(cube.shape) !=3:
+        print('Registration requires at least 2 images')
+        return
+
+    if cube.shape[2] <2:
+        print('Registration requires at least 2 images')
+        return
+    nimages= cube.shape[2]
+    RigReg = np.empty_like(cube)
+
+    # select central image as fixed image 
+    icent = int(nimages/2)
+    fixed = cube[:,:,0]
+    fft_fixed = np.fft.fft2(fixed)
+    # determine maximum shifts 
+    xshift = [0]
+    yshift = [0]
+    drift = [[0,0]]
+
+    usfac = 1000
+    for i in range(1,nimages) :
+        moving = cube[:,:,i]
+        fft_moving = np.fft.fft2(moving)
+        output, Greg = dftregistration1(fft_fixed,fft_moving,usfac)
+        
+        xshift.append(output[3])
+        yshift.append(output[2])
+        drift.append([output[3],output[2]])
+        fft_fixed = fft_moving
+        print('Image number', i,' xshift = ',xshift[-1],' y-shift =',yshift[-1])
+
+    return drift
+
+def Rig_Reg_Drift(stack, rel_drift):
+    """
+    Uses relative drift to shift images ontop of each other
+    
+    """
+    RigReg = stack.copy()
+    ## absolute drift
+    drift = np.array(rel_drift).copy()
+
+    drift[0] = [0,0]
+    for i in range(1,drift.shape[0]):
+        drift[i] = drift[i-1]+rel_drift[i]
+    center_drift = drift[int(drift.shape[0]/2)]
+    drift = drift - center_drift
+
+    ## Shift images
+    for i  in range(stack.shape[2]):
+        ## Now we shift
+        RigReg[:,:,i] = ndimage.shift(stack[:,:,i], [drift[i,1],drift[i,0]],  order=3)
+    return RigReg, drift
+
+
+
+def crop_image_stack(RigReg, drift):
+    ## Crop images
+    xpmin = int(-np.floor(np.min(np.array(drift)[:,1])))
+    xpmax = int(RigReg.shape[1]-np.ceil(np.max(np.array(drift)[:,1])))
+    ypmin = int(-np.floor(np.min(np.array(drift)[:,0])))
+    ypmax = int(RigReg.shape[0]-np.ceil(np.max(np.array(drift)[:,1])))
+   
+    return RigReg[xpmin:xpmax,ypmin:ypmax,:]
+    
 def RigReg(cube, verbose = False):
     """**********************************************
     * RigReg rigid registration

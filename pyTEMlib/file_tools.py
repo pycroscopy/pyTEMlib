@@ -278,7 +278,7 @@ def h5_open_file(filename = None):
         return h5_file
 
     elif extension in ['.ndata', '.h5']:
-        tags = open_file(filename)  
+        tags = open_file(file_name)  
         if 'file_type' not in tags:
             tags['file_type'] = 'image'
         h5_file = nion_to_pyUSID(tags)
@@ -1029,8 +1029,9 @@ def get_nion_tags(dic,data):
                 tags['SI']['data'] = data
                 tags['cf.ndaube'] = data
         else:    
-            if tags['axis']['0']['units'] == tags['axis']['1']['units']:
-                tags['data_type'] = 'image'
+            if '1' in  tags['axis']:
+                if tags['axis']['0']['units'] == tags['axis']['1']['units']:
+                    tags['data_type'] = 'image'
         tags['pixel_size'] = tags['axis']['0']['scale']
         tags['FOV'] = tags['shape'][0] * tags['pixel_size']
     if 'metadata' in  dic:
@@ -2305,7 +2306,7 @@ class nion_directory(object):
                 pass
             self.h5_file = nion_to_pyUSID(tags)
             self.current_channel = self.h5_file['Measurement_000/Channel_000']
-            print('loaded ', self.select_Nion_files.value, self.current_channel['title'][()] )
+            print('loaded ', self.select_Nion_files.value, ' - ', self.current_channel['title'][()],self.hidden_list[self.select_Nion_files.index] )
 
 def plot_tags(tags, which = 'All'):
 

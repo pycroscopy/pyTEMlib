@@ -18,7 +18,7 @@ with open(os.path.join(here, 'pyTEMlib/__version__.py')) as f:
     
 setuptools.setup(
     name="pyTEMlib",
-    version="0.11.2019.5",
+    version="0.11.2019.7",
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
     description="pyTEM: TEM Data Quantification library through a Model Based Approach",
