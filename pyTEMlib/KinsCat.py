@@ -854,6 +854,22 @@ def zone_mistilt (zone, angles):
 # We determine spherical coordinates to do that
 
 def get_rotation_matrix(zone, verbose = False):
+    """
+     Calculates the rotation matrix to rotate the zone axis parallel to the cartasian z-axis.
+     
+     We use spherical coordinates to first rotate around the z-axis and then around the y-axis.
+     This makes it easier to apply additional tilts, than to use the cross product to determine a single rotation axis (Rodrigues Formula)
+
+
+     INPUT:
+      - zone axis has to be in cartesian coordinates also. 
+     The dot product of zone axis  and unit cell will accomplish that.
+
+    Output: 
+     - rotation_matrix
+     - theta (degrees)
+     - phi (degrees)
+    """
     #spherical coordinates of zone
     r = np.sqrt((zone*zone).sum())
     theta = np.arccos(zone[2]/r)
@@ -876,7 +892,7 @@ def get_rotation_matrix(zone, verbose = False):
     c, s = np.cos(theta), np.sin(theta)
     roty = np.array([[c, 0 ,s],[0,1,0],[-s,0,c]])
     
-    # the rotation now makes z-axis coincide with plane normal
+    # the rotation now makes zone-axis coincide with plane normal
     return np.dot(rotz,roty), np.degrees(theta), np.degrees(phi)
 
 def check_sanity(tags):
