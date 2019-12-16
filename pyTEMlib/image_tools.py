@@ -29,6 +29,7 @@ from itertools import product
 
 from scipy import fftpack
 from scipy import signal
+from skimage.feature import  blob_log #blob_dog, blob_doh
 from scipy.interpolate import interp1d, interp2d
 from scipy.optimize import leastsq
 
@@ -304,7 +305,7 @@ def Fourier_Transform(current_channel):
 
 
 def find_atoms(im, tags, verbose = False):
-    from skimage.feature import  blob_log #blob_dog, blob_doh
+    
     if 'rel_blob_size' not in tags:
         tags['rel_blob_size'] = .4 # between 0 and 1 nromally around 0.5
         tags['source_size'] = 0.06 #in nm gives the size of the atoms or resolution
@@ -348,7 +349,7 @@ def find_atoms(im, tags, verbose = False):
     rim_atoms = []
 
     for i in range(len(atoms)):
-        if (np.array(atoms[i][0:2])<rim_width).any() or (np.array(atoms[i]) > im.shape[0]-rim_width-5).any():
+        if (np.array(atoms[i][0:2])<rim_width).any() or (np.array(atoms[i,0]) > im.shape[0]-rim_width) or (np.array(atoms[i,1]) > im.shape[1]-rim_width):
             rim_atoms.append(i)
     rim_atoms=np.unique(rim_atoms)
     mid_atoms_list = np.setdiff1d(np.arange(len(atoms)),rim_atoms)

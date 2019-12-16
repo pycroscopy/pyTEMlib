@@ -278,7 +278,7 @@ def h5_open_file(filename = None):
         return h5_file
 
     elif extension in ['.ndata', '.h5']:
-        tags = open_file(file_name)  
+        tags = open_file(filename)  
         if 'file_type' not in tags:
             tags['file_type'] = 'image'
         h5_file = nion_to_pyUSID(tags)
