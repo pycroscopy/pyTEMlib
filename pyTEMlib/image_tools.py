@@ -346,12 +346,12 @@ def find_atoms(im, tags, verbose = False):
         if r > patch_size*rel_blob_size:
             atoms.append([x+patch_size/2,y+patch_size/2,r])
 
-    
+    atoms = np.array(atoms)
     ### Determine Rim atoms
     rim_left = np.where(atoms[:,0]< rim_width)[0].flatten()
-    rim_right = np.where(atoms[:,0]> data.shape[0]-rim_width)[0].flatten()
+    rim_right = np.where(atoms[:,0]> im.shape[0]-rim_width)[0].flatten()
     rim_up = np.where(atoms[:,1]< rim_width)[0].flatten()
-    rim_down = np.where(atoms[:,1]> data.shape[1]-rim_width)[0].flatten()
+    rim_down = np.where(atoms[:,1]> im.shape[1]-rim_width)[0].flatten()
 
     rim_indices = np.concatenate((rim_left,rim_right,rim_up,rim_down))
 
