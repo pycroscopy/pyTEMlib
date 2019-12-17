@@ -167,7 +167,7 @@ def save_file(tags):
     file_name = savefile_dialog('QF files ( *.qf3);;All files (*)')
     if not (file_name[-4:]  == '.qf3'):
         file_name = file_name + '.qf3'
-    print(file_name)
+    #print(file_name)
     f = open(file_name, 'wb')
     pickle.dump(tags, f)
     f.close()
@@ -1104,7 +1104,7 @@ def open_nion_file(file_name,tags):
         tags['cube'] = tags['data']
         tags['data'] = tags['cube'][0,:,:]
         tags['shape'] = tags['data'].shape
-        print(tags['shape'] )
+        #print(tags['shape'] )
     
     json_pos = local_files[dir_files[b"metadata.json"][1]][1]
     json_len = local_files[dir_files[b"metadata.json"][1]][2]
@@ -2041,7 +2041,7 @@ def sort_nion_tags(tags, data):
         if data_tags['data_type']== 'unknown':
             if 'metadata' in tags:
                 if 'hardware_source' in tags['metadata']:
-                    print('here')
+                    #print('here')
                     for key in tags['metadata']['hardware_source']:
                         if 'Ronchi' in key:
                             tags['data_type'] = 'ronchigram'
@@ -2115,7 +2115,7 @@ def nion_to_pyUSID(tags):
     
     tran = usid.NumpyTranslator()
     h5_file_name = os.path.join(path,tags['original_metadata']['title']+'.hf5')
-    print(h5_file_name)
+    #print(h5_file_name)
     basename, extension = os.path.splitext(tags['original_metadata']['title'])
     time_last_modified = os.path.getmtime(tags['filename'])
     
@@ -2306,7 +2306,7 @@ class nion_directory(object):
                 pass
             self.h5_file = nion_to_pyUSID(tags)
             self.current_channel = self.h5_file['Measurement_000/Channel_000']
-            print('loaded ', self.select_Nion_files.value, ' - ', self.current_channel['title'][()],self.hidden_list[self.select_Nion_files.index] )
+            print('loaded: ', self.current_channel['title'][()],' - ',self.hidden_list[self.select_Nion_files.index] )
 
 def plot_tags(tags, which = 'All'):
 
