@@ -1332,6 +1332,8 @@ def get_main_tags(si):
     else:        
         if number_of_dimensions== 2:
             data_tags['data_type'] = 'image_stack'
+            data =  np.swapaxes(data, 0, 1)
+            channel_tags['image_stack'] =data
             data = data.sum(axis=2)
             pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
                     usid.write_utils.Dimension('Y', 'nm', data.shape[1])]
@@ -1339,11 +1341,11 @@ def get_main_tags(si):
 
 
             rawData = np.reshape(data,(data.shape[0]*data.shape[1],1),order='F' )
-            channel_tags['image_stack'] = si.data_cube
+            
             
         elif number_of_dimensions == 1: #starts at 0!!!!
             data_tags['data_type'] = 'image'
-
+            data =  np.swapaxes(data, 0, 1)
             rawData = np.reshape(data,(data.shape[0]*data.shape[1],1),order='F' )
             pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
                     usid.write_utils.Dimension('Y', 'nm', data.shape[1])]
