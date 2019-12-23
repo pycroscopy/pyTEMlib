@@ -2022,7 +2022,8 @@ def sort_nion_tags(tags, data):
 
                 if 'time_scale' in channel_tags:
                     data_tags['data_type'] = 'image_stack'
-                    channel_tags['image_stack'] = np.swapaxes(data,0,2)
+                    data = np.swapaxes(data,0,2)
+                    channel_tags['image_stack'] = np.swapaxes(data,0,1)
                     data = data.sum(axis=0)
                     pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),
                             usid.write_utils.Dimension('Y', 'nm', data.shape[1])]
@@ -2033,6 +2034,7 @@ def sort_nion_tags(tags, data):
 
                 else:
                     data_tags['data_type'] = 'image'
+                    data = np.swapaxis(data,0,1)
 
                     rawData = np.reshape(data,(data.shape[0]*data.shape[1],1),order='F' )
                     pos_dims = [usid.write_utils.Dimension('X', 'nm', data.shape[0]),

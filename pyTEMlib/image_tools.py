@@ -78,6 +78,74 @@ def get_waveLength(E0):
     eV = const.e * E0 
     return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
     
+class Image_with_Line_Profile:
+    def __init__(self, data, extent, title = ''):
+        fig,ax = plt.subplots(1,1)
+        self.figure = fig
+        self.title = title
+        self.line_plot = False
+        self.ax = ax
+        self.data = data
+        self.extent = extent
+        self.ax.imshow(data, extent = extent)
+        self.ax.set_title(title)
+        self.line,  = self.ax.plot([0], [0], color = 'orange')  # empty line
+        self.end_x = self.line.get_xdata()
+        self.end_y = self.line.get_ydata()
+        self.cid = self.line.figure.canvas.mpl_connect('button_press_event', self)
+
+    def __call__(self, event):
+        if event.inaxes!=self.line.axes: 
+            return
+        self.start_x = self.end_x 
+        self.start_y = self.end_y
+        
+        self.line.set_data([self.start_x, event.xdata], [self.start_y, event.ydata])
+        self.line.figure.canvas.draw()
+        
+        self.end_x = event.xdata
+        self.end_y = event.ydata
+        
+        self.update()
+        
+    def update(self):
+        
+        if not self.line_plot:
+            self.line_plot = True
+            self.figure.clear()
+            self.ax = self.figure.subplots(2,1)
+            self.ax[0].imshow(self.data, extent = self.extent)
+            self.ax[0].set_title(self.title)
+        
+            self.line,  = self.ax[0].plot([0], [0], color = 'orange')  # empty line
+            self.line_plot, = self.ax[1].plot([],[], color = 'orange')
+            self.ax[1].set_xlabel('distance [nm]')
+        
+        x0 = self.start_x
+        x1 = self.end_x
+        y0 = self.start_y
+        y1 = self.end_y
+        length_plot = np.sqrt((x1-x0)**2+(y1-y0)**2)
+       
+        num = length_plot*(self.data.shape[0]/self.extent[1])
+        x = np.linspace(x0, x1, num)*(self.data.shape[0]/self.extent[1])
+        y = np.linspace(y0, y1, num)*(self.data.shape[0]/self.extent[1])
+        
+        # Extract the values along the line, using cubic interpolation
+        zi2 = ndimage.map_coordinates(self.data.T, np.vstack((x,y)))
+        
+        x_axis = np.linspace(0,length_plot,len(zi2))
+        
+        self.x = x_axis
+        self.z = zi2
+        
+        self.line_plot.set_xdata(x_axis)
+        self.line_plot.set_ydata(zi2)
+        self.ax[1].set_xlim(0,x_axis.max())
+        self.ax[1].set_ylim(zi2.min(),zi2.max())
+        self.ax[1].draw()
+        
+
 
 def plot_image2(image_tags,fig, axes):
     if 'color_map' not in image_tags: 
@@ -337,8 +405,7 @@ def find_atoms(im, tags, verbose = False):
     # Find atoms    
     thresh = reduced_image.std()*threshold
     blobs = blob_log(np.array(reduced_image), max_sigma=source_size/pixel_size, threshold=thresh)
-    plot_image = im[int(patch_size/2):,int(patch_size/2):]
-
+    
     atoms = []
     
     for blob in blobs:
