@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="sidpy- 1st try">
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/dm3_reader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/nion_reader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/nsi_reader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/sidpy_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/version.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/EELS_tools.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/KinsCat.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/__version__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/chksanity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/config_dir.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/data/TEMlibrc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/data/edges_db.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/data/edges_db.pkl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/data/fparam.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/data/microscopes.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/data/microscopes.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/data/path.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/defaults_parser.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/dftregistration.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/dftregistration2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/dm3lib_v1_0b.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/edges_db.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/file_tools.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/image_tools.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/image_tools1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/structure_tools.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/pyTEMlib-0.11.2019.4-py3-none-any.whl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/pyTEMlib-0.11.2019.4.tar.gz" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/pyTEMlib-0.11.2019.5-py3-none-any.whl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/pyTEMlib-0.11.2019.5.tar.gz" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/Read_FFAST.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/chksanity.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/config_dir.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/config_dir.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/defaults_parser.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/dftregistration.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/dftregistration2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/dm3lib_v1_0b.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/file_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/file_tools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/image_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/image_tools.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <favorite-branches>
+      <branch-storage>
+        <map>
+          <entry type="LOCAL">
+            <value>
+              <list>
+                <branch-info repo="$PROJECT_DIR$" source="gerd_dev2" />
+              </list>
+            </value>
+          </entry>
+        </map>
+      </branch-storage>
+    </favorite-branches>
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="gerd_dev2" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="UPDATE_TYPE" value="REBASE" />
+  </component>
+  <component name="ProjectId" id="1jTCw4id0oLsWjpoAwqIpTsg1YO" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showMembers" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/pyTEMlib" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\gduscher\Documents\GitHub\pyTEMlib\pyTEMlib" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\Users\gduscher\Anaconda3\python.exe" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="" />
+      <created>1603818931017</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1603818931017</updated>
+    </task>
+    <task id="LOCAL-00001" summary="sidpy- 1st try">
+      <created>1603819251874</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1603819251874</updated>
+    </task>
+    <task id="LOCAL-00002" summary="sidpy- 1st try">
+      <created>1603820001279</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1603820001279</updated>
+    </task>
+    <task id="LOCAL-00003" summary="sidpy- 1st try">
+      <created>1603820486568</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1603820486568</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="sidpy- 1st try" />
+    <option name="LAST_COMMIT_MESSAGE" value="sidpy- 1st try" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="176" y="115" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1603822434047">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="176" y="115" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1440.920@0.0.1440.920" timestamp="1603822434047" />
+    <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1603829683416">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603829683416" />
+    <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1440.920@0.0.1440.920" timestamp="1603823834351" />
+    <state x="138" y="75" key="DiffContextDialog" timestamp="1603824011156">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="138" y="75" key="DiffContextDialog/0.0.1440.920@0.0.1440.920" timestamp="1603824011156" />
+    <state x="544" y="362" key="Github.CreateGistDialog" timestamp="1603821836752">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="544" y="362" key="Github.CreateGistDialog/0.0.1440.920@0.0.1440.920" timestamp="1603821836752" />
+    <state x="359" y="221" key="MultipleFileMergeDialog" timestamp="1603818988413">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="359" y="221" key="MultipleFileMergeDialog/0.0.1440.920@0.0.1440.920" timestamp="1603818988413" />
+    <state x="510" y="180" key="RollbackChangesDialog" timestamp="1603822455792">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="510" y="180" key="RollbackChangesDialog/0.0.1440.920@0.0.1440.920" timestamp="1603822455792" />
+    <state x="222" y="105" key="SettingsEditor" timestamp="1603820372927">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1603820747169">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1603820747169" />
+    <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1440.920@0.0.1440.920" timestamp="1603822466317" />
+    <state x="499" y="173" key="git4idea.branch.GitSmartOperationDialog" timestamp="1603824037840">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="499" y="173" key="git4idea.branch.GitSmartOperationDialog/0.0.1440.920@0.0.1440.920" timestamp="1603824037840" />
+    <state x="383" y="196" width="672" height="678" key="search.everywhere.popup" timestamp="1603820277978">
+      <screen x="0" y="0" width="1440" height="920" />
+    </state>
+    <state x="383" y="196" width="672" height="678" key="search.everywhere.popup/0.0.1440.920@0.0.1440.920" timestamp="1603820277978" />
+  </component>
+</project>
