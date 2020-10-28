@@ -398,6 +398,8 @@ class ProgressDialog(QtWidgets.QDialog):
     def set_value(self, count):
         self.progress.setValue(count)
 
+    def processEvents(self):
+        QtCore.Qt.QApplication.processEvents()
 
 ###############################################
 # Support old pyTEM file format

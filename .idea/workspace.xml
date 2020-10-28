@@ -23,14 +23,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="cleaned KinsCat.py">
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/atom_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/graph_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/probe_tools.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/KinsCat.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/KinsCat.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/file_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/file_tools.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pyTEMlib/image_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/image_tools.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <favorite-branches>
@@ -142,7 +152,14 @@
       <option name="project" value="LOCAL" />
       <updated>1603849088625</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="cleaned KinsCat.py">
+      <created>1603850036102</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1603850036102</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -193,10 +210,10 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1603849091919">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1603850043467">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1603849091919" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1603850043467" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
