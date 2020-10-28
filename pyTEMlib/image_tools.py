@@ -41,7 +41,12 @@ import scipy.constants as const
 import scipy.spatial as sp
 from scipy.spatial import Voronoi, KDTree, cKDTree
 
+import skimage
+import skimage.registration as registration
+from skimage.feature import register_translation  # blob_dog, blob_doh
 from skimage.feature import peak_local_max
+from skimage.measure import points_in_poly
+
 # our blob detectors from the scipy image package
 from skimage.feature import blob_log  # blob_dog, blob_doh
 
@@ -51,7 +56,7 @@ from sklearn.cluster import KMeans
 
 _SimpleITK_present = True
 try:
-    import SimpleITK as sitk
+    import SimpleITK as sITK
 except ModuleNotFoundError:
     _SimpleITK_present = False
 
@@ -291,8 +296,8 @@ def rotational_symmetry_diffractogram(spots):
 
 def complete_registration(main_dataset):
     rigid_registered_dataset = rigid_registration(main_dataset)
-
-    registration_channel = log_results(current_channel, rig_reg_dataset)
+    current_channel = main_dataset.h5_dataset.parent
+    registration_channel = log_results(current_channel, rigid_registered_dataset)
 
     print('Non-Rigid_Registration')
 
@@ -358,7 +363,7 @@ def demon_registration(dataset, verbose=False):
 
         if QT_available:
             progress.setValue(i)
-            Qt.QApplication.processEvents()
+            QtGui.Qt.QApplication.processEvents()
         else:
             if done < int((i + 1) / nimages * 50):
                 done = int((i + 1) / nimages * 50)
@@ -367,7 +372,7 @@ def demon_registration(dataset, verbose=False):
                 sys.stdout.write("[%-50s] %d%%" % ('*' * done, 2 * done))
                 sys.stdout.flush()
 
-        moving = sITK.GetImageFromArray(cube[i])
+        moving = sITK.GetImageFromArray(dataset[i])
         moving_f = sITK.DiscreteGaussian(moving, 2.0)
         displacement_field = demons.Execute(fixed, moving_f)
         out_tx = sITK.DisplacementFieldTransform(displacement_field)
@@ -429,7 +434,7 @@ def rigid_registration(dataset):
     for i in range(nimages):
         if QT_available:
             progress.setValue(i)
-            Qt.QApplication.processEvents()
+            QtGui.Qt.QApplication.processEvents()
         else:
             if done < int((i + 1) / nimages * 50):
                 done = int((i + 1) / nimages * 50)
@@ -940,8 +945,7 @@ def plot_image(tags):
     else:
         pixel_size = tags['pixel_size']
         units = 'nm'
-    
-        
+
     image = tags['data'].T
     FOV = pixel_size*image.shape[0]
     plt.imshow(image, cmap='gray', extent=(0, FOV, 0, FOV))
@@ -951,88 +955,79 @@ def plot_image(tags):
     plt.show()
 
 
-
-def makechi1( phi, theta,wl,ab, C1include)  :
+# ## Aberration Function for Probe calculations
+def make_chi1(phi, theta, wl, ab, c1_include):
     """
     ###
     # Aberration function chi without defocus
     ###
     """
-    t0 = np.power(theta,1)/1*(  float(ab['C01a']) * np.cos(1*phi)
-                                + float(ab['C01b']) * np.sin(1*phi))
+    t0 = np.power(theta, 1) / 1 * (float(ab['C01a']) * np.cos(1 * phi) + float(ab['C01b']) * np.sin(1 * phi))
 
-    if C1include == 1: #First and second terms
-        t1 = np.power(theta,2)/2*(  ab['C10']
-                                    + ab['C12a'] *np.cos(2*phi) 
-                                    + ab['C12b'] *np.sin(2*phi))
-    elif C1include == 2:#Second terms only
-        t1 = np.power(theta,2)/2*(  ab['C12a'] *np.cos(2*phi) 
-                                    + ab['C12b'] *np.sin(2*phi))
-    else: # none for zero
-        t1 = t0*0.
-    t2 = np.power(theta,3)/3*(  ab['C21a'] * np.cos(1*phi)
-                                + ab['C21b'] * np.sin(1*phi)
-                                + ab['C23a'] * np.cos(3*phi)
-                                + ab['C23b'] * np.sin(3*phi) )
+    if c1_include == 1:  # First and second terms
+        t1 = np.power(theta, 2) / 2 * (ab['C10'] + ab['C12a'] * np.cos(2 * phi) + ab['C12b'] * np.sin(2 * phi))
+    elif c1_include == 2:  # Second terms only
+        t1 = np.power(theta, 2) / 2 * (ab['C12a'] * np.cos(2 * phi) + ab['C12b'] * np.sin(2 * phi))
+    else:  # none for zero
+        t1 = t0 * 0.
+    t2 = np.power(theta, 3) / 3 * (ab['C21a'] * np.cos(1 * phi) + ab['C21b'] * np.sin(1 * phi)
+                                   + ab['C23a'] * np.cos(3 * phi) + ab['C23b'] * np.sin(3 * phi))
 
-    t3 = np.power(theta,4)/4*(  ab['C30']
-                                + ab['C32a'] * np.cos(2*(phi))
-                                + ab['C32b'] * np.sin(2*(phi))
-                                + ab['C34a'] * np.cos(4*(phi))
-                                + ab['C34b'] * np.sin(4*(phi)) )
+    t3 = np.power(theta, 4) / 4 * (ab['C30']
+                                   + ab['C32a'] * np.cos(2 * phi)
+                                   + ab['C32b'] * np.sin(2 * phi)
+                                   + ab['C34a'] * np.cos(4 * phi)
+                                   + ab['C34b'] * np.sin(4 * phi))
 
-    t4 = np.power(theta,5)/5*(  ab['C41a'] * np.cos(1*phi)
-                                + ab['C41b'] * np.sin(1*phi)
-                                + ab['C43a'] * np.cos(3*phi)
-                                + ab['C43b'] * np.sin(3*phi)
-                                + ab['C45a'] * np.cos(5*phi)
-                                + ab['C45b'] * np.sin(5*phi) )
+    t4 = np.power(theta, 5) / 5 * (ab['C41a'] * np.cos(1 * phi)
+                                   + ab['C41b'] * np.sin(1 * phi)
+                                   + ab['C43a'] * np.cos(3 * phi)
+                                   + ab['C43b'] * np.sin(3 * phi)
+                                   + ab['C45a'] * np.cos(5 * phi)
+                                   + ab['C45b'] * np.sin(5 * phi))
 
-    t5 = np.power(theta,6)/6*(  ab['C50']
-                                + ab['C52a'] * np.cos(2*phi)
-                                + ab['C52b'] * np.sin(2*phi)
-                                + ab['C54a'] * np.cos(4*phi)
-                                + ab['C54b'] * np.sin(4*phi)
-                                + ab['C56a'] * np.cos(6*phi)
-                                + ab['C56b'] * np.sin(6*phi) )
+    t5 = np.power(theta, 6) / 6 * (ab['C50']
+                                   + ab['C52a'] * np.cos(2 * phi)
+                                   + ab['C52b'] * np.sin(2 * phi)
+                                   + ab['C54a'] * np.cos(4 * phi)
+                                   + ab['C54b'] * np.sin(4 * phi)
+                                   + ab['C56a'] * np.cos(6 * phi)
+                                   + ab['C56b'] * np.sin(6 * phi))
 
-
-
-    chi = t0 + t1+t2+t3+t4+t5
+    chi = t0 + t1 + t2 + t3 + t4 + t5
     if 'C70' in ab:
-        chi += np.power(theta,8)/8*(   ab['C70'])
-    return chi*2*np.pi/wl #np.power(theta,6)/6*(  ab['C50'] )
+        chi += np.power(theta, 8) / 8 * (ab['C70'])
+    return chi * 2 * np.pi / wl  # np.power(theta,6)/6*(  ab['C50'] )
 
 
-
-def Probe2( ab, sizeX, sizeY, tags, verbose= False):     
+def probe2(ab, size_x, size_y, tags, verbose=False):
     """
     **********************************************
-    * This function creates a incident STEM probe 
+    * This function creates a incident STEM probe
     * at position (0,0)
     * with parameters given in ab dictionary
     *
-    * The following Abberation functions are being used:
-    * 1) ddf = Cc*dE/E  but not  + Cc2*(dE/E)^2,    
-    *    Cc, Cc2 = chrom. Abber. (1st, 2nd order) [1]
+    * The following Aberration functions are being used:
+    * 1) ddf = Cc*de/E  but not  + Cc2*(de/E)^2,
+    *    Cc, Cc2 = chrom. Aber. (1st, 2nd order) [1]
     * 2) chi(qx,qy) = (2*pi/lambda)*{0.5*C1*(qx^2+qy^2)+
     *                 0.5*C12a*(qx^2-qy^2)+
     *                 C12b*qx*qy+
     *                 C21a/3*qx*(qx^2+qy^2)+
-    *                 ... 
+    *                 ...
     *                 +0.5*C3*(qx^2+qy^2)^2
     *                 +0.125*C5*(qx^2+qy^2)^3
     *                 ... (need to finish)
     *
     *
-    *    qx = acos(kx/K), qy = acos(ky/K) 
+    *    qx = acos(kx/K), qy = acos(ky/K)
     *
     * References:
-    * [1] J. Zach, M. Haider, 
-    *    "Correction of spherical and Chromatic Abberation 
+    * [1] J. Zach, M. Haider,
+    *    "Correction of spherical and Chromatic Aberration
     *     in a low Voltage SEM", Optik 98 (3), 112-118 (1995)
     * [2] O.L. Krivanek, N. Delby, A.R. Lupini,
-    *    "Towards sub-Angstroem Electron Beams", 
+    *    "Towards sub-Angstroem Electron Beams",
     *    Ultramicroscopy 78, 1-11 (1999)
     *
     *********************************************'''
@@ -1040,23 +1035,22 @@ def Probe2( ab, sizeX, sizeY, tags, verbose= False):
     # Internally reciprocal lattice vectors in 1/nm or rad.
     # All calculations of chi in angles.
     # All aberration coefficients in nm
-    """  
+    """
 
-    if 'FOV' not in ab:
-        if 'FOV' not in tags:
-            print(' need field of view in tags ' )
+    if 'fov' not in ab:
+        if 'fov' not in tags:
+            print(' need field of view in tags ')
         else:
-            ab['FOV'] = tags['FOV']
+            ab['fov'] = tags['fov']
 
     if 'convAngle' not in ab:
-        ab['convAngle'] = 30 # in mrad
+        ab['convAngle'] = 30  # in mrad
 
-    ApAngle=ab['convAngle']/1000.0 # in rad
+    ap_angle = ab['convAngle'] / 1000.0  # in rad
 
-    E0= ab['EHT'] = float( ab['EHT'])  # acceleration voltage in eV
+    e0 = ab['EHT'] = float(ab['EHT'])  # acceleration voltage in ev
 
-    defocus = ab['C10'] 
-
+    # defocus = ab['C10']
 
     if 'C01a' not in ab:
         ab['C01a'] = 0.
@@ -1069,197 +1063,199 @@ def Probe2( ab, sizeX, sizeY, tags, verbose= False):
         ab['C70'] = 0.
 
     if 'Cc' not in ab:
-        ab['Cc'] = 1.3e6            #// Cc in  nm
-
+        ab['Cc'] = 1.3e6  # Cc in  nm
 
     def get_wl():
-        h=6.626*10**-34
-        m0=9.109*10**-31
-        eV=1.602*10**-19*E0
-        C=2.998*10**8
-        return h/np.sqrt(2*m0*eV*(1+eV/(2*m0*C**2)))*10**9
+        h = 6.626 * 10 ** -34
+        m0 = 9.109 * 10 ** -31
+        ev = 1.602 * 10 ** -19 * e0
+        c = 2.998 * 10 ** 8
+        return h / np.sqrt(2 * m0 * ev * (1 + ev / (2 * m0 * c ** 2))) * 10 ** 9
 
-    wl=get_wl()
+    wl = get_wl()
     if verbose:
-        print('Acceleration voltage {0:}kV => wavelength {1:.2f}pm'.format(int(E0/1000),wl*1000) )
+        print('Acceleration voltage {0:}kV => wavelength {1:.2f}pm'.format(int(e0 / 1000), wl * 1000))
     ab['wavelength'] = wl
 
-
-    ## Reciprocal plane in 1/nm
-    dk = 1/ab['FOV']
-    kx = np.array(dk*(-sizeX/2.+ np.arange(sizeX)))
-    ky = np.array(dk*(-sizeY/2.+ np.arange(sizeY)))
-    Txv, Tyv = np.meshgrid(kx, ky)
+    # Reciprocal plane in 1/nm
+    dk = 1 / ab['fov']
+    kx = np.array(dk * (-size_x / 2. + np.arange(size_x)))
+    ky = np.array(dk * (-size_y / 2. + np.arange(size_y)))
+    t_xv, t_yv = np.meshgrid(kx, ky)
 
     # define reciprocal plane in angles
-    phi =  np.arctan2(Txv, Tyv)
-    theta = np.arctan2(np.sqrt(Txv**2 + Tyv**2),1/wl)
+    phi = np.arctan2(t_xv, t_yv)
+    theta = np.arctan2(np.sqrt(t_xv ** 2 + t_yv ** 2), 1 / wl)
 
-    ## calculate chi but omit defocus
-    chi = np.fft.ifftshift (makechi1(phi,theta,wl,ab, 2))
-    probe = np.zeros((sizeX, sizeY))
+    # calculate chi but omit defocus
+    chi = np.fft.ifftshift(make_chi1(phi, theta, wl, ab, 2))
+    probe = np.zeros((size_x, size_y))
 
+    # Aperture function
+    mask = theta >= ap_angle
 
-    ## Aperture function 
-    mask = theta >= ApAngle
-
-    ## Calculate probe with Cc
+    # Calculate probe with Cc
 
     for i in range(len(ab['zeroLoss'])):
-        df = ab['C10'] + ab['Cc']* ab['zeroEnergy'][i]/E0
+        df = ab['C10'] + ab['Cc'] * ab['zeroEnergy'][i] / e0
         if verbose:
-            print('defocus due to Cc: {0:.2f} nm with weight {1:.2f}'.format(df,ab['zeroLoss'][i]))
+            print('defocus due to Cc: {0:.2f} nm with weight {1:.2f}'.format(df, ab['zeroLoss'][i]))
         # Add defocus
-        chi2 = chi + np.power(theta,2)/2*(df)
-        #Calculate exponent of - i * chi
-        chiT = np.fft.ifftshift (np.vectorize(complex)(np.cos(chi2), -np.sin(chi2)) )
-        ## Aply aperture function
-        chiT[mask] = 0.
-        ## inverse fft of aberration function
-        i2  = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift (chiT)))
-        ## add intensities
-        probe = probe + np.real(i2 * np.conjugate(i2)).T*ab['zeroLoss'][i]
+        chi2 = chi + np.power(theta, 2) / 2 * df
+        # Calculate exponent of - i * chi
+        chi_t = np.fft.ifftshift(np.vectorize(complex)(np.cos(chi2), -np.sin(chi2)))
+        # Apply aperture function
+        chi_t[mask] = 0.
+        # inverse fft of aberration function
+        i2 = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(chi_t)))
+        # add intensities
+        probe = probe + np.real(i2 * np.conjugate(i2)).T * ab['zeroLoss'][i]
 
-    ab0={}
+    ab0 = {}
     for key in ab:
         ab0[key] = 0.
-    chiIA = np.fft.fftshift (makechi1(phi,theta,wl,ab0, 0))#np.ones(chi2.shape)*2*np.pi/wl
-    chiI = np.ones((sizeY, sizeX))
-    chiI[mask]=0.
-    i2 = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift (chiI)))
+    # chiIA = np.fft.fftshift(make_chi1(phi, theta, wl, ab0, 0))  # np.ones(chi2.shape)*2*np.pi/wl
+    chi_i = np.ones((size_y, size_x))
+    chi_i[mask] = 0.
+    i2 = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift(chi_i)))
     ideal = np.real(i2 * np.conjugate(i2))
 
-    probeF = np.fft.fft2(probe,probe.shape)+1e-12
-    idealF = np.fft.fft2(ideal,probe.shape)
-    fourier_space_division = idealF/probeF
-    probeR = (np.fft.ifft2(fourier_space_division,probe.shape))
+    probe_f = np.fft.fft2(probe, probe.shape) + 1e-12
+    ideal_f = np.fft.fft2(ideal, probe.shape)
+    fourier_space_division = ideal_f / probe_f
+    probe_r = (np.fft.ifft2(fourier_space_division, probe.shape))
+
+    return probe / sum(ab['zeroLoss']), np.real(probe_r)
 
 
-    return probe/sum(ab['zeroLoss']), np.real(probeR)
-
-
-    
-
-
-def DeconLR(  Oimage, probe, tags, verbose = False):
+# Deconvolution
+def decon_lr(o_image, probe, tags, verbose=False):
     """
-    
-    
-    # This task generates a restored image from an input image and point spread function (PSF) using the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson (1972, J. Opt. Soc. Am. 62, 55) and adapted for HST imagery by Snyder (1990, in Restoration of HST Images and Spectra, ST ScI Workshop Proceedings; see also Snyder, Hammoud, & White, JOSA, v. 10, no. 5, May 1993, in press). Additional options developed by Rick White (STScI) are also included.
+    # This task generates a restored image from an input image and point spread function (PSF) using
+    # the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson
+    # (1972, J. Opt. Soc. Am. 62, 55) and adapted for HST imagery by Snyder
+    # (1990, in Restoration of HST Images and Spectra, ST ScI Workshop Proceedings; see also
+    # Snyder, Hammoud, & White, JOSA, v. 10, no. 5, May 1993, in press).
+    # Additional options developed by Rick White (STScI) are also included.
     #
-    # The Lucy-Richardson method can be derived from the maximum likelihood expression for data with a Poisson noise distribution. Thus, it naturally applies to optical imaging data such as HST. The method forces the restored image to be positive, in accord with photon-counting statistics.
+    # The Lucy-Richardson method can be derived from the maximum likelihood expression for data
+    # with a Poisson noise distribution. Thus, it naturally applies to optical imaging data such as HST.
+    # The method forces the restored image to be positive, in accord with photon-counting statistics.
     #
-    # The Lucy-Richardson algorithm generates a restored image through an iterative method. The essence of the iteration is as follows: the (n+1)th estimate of the restored image is given by the nth estimate of the restored image multiplied by a correction image. That is,
+    # The Lucy-Richardson algorithm generates a restored image through an iterative method. The essence
+    # of the iteration is as follows: the (n+1)th estimate of the restored image is given by the nth estimate
+    # of the restored image multiplied by a correction image. That is,
     #
     #                            original data
-    #       image    = image    ---------------  * reflect(PSF) 
+    #       image    = image    ---------------  * reflect(PSF)
     #            n+1        n     image * PSF
     #                                  n
 
-    # where the *'s represent convolution operators and reflect(PSF) is the reflection of the PSF, i.e. reflect((PSF)(x,y)) = PSF(-x,-y). When the convolutions are carried out using fast Fourier transforms (FFTs), one can use the fact that FFT(reflect(PSF)) = conj(FFT(PSF)), where conj is the complex conjugate operator. 
+    # where the *'s represent convolution operators and reflect(PSF) is the reflection of the PSF, i.e.
+    # reflect((PSF)(x,y)) = PSF(-x,-y). When the convolutions are carried out using fast Fourier transforms
+    # (FFTs), one can use the fact that FFT(reflect(PSF)) = conj(FFT(PSF)), where conj is the complex conjugate
+    # operator.
     """
-    
-    if len(Oimage) < 1:
-        return Oimage
-    
-    if Oimage.shape != probe.shape:
-        print('Weirdness ',Oimage.shape,' != ',probe.shape)
 
-    probeC = np.ones((probe.shape), dtype = np.complex64)
-    probeC.real = probe
+    if len(o_image) < 1:
+        return o_image
 
+    if o_image.shape != probe.shape:
+        print('Weirdness ', o_image.shape, ' != ', probe.shape)
 
-    error = np.ones((Oimage.shape), dtype = np.complex64)
-    est = np.ones((Oimage.shape), dtype = np.complex64)
-    source= np.ones((Oimage.shape), dtype = np.complex64)
-    source.real = Oimage
-    
-    responseFT =fftpack.fft2(probeC)
+    probe_c = np.ones(probe.shape, dtype=np.complex64)
+    probe_c.real = probe
 
+    error = np.ones(o_image.shape, dtype=np.complex64)
+    est = np.ones(o_image.shape, dtype=np.complex64)
+    source = np.ones(o_image.shape, dtype=np.complex64)
+    source.real = o_image
 
+    response_ft = fftpack.fft2(probe_c)
 
-    
     if 'ImageScanned' in tags:
         ab = tags['ImageScanned']
-    elif 'aberrations' in  tags:
+    elif 'aberrations' in tags:
         ab = tags['aberrations']
     if 'convAngle' not in ab:
         ab['convAngle'] = 30
-    ApAngle=ab['convAngle']/1000.0
-    
-    E0=  float( ab['EHT'])  
+    ap_angle = ab['convAngle'] / 1000.0
 
-    def get_wl(E0):
-        h=6.626*10**-34
-        m0=9.109*10**-31
-        eV=1.602*10**-19*E0
-        C=2.998*10**8
-        return h/np.sqrt(2*m0*eV*(1+eV/(2*m0*C**2)))*10**9
+    e0 = float(ab['EHT'])
 
-    wl=get_wl(E0)
+    wl = get_wavelength(e0)
     ab['wavelength'] = wl
-    
-    over_d = 2* ApAngle / wl
+
+    over_d = 2 * ap_angle / wl
 
     dx = tags['pixel_size']
-    dk = 1.0/ float(tags['FOV'])
-    ScreenWidth = 1/dx
+    dk = 1.0 / float(tags['fov'])
+    screen_width = 1 / dx
 
-    
-    aperture = np.ones((Oimage.shape), dtype = np.complex64)
+    aperture = np.ones(o_image.shape, dtype=np.complex64)
     # Mask for the aperture before the Fourier transform
-    N = Oimage.shape[0]
-    sizeX = Oimage.shape[0]
-    sizeY = Oimage.shape[1]
-    App_ratio = over_d/ScreenWidth*N
+    n = o_image.shape[0]
+    size_x = o_image.shape[0]
+    size_y = o_image.shape[1]
+    app_ratio = over_d / screen_width * n
 
-    
-    Thetax = np.array((-sizeX/2.+ np.arange(sizeX)))
-    Thetay = np.array((-sizeY/2.+ np.arange(sizeY)))
-    Txv, Tyv = np.meshgrid(Thetax, Thetay)
+    theta_x = np.array(-size_x / 2. + np.arange(size_x))
+    theta_y = np.array(-size_y / 2. + np.arange(size_y))
+    t_xv, t_yv = np.meshgrid(theta_x, theta_y)
 
-    tp1 = Txv**2 + Tyv**2 >= (App_ratio)**2
+    tp1 = t_xv ** 2 + t_yv ** 2 >= app_ratio ** 2
     aperture[tp1.T] = 0.
-    print( App_ratio, ScreenWidth, dk)
+    print(app_ratio, screen_width, dk)
 
-    
-    
+    if QT_available:
+        progress = QtWidgets.QProgressDialog("Lucy-Richardson Deconvolutions", "Abort", 0, 100)
+        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # progress.setWindowModality(Qt.WindowModal);
+        progress.show()
 
-    
-    dE = 100
+    # de = 100
     dest = 100
-    i=0
-    while abs(dest) > 0.0001 :#or abs(dE)  > .025:
+    i = 0
+    while abs(dest) > 0.0001:  # or abs(de)  > .025:
         i += 1
-
         error_old = np.sum(error.real)
         est_old = est.copy()
-        error = source / np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est)*responseFT)))
-        est = est * np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(error)*np.conjugate(responseFT))))
-        #est = est_old * est
-        #est =  np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est)*fftpack.fftshift(aperture) )))
-    
-        error_new = np.real(np.sum(np.power(error,2)))-error_old
-        dest = np.sum(np.power((est - est_old).real,2))/np.sum(est)*100
-        #print(np.sum((est.real - est_old.real)* (est.real - est_old.real) )/np.sum(est.real)*100 )
+        error = source / np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est) * response_ft)))
+        est = est * np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(error) * np.conjugate(response_ft))))
+        # est = est_old * est
+        # est =  np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est)*fftpack.fftshift(aperture) )))
 
-        if error_old!=0:
-            dE = error_new / error_old *1.0
-            
+        error_new = np.real(np.sum(np.power(error, 2))) - error_old
+        dest = np.sum(np.power((est - est_old).real, 2)) / np.sum(est) * 100
+        # print(np.sum((est.real - est_old.real)* (est.real - est_old.real) )/np.sum(est.real)*100 )
+
+        if error_old != 0:
+            de = error_new / error_old * 1.0
         else:
-            dE = error_new
-    
+            de = error_new
+
         if verbose:
-            print(' LR Deconvolution - Iteration: {0:d} Error: {1:.2f} = change: {2:.5f}%, {3:.5f}%'.format(i,error_new,dE,abs(dest)))
-    
+            print(
+                ' LR Deconvolution - Iteration: {0:d} Error: {1:.2f} = change: {2:.5f}%, {3:.5f}%'.format(i, error_new,
+                                                                                                          de,
+                                                                                                          abs(dest)))
+
+        if QT_available:
+            count = (0.1 - abs(dest)) * 1000.
+            if count < 0:
+                count = 0
+            progress.setValue(count)
+            QtGui.Qt.QApplication.processEvents()
+
         if i > 1000:
-            dE = dest =  0.0
+            dest = 0.0
             print('terminate')
-    
-    print('\n Lucy-Richardson deconvolution converged in '+str(i)+ '  Iterations')
-    est2 =  np.real(fftpack.ifft2(fftpack.fft2(est)*fftpack.fftshift(aperture) ))
-    #plt.imshow(np.real(np.log10(np.abs(fftpack.fftshift(fftpack.fft2(est)))+1)+aperture), origin='lower',)
-    #plt.show()
+    if QT_available:
+        progress.setValue(100)
+    print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  Iterations')
+    est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
+    # plt.imshow(np.real(np.log10(np.abs(fftpack.fftshift(fftpack.fft2(est)))+1)+aperture), origin='lower',)
+    # plt.show()
     print(est2.shape)
     return est2
 
@@ -1267,34 +1263,35 @@ def DeconLR(  Oimage, probe, tags, verbose = False):
 ##########################################
 # Functions Used
 ##########################################
- 
-def MakeProbeG(sizeX,sizeY,widthi,xi,yi):
-    sizeX = (sizeX/2)
-    sizeY = (sizeY/2)
-    width = 2*widthi**2
-    x, y = np.mgrid[-sizeX:sizeX, -sizeY:sizeY]
-    g = np.exp(-((x-xi)**2/float(width)+(y-yi)**2/float(width)))
-    probe = g/g.sum()
-        
+
+
+def make_probe_gauss(size_x, size_y, width_i, xi, yi):
+    size_x = (size_x / 2)
+    size_y = (size_y / 2)
+    width = 2 * width_i ** 2
+    x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
+    g = np.exp(-((x - xi) ** 2 / float(width) + (y - yi) ** 2 / float(width)))
+    probe = g / g.sum()
+
     return probe
 
-def MakeLorentz(sizeX,sizeY,width,xi,yi):
-    sizeX = np.floor(sizeX/2)
-    sizeY = np.floor(sizeY/2)
+
+def make_lorentz(size_x, size_y, width, xi, yi):
+    size_x = np.floor(size_x / 2)
+    size_y = np.floor(size_y / 2)
     gamma = width
-    x, y = np.mgrid[-sizeX:sizeX, -sizeY:sizeY]
-    g = gamma/(2*np.pi)/ np.power( ((x-xi)**2+(y-yi)**2+gamma**2),1.5)
-    probe = g/g.sum()
-        
-    return probe
+    x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
+    g = gamma / (2 * np.pi) / np.power(((x - xi) ** 2 + (y - yi) ** 2 + gamma ** 2), 1.5)
+    probe = g / g.sum()
 
+    return probe
 
 
 def ZLPWeight():
-    x = np.linspace(-0.5,.9, 29)
-    y = [0.0143,0.0193,0.0281,0.0440,0.0768,0.1447,0.2785,0.4955,0.7442,0.9380,1.0000,0.9483,0.8596,0.7620,0.6539,0.5515,0.4478,0.3500,0.2683,0.1979,0.1410,0.1021,0.0752,0.0545,0.0401,0.0300,0.0229,0.0176,0.0139]
+    x = np.linspace(-0.5, 0.9, 29)
+    y = [0.0143, 0.0193, 0.0281, 0.0440, 0.0768, 0.1447, 0.2785, 0.4955, 0.7442, 0.9380,1.0000, 0.9483, 0.8596, 0.7620, 0.6539, 0.5515, 0.4478, 0.3500, 0.2683, 0.1979, 0.1410, 0.1021, 0.0752, 0.0545, 0.0401, 0.0300, 0.0229, 0.0176, 0.0139]
     
-    return (x,y)
+    return (x, y)
 
 
     ##
@@ -1673,16 +1670,16 @@ def defineSymmetry(tags):
                 'diamond', 'fcc']
         sym['lattice']=latticeTypes[tags['latticeType']]
 
-    sym['number of atoms'] = len(self.tags['atoms'])
+    sym['number of atoms'] = len(tags['atoms'])
     
     points = []
     for i in range(sym['number of atoms']):            
         sym[str(i)] = {}
         sym[str(i)]['index']= i
-        sym[str(i)]['x'] = self.tags['atoms'] [i][0]
-        sym[str(i)]['y'] = self.tags['atoms'] [i][1]
-        sym[str(i)]['intensity'] = self.tags['atoms'] [i][3]
-        sym[str(i)]['maximum'] = self.tags['atoms'] [i][4]
+        sym[str(i)]['x'] = tags['atoms'][i][0]
+        sym[str(i)]['y'] = tags['atoms'][i][1]
+        sym[str(i)]['intensity'] = tags['atoms'][i][3]
+        sym[str(i)]['maximum'] = tags['atoms'][i][4]
         sym[str(i)]['position'] = 'inside'
         sym[str(i)]['Z'] = 0
         sym[str(i)]['Name'] = 'undefined'
@@ -1690,7 +1687,7 @@ def defineSymmetry(tags):
         
         points.append([int(sym[str(i)]['x']+0.5),int(sym[str(i)]['y']+0.5)])
 
-    self.points = points.copy()
+    points = points.copy()
     
 
 

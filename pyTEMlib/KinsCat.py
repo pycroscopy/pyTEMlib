@@ -201,7 +201,7 @@ def h5_add_crystal_structure(h5_file, crystal_tags):
     >> crystal_tags = ks.structure_by_name(h5_file, 'Graphite')
     >> ks.add_crystal_structure(h5_file, crystal_tags)
     """
-    structure_group = sidpy.hdf_utils.create_indexed_group(h5_file, 'Structure')
+    structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure')
     
     structure_group['unit_cell'] = crystal_tags['unit_cell']
     structure_group['relative_positions'] = crystal_tags['base']
