@@ -35,10 +35,49 @@ from .sidpy_tools import *
 
 Dimension = sidpy.Dimension
 nest_dict = sidpy.base.dict_utils.nest_dict
+# flatten_dict = sidpy.dict_utils.flatten_dict
 print('sidpy version: ', sidpy.__version__)
 __version__ = '10.27.2020'
 
 get_slope = sidpy.base.num_utils.get_slope
+
+
+def flatten_dict(d, parent_key='', sep='-'):
+    items = []
+    for k, v in d.items():
+        if sep in k:
+            k = k.replace(sep, '_')
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        elif isinstance(v, list):
+            for i in range(len(v)):
+                if isinstance(v[i], dict):
+                    for kk in v[i]:
+                        items.append(('dim-'+kk+'-'+str(i), v[i][kk]))
+                else:
+                    if type(v) != bytes:
+                        items.append((new_key, v))
+        else:
+            if type(v) != bytes:
+                items.append((new_key, v))
+    return dict(items)
+
+
+def flatten(d, parent_key='', sep='.'):
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            if new_key == 'dimensional_calibrations':
+                for i in range(len(v)):
+                    for kk in v[i]:
+                        items.append(('dim-'+kk+'-'+str(i), v[i][kk]))
+            else:
+                items.append((new_key, v))
+    return dict(items)
 
 
 ####
@@ -243,10 +282,9 @@ def open_file(filename=None, save_file=False, h5_group=None):
         path, file_name = os.path.split(filename)
         basename, _ = os.path.splitext(file_name)
         dset = reader.read()
-        dset.title = basename
-        dset.filename = basename
-        original_metadata = dset.original_metadata.copy()
-        dset.original_metadata = sidpy.dict_utils.flatten_dict(original_metadata)
+        dset.title = basename.strip().replace('-', '_')
+        dset.filename = basename.strip().replace('-', '_')
+        dset.original_metadata = flatten_dict(dset.original_metadata)
 
         h5_filename = get_h5_filename(filename)
         h5_file = h5py.File(h5_filename, mode='a')
@@ -259,8 +297,9 @@ def open_file(filename=None, save_file=False, h5_group=None):
             dset.axes = dset._axes
             dset.attrs = {}
             h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dset, h5_group)
+            dset.original_metadata = nest_dict(dset.original_metadata)
+
             dset.h5_dataset = h5_dataset
-            dset.original_metadata = {}  # flatten(original_metadata)
         return dset
     else:
         print('file type not handled yet.')
