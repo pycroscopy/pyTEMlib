@@ -305,6 +305,7 @@ def h5_tree(h5_file):
     """
     sidpy.hdf_utils.print_tree(h5_file)
 
+
 def log_results(h5_group, dataset=None, attributes=None):
     if dataset is None:
         log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Log_')
