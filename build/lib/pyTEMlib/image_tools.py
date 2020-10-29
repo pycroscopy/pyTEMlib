@@ -1,0 +1,966 @@
+##################################
+#
+# image_tools.py
+# by Gerd Duscher, UTK
+# part of pyTEMlib
+# MIT license except where stated differently
+#
+###############################
+import numpy as np
+
+import matplotlib as mpl
+import matplotlib.pylab as plt
+from matplotlib.patches import Polygon  # plotting of polygons -- graph rings
+
+import matplotlib.widgets as mwidgets
+from matplotlib.widgets import RectangleSelector
+
+import pickle
+import json
+import struct
+
+import sidpy
+from .file_tools import *
+from .probe_tools import *
+import sys
+
+import itertools
+from itertools import product
+
+from scipy import fftpack
+from scipy import signal
+from scipy.interpolate import interp1d, interp2d
+from scipy.optimize import leastsq
+import scipy.optimize as optimization
+
+# Multidimensional Image library
+import scipy.ndimage as ndimage
+import scipy.constants as const
+
+import scipy.spatial as sp
+from scipy.spatial import Voronoi, KDTree, cKDTree
+
+import skimage
+import skimage.registration as registration
+from skimage.feature import register_translation  # blob_dog, blob_doh
+from skimage.feature import peak_local_max
+from skimage.measure import points_in_poly
+
+# our blob detectors from the scipy image package
+from skimage.feature import blob_log  # blob_dog, blob_doh
+
+from sklearn.feature_extraction import image
+from sklearn.utils.extmath import randomized_svd
+
+_SimpleITK_present = True
+try:
+    import SimpleITK as sITK
+except ModuleNotFoundError:
+    _SimpleITK_present = False
+
+if not _SimpleITK_present:
+    print('SimpleITK not installed; Registration Functions for Image Stacks not available')
+
+
+# Wavelength in 1/nm
+def get_wavelength(e0):
+    """
+    Calculates the relativistic corrected de Broglie wave length of an electron
+
+    Input:
+    ------
+        acceleration voltage in volt
+    Output:
+    -------
+        wave length in 1/nm
+    """
+
+    eV = const.e * e0
+    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
+
+
+def fourier_transform(dset):
+    """
+        Reads information into dictionary 'tags', performs 'FFT', and provides a smoothed FT and reciprocal
+        and intensity limits for visualization.
+
+        Input
+        -----
+        dset: sidp Dataset
+
+        Usage
+        -----
+
+        fft_dataset = fourier_transform(sidpy_dataset)
+        fft+dataset.plot()
+    """
+
+    assert isinstance(dset, sidpy.Dataset), 'Expected a sidpy Dataset'
+
+    selection = []
+    image_dim = []
+    # image_dim = get_image_dims(sidpy.DimensionTypes.SPATIAL)
+    if dset.data_type == sidpy.DataTypes.IMAGE_STACK:
+        for dim, axis in dset._axes.items():
+            if axis.dimension_type == sidpy.DimensionTypes.SPATIAL:
+                selection.append(slice(None))
+                image_dim.append(dim)
+            elif axis.dimension_type == sidpy.DimensionTypes.TEMPORAL or len(dset) == 3:
+                selection.append(slice(None))
+                stack_dim = dim
+            else:
+                selection.append(slice(0, 1))
+        if len(image_dim) != 2:
+            raise ValueError('need at least two SPATIAL dimension for an image stack')
+        image_stack = np.squeeze(np.array(dset)[selection])
+        image = np.sum(np.array(image_stack), axis=stack_dim)
+    elif dset.data_type.upper() == 'IMAGE':
+        image = np.array(dset)
+    else:
+        return
+
+    image = image - image.min()
+    fft_transform = (np.fft.fftshift(np.fft.fft2(image)))
+
+    image_dims = get_image_dims(dset)
+    extent = dset.get_extent(image_dims)
+    scale_x = 1 / abs(extent[1] - extent[0])
+    scale_y = 1 / abs(extent[2] - extent[3])
+
+    units_x = '1/' + dset._axes[image_dims[0]].units
+    units_y = '1/' + dset._axes[image_dims[1]].units
+
+    fft_dset = sidpy.Dataset.from_array(fft_transform)
+    fft_dset.quantity = dset.quantity
+    fft_dset.units = 'a.u.'
+    fft_dset.data_type = 'IMAGE'
+    fft_dset.source = dset.title
+    fft_dset.modality = 'fft'
+    fft_dset.set_dimension(0, sidpy.Dimension((np.arange(fft_dset.shape[0]) - fft_dset.shape[0] / 2) * scale_x,
+                                              name='u', units=units_x, dimension_type='RECIPROCAL',
+                                              quantity='reciprocal_length'))
+    fft_dset.set_dimension(1, sidpy.Dimension((np.arange(fft_dset.shape[1]) - fft_dset.shape[1] / 2) * scale_y,
+                                              name='v', units=units_y, dimension_type='RECIPROCAL',
+                                              quantity='reciprocal_length'))
+
+    return fft_dset
+
+
+def power_spectrum(dset, smoothing=3):
+    """
+    Calculate power spectrum
+
+    Input:
+    ======
+            channel: channnel in h5f file with image content
+
+    Output:
+    =======
+            tags: dictionary with
+                ['data']: fourier transformed image
+                ['axis']: scale of reciprocal image
+                ['power_spectrum']: power_spectrum
+                ['FOV']: field of view for extent parameter in plotting
+                ['minimum_intensity']: suggested minimum intensity for plotting
+                ['maximum_intensity']: suggested maximum intensity for plotting
+
+    """
+    fft_transform = fourier_transform(dset)
+    fft_mag = np.abs(fft_transform)
+    fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
+
+    power_spec = fft_transform.like_data(np.log(1.+fft_mag2))
+
+    # prepare mask
+
+    x, y = np.meshgrid(power_spec.u.values, power_spec.v.values)
+    mask = np.zeros(power_spec.shape)
+
+    mask_spot = x ** 2 + y ** 2 > 1 ** 2
+    mask = mask + mask_spot
+    mask_spot = x ** 2 + y ** 2 < 11 ** 2
+    mask = mask + mask_spot
+
+    mask[np.where(mask == 1)] = 0  # just in case of overlapping disks
+
+    minimum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].min() * 0.95
+    maximum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].max() * 1.05
+    power_spec.metadata = {'smoothing': smoothing,
+                           'minimum_intensity': minimum_intensity, 'maximum_intensity': maximum_intensity}
+    power_spec.title = 'power spectrum ' + power_spec.source
+
+    return power_spec
+
+
+def diffractogram_spots(dset, spot_threshold):
+    """
+    Find spots in diffractogram and sort them by distance from center
+
+    Input:
+    ======
+            fft_tags: dictionary with
+                ['spatial_***']: information of scale of fourier pattern
+                ['data']: power_spectrum
+            spot_threshold: threshold for blob finder
+    Output:
+    =======
+            spots: numpy array with sorted position (x,y) and radius (r) of all spots
+
+    """
+    # Needed for conversion from pixel to Reciprocal space
+    # we'll have to switch x- and y-coordinates due to the differences in numpy and matrix
+    center = np.array([int(dset.shape[0]/2.), int(dset.shape[1]/2.), 1])
+    rec_scale = np.array([get_slope(dset.u.values), get_slope(dset.v.values), 1])
+
+    # spot detection ( for future referece there is no symmetry assumed here)
+    data = np.array(dset).T
+    data = (data - data.min()) / data.max()
+    spots_random = (blob_log(data, max_sigma=5, threshold=spot_threshold) - center) * rec_scale
+    print(f'Found {spots_random.shape[0]} reflections')
+
+    # sort reflections
+    spots_random[:, 2] = np.linalg.norm(spots_random[:, 0:2], axis=1)
+    spots_index = np.argsort(spots_random[:, 2])
+    spots = spots_random[spots_index]
+    # third row is angles
+    spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
+    return spots
+
+
+def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
+    """
+    Use spots in diffractogram for a Fourier Filter
+
+    Input:
+    ======
+            image:  image to be filtered
+            tags: dictionary with
+                ['spatial_***']: information of scale of fourier pattern
+                ['spots']: sorted spots in diffractogram in 1/nm
+            low_pass: low pass filter in center of diffractogrm
+
+    Output:
+    =======
+            Fourier filtered image
+    """
+    # prepare mask
+
+    fft_transform = fourier_transform(dset)
+    x, y = np.meshgrid(fft_transform.u.values, fft_transform.v.values)
+    mask = np.zeros(dset.shape)
+
+    # mask reflections
+    # reflection_radius = 0.3 # in 1/nm
+    for spot in spots:
+        mask_spot = (x - spot[0]) ** 2 + (y - spot[1]) ** 2 < reflection_radius ** 2  # make a spot
+        mask = mask + mask_spot  # add spot to mask
+
+    # mask zero region larger (low-pass filter = intensity variations)
+    # low_pass = 3 # in 1/nm
+    mask_spot = x ** 2 + y ** 2 < low_pass ** 2
+    mask = mask + mask_spot
+    mask[np.where(mask > 1)] = 1
+    fft_filtered = fft_transform * mask
+
+    filtered_image = dset.like_data(np.fft.ifft2(np.fft.fftshift(fft_filtered)).real)
+    filtered_image.title = 'Fourier filtered ' + dset.title
+    filtered_image.source = dset.title
+    filtered_image.metadata = {'analysis': 'adaptive fourier filtered', 'spots': spots,
+                               'low_pass': low_pass, 'reflection_radius': reflection_radius}
+
+    return filtered_image
+
+
+def rotational_symmetry_diffractogram(spots):
+    rotation_symmetry = []
+    for n in [2, 3, 4, 6]:
+        cc = np.array(
+            [[np.cos(2 * np.pi / n), np.sin(2 * np.pi / n), 0], [-np.sin(2 * np.pi / n), np.cos(2 * np.pi / n), 0],
+             [0, 0, 1]])
+        sym_spots = np.dot(spots, cc)
+        dif = []
+        for p0, p1 in product(sym_spots[:, 0:2], spots[:, 0:2]):
+            dif.append(np.linalg.norm(p0 - p1))
+        dif = np.array(sorted(dif))
+
+        if dif[int(spots.shape[0] * .7)] < 0.2:
+            rotation_symmetry.append(n)
+    return rotation_symmetry
+
+#####################################################
+# Registration Functions
+#####################################################
+
+
+def complete_registration(main_dataset):
+    rigid_registered_dataset = rigid_registration(main_dataset)
+    current_channel = main_dataset.h5_dataset.parent
+    registration_channel = log_results(current_channel, rigid_registered_dataset)
+
+    print('Non-Rigid_Registration')
+
+    non_rigid_registered = demon_registration(rigid_registered_dataset)
+
+    registration_channel = log_results(current_channel, non_rigid_registered)
+
+    return registration_channel
+
+
+def demon_registration(dataset, verbose=False):
+    """
+    Diffeomorphic Demon Non-Rigid Registration
+    Usage:
+    ------
+    dem_reg = demon_reg(cube, verbose = False)
+
+    Input:
+        cube: stack of image after rigid registration and cropping
+    Output:
+        dem_reg: stack of images with non-rigid registration
+
+    Depends on:
+        simpleITK and numpy
+
+    Please Cite: http://www.simpleitk.org/SimpleITK/project/parti.html
+    and T. Vercauteren, X. Pennec, A. Perchant and N. Ayache
+    Diffeomorphic Demons Using ITK\'s Finite Difference Solver Hierarchy
+    The Insight Journal, http://hdl.handle.net/1926/510 2007
+    """
+
+    dem_reg = np.zeros(dataset.shape)
+    nimages = dataset.shape[0]
+    if verbose:
+        print(nimages)
+    # create fixed image by summing over rigid registration
+
+    fixed_np = np.average(np.array(dataset), axis=0)
+
+    fixed = sITK.GetImageFromArray(fixed_np)
+    fixed = sITK.DiscreteGaussian(fixed, 2.0)
+
+    # demons = sITK.SymmetricForcesDemonsRegistrationFilter()
+    demons = sITK.DiffeomorphicDemonsRegistrationFilter()
+
+    demons.SetNumberOfIterations(200)
+    demons.SetStandardDeviations(1.0)
+
+    resampler = sITK.ResampleImageFilter()
+    resampler.SetReferenceImage(fixed)
+    resampler.SetInterpolator(sITK.sitkBSpline)
+    resampler.SetDefaultPixelValue(0)
+
+    done = 0
+
+    if QT_available:
+        progress = QtWidgets.QProgressDialog("Non-Rigid Registration.", "Abort", 0, nimages)
+        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # progress.setWindowModality(Qt.WindowModal);
+        progress.show()
+
+    for i in range(nimages):
+
+        if QT_available:
+            progress.setValue(i)
+            QtGui.Qt.QApplication.processEvents()
+        else:
+            if done < int((i + 1) / nimages * 50):
+                done = int((i + 1) / nimages * 50)
+                sys.stdout.write('\r')
+                # progress output :
+                sys.stdout.write("[%-50s] %d%%" % ('*' * done, 2 * done))
+                sys.stdout.flush()
+
+        moving = sITK.GetImageFromArray(dataset[i])
+        moving_f = sITK.DiscreteGaussian(moving, 2.0)
+        displacement_field = demons.Execute(fixed, moving_f)
+        out_tx = sITK.DisplacementFieldTransform(displacement_field)
+        resampler.SetTransform(out_tx)
+        out = resampler.Execute(moving)
+        dem_reg[i, :, :] = sITK.GetArrayFromImage(out)
+        # print('image ', i)
+
+    if QT_available:
+        progress.setValue(nimages)
+
+    print(':-)')
+    print('You have successfully completed Diffeomorphic Demons Registration')
+
+    demon_registered = dataset.like_data(dem_reg)
+    demon_registered.title = 'Non-Rigid Registration'
+    demon_registered.source = dataset.title
+
+    demon_registered.metadata = {'analysis': 'non-rigid demon registration'}
+    if 'boundaries' in dataset.metadata:
+        demon_registered.metadata['boundaries'] = dataset.metadata['boundaries']
+
+    return demon_registered
+
+
+###############################
+# Rigid Registration New 05/09/2020
+
+def rigid_registration(dataset):
+    """
+    Rigid registration of image stack with sub-pixel accuracy
+    used phase_cross_correlation from skimage.registration
+    (we determine drift from one image to next)
+
+    Input hdf5 group with image_stack dataset
+
+    Output Registered Stack and drift (with respect to center image)
+
+    """
+
+    nopix = dataset.shape[1]
+    nopiy = dataset.shape[2]
+    nimages = dataset.shape[0]
+
+    print('Stack contains ', nimages, ' images, each with', nopix, ' pixels in x-direction and ', nopiy,
+          ' pixels in y-direction')
+    fixed = np.array(dataset[0])
+    fft_fixed = np.fft.fft2(fixed)
+
+    relative_drift = [[0., 0.]]
+    done = 0
+
+    if QT_available:
+        progress = QtWidgets.QProgressDialog("Rigid Registration.", "Abort", 0, nimages)
+        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # progress.setWindowModality(Qt.WindowModal);
+        progress.show()
+
+    for i in range(nimages):
+        if QT_available:
+            progress.setValue(i)
+            QtGui.Qt.QApplication.processEvents()
+        else:
+            if done < int((i + 1) / nimages * 50):
+                done = int((i + 1) / nimages * 50)
+                sys.stdout.write('\r')
+                # progress output :
+                sys.stdout.write("[%-50s] %d%%" % ('*' * done, 2 * done))
+                sys.stdout.flush()
+
+        moving = np.array(dataset[i])
+        fft_moving = np.fft.fft2(moving)
+        if skimage.__version__[:4] == '0.16':
+            shift = register_translation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
+        else:
+            shift = registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
+
+        fft_fixed = fft_moving
+        # print(f'Image number {i:2}  xshift =  {shift[0][0]:6.3f}  y-shift =  {shift[0][1]:6.3f}')
+
+        relative_drift.append(shift[0])
+    if QT_available:
+        progress.setValue(nimages)
+    rig_reg, drift = rig_reg_drift(dataset, relative_drift)
+
+    crop_reg, boundaries = crop_image_stack(rig_reg, drift)
+
+    rigid_registered = dataset.like_data(crop_reg)
+    rigid_registered.title = 'Rigid Registration'
+    rigid_registered.source = dataset.title
+    rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift, 'boundaries': boundaries}
+
+    return rigid_registered
+
+
+def rig_reg_drift(dset, rel_drift):
+    """
+    Uses relative drift to shift images ontop of each other
+    Shifting is done with shift routine of ndimage from scipy
+
+    is used by Rigid_Registration routine
+
+    Input image_channel with image_stack numpy array
+    relative_drift from image to image as list of [shiftx, shifty]
+
+    output stack and drift
+    """
+
+    rig_reg = np.zeros(dset.shape)
+    # absolute drift
+    drift = np.array(rel_drift).copy()
+
+    drift[0] = [0, 0]
+    for i in range(drift.shape[0]):
+        drift[i] = drift[i - 1] + rel_drift[i]
+    center_drift = drift[int(drift.shape[0] / 2)]
+    drift = drift - center_drift
+    # Shift images
+    for i in range(rig_reg.shape[0]):
+        # Now we shift
+        rig_reg[i, :, :] = ndimage.shift(dset[i], [drift[i, 0], drift[i, 1]], order=3)
+    return rig_reg, drift
+
+
+def crop_image_stack(rig_reg, drift):
+    """
+    ## Crop images
+    """
+    xpmin = int(-np.floor(np.min(np.array(drift)[:, 0])))
+    xpmax = int(rig_reg.shape[1] - np.ceil(np.max(np.array(drift)[:, 0])))
+    ypmin = int(-np.floor(np.min(np.array(drift)[:, 1])))
+    ypmax = int(rig_reg.shape[2] - np.ceil(np.max(np.array(drift)[:, 1])))
+
+    return rig_reg[:, xpmin:xpmax, ypmin:ypmax], [xpmin, xpmax, ypmin, ypmax]
+
+
+class ImageWithLineProfile:
+    def __init__(self, data, extent, title=''):
+        fig, ax = plt.subplots(1, 1)
+        self.figure = fig
+        self.title = title
+        self.line_plot = False
+        self.ax = ax
+        self.data = data
+        self.extent = extent
+        self.ax.imshow(data, extent=extent)
+        self.ax.set_title(title)
+        self.line,  = self.ax.plot([0], [0], color='orange')  # empty line
+        self.end_x = self.line.get_xdata()
+        self.end_y = self.line.get_ydata()
+        self.cid = self.line.figure.canvas.mpl_connect('button_press_event', self)
+
+    def __call__(self, event):
+        if event.inaxes != self.line.axes:
+            return
+        self.start_x = self.end_x 
+        self.start_y = self.end_y
+        
+        self.line.set_data([self.start_x, event.xdata], [self.start_y, event.ydata])
+        self.line.figure.canvas.draw()
+        
+        self.end_x = event.xdata
+        self.end_y = event.ydata
+        
+        self.update()
+        
+    def update(self):
+        
+        if not self.line_plot:
+            self.line_plot = True
+            self.figure.clear()
+            self.ax = self.figure.subplots(2, 1)
+            self.ax[0].imshow(self.data, extent=self.extent)
+            self.ax[0].set_title(self.title)
+        
+            self.line,  = self.ax[0].plot([0], [0], color='orange')  # empty line
+            self.line_plot, = self.ax[1].plot([], [], color='orange')
+            self.ax[1].set_xlabel('distance [nm]')
+        
+        x0 = self.start_x
+        x1 = self.end_x
+        y0 = self.start_y
+        y1 = self.end_y
+        length_plot = np.sqrt((x1-x0)**2+(y1-y0)**2)
+       
+        num = length_plot*(self.data.shape[0]/self.extent[1])
+        x = np.linspace(x0, x1, num)*(self.data.shape[0]/self.extent[1])
+        y = np.linspace(y0, y1, num)*(self.data.shape[0]/self.extent[1])
+        
+        # Extract the values along the line, using cubic interpolation
+        zi2 = ndimage.map_coordinates(self.data.T, np.vstack((x, y)))
+        
+        x_axis = np.linspace(0, length_plot, len(zi2))
+        
+        self.x = x_axis
+        self.z = zi2
+        
+        self.line_plot.set_xdata(x_axis)
+        self.line_plot.set_ydata(zi2)
+        self.ax[1].set_xlim(0, x_axis.max())
+        self.ax[1].set_ylim(zi2.min(), zi2.max())
+        self.ax[1].draw()
+        
+
+def histogram_plot(image_tags):
+    nbins = 75
+    minbin = 0.
+    maxbin = 1.
+    color_map_list = ['gray', 'viridis', 'jet', 'hot']
+    
+    if 'minimum_intensity' not in image_tags: 
+        image_tags['minimum_intensity'] = image_tags['plotimage'].min()
+    minimum_intensity = image_tags['minimum_intensity']
+    if 'maximum_intensity' not in image_tags: 
+        image_tags['maximum_intensity'] = image_tags['plotimage'].max()
+    data = image_tags['plotimage']
+    vmin = image_tags['minimum_intensity']
+    vmax = image_tags['maximum_intensity']
+    if 'color_map' not in image_tags: 
+        image_tags['color_map'] = color_map_list[0]
+    cmap = plt.cm.get_cmap(image_tags['color_map'])
+
+    colors = cmap(np.linspace(0., 1., nbins))
+
+    norm2 = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    hist, bin_edges = np.histogram(data, np.linspace(vmin, vmax, nbins), density=True)
+
+    width = bin_edges[1]-bin_edges[0]
+
+    def onselect(vmin, vmax):
+        
+        ax1.clear()
+        cmap = plt.cm.get_cmap(image_tags['color_map'])
+
+        colors = cmap(np.linspace(0., 1., nbins))
+
+        norm2 = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+        hist2, bin_edges2 = np.histogram(data, np.linspace(vmin, vmax, nbins), density=True)
+
+        width2 = (bin_edges2[1]-bin_edges2[0])
+
+        for i in range(nbins-1):
+            histogram[i].xy = (bin_edges2[i], 0)
+            histogram[i].set_height(hist2[i])
+            histogram[i].set_width(width2)
+            histogram[i].set_facecolor(colors[i])
+        ax.set_xlim(vmin, vmax)
+        ax.set_ylim(0, hist2.max()*1.01)
+
+        cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap, norm=norm2, orientation='horizontal')
+
+        image_tags['minimum_intensity'] = vmin
+        image_tags['maximum_intensity'] = vmax
+        
+    def onclick(event):
+        global event2
+        event2 = event
+        print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+              ('double' if event.dblclick else 'single', event.button,
+               event.x, event.y, event.xdata, event.ydata)) 
+        if event.inaxes == ax1:
+            if event.button == 3:
+                ind = color_map_list.index(image_tags['color_map'])+1
+                if ind == len(color_map_list):
+                    ind = 0
+                image_tags['color_map'] = color_map_list[ind]  # 'viridis'
+                vmin = image_tags['minimum_intensity']
+                vmax = image_tags['maximum_intensity']
+            else:
+                vmax = data.max()
+                vmin = data.min()
+        onselect(vmin, vmax)
+
+    fig2 = plt.figure()
+
+    ax = fig2.add_axes([0., 0.2, 0.9, 0.7])
+    ax1 = fig2.add_axes([0., 0.15, 0.9, 0.05])
+
+    histogram = ax.bar(bin_edges[0:-1], hist, width=width, color=colors, edgecolor='black', alpha=0.8)
+    onselect(vmin, vmax)
+    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=cmap, norm=norm2, orientation='horizontal')
+
+    rectprops = dict(facecolor='blue', alpha=0.5)
+
+    span = mwidgets.SpanSelector(ax, onselect, 'horizontal', rectprops=rectprops)
+
+    cid = fig2.canvas.mpl_connect('button_press_event', onclick)
+    return span
+
+
+def clean_svd(im, pixel_size=1, source_size=5):
+    patch_size = int(source_size/pixel_size)
+    if patch_size < 3:
+        patch_size = 3
+    print(patch_size)
+    
+    patches = image.extract_patches_2d(im, (patch_size, patch_size))
+    patches = patches.reshape(patches.shape[0], patches.shape[1]*patches.shape[2])
+    
+    num_components = 32
+    
+    u, s, v = randomized_svd(patches, num_components)
+    u_im_size = int(np.sqrt(u.shape[0]))
+    reduced_image = u[:, 0].reshape(u_im_size, u_im_size)
+    reduced_image = reduced_image/reduced_image.sum()*im.sum()
+    return reduced_image
+
+
+def rebin(im, binning=2):
+    """
+    rebin an image by the number of pixels in x and y direction given by binning
+    
+    Input:
+    ======
+            image: numpy array in 2 dimensions
+    
+    Output:
+    =======
+            binned image 
+    """
+    if len(im.shape) == 2:
+        return im.reshape((im.shape[0]//binning, binning, im.shape[1]//binning, binning)).mean(axis=3).mean(1)
+    else:
+        print('not a 2D image')
+        return im
+
+
+def cart2pol(points):
+    rho = np.linalg.norm(points[:, 0:2], axis=1)
+    phi = np.arctan2(points[:, 1], points[:, 0])
+    return rho, phi
+
+
+def pol2cart(rho, phi):
+    x = rho * np.cos(phi)
+    y = rho * np.sin(phi)
+    return x, y
+
+
+def xy2polar(points, rounding=1e-3):
+    """
+    Conversion from carthesian to polar coordinates
+    
+    the angles and distances are sorted by r and then phi
+    The indices of this sort is also returned
+    
+    input points: numpy array with number of points in axis 0 first two elements in axis 1 are x and y
+    
+    optional rounding in significant digits 
+    
+    returns r,phi, sorted_indices
+    """
+    
+    r, phi = cart2pol(points)
+    
+    phi = phi-phi.min()  # only positive angles
+    r = (np.floor(r/rounding))*rounding  # Remove rounding error differences
+
+    sorted_indices = np.lexsort((phi, r))  # sort first by r and then by phi
+    r = r[sorted_indices]
+    phi = phi[sorted_indices]
+    
+    return r, phi, sorted_indices
+            
+
+def cartesian2polar(x, y, grid, r, t, order=3):
+
+    rr, tt = np.meshgrid(r, t)
+
+    new_x = rr*np.cos(tt)
+    new_y = rr*np.sin(tt)
+
+    ix = interp1d(x, np.arange(len(x)))
+    iy = interp1d(y, np.arange(len(y)))
+
+    new_ix = ix(new_x.ravel())
+    new_iy = iy(new_y.ravel())
+
+    return ndimage.map_coordinates(grid, np.array([new_ix, new_iy]), order=order).reshape(new_x.shape)
+
+
+def warp(diff, center):
+    # Define original polar grid
+    nx = diff.shape[0]
+    ny = diff.shape[1]
+
+    x = np.linspace(1, nx, nx, endpoint=True)-center[1]
+    y = np.linspace(1, ny, ny, endpoint=True)-center[0]
+    z = np.abs(diff)
+
+    # Define new polar grid
+    nr = min([center[0], center[1], diff.shape[0]-center[0], diff.shape[1]-center[1]])-1
+    nt = 360*3
+
+    r = np.linspace(1, nr, nr)
+    t = np.linspace(0., np.pi, nt, endpoint=False)
+    return cartesian2polar(x, y, z, r, t, order=3).T
+
+
+def calculate_ctf(wavelength, cs, defocus, k):
+    """ Calculate Contrast Transfer Function
+    everything in nm
+    """
+    ctf = np.sin(np.pi*defocus*wavelength*k**2+0.5*np.pi*cs*wavelength**3*k**4)
+    return ctf
+
+
+def calculate_scherzer(wavelength, cs):
+    """
+    Calculate the Scherzer defocus. Cs is in mm, lambda is in nm
+    # EInput and output in nm
+    """
+    scherzer = -1.155*(cs*wavelength)**0.5  # in m
+    return scherzer
+
+
+def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
+    gx = fft_tags['spatial_scale_x']
+    gy = fft_tags['spatial_scale_y']
+
+    dist_reference = np.linalg.norm(spots_reference, axis=1)
+    distance_experiment = np.linalg.norm(spots_experiment, axis=1)
+
+    first_reflections = abs(distance_experiment - dist_reference.min()) < .2
+    print('Evaluate ', first_reflections.sum(), 'reflections')
+    closest_exp_reflections = spots_experiment[first_reflections]
+
+    def func(params, xdata, ydata):
+        dgx, dgy = params
+        return np.sqrt((xdata * dgx) ** 2 + (ydata * dgy) ** 2) - dist_reference.min()
+
+    x0 = [1.001, 0.999]
+    dg, sig = optimization.leastsq(func, x0, args=(closest_exp_reflections[:, 0], closest_exp_reflections[:, 1]))
+    return dg
+
+
+def align_crystal_reflections(spots, crystals):
+    crystal_reflections_polar = []
+    angles = []
+    exp_r, exp_phi = cart2pol(spots)  # just in polar coordinates
+    spots_polar = np.array([exp_r, exp_phi])
+        
+    for i in range(len(crystals)):
+        tags = crystals[i]
+        r, phi, indices = xy2polar(tags['allowed']['g'])  # sorted by r and phi , only positive angles
+        # we mask the experimental values that are found already
+        angle = 0.
+        
+        angle_i = np.argmin(np.abs(exp_r - r[1]))
+        angle = exp_phi[angle_i] - phi[0]
+        angles.append(angle)  # Determine rotation angle
+
+        crystal_reflections_polar.append([r, angle + phi, indices])
+        tags['allowed']['g_rotated'] = pol2cart(r, angle + phi)
+        for spot in tags['allowed']['g']:
+            dif = np.linalg.norm(spots[:, 0:2]-spot[0:2], axis=1)
+            # print(dif.min())
+            if dif.min() < 1.5:
+                ind = np.argmin(dif)
+        
+    return crystal_reflections_polar, angles
+
+# Deconvolution
+def decon_lr(o_image, probe, tags, verbose=False):
+    """
+    # This task generates a restored image from an input image and point spread function (PSF) using
+    # the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson
+    # (1972, J. Opt. Soc. Am. 62, 55) and adapted for HST imagery by Snyder
+    # (1990, in Restoration of HST Images and Spectra, ST ScI Workshop Proceedings; see also
+    # Snyder, Hammoud, & White, JOSA, v. 10, no. 5, May 1993, in press).
+    # Additional options developed by Rick White (STScI) are also included.
+    #
+    # The Lucy-Richardson method can be derived from the maximum likelihood expression for data
+    # with a Poisson noise distribution. Thus, it naturally applies to optical imaging data such as HST.
+    # The method forces the restored image to be positive, in accord with photon-counting statistics.
+    #
+    # The Lucy-Richardson algorithm generates a restored image through an iterative method. The essence
+    # of the iteration is as follows: the (n+1)th estimate of the restored image is given by the nth estimate
+    # of the restored image multiplied by a correction image. That is,
+    #
+    #                            original data
+    #       image    = image    ---------------  * reflect(PSF)
+    #            n+1        n     image * PSF
+    #                                  n
+
+    # where the *'s represent convolution operators and reflect(PSF) is the reflection of the PSF, i.e.
+    # reflect((PSF)(x,y)) = PSF(-x,-y). When the convolutions are carried out using fast Fourier transforms
+    # (FFTs), one can use the fact that FFT(reflect(PSF)) = conj(FFT(PSF)), where conj is the complex conjugate
+    # operator.
+    """
+
+    if len(o_image) < 1:
+        return o_image
+
+    if o_image.shape != probe.shape:
+        print('Weirdness ', o_image.shape, ' != ', probe.shape)
+
+    probe_c = np.ones(probe.shape, dtype=np.complex64)
+    probe_c.real = probe
+
+    error = np.ones(o_image.shape, dtype=np.complex64)
+    est = np.ones(o_image.shape, dtype=np.complex64)
+    source = np.ones(o_image.shape, dtype=np.complex64)
+    source.real = o_image
+
+    response_ft = fftpack.fft2(probe_c)
+
+    if 'ImageScanned' in tags:
+        ab = tags['ImageScanned']
+    elif 'aberrations' in tags:
+        ab = tags['aberrations']
+    if 'convAngle' not in ab:
+        ab['convAngle'] = 30
+    ap_angle = ab['convAngle'] / 1000.0
+
+    e0 = float(ab['EHT'])
+
+    wl = get_wavelength(e0)
+    ab['wavelength'] = wl
+
+    over_d = 2 * ap_angle / wl
+
+    dx = tags['pixel_size']
+    dk = 1.0 / float(tags['fov'])
+    screen_width = 1 / dx
+
+    aperture = np.ones(o_image.shape, dtype=np.complex64)
+    # Mask for the aperture before the Fourier transform
+    n = o_image.shape[0]
+    size_x = o_image.shape[0]
+    size_y = o_image.shape[1]
+    app_ratio = over_d / screen_width * n
+
+    theta_x = np.array(-size_x / 2. + np.arange(size_x))
+    theta_y = np.array(-size_y / 2. + np.arange(size_y))
+    t_xv, t_yv = np.meshgrid(theta_x, theta_y)
+
+    tp1 = t_xv ** 2 + t_yv ** 2 >= app_ratio ** 2
+    aperture[tp1.T] = 0.
+    print(app_ratio, screen_width, dk)
+
+    if QT_available:
+        progress = QtWidgets.QProgressDialog("Lucy-Richardson Deconvolutions", "Abort", 0, 100)
+        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        # progress.setWindowModality(Qt.WindowModal);
+        progress.show()
+
+    # de = 100
+    dest = 100
+    i = 0
+    while abs(dest) > 0.0001:  # or abs(de)  > .025:
+        i += 1
+        error_old = np.sum(error.real)
+        est_old = est.copy()
+        error = source / np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est) * response_ft)))
+        est = est * np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(error) * np.conjugate(response_ft))))
+        # est = est_old * est
+        # est =  np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est)*fftpack.fftshift(aperture) )))
+
+        error_new = np.real(np.sum(np.power(error, 2))) - error_old
+        dest = np.sum(np.power((est - est_old).real, 2)) / np.sum(est) * 100
+        # print(np.sum((est.real - est_old.real)* (est.real - est_old.real) )/np.sum(est.real)*100 )
+
+        if error_old != 0:
+            de = error_new / error_old * 1.0
+        else:
+            de = error_new
+
+        if verbose:
+            print(
+                ' LR Deconvolution - Iteration: {0:d} Error: {1:.2f} = change: {2:.5f}%, {3:.5f}%'.format(i, error_new,
+                                                                                                          de,
+                                                                                                          abs(dest)))
+
+        if QT_available:
+            count = (0.1 - abs(dest)) * 1000.
+            if count < 0:
+                count = 0
+            progress.setValue(count)
+            QtGui.Qt.QApplication.processEvents()
+
+        if i > 1000:
+            dest = 0.0
+            print('terminate')
+    if QT_available:
+        progress.setValue(100)
+    print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  Iterations')
+    est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
+    # plt.imshow(np.real(np.log10(np.abs(fftpack.fftshift(fftpack.fft2(est)))+1)+aperture), origin='lower',)
+    # plt.show()
+    print(est2.shape)
+    return est2
+

@@ -22,20 +22,57 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="cleaned image_tools.py">
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/defaults_parser.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/eels_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/eels_dlg.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/graph_tools.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/info_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/info_dlg.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/interactive_eels.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/microscope.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/peak_dlg.py" afterDir="false" />
+    <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="added interactive_eels">
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/KinsCat.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/atom_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/config_dir.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/data/TEMlibrc" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/data/edges_db.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/data/edges_db.pkl" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/data/fparam.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/data/microscopes.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/data/microscopes.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/data/path.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/defaults_parser.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/dm3_reader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/edges_db.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_dialog.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_dlg.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/file_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/graph_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/hdf_utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/image_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/info_dialog.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/info_dlg.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/interactive_eels.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/microscope.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/nion_reader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/nsi_reader.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/peak_dialog.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/peak_dlg.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/probe_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/sidpy_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/simulation_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/structure_tools.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/version.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dist/pyTEMlib-0.2020.10.2-py3-none-any.whl" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dist/pyTEMlib-0.2020.10.2.tar.gz" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pyTEMlib/hdf_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/EELS_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/file_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/file_tools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/PKG-INFO" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/PKG-INFO" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/SOURCES.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/dependency_links.txt" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/dependency_links.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/entry_points.txt" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/entry_points.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/requires.txt" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/requires.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/top_level.txt" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/top_level.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/__version__.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/__version__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/image_tools1.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/image_tools1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/nsi_reader.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/nsi_reader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/simulation_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/simulation_tools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/version.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/version.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -173,7 +210,14 @@
       <option name="project" value="LOCAL" />
       <updated>1603912017389</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="added interactive_eels">
+      <created>1603922694863</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1603922694863</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -193,17 +237,18 @@
     <MESSAGE value="sidpy- 1st try" />
     <MESSAGE value="cleaned KinsCat.py" />
     <MESSAGE value="cleaned image_tools.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="cleaned image_tools.py" />
+    <MESSAGE value="added interactive_eels" />
+    <option name="LAST_COMMIT_MESSAGE" value="added interactive_eels" />
   </component>
   <component name="WindowStateProjectService">
     <state x="176" y="115" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1603822434047">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="176" y="115" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1440.920@0.0.1440.920" timestamp="1603822434047" />
-    <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1603829683416">
+    <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1603923191457">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
-    <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603829683416" />
+    <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603923191457" />
     <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1440.920@0.0.1440.920" timestamp="1603823834351" />
     <state x="138" y="75" key="DiffContextDialog" timestamp="1603824011156">
       <screen x="0" y="0" width="1440" height="920" />
@@ -225,10 +270,10 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1603912022186">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1603923023624">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603912022186" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603923023624" />
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1603850043467" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
       <screen x="0" y="0" width="1440" height="920" />

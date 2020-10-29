@@ -13,12 +13,12 @@ import setuptools
 here = os.path.abspath(os.path.dirname(__file__))
 
 
-with open(os.path.join(here, 'pyTEMlib/__version__.py')) as f:
+with open(os.path.join(here, 'pyTEMlib/version.py')) as f:
     __version__ = f.read().split("'")[1]
     
 setuptools.setup(
     name="pyTEMlib",
-    version="0.12.2019.2",
+    version="0.2020.10.2",
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
     description="pyTEM: TEM Data Quantification library through a Model Based Approach",
@@ -26,7 +26,7 @@ setuptools.setup(
     url="https://web.utk.edu/~gduscher/Quantifit/",
     packages=["pyTEMlib"],
     package_data={"pyTEMlib": ["data/*"]},
-    install_requires=['scipy', 'numpy',  'pillow', 'simpleITK','ase','pyUSID'],#,'PyQt5> 1.0'],#
+    install_requires=['scipy', 'numpy',  'pillow', 'simpleITK','ase','pyNSID'],#,'PyQt5> 1.0'],#
     classifiers=[
         "Development Status :: 2 - Pre-Alpha"
     ],
