@@ -334,7 +334,11 @@ class DM3Reader(sidpy.Reader):
                 dimension_tags['Units'] = 'nm'
                 dimension_tags['Scale'] *= 1000.0
 
-            units = dimension_tags['Units']
+            if dimension_tags['Units'].strip() == '':
+                units = 'counts'
+            else:
+                units = dimension_tags['Units']
+
             values = (np.arange(dataset.shape[int(dim)]) - dimension_tags['Origin']) * dimension_tags['Scale']
 
             if 'eV' == units:
@@ -351,6 +355,7 @@ class DM3Reader(sidpy.Reader):
                                                                 dimension_type=sidpy.DimensionTypes.RECIPROCAL))
                 reciprocal_name = chr(ord(reciprocal_name) + 1)
             else:
+                units = 'counts'
                 dataset.set_dimension(int(dim), sidpy.Dimension(values, name=spatial_name, units=units,
                                                                 quantity='distance',
                                                                 dimension_type=sidpy.DimensionTypes.SPATIAL))

@@ -518,7 +518,7 @@ def set_dimensions(dset, current_channel):
     current_channel: hdf5 group
     """
     dim = 0
-    if 'STACK' in dset.data_type:
+    if dset.data_type == sidpy.DataTypes.IMAGE_STACK:
         dset.set_dimension(dim, sidpy.Dimension(np.arange(dset.shape[dim]), 'frame',
                                                 units='frame', quantity='stack',
                                                 dimension_type='TEMPORAL'))
