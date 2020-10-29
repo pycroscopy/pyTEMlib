@@ -519,7 +519,7 @@ def set_dimensions(dset, current_channel):
     """
     dim = 0
     if dset.data_type == sidpy.DataTypes.IMAGE_STACK:
-        dset.set_dimension(dim, sidpy.Dimension(np.arange(dset.shape[dim]), 'frame',
+        dset.set_dimension(dim, sidpy.Dimension(np.arange(dset.shape[dim]), name='frame',
                                                 units='frame', quantity='stack',
                                                 dimension_type='TEMPORAL'))
         dim += 1
