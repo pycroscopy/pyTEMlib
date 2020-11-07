@@ -24,8 +24,7 @@
   <component name="ChangeListManager">
     <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/peak_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/peak_dlg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_tools.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -202,7 +201,14 @@
       <option name="project" value="LOCAL" />
       <updated>1604787116247</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog">
+      <created>1604787222841</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1604787222841</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -267,11 +273,11 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604787117785">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604787224492">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603986530699" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604787117785" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604787224492" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
       <screen x="0" y="0" width="1440" height="920" />
     </state>

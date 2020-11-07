@@ -3,7 +3,7 @@ import numpy as np
 import scipy
 from scipy.interpolate import interp1d, splrep  # splev, splint
 from scipy import interpolate
-from scipy.signal import find_peaks, peak_prominences
+from scipy.signal import peak_prominences
 from scipy.ndimage.filters import gaussian_filter
 
 from scipy import constants
@@ -343,7 +343,7 @@ def find_edges(dataset, sensitivity=2.5):
         else:
             selected_edge = ''
             edges = find_major_edges(energy_scale[peak], 20)
-            edges = edges.split(('\n'))
+            edges = edges.split('\n')
             minimum_dist = 100.
             for edge in edges[1:]:
                 edge = edge[:-3].split(':')
@@ -357,45 +357,6 @@ def find_edges(dataset, sensitivity=2.5):
                 selected_edges.append(selected_edge)
 
     return selected_edges
-
-def smooth(dataset, fit_start, fit_end, iterations=2):
-    if dataset.data_type.name == 'SPECTRAL_IMAGE':
-        spectrum = dataset.view.get_spectrum()
-    else:
-        spectrum = np.array(dataset)
-
-    spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
-    energy_scale = np.array(spec_dim[1])
-
-    second_dif, noise_level = eels.second_derivative(dataset, sensitivity=2)
-    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
-
-    start_channel = np.searchsorted(energy_scale, fit_start)
-    end_channel = np.searchsorted(energy_scale, fit_end)
-    peaks = []
-    for index in indices:
-        if start_channel < index < end_channel:
-            peaks.append(index - start_channel)
-
-    if energy_scale[0] > 0:
-        if 'edges' not in dataset.metadata:
-            return
-        if 'model' not in dataset.metadata['edges']:
-            return
-        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
-
-    else:
-        model = np.zeros(end_channel - start_channel)
-
-    energy_scale = energy_scale[start_channel:end_channel]
-
-    difference = np.array(spectrum)[start_channel:end_channel] - model
-
-    peak_model, peak_out_list = gaussian_mixing(difference, energy_scale, iterations=iterations, n_pks=30, peaks=peaks)
-    peak_model2 = np.zeros(len(spec_dim[1]))
-    peak_model2[start_channel:end_channel] = peak_model
-
-    return peak_model2, peak_out_list
 
 
 def make_edges(edges_present, energy_scale, e_0, coll_angle):
@@ -664,49 +625,49 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
 
 
 def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
-        if dataset.data_type.name == 'SPECTRAL_IMAGE':
-            spectrum = dataset.view.get_spectrum()
-        else:
-            spectrum = np.array(dataset)
+    if dataset.data_type.name == 'SPECTRAL_IMAGE':
+        spectrum = dataset.view.get_spectrum()
+    else:
+        spectrum = np.array(dataset)
 
-        spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
-        energy_scale = np.array(spec_dim[1])
+    spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
+    energy_scale = np.array(spec_dim[1])
 
-        second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
-        [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
+    second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
+    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
 
-        start_channel = np.searchsorted(energy_scale, fit_start)
-        end_channel = np.searchsorted(energy_scale, fit_end)
-        peaks = []
-        for index in indices:
-            if start_channel < index < end_channel:
-                peaks.append(index - start_channel)
+    start_channel = np.searchsorted(energy_scale, fit_start)
+    end_channel = np.searchsorted(energy_scale, fit_end)
+    peaks = []
+    for index in indices:
+        if start_channel < index < end_channel:
+            peaks.append(index - start_channel)
 
-        if energy_scale[0] > 0:
-            if 'edges' not in dataset.metadata:
-                return
-            if 'model' not in dataset.metadata['edges']:
-                return
-            model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
+    if energy_scale[0] > 0:
+        if 'edges' not in dataset.metadata:
+            return
+        if 'model' not in dataset.metadata['edges']:
+            return
+        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
 
-        else:
-            model = np.zeros(end_channel - start_channel)
+    else:
+        model = np.zeros(end_channel - start_channel)
 
-        energy_scale = energy_scale[start_channel:end_channel]
+    energy_scale = energy_scale[start_channel:end_channel]
 
-        difference = np.array(spectrum)[start_channel:end_channel] - model
-        fit = np.zeros(len(energy_scale))
-        if len(peaks) > 0:
-            p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
-            p_out, cov = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
-                                                                                              difference,
-                                                                                              False))
-            fit = fit + model_smooth(energy_scale, p_out, False)
+    difference = np.array(spectrum)[start_channel:end_channel] - model
+    fit = np.zeros(len(energy_scale))
+    if len(peaks) > 0:
+        p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
+        [p_out, _] = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
+                                                                                     difference,
+                                                                                     False))
+        fit = fit + model_smooth(energy_scale, p_out, False)
 
-        peak_model = np.zeros(len(spec_dim[1]))
-        peak_model[start_channel:end_channel] = fit
+    peak_model = np.zeros(len(spec_dim[1]))
+    peak_model[start_channel:end_channel] = fit
 
-        return peak_model, p_out
+    return peak_model, p_out
 
 
 def find_maxima(y, number_of_peaks):
@@ -721,7 +682,7 @@ def find_maxima(y, number_of_peaks):
         array of indices of peaks
     """
     blurred2 = gaussian_filter(y, sigma=2)
-    peaks, _ = find_peaks(blurred2)
+    peaks, _ = scipy.signal.find_peaks(blurred2)
     prominences = peak_prominences(blurred2, peaks)[0]
     prominences_sorted = np.argsort(prominences)
     peaks = peaks[prominences_sorted[-number_of_peaks:]]
