@@ -215,7 +215,6 @@ class UiDialog(object):
         ######################################################################
 
         row += 1
-        name = 'white_line'
         self.labelwl = QtWidgets.QLabel('White-Line Ratio:')
         self.wl_list = ['Ratio']
         self.listwl = QtWidgets.QComboBox()
@@ -228,7 +227,6 @@ class UiDialog(object):
         self.layout.addWidget(self.unitswl, row, 2)
 
         row += 1
-        name = 'white_line'
         self.labelwls = QtWidgets.QLabel('White-Line Sum:')
         self.wls_list = ['Sum']
         self.listwls = QtWidgets.QComboBox()

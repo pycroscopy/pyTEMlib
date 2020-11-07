@@ -193,7 +193,7 @@ class PeakFitDialog(QtWidgets.QDialog):
     def smooth(self):
         iterations = int(self.ui.smooth_list.currentIndex())
 
-        # TODO: add sensitivity to dialog and the two funcitons below
+        # TODO: add sensitivity to dialog and the two functions below
         if advanced_present:
             self.peak_model, self.peak_out_list = advanced_eels_tools.smooth(self.dataset,
                                                                              self.peaks['fit_start'],
@@ -335,7 +335,6 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.ui.list3.addItems(self.ui.peak_list)
         self.ui.list3.setCurrentIndex(0)
 
-
     def on_enter(self):
         if self.sender() == self.ui.edit1:
             value = float(str(self.ui.edit1.displayText()).strip())
@@ -368,14 +367,14 @@ class PeakFitDialog(QtWidgets.QDialog):
 
     def on_list_enter(self):
         # self.setWindowTitle('list')
-        if self.sender () == self.ui.list3:
+        if self.sender() == self.ui.list3:
             if self.ui.list3.currentText() == 'Add Peak':
                 self.ui.list3.addItem('Add Peak')
                 peak_index = self.ui.list3.currentIndex()
                 self.ui.list3.setCurrentText(f'Peak {peak_index+1}')
-                self.peaks['peaks'][str(peak_index)] =  {'position': self.energy_scale[1],
-                                                         'amplitude': 1000.0, 'width': 1.0,
-                                                         'type': 'Gauss', 'asymmetry': 0}
+                self.peaks['peaks'][str(peak_index)] = {'position': self.energy_scale[1],
+                                                        'amplitude': 1000.0, 'width': 1.0,
+                                                        'type': 'Gauss', 'asymmetry': 0}
         self.update()
 
     def set_action(self):

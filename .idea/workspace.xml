@@ -22,62 +22,10 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="fixed bug in dm3reader and file_tools.py">
-      <change afterPath="$PROJECT_DIR$/dist/pyTEMlib-0.2020.11.0-py3-none-any.whl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dist/pyTEMlib-0.2020.11.0.tar.gz" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/0_pyTEMlib-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/1_Introduction-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/2_Diffraction_Tools-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/3_Image_Tools-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/4_2_1_Edge_Onset-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/4_2_2_Analysis_Core_Loss-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/4_EELS_Tools-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/Register_Image_Stack-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/Untitled-checkpoint.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/0_pyTEMlib.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/1_Introduction.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/2_Diffraction_Tools.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/3-Adaptive_Fourier_Filter.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/3-Register_Image_Stack.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/3_Image_Tools.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/4_0_EELS_Tools.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/4_2_1_Edge_Onset.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/4_2_2_Analysis_Core_Loss.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/Untitled.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/notebooks/nsid_simple.h5" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pyTEMlib/peak_dlg.py" afterDir="false" />
+    <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/dm3_reader.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/dm3_reader.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_dlg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/eels_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/file_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/file_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/image_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/image_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/info_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/info_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/info_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/info_dlg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/interactive_eels.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/interactive_eels.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/peak_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/peak_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/peak_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/peak_dlg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/sidpy_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/sidpy_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build/lib/pyTEMlib/version.py" beforeDir="false" afterPath="$PROJECT_DIR$/build/lib/pyTEMlib/version.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/pyTEMlib-0.2020.10.2-py3-none-any.whl" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/pyTEMlib-0.2020.10.2.tar.gz" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/Adaptive_Fourier_Filter-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/Adaptive_Fourier_Filter-checkpoint.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/Adaptive_Fourier_Filter.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/PKG-INFO" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/PKG-INFO" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib.egg-info/SOURCES.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/dm3_reader.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/dm3_reader.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_dlg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/file_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/file_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/image_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/image_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/info_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/info_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/info_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/info_dlg.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/interactive_eels.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/interactive_eels.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/sidpy_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/sidpy_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/version.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/version.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/peak_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/peak_dlg.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -247,7 +195,14 @@
       <option name="project" value="LOCAL" />
       <updated>1603988983059</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog">
+      <created>1604787116247</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1604787116247</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -270,7 +225,8 @@
     <MESSAGE value="added interactive_eels" />
     <MESSAGE value="cleaned code some more" />
     <MESSAGE value="fixed bug in dm3reader and file_tools.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed bug in dm3reader and file_tools.py" />
+    <MESSAGE value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog" />
   </component>
   <component name="WindowStateProjectService">
     <state x="176" y="115" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1603822434047">
@@ -311,11 +267,11 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1603988986476">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604787117785">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603986530699" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1603988986476" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604787117785" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
