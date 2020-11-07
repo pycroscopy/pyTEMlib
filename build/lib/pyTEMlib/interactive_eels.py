@@ -15,7 +15,7 @@ import ipywidgets as widgets
 from pyTEMlib import eels_tools as eels
 from pyTEMlib import eels_dialog
 from pyTEMlib import info_dialog
-# from pyTEMlib import peak_dialog
+from pyTEMlib import peak_dialog
 
 major_edges = ['K1', 'L3', 'M5', 'N5']
 all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'O1', 'O2',
@@ -24,7 +24,7 @@ first_close_edges = ['K1', 'L3', 'M5', 'M3', 'N5', 'N3']
 
 CompositionDialog = eels_dialog.EELSDialog
 InfoDialog = info_dialog.InfoDialog
-# PeakFitDialog = peak_dialog.PeakFitDialog
+PeakFitDialog = peak_dialog.PeakFitDialog
 
 
 class PeriodicTableDialog(QtWidgets.QDialog):
@@ -993,7 +993,7 @@ class InteractiveSpectrumImage(object):
 
 class ElementalEdges(object):
     """
-        The necessary initializtion parameter are:
+        The necessary initialization parameter are:
         ax: matplotlib axis
 
 
@@ -1003,14 +1003,14 @@ class ElementalEdges(object):
         available functions:
         - update(): updates the drawing of ionization edges
         - set_edge(Z) : changes atomic number and updates everything accordingly
-        - disconnect: makes everythign invisible and stops drawing
+        - disconnect: makes everything invisible and stops drawing
         - reconnect: undo of disconnect
 
         usage:
         >> fig, ax = plt.subplots()
         >> ax.plot(energy_scale, spectrum)
         >> Z= 42
-        >> cursor = elemental_edges(ax, Z)
+        >> cursor = ElementalEdges(ax, Z)
 
 
         see Chapter4 'CH4-Working_with_X-Sections' notebook

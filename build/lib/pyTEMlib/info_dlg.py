@@ -166,9 +166,39 @@ class UiDialog(object):
         self.layout.addWidget(self.VOAEdit, row, 1)
         self.layout.addWidget(self.VOAUnit, row, 2)
 
-        dialog.setLayout(self.layout)
+        self.separator4 = QtWidgets.QLabel(dialog)
+        self.separator4.setAutoFillBackground(True)
+        self.separator4.setAlignment(QtCore.Qt.AlignCenter)
+        self.separator4.setMaximumHeight(50)
+        self.separator4.setPalette(palette)
+        ######################################################################
+        self.separator4.setText("Spectrum Image")
 
-        self.offsetEdit.setFocus()
+        row += 1
+        self.layout.addWidget(self.separator4, row, 0, 1, 4)
+        ######################################################################
+
+        self.binXLabel = QtWidgets.QLabel('Bin X:')
+        self.binXEdit = QtWidgets.QLineEdit('1')
+        self.binXEdit.setValidator(valid_int)
+        self.binXUnit = QtWidgets.QLabel('pixel')
+
+        row += 1
+        self.layout.addWidget(self.binXLabel, row, 0)
+        self.layout.addWidget(self.binXEdit, row, 1)
+        self.layout.addWidget(self.binXUnit, row, 2)
+
+        self.binYLabel = QtWidgets.QLabel('Bin Y:')
+        self.binYEdit = QtWidgets.QLineEdit('1')
+        self.binYEdit.setValidator(valid_int)
+        self.binYUnit = QtWidgets.QLabel('pixel')
+
+        row += 1
+        self.layout.addWidget(self.binYLabel, row, 0)
+        self.layout.addWidget(self.binYEdit, row, 1)
+        self.layout.addWidget(self.binYUnit, row, 2)
+
+        dialog.setLayout(self.layout)
 
         dialog.setWindowTitle("Spectrum Info")
 

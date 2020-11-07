@@ -4,13 +4,20 @@ import numpy as np
 import scipy
 import scipy.optimize
 import scipy.signal
-import eels_tools as eels
 
-import peak_dlg
 import sidpy
-import file_tools_nsid as ft
+import pyTEMlib.file_tools as ft
+import pyTEMlib.eels_tools as eels
+import pyTEMlib.peak_dlg as peak_dlg
 
-_version = 000
+advanced_present = True
+try:
+    import advanced_eels_tools
+    print('advanced EELS features enabled')
+except ModuleNotFoundError:
+    advanced_present = False
+
+_version = .001
 
 
 class PeakFitDialog(QtWidgets.QDialog):
@@ -30,6 +37,7 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.model = np.array([])
         self.peak_model = np.array([])
         self.peak_out_list = []
+        self.p_out = []
         self.edges = {}
         self.axis = None
         self.show_regions = False
@@ -52,11 +60,14 @@ class PeakFitDialog(QtWidgets.QDialog):
             self.dataset.metadata['peak_fit'] = {}
             if 'edges' in self.dataset.metadata:
                 if 'fit_area' in self.dataset.metadata['edges']:
-                    self.dataset.metadata['peak_fit']['fit_start'] = self.dataset.metadata['edges']['fit_area']['fit_start']
+                    self.dataset.metadata['peak_fit']['fit_start'] = \
+                        self.dataset.metadata['edges']['fit_area']['fit_start']
                     self.dataset.metadata['peak_fit']['fit_end'] = self.dataset.metadata['edges']['fit_area']['fit_end']
 
-                self.dataset.metadata['peak_fit']['peaks'] = {'0': {'position': self.energy_scale[1], 'amplitude': 1000.0,
-                                         'width': 1.0, 'type': 'Gauss', 'asymmetry': 0}}
+                self.dataset.metadata['peak_fit']['peaks'] = {'0': {'position': self.energy_scale[1],
+                                                                    'amplitude': 1000.0,
+                                                                    'width': 1.0,
+                                                                    'type': 'Gauss', 'asymmetry': 0}}
 
         self.peaks = self.dataset.metadata['peak_fit']
         if 'fit_start' not in self.peaks:
@@ -65,7 +76,17 @@ class PeakFitDialog(QtWidgets.QDialog):
 
         self.update()
         self.dataset.plot()
-        self.figure = dataset.view.axis.figure
+        if hasattr(self.dataset.view, 'axes'):
+            self.axis = self.dataset.view.axes[-1]
+        elif hasattr(self.dataset.view, 'axis'):
+            self.axis = self.dataset.view.axis
+        self.figure = self.axis.figure
+
+        if not advanced_present:
+            self.ui.iteration_list = ['0']
+            self.ui.smooth_list.clear()
+            self.ui.smooth_list.addItems(self.ui.iteration_list)
+            self.ui.smooth_list.setCurrentIndex(0)
         self.plot()
 
     def update(self):
@@ -90,7 +111,9 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.ui.edit8.setText(f"{self.peaks['peaks'][str(peak_index)]['asymmetry']:.2f}")
 
     def plot(self):
-        self.energy_scale = self.dataset.energy_scale
+        spec_dim = ft.get_dimensions_by_type(sidpy.DimensionTypes.SPECTRAL, self.dataset)
+        spec_dim = spec_dim[0]
+        self.energy_scale = spec_dim[1].values
         if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
             self.axis = self.dataset.view.axes[1]
@@ -114,8 +137,7 @@ class PeakFitDialog(QtWidgets.QDialog):
 
         for index, peak in self.peaks['peaks'].items():
             p = [peak['position'], peak['amplitude'], peak['width']]
-            self.axis.plot(self.energy_scale, eels.gauss(self.dataset.energy_scale, p))
-
+            self.axis.plot(self.energy_scale, eels.gauss(self.energy_scale, p))
 
     def fit_peaks(self):
         p_in = []
@@ -124,8 +146,11 @@ class PeakFitDialog(QtWidgets.QDialog):
                 p_in.append(peak['position'])
                 p_in.append(peak['amplitude'])
                 p_in.append(peak['width'])
-
-        energy_scale = self.dataset.energy_scale
+        if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+            spectrum = self.dataset.view.get_spectrum()
+        else:
+            spectrum = np.array(self.dataset)
+        energy_scale = np.array(self.energy_scale)
         start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
         end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
 
@@ -140,12 +165,12 @@ class PeakFitDialog(QtWidgets.QDialog):
         else:
             model = np.zeros(end_channel - start_channel)
 
-        difference = np.array(self.dataset[start_channel:end_channel] - model)
+        difference = np.array(spectrum - model)
 
-        self.p_out, cov = scipy.optimize.leastsq(eels.residuals_smooth, p_in, ftol=1e-3, args=(energy_scale, difference,
-                                                                                          False))
+        [self.p_out, _] = scipy.optimize.leastsq(eels.residuals_smooth, np.array(p_in), ftol=1e-3,
+                                                 args=(energy_scale, difference, False))
         self.peak_model = np.zeros(len(self.dataset.energy_scale))
-        fit = eels.model_smooth(energy_scale, p_out, False)
+        fit = eels.model_smooth(energy_scale, self.p_out, False)
         self.peak_model[start_channel:end_channel] = fit
         if self.dataset.energy_scale[0] > 0:
             self.model = self.dataset.metadata['edges']['model']['spectrum']
@@ -156,47 +181,23 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.plot()
 
     def smooth(self):
-        iterations = int(self.ui.smooth_list.currentIndex())+1
-        energy_scale = self.dataset.energy_scale
-        start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
-        end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
+        iterations = int(self.ui.smooth_list.currentIndex())
 
-        energy_scale = self.dataset.energy_scale[start_channel:end_channel]
-        if self.dataset.energy_scale[0] > 0:
-            if 'edges' not in self.dataset.metadata:
-                return
-            if 'model' not in self.dataset.metadata['edges']:
-                return
-            model = self.dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
-
+        # TODO: add sensitivity to dialog and the two funcitons below
+        if advanced_present:
+            self.peak_model, self.peak_out_list = advanced_eels_tools.smooth(self.dataset,
+                                                                             self.peaks['fit_start'],
+                                                                             self.peaks['fit_end'],
+                                                                             iterations=iterations)
         else:
-            model = np.zeros(end_channel-start_channel)
+            self.peak_model, self.peak_out_list = eels.find_peaks(self.dataset, self.peaks['fit_start'],
+                                                                  self.peaks['fit_end'])
 
-        original_difference = np.array(self.dataset[start_channel:end_channel] - model)
-        n_pks = 30
-
-        self.peak_out_list = []
-        fit = np.zeros(len(energy_scale))
-        difference = np.array(original_difference)
-        for i in range(iterations):
-            i_pk = scipy.signal.find_peaks_cwt(np.abs(difference), widths=range(3, len(energy_scale) // n_pks))
-            p_in = np.ravel([[energy_scale[i], difference[i], 1.0] for i in i_pk])  # starting guess for fit
-
-            p_out, cov = scipy.optimize.leastsq(eels.residuals_smooth, p_in, ftol=1e-3, args=(energy_scale, difference,
-                                                                                              False))
-            self.peak_out_list.append(p_out)
-            fit = fit + eels.model_smooth(energy_scale, p_out, False)
-            difference = np.array(original_difference - fit)
-
-        self.peak_model = np.zeros(len(self.dataset.energy_scale))
-        self.peak_model[start_channel:end_channel] = fit
-
-
-
-        if self.dataset.energy_scale[0] > 0:
+        spec_dim = ft.get_dimensions_by_type('SPECTRAL', self.dataset)[0]
+        if spec_dim[1][0] > 0:
             self.model = self.dataset.metadata['edges']['model']['spectrum']
         else:
-            self.model = np.zeros(len(self.dataset.energy_scale))
+            self.model = np.zeros(len(spec_dim[1]))
         self.model = self.model+self.peak_model
 
         self.plot()
@@ -217,9 +218,9 @@ class PeakFitDialog(QtWidgets.QDialog):
                 distance = self.energy_scale[-1]
                 index = -1
                 for ii, onset in enumerate(onsets):
-                    if onset - 3 < peak['position'] < onset + 100:
+                    if onset-5 < peak['position'] < onset+50:
                         if distance > np.abs(peak['position'] - onset):
-                            distance = np.abs(peak['position'] - onset)  # TODO check whether absolute is good
+                            distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
                             index = ii
                 if index > 0:
                     peak['associated_edge'] = edges[index][1]  # check if more info is necessary
@@ -245,6 +246,7 @@ class PeakFitDialog(QtWidgets.QDialog):
                         white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
                                     area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
 
+                        areal_density = 1.
                         if 'edges' in self.dataset.metadata:
                             for key, edge in self.dataset.metadata['edges'].items():
                                 if key.isdigit():
@@ -346,4 +348,3 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.ui.find_button.clicked.connect(self.find_peaks)
         self.ui.smooth_button.clicked.connect(self.smooth)
         self.ui.fit_button.clicked.connect(self.fit_peaks)
-

@@ -42,12 +42,28 @@ class EELSDialog(QtWidgets.QDialog):
             raise TypeError('dataset has to be a sidpy dataset')
 
         self.set_dataset(dataset)
+        # TODO: set elements does not work correctly for periodic table
+        # selected_edges = eels.find_edges(dataset, sensitivity=3)
+        selected_edges = []
+        initial_elements = []
 
-        self.pt_dialog = interactive_eels.PeriodicTableDialog(energy_scale=self.energy_scale)
+        for edge in selected_edges:
+            initial_elements.append(edge.split('-')[0])
+        if len(initial_elements) > 0:
+            self.set_elements(initial_elements)
+
+        self.pt_dialog = interactive_eels.PeriodicTableDialog(energy_scale=self.energy_scale,
+                                                              initial_elements=initial_elements)
         self.pt_dialog.signal_selected[list].connect(self.set_elements)
 
         self.dataset.plot()
-        self.figure = dataset.view.axis.figure
+
+        if hasattr(self.dataset.view, 'axes'):
+            self.axis = self.dataset.view.axes[-1]
+        elif hasattr(self.dataset.view, 'axis'):
+            self.axis = self.dataset.view.axis
+        self.figure = self.axis.figure
+
         self.cid = self.figure.canvas.mpl_connect('draw_event', self.plot)
 
         self.plot()
@@ -56,7 +72,7 @@ class EELSDialog(QtWidgets.QDialog):
     def set_dataset(self, dataset):
 
         self.dataset = dataset
-        if 'edges' not in self.dataset.metadata:
+        if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
             self.dataset.metadata['edges'] = {'0': {}, 'model': {}}
         self.edges = self.dataset.metadata['edges']
 
@@ -119,21 +135,29 @@ class EELSDialog(QtWidgets.QDialog):
         minor_edge = ''
         all_edges = {}
         x_section = eels.get_x_sections(zz)
-
+        edge_start = 10  # int(15./ft.get_slope(self.energy_scale)+0.5)
         for key in x_section:
             if len(key) == 2 and key[0] in ['K', 'L', 'M', 'N', 'O'] and key[1].isdigit():
-                if self.energy_scale[10] < x_section[key]['onset'] < self.energy_scale[-10]:
+                if self.energy_scale[edge_start] < x_section[key]['onset'] < self.energy_scale[-edge_start]:
                     if key in ['K1', 'L3', 'M5']:
                         major_edge = key
                     elif key in self.ui.edge_sym:
-                        minor_edge = key
+                        if minor_edge == '':
+                            minor_edge = key
+                        if int(key[-1]) % 2 > 0:
+                            if int(minor_edge[-1]) % 2 == 0 or key[-1] > minor_edge[-1]:
+                                minor_edge = key
+
                     all_edges[key] = {'onset': x_section[key]['onset']}
 
         if major_edge != '':
             key = major_edge
-        else:
+        elif minor_edge != '':
             key = minor_edge
-        
+        else:
+            print(f'Could not find no edge of {zz} in spectrum')
+            return False
+
         index = self.ui.list3.currentIndex()
 
         if str(index) not in self.edges:
@@ -141,6 +165,7 @@ class EELSDialog(QtWidgets.QDialog):
 
         start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
         end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
+
         self.edges[str(index)] = {'Z': zz, 'symmetry': key, 'element': eels.elements[zz],
                                   'onset': x_section[key]['onset'], 'end_exclude': end_exclude,
                                   'start_exclude': start_exclude}
@@ -191,7 +216,6 @@ class EELSDialog(QtWidgets.QDialog):
             for key in self.edges:
                 if key.isdigit():
                     self.model = self.model + self.edges[key]['areal_density'] * self.edges[key]['data']
-
             self.plot()
         else:
             return
@@ -244,6 +268,32 @@ class EELSDialog(QtWidgets.QDialog):
         else:
             spectrum = np.array(self.dataset)
             self.axis = self.dataset.view.axis
+
+        if self.ui.select10.isChecked():
+            if 'experiment' in self.dataset.metadata:
+                exp = self.dataset.metadata['experiment']
+                if 'convergence_angle' not in exp:
+                    raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
+                alpha = exp['convergence_angle']
+                beta = exp['collection_angle']
+                beam_kv = exp['acceleration_voltage']
+
+                eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
+                edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta)
+                self.edges = eels.fit_edges2(spectrum, self.energy_scale, edges)
+                areal_density = []
+                elements = []
+                for key in edges:
+                    if key.isdigit():  # only edges have numbers in that dictionary
+                        elements.append(edges[key]['element'])
+                        areal_density.append(edges[key]['areal_density'])
+                areal_density = np.array(areal_density)
+                out_string = '\nRelative composition: \n'
+                for i, element in enumerate(elements):
+                    out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.1f}%  '
+
+                self.model = self.edges['model']['spectrum']
+                self.update()
 
         x_limit = self.axis.get_xlim()
         y_limit = self.axis.get_ylim()
@@ -431,9 +481,6 @@ class EELSDialog(QtWidgets.QDialog):
         self.ui.check10.clicked.connect(self.on_check)
         self.ui.select10.clicked.connect(self.on_check)
         self.ui.show_edges.clicked.connect(self.on_check)
-
-        self.ui.edit11.editingFinished.connect(self.on_enter)
-        self.ui.edit12.editingFinished.connect(self.on_enter)
 
         self.ui.do_all_button.clicked.connect(self.do_all_button_click)
         self.ui.do_fit_button.clicked.connect(self.do_fit_button_click)

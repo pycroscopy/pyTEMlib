@@ -294,12 +294,12 @@ class DM3Reader(sidpy.Reader):
             image_tags = dataset.original_metadata['ImageList'][str(self.__chosen_image)]['ImageTags']
             if 'SI' in image_tags:
                 if len(dataset.shape) == 3:
-                    dataset.data_type = 'spectrum_image'
+                    dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
                 else:
                     if spectral_dim:
-                        dataset.data_type = 'spectrum_image'  # 'linescan'
+                        dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE  # 'linescan'
                     else:
-                        dataset.data_type = 'image'
+                        dataset.data_type = sidpy.DataTypes.IMAGE
                         dataset.metadata['image_type'] = 'survey image'
 
         if dataset.data_type == sidpy.DataTypes.UNKNOWN:
@@ -307,19 +307,19 @@ class DM3Reader(sidpy.Reader):
                 raise NotImplementedError('Data_type not implemented yet')
             elif len(dataset.shape) == 3:
                 if spectral_dim:
-                    dataset.data_type = 'spectrum_image'
+                    dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
                 else:
                     dataset.data_type = 'image_stack'
             elif len(dataset.shape) == 2:
                 if spectral_dim:
-                    dataset.data_type = 'spectrum_image'
+                    dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
                 else:
                     dataset.data_type = 'image'
             elif len(dataset.shape) == 1:
                 if spectral_dim:
-                    dataset.data_type = 'spectrum'
+                    dataset.data_type = sidpy.DataTypes.SPECTRUM
                 else:
-                    dataset.data_type = 'line_plot'
+                    dataset.data_type = sidpy.DataTypes.LINE_PLOT
 
     def set_dimensions(self, dataset):
         dimensions_dict = dataset.original_metadata['ImageList'][str(self.__chosen_image)]['ImageData']['Calibrations'][

@@ -1,5 +1,6 @@
 import numpy as np
 
+import scipy
 from scipy.interpolate import interp1d, splrep  # splev, splint
 from scipy import interpolate
 from scipy.signal import find_peaks, peak_prominences
@@ -7,9 +8,9 @@ from scipy.ndimage.filters import gaussian_filter
 
 from scipy import constants
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+# import matplotlib.patches as patches
 
-from matplotlib.widgets import SpanSelector
+# from matplotlib.widgets import SpanSelector
 # import ipywidgets as widgets
 # from IPython.display import display
 
@@ -20,7 +21,7 @@ from scipy.optimize import leastsq  # least square fitting routine fo scipy
 import pickle  # pkg_resources,
 
 # ## And we use the image tool library of Quantifit
-from .file_tools import nest_dict
+import pyTEMlib.file_tools as ft
 from pyTEMlib.config_dir import data_path
 
 major_edges = ['K1', 'L3', 'M5', 'N5']
@@ -34,7 +35,7 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
             'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag',
             'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr',
             'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
-            'Hf', 'Ta', 'W']
+            'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi']
 
 
 # kroeger_core(e_data,a_data,eps_data,ee,thick, relativistic =True)
@@ -94,7 +95,7 @@ def set_previous_quantification(current_dataset):
     for key in current_channel:
         if 'Log' in key:
             if current_channel[key]['analysis'][()] == 'EELS_quantification':
-                current_dataset.metadata.update(nest_dict(current_channel[key].attrs))
+                current_dataset.metadata.update(ft.nest_dict(current_channel[key].attrs))
                 found_metadata = True
                 print('found previous quantification')
 
@@ -251,8 +252,6 @@ def find_major_edges(edge_onset, maximal_chemical_shift=5):
             # if isinstance(x_sections[element][key], dict):
             if key in major_edges:
 
-                # if 'onset' in x_sections[element][key]:
-                # print(key, x_sections[element][key])
                 if abs(x_sections[element][key]['onset'] - edge_onset) < maximal_chemical_shift:
                     # print(element, x_sections[element]['name'], key, x_sections[element][key]['onset'])
                     text = text + f"\n {x_sections[element]['name']:2s}-{key}: " \
@@ -274,6 +273,129 @@ def find_all_edges(edge_onset, maximal_chemical_shift=5):
                         text = text + f"\n {x_sections[element]['name']:2s}-{key}: " \
                                       f"{x_sections[element][key]['onset']:8.1f} eV "
     return text
+
+
+def second_derivative(dataset, sensitivity):
+    dim = ft.get_dimensions_by_type('spectral', dataset)
+    energy_scale = np.array(dim[0][1])
+    if dataset.data_type.name == 'SPECTRAL_IMAGE':
+        spectrum = dataset.view.get_spectrum()
+    else:
+        spectrum = np.array(dataset)
+
+    spec = scipy.ndimage.gaussian_filter(spectrum, 3)
+
+    dispersion = ft.get_slope(energy_scale)
+    second_dif = np.roll(spec, -3) - 2 * spec + np.roll(spec, +3)
+    second_dif[:3] = 0
+    second_dif[-3:] = 0
+
+    # find if there is a strong edge at high energy_scale
+    noise_level = 2. * np.std(second_dif[3:50])
+    [indices, _] = scipy.signal.find_peaks(second_dif, noise_level)
+    width = 50 / dispersion
+    if width < 50:
+        width = 50
+    start_end_noise = int(len(energy_scale) - width)
+    for index in indices[::-1]:
+        if index > start_end_noise:
+            start_end_noise = index - 70
+
+    noise_level_start = sensitivity * np.std(second_dif[3:50])
+    noise_level_end = sensitivity * np.std(second_dif[start_end_noise: start_end_noise + 50])
+    slope = (noise_level_end - noise_level_start) / (len(energy_scale) - 400)
+    noise_level = noise_level_start + np.arange(len(energy_scale)) * slope
+    return second_dif, noise_level
+
+
+def find_edges(dataset, sensitivity=2.5):
+    dim = ft.get_dimensions_by_type('spectral', dataset)
+    energy_scale = np.array(dim[0][1])
+
+    second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
+
+    [indices, peaks] = scipy.signal.find_peaks(second_dif, noise_level)
+
+    peaks['peak_positions'] = energy_scale[indices]
+    peaks['peak_indices'] = indices
+    edge_energies = [energy_scale[50]]
+    edge_indices = []
+
+    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
+    minima = energy_scale[indices]
+
+    for peak_number in range(len(peaks['peak_positions'])):
+        position = peaks['peak_positions'][peak_number]
+        if position - edge_energies[-1] > 20:
+            impossible = minima[minima < position]
+            impossible = impossible[impossible > position - 5]
+            if len(impossible) == 0:
+                possible = minima[minima > position]
+                possible = possible[possible < position + 5]
+                if len(possible) > 0:
+                    edge_energies.append((position + possible[0])/2)
+                    edge_indices.append(np.searchsorted(energy_scale, (position + possible[0])/2))
+
+    selected_edges = []
+    for peak in edge_indices:
+        if 525 < energy_scale[peak] < 533:
+            selected_edges.append('O-K1')
+        else:
+            selected_edge = ''
+            edges = find_major_edges(energy_scale[peak], 20)
+            edges = edges.split(('\n'))
+            minimum_dist = 100.
+            for edge in edges[1:]:
+                edge = edge[:-3].split(':')
+                name = edge[0].strip()
+                energy = float(edge[1].strip())
+                if np.abs(energy - energy_scale[peak]) < minimum_dist:
+                    minimum_dist = np.abs(energy - energy_scale[peak])
+                    selected_edge = name
+
+            if selected_edge != '':
+                selected_edges.append(selected_edge)
+
+    return selected_edges
+
+def smooth(dataset, fit_start, fit_end, iterations=2):
+    if dataset.data_type.name == 'SPECTRAL_IMAGE':
+        spectrum = dataset.view.get_spectrum()
+    else:
+        spectrum = np.array(dataset)
+
+    spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
+    energy_scale = np.array(spec_dim[1])
+
+    second_dif, noise_level = eels.second_derivative(dataset, sensitivity=2)
+    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
+
+    start_channel = np.searchsorted(energy_scale, fit_start)
+    end_channel = np.searchsorted(energy_scale, fit_end)
+    peaks = []
+    for index in indices:
+        if start_channel < index < end_channel:
+            peaks.append(index - start_channel)
+
+    if energy_scale[0] > 0:
+        if 'edges' not in dataset.metadata:
+            return
+        if 'model' not in dataset.metadata['edges']:
+            return
+        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
+
+    else:
+        model = np.zeros(end_channel - start_channel)
+
+    energy_scale = energy_scale[start_channel:end_channel]
+
+    difference = np.array(spectrum)[start_channel:end_channel] - model
+
+    peak_model, peak_out_list = gaussian_mixing(difference, energy_scale, iterations=iterations, n_pks=30, peaks=peaks)
+    peak_model2 = np.zeros(len(spec_dim[1]))
+    peak_model2[start_channel:end_channel] = peak_model
+
+    return peak_model2, peak_out_list
 
 
 def make_edges(edges_present, energy_scale, e_0, coll_angle):
@@ -539,6 +661,52 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
     edges['model']['fit_area_end'] = region_tags['fit_area']['start_x'] + region_tags['fit_area']['width_x']
 
     return edges
+
+
+def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
+        if dataset.data_type.name == 'SPECTRAL_IMAGE':
+            spectrum = dataset.view.get_spectrum()
+        else:
+            spectrum = np.array(dataset)
+
+        spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
+        energy_scale = np.array(spec_dim[1])
+
+        second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
+        [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
+
+        start_channel = np.searchsorted(energy_scale, fit_start)
+        end_channel = np.searchsorted(energy_scale, fit_end)
+        peaks = []
+        for index in indices:
+            if start_channel < index < end_channel:
+                peaks.append(index - start_channel)
+
+        if energy_scale[0] > 0:
+            if 'edges' not in dataset.metadata:
+                return
+            if 'model' not in dataset.metadata['edges']:
+                return
+            model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
+
+        else:
+            model = np.zeros(end_channel - start_channel)
+
+        energy_scale = energy_scale[start_channel:end_channel]
+
+        difference = np.array(spectrum)[start_channel:end_channel] - model
+        fit = np.zeros(len(energy_scale))
+        if len(peaks) > 0:
+            p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
+            p_out, cov = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
+                                                                                              difference,
+                                                                                              False))
+            fit = fit + model_smooth(energy_scale, p_out, False)
+
+        peak_model = np.zeros(len(spec_dim[1]))
+        peak_model[start_channel:end_channel] = fit
+
+        return peak_model, p_out
 
 
 def find_maxima(y, number_of_peaks):

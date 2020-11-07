@@ -79,7 +79,7 @@ class UiDialog(object):
         # self.progress.setMaximum(100)
 
         self.smooth_label = QtWidgets.QLabel('Iterations:')
-        self.iteration_list = ['1', '2', '3', '4']
+        self.iteration_list = ['0', '1', '2', '3', '4']
         self.smooth_list = QtWidgets.QComboBox()
         self.smooth_list.setEditable(False)
         self.smooth_list.addItems(self.iteration_list)

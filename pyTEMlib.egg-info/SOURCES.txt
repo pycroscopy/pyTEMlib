@@ -20,6 +20,8 @@ pyTEMlib/interactive_eels.py
 pyTEMlib/microscope.py
 pyTEMlib/nion_reader.py
 pyTEMlib/nsi_reader.py
+pyTEMlib/peak_dialog.py
+pyTEMlib/peak_dlg.py
 pyTEMlib/probe_tools.py
 pyTEMlib/sidpy_tools.py
 pyTEMlib/simulation_tools.py

@@ -6,7 +6,6 @@
 ##################################
 
 import numpy as np
-import csv
 import h5py
 import os
 
@@ -25,21 +24,25 @@ from .config_dir import config_path
 from .nsi_reader import NSIDReader
 from .dm3_reader import DM3Reader
 from .nion_reader import NionReader
-import sidpy
 import pyNSID
 
 import ipywidgets as widgets
 from IPython.display import display
 
 from .sidpy_tools import *
+# import sys
+# sys.path.insert(0, "../../sidpy/")
+import sidpy
+
 
 Dimension = sidpy.Dimension
 nest_dict = sidpy.base.dict_utils.nest_dict
-# flatten_dict = sidpy.dict_utils.flatten_dict
-print('sidpy version: ', sidpy.__version__)
-__version__ = '10.27.2020'
 
 get_slope = sidpy.base.num_utils.get_slope
+__version__ = '10.30.2020'
+
+# TODO: new sidpy-version, uncomment and delete function below.
+# flatten_dict = sidpy.dict_utils.flatten_dict
 
 
 def flatten_dict(d, parent_key='', sep='-'):
@@ -64,22 +67,6 @@ def flatten_dict(d, parent_key='', sep='-'):
     return dict(items)
 
 
-def flatten(d, parent_key='', sep='.'):
-    items = []
-    for k, v in d.items():
-        new_key = parent_key + sep + k if parent_key else k
-        if isinstance(v, dict):
-            items.extend(flatten_dict(v, new_key, sep=sep).items())
-        else:
-            if new_key == 'dimensional_calibrations':
-                for i in range(len(v)):
-                    for kk in v[i]:
-                        items.append(('dim-'+kk+'-'+str(i), v[i][kk]))
-            else:
-                items.append((new_key, v))
-    return dict(items)
-
-
 ####
 #  General Open and Save Methods
 ####
@@ -92,13 +79,12 @@ def get_qt_app():
     :returns: QApplication
 
     """
-    from PyQt5.Qt import QApplication
 
     # start qt event loop
-    _instance = QApplication.instance()
+    _instance = QtWidgets.QApplication.instance()
     if not _instance:
         # print('not_instance')
-        _instance = QApplication([])
+        _instance = QtWidgets.QApplication([])
 
     return _instance
 
@@ -337,11 +323,21 @@ def get_main_channel(h5_file):
     return current_channel
 
 
-def h5_tree(h5_file):
+def h5_tree(input):
     """
     Just a wrapper for the sidpy function print_tree,
     so that sidpy does not have to be loaded in notebook
     """
+    if isinstance(input, sidpy.Dataset):
+        if not isinstance(input.h5_dataset, h5py.Dataset):
+            raise ValueError('sidpy dataset does not have an associated h5py dataset')
+        h5_file = input.h5_dataset.file
+    elif isinstance(input, h5py.Dataset):
+        h5_file = input.file
+    elif isinstance(input, (h5py.Group, h5py.File)):
+        h5_file = input
+    else:
+        raise TypeError('should be a h5py.object or sidpy Dataset')
     sidpy.hdf_utils.print_tree(h5_file)
 
 
@@ -366,79 +362,6 @@ def log_results(h5_group, dataset=None, attributes=None):
 
     return log_group
 
-###################################################
-# Interactive Function
-###################################################
-
-
-class ChooseDataset(object):
-    def __init__(self, input_object):
-        if isinstance(input_object, sidpy.Dataset):
-            self.current_channel = input_object.h5_dataset.parent
-        elif isinstance(input_object, h5py.Group):
-            self.current_channel = input_object
-        elif isinstance(input_object, h5py.Dataset):
-            self.current_channel = input_object.parent
-        else:
-            raise ValueError('Need hdf5 group or sidpy Dataset to determine image choices')
-        self.dataset_names = []
-        self.dataset_list = []
-        self.dataset_type = None
-        self.dataset = None
-        self.reader = NSIDReader(self.current_channel)
-
-        self.get_dataset_list()
-        self.select_image = widgets.Dropdown(options=self.dataset_names,
-                                             value=self.dataset_names[0],
-                                             description='Select image:',
-                                             disabled=False,
-                                             button_style='')
-        display(self.select_image)
-
-        self.select_image.observe(self.set_dataset, names='value')
-        self.set_dataset(0)
-        self.select_image.index = (len(self.dataset_names) - 1)
-
-    def get_dataset_list(self):
-        datasets = self.reader.read()
-        for dset in datasets[::-1]:
-            if self.dataset_type is None:
-                self.dataset_names.append('/'.join(dset.title.replace('-', '_').split('/')[-2:]))
-                self.dataset_list.append(dset)
-            else:
-                if dset.data_type == self.data_type:
-                    self.dataset_names.append('/'.join(dset.title.replace('-', '_').split('/')[-2:]))
-                    self.dataset_list.append(dset)
-
-    def set_dataset(self, b):
-        index = self.select_image.index
-        self.dataset = self.dataset_list[index]
-
-
-class ProgressDialog(QtWidgets.QDialog):
-    """
-    Simple dialog that consists of a Progress Bar and a Button.
-    Clicking on the button results in the start of a timer and
-    updates the progress bar.
-    """
-
-    def __init__(self, title=''):
-        super().__init__()
-        self.progress = None
-        self.init_ui(title)
-
-    def init_ui(self, title):
-        self.setWindowTitle('Progress Bar: ' + title)
-        self.progress = QtWidgets.QProgressBar(self)
-        self.progress.setGeometry(10, 10, 500, 50)
-        self.progress.setMaximum(100)
-        self.show()
-
-    def set_value(self, count):
-        self.progress.setValue(count)
-
-    def processEvents(self):
-        QtCore.Qt.QApplication.processEvents()
 
 ###############################################
 # Support old pyTEM file format

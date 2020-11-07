@@ -232,34 +232,6 @@ class UiDialog(object):
         self.layout.addWidget(self.separator4, row, 0, 1, 4)
         ######################################################################
 
-        name = 'bin_x'
-
-        self.label11 = QtWidgets.QLabel('Bin X:')
-        self.edit11 = QtWidgets.QLineEdit('0')
-        self.edit11.setValidator(valid_int)
-        self.unit11 = QtWidgets.QLabel('pixel')
-        self.edit11.setObjectName(name + '_edit')
-        self.unit11.setObjectName(name + '_units')
-
-        row += 1
-        self.layout.addWidget(self.label11, row, 0)
-        self.layout.addWidget(self.edit11, row, 1)
-        self.layout.addWidget(self.unit11, row, 2)
-
-        name = 'bin_x'
-
-        self.label12 = QtWidgets.QLabel('Bin X:')
-        self.edit12 = QtWidgets.QLineEdit('0')
-        self.edit12.setValidator(valid_int)
-        self.unit12 = QtWidgets.QLabel('pixel')
-        self.edit12.setObjectName(name + '_edit')
-        self.unit12.setObjectName(name + '_units')
-
-        row += 1
-        self.layout.addWidget(self.label12, row, 0)
-        self.layout.addWidget(self.edit12, row, 1)
-        self.layout.addWidget(self.unit12, row, 2)
-
         dialog.setLayout(self.layout)
         dialog.setWindowTitle('Fit Composition Input')
 

@@ -15,10 +15,6 @@ from matplotlib.patches import Polygon  # plotting of polygons -- graph rings
 import matplotlib.widgets as mwidgets
 from matplotlib.widgets import RectangleSelector
 
-import pickle
-import json
-import struct
-
 import sidpy
 from .file_tools import *
 from .probe_tools import *
@@ -114,7 +110,7 @@ def fourier_transform(dset):
             raise ValueError('need at least two SPATIAL dimension for an image stack')
         image_stack = np.squeeze(np.array(dset)[selection])
         image = np.sum(np.array(image_stack), axis=stack_dim)
-    elif dset.data_type.upper() == 'IMAGE':
+    elif dset.data_type == sidpy.DataTypes.IMAGE:
         image = np.array(dset)
     else:
         return
@@ -183,10 +179,10 @@ def power_spectrum(dset, smoothing=3):
 
     mask[np.where(mask == 1)] = 0  # just in case of overlapping disks
 
-    minimum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].min() * 0.95
-    maximum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].max() * 1.05
-    power_spec.metadata = {'smoothing': smoothing,
-                           'minimum_intensity': minimum_intensity, 'maximum_intensity': maximum_intensity}
+    # minimum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].min() * 0.95
+    # maximum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].max() * 1.05
+    power_spec.metadata = {'smoothing': smoothing}
+    #                       'minimum_intensity': minimum_intensity, 'maximum_intensity': maximum_intensity}
     power_spec.title = 'power spectrum ' + power_spec.source
 
     return power_spec
@@ -214,8 +210,16 @@ def diffractogram_spots(dset, spot_threshold):
 
     # spot detection ( for future referece there is no symmetry assumed here)
     data = np.array(dset).T
-    data = (data - data.min()) / data.max()
-    spots_random = (blob_log(data, max_sigma=5, threshold=spot_threshold) - center) * rec_scale
+    data = (data - data.min())
+    data = data/data.max()
+    # some images are strange and blob_log does not work on the power spectrum
+    try:
+        spots_random = (blob_log(data, max_sigma=5, threshold=spot_threshold) - center) * rec_scale
+    except ValueError:
+        spots_random = (peak_local_max(np.array(data.T), min_distance=3, threshold_rel=spot_threshold) - center[:2]) \
+                       * rec_scale
+        spots_random = np.hstack(spots_random,np.zeros((spots_random.shape[0],1)))
+
     print(f'Found {spots_random.shape[0]} reflections')
 
     # sort reflections
@@ -303,7 +307,7 @@ def complete_registration(main_dataset):
 
     registration_channel = log_results(current_channel, non_rigid_registered)
 
-    return registration_channel
+    return non_rigid_registered, rigid_registered_dataset
 
 
 def demon_registration(dataset, verbose=False):
@@ -352,16 +356,10 @@ def demon_registration(dataset, verbose=False):
     done = 0
 
     if QT_available:
-        progress = QtWidgets.QProgressDialog("Non-Rigid Registration.", "Abort", 0, nimages)
-        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-        # progress.setWindowModality(Qt.WindowModal);
-        progress.show()
-
+        progress = ProgressDialog("Non-Rigid Registration", nimages)
     for i in range(nimages):
-
         if QT_available:
-            progress.setValue(i)
-            QtGui.Qt.QApplication.processEvents()
+            progress.set_value(i)
         else:
             if done < int((i + 1) / nimages * 50):
                 done = int((i + 1) / nimages * 50)
@@ -380,7 +378,7 @@ def demon_registration(dataset, verbose=False):
         # print('image ', i)
 
     if QT_available:
-        progress.setValue(nimages)
+        progress.close()
 
     print(':-)')
     print('You have successfully completed Diffeomorphic Demons Registration')
@@ -424,15 +422,10 @@ def rigid_registration(dataset):
     done = 0
 
     if QT_available:
-        progress = QtWidgets.QProgressDialog("Rigid Registration.", "Abort", 0, nimages)
-        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-        # progress.setWindowModality(Qt.WindowModal);
-        progress.show()
-
+        progress = ProgressDialog("Rigid Registration", nimages)
     for i in range(nimages):
         if QT_available:
-            progress.setValue(i)
-            QtGui.Qt.QApplication.processEvents()
+            progress.set_value(i)
         else:
             if done < int((i + 1) / nimages * 50):
                 done = int((i + 1) / nimages * 50)
@@ -453,7 +446,7 @@ def rigid_registration(dataset):
 
         relative_drift.append(shift[0])
     if QT_available:
-        progress.setValue(nimages)
+        progress.close()
     rig_reg, drift = rig_reg_drift(dataset, relative_drift)
 
     crop_reg, boundaries = crop_image_stack(rig_reg, drift)
@@ -913,10 +906,7 @@ def decon_lr(o_image, probe, tags, verbose=False):
     print(app_ratio, screen_width, dk)
 
     if QT_available:
-        progress = QtWidgets.QProgressDialog("Lucy-Richardson Deconvolutions", "Abort", 0, 100)
-        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-        # progress.setWindowModality(Qt.WindowModal);
-        progress.show()
+        progress = ProgressDialog("Lucy-Richardson", 100)
 
     # de = 100
     dest = 100
@@ -949,14 +939,14 @@ def decon_lr(o_image, probe, tags, verbose=False):
             count = (0.1 - abs(dest)) * 1000.
             if count < 0:
                 count = 0
-            progress.setValue(count)
-            QtGui.Qt.QApplication.processEvents()
+            progress.set_value(count)
+
 
         if i > 1000:
             dest = 0.0
             print('terminate')
     if QT_available:
-        progress.setValue(100)
+        progress.close()
     print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  Iterations')
     est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
     # plt.imshow(np.real(np.log10(np.abs(fftpack.fftshift(fftpack.fft2(est)))+1)+aperture), origin='lower',)

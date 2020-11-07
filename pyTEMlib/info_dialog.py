@@ -56,7 +56,11 @@ class InfoDialog(QtWidgets.QDialog):
         self.set_dataset(dataset)
 
         self.dataset.plot()
-        self.figure = dataset.view.axis.figure
+        if hasattr(self.dataset.view, 'axes'):
+            self.axis = self.dataset.view.axes[-1]
+        elif hasattr(self.dataset.view, 'axis'):
+            self.axis = self.dataset.view.axis
+        self.figure = self.axis.figure
         self.plot()
         self.update()
 
@@ -88,10 +92,14 @@ class InfoDialog(QtWidgets.QDialog):
                 self.experiment[key] = item
 
     def set_dimension(self):
-        self.dataset.set_dimension(self.spec_dim[0], sidpy.Dimension(self.energy_scale, name='energy_scale'))
-        self.dataset.energy_scale.dimension_type = sidpy.DimensionTypes.SPECTRAL
-        self.dataset.energy_scale.units = 'eV'
-        self.dataset.energy_scale.quantity = 'energy loss'
+        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionTypes.SPECTRAL, self.dataset)
+        self.spec_dim = self.spec_dim[0]
+        old_energy_scale = self.spec_dim[1]
+        self.dataset.set_dimension(self.spec_dim[0], sidpy.Dimension(np.array(self.energy_scale),
+                                                                     name=old_energy_scale.name,
+                                                                     dimension_type=sidpy.DimensionTypes.SPECTRAL,
+                                                                     units='eV',
+                                                                     quantity='energy loss'))
 
     def update(self):
 
@@ -110,6 +118,7 @@ class InfoDialog(QtWidgets.QDialog):
 
     def on_enter(self):
         sender = self.sender()
+
         if sender == self.ui.offsetEdit:
             value = float(str(sender.displayText()).strip())
             self.experiment['offset'] = value
@@ -123,7 +132,7 @@ class InfoDialog(QtWidgets.QDialog):
             self.energy_scale = np.arange(len(self.energy_scale)) * value + self.energy_scale[0]
             self.set_dimension()
             self.plot()
-            sender.setText(f"{value:.2f}")
+            sender.setText(f"{value:.3f}")
         elif sender == self.ui.timeEdit:
             value = float(str(sender.displayText()).strip())
             self.experiment['exposure_time'] = value
@@ -144,6 +153,13 @@ class InfoDialog(QtWidgets.QDialog):
             value = float(str(sender.displayText()).strip())
             self.experiment['acceleration_voltage'] = value
             sender.setText(f"{value:.2f}")
+        elif sender == self.ui.binXEdit or sender == self.ui.binYEdit:
+            if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+                bin_x = int(self.ui.binXEdit.displayText())
+                bin_y = int(self.ui.binYEdit.displayText())
+                self.dataset.view.set_bin([bin_x, bin_y])
+                self.ui.binXEdit.setText(str(self.dataset.view.bin_x))
+                self.ui.binYEdit.setText(str(self.dataset.view.bin_y))
         else:
             print('not supported yet')
 
@@ -207,3 +223,5 @@ class InfoDialog(QtWidgets.QDialog):
         self.ui.fluxEdit.editingFinished.connect(self.on_enter)
         self.ui.VOAEdit.editingFinished.connect(self.on_enter)
         self.ui.energy_button.clicked.connect(self.set_energy_scale)
+        self.ui.binXEdit.editingFinished.connect(self.on_enter)
+        self.ui.binYEdit.editingFinished.connect(self.on_enter)
