@@ -1,8 +1,13 @@
 
 import numpy as np
 import sidpy
+import h5py
+import pyNSID
+import ipywidgets as widgets
+from IPython.display import display
 
 from PyQt5 import QtWidgets, QtCore
+
 
 class ProgressDialog(QtWidgets.QDialog):
     """
@@ -25,6 +30,7 @@ class ProgressDialog(QtWidgets.QDialog):
         self.progress.setValue(count)
         QtWidgets.QApplication.processEvents()
 
+
 class ChooseDataset(object):
     def __init__(self, input_object):
         if isinstance(input_object, sidpy.Dataset):
@@ -40,7 +46,7 @@ class ChooseDataset(object):
         self.dataset_list = []
         self.dataset_type = None
         self.dataset = None
-        self.reader = NSIDReader(self.current_channel)
+        self.reader = pyNSID.NSIDReader(self.current_channel)
 
         self.get_dataset_list()
         self.select_image = widgets.Dropdown(options=self.dataset_names,
@@ -68,7 +74,6 @@ class ChooseDataset(object):
     def set_dataset(self, b):
         index = self.select_image.index
         self.dataset = self.dataset_list[index]
-
 
 
 def get_dimensions_by_order(dims_in, dataset):
