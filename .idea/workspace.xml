@@ -22,9 +22,8 @@
     <select />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_tools.py" afterDir="false" />
+    <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code">
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/interactive_eels.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/interactive_eels.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -208,7 +207,14 @@
       <option name="project" value="LOCAL" />
       <updated>1604787222841</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code">
+      <created>1604787617866</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1604787617866</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -232,7 +238,8 @@
     <MESSAGE value="cleaned code some more" />
     <MESSAGE value="fixed bug in dm3reader and file_tools.py" />
     <MESSAGE value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog" />
+    <MESSAGE value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code" />
   </component>
   <component name="WindowStateProjectService">
     <state x="176" y="115" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1603822434047">
@@ -273,11 +280,11 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604787224492">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604787621257">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603986530699" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604787224492" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604787621257" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
