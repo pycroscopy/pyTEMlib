@@ -23,11 +23,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code">
+      <change afterPath="$PROJECT_DIR$/docs/Makefile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/_templates/custom-class-template.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/_templates/custom-module-template.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/_templates/module.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/about.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/conf.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/contact.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/credits.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/index.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/install.rst" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/source/nsid.rst" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/4_2_2_Analysis_Core_Loss-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/4_2_2_Analysis_Core_Loss-checkpoint.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/notebooks/4_2_2_Analysis_Core_Loss.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_2_2_Analysis_Core_Loss.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_dlg.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_dlg.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -239,7 +248,14 @@
       <option name="project" value="LOCAL" />
       <updated>1604788163643</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code">
+      <created>1604796803050</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1604796803050</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -305,11 +321,11 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604788166516">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604796806777">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603986530699" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604788166516" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604796806777" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
@@ -322,5 +338,16 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="386" y="199" width="672" height="678" key="search.everywhere.popup/0.0.1440.920@0.0.1440.920" timestamp="1604788574029" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/docs/source/conf.py</url>
+          <line>14</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

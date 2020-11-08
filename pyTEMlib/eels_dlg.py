@@ -220,18 +220,6 @@ class UiDialog(object):
         self.layout.addWidget(self.progress, row, 1)
         self.layout.addWidget(self.do_fit_button, row, 2)
 
-        self.separator4 = QtWidgets.QLabel(dialog)
-        self.separator4.setAutoFillBackground(True)
-        self.separator4.setAlignment(QtCore.Qt.AlignCenter)
-        self.separator4.setMaximumHeight(50)
-        self.separator4.setPalette(palette)
-        ######################################################################
-        self.separator4.setText("Spectrum Image")
-
-        row += 1
-        self.layout.addWidget(self.separator4, row, 0, 1, 4)
-        ######################################################################
-
         dialog.setLayout(self.layout)
         dialog.setWindowTitle('Fit Composition Input')
 
