@@ -9,6 +9,7 @@ def sanityoptics():
 	from experiment import df, C0a, C0b, C12a, C12b, C21a, C21b, C23a, C23b, C3
 	from experiment import C32a, C32b, C34a, C34b, C41a, C43a, C45a, C5, C7
 
+    all()
 	try:
 		ApAngle
 	except NameError:
