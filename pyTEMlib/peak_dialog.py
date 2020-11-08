@@ -34,11 +34,8 @@ class PeakFitDialog(QtWidgets.QDialog):
 
         self.dataset = dataset
         self.energy_scale = np.array([])
-        self.model = np.array([])
-        self.peak_model = np.array([])
         self.peak_out_list = []
         self.p_out = []
-        self.edges = {}
         self.axis = None
         self.show_regions = False
         self.show()
@@ -63,10 +60,8 @@ class PeakFitDialog(QtWidgets.QDialog):
                     self.dataset.metadata['peak_fit']['fit_start'] = \
                         self.dataset.metadata['edges']['fit_area']['fit_start']
                     self.dataset.metadata['peak_fit']['fit_end'] = self.dataset.metadata['edges']['fit_area']['fit_end']
-
                 self.dataset.metadata['peak_fit']['peaks'] = {'0': {'position': self.energy_scale[1],
-                                                                    'amplitude': 1000.0,
-                                                                    'width': 1.0,
+                                                                    'amplitude': 1000.0, 'width': 1.0,
                                                                     'type': 'Gauss', 'asymmetry': 0}}
 
         self.peaks = self.dataset.metadata['peak_fit']
@@ -74,6 +69,16 @@ class PeakFitDialog(QtWidgets.QDialog):
             self.peaks['fit_start'] = self.energy_scale[1]
             self.peaks['fit_end'] = self.energy_scale[-2]
 
+        if 'peak_model' in self.peaks:
+            self.peak_model = self.peaks['peak_model']
+            self.model = self.peak_model
+            if 'edge_model' in self.peaks:
+                self.model = self.model + self.peaks['edge_model']
+        else:
+            self.model = np.array([])
+            self.peak_model = np.array([])
+        if 'peak_out_list' in self.peaks:
+            self.peak_out_list = self.peaks['peak_out_list']
         self.set_peak_list()
 
         self.update()
@@ -178,7 +183,10 @@ class PeakFitDialog(QtWidgets.QDialog):
             self.model = self.dataset.metadata['edges']['model']['spectrum']
         else:
             self.model = np.zeros(len(self.energy_scale))
+
+        self.dataset.metadata['peak_fit']['edge_model'] = self.model
         self.model = self.model + self.peak_model
+        self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
 
         for key, peak in self.peaks['peaks'].items():
             if key.isdigit():
@@ -208,7 +216,11 @@ class PeakFitDialog(QtWidgets.QDialog):
             self.model = self.dataset.metadata['edges']['model']['spectrum']
         else:
             self.model = np.zeros(len(spec_dim[1]))
-        self.model = self.model+self.peak_model
+
+        self.dataset.metadata['peak_fit']['edge_model'] = self.model
+        self.model = self.model + self.peak_model
+        self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
+        self.dataset.metadata['peak_fit']['peak_out_list'] = self.peak_out_list
 
         self.plot()
 
@@ -326,10 +338,13 @@ class PeakFitDialog(QtWidgets.QDialog):
 
     def set_peak_list(self):
         self.ui.peak_list = []
-        self.peaks['peaks'] = {}
+        if 'peaks' not in self.peaks:
+            self.peaks['peaks'] = {}
+        key = 0
         for key in self.peaks['peaks']:
             if key.isdigit():
                 self.ui.peak_list.append(f'Peak {int(key) + 1}')
+        self.ui.find_edit.setText(str(int(key) + 1))
         self.ui.peak_list.append(f'add peak')
         self.ui.list3.clear()
         self.ui.list3.addItems(self.ui.peak_list)
@@ -368,13 +383,13 @@ class PeakFitDialog(QtWidgets.QDialog):
     def on_list_enter(self):
         # self.setWindowTitle('list')
         if self.sender() == self.ui.list3:
-            if self.ui.list3.currentText() == 'Add Peak':
-                self.ui.list3.addItem('Add Peak')
+            if self.ui.list3.currentText().lower() == 'add peak':
                 peak_index = self.ui.list3.currentIndex()
-                self.ui.list3.setCurrentText(f'Peak {peak_index+1}')
-                self.peaks['peaks'][str(peak_index)] = {'position': self.energy_scale[1],
-                                                        'amplitude': 1000.0, 'width': 1.0,
-                                                        'type': 'Gauss', 'asymmetry': 0}
+                self.ui.list3.insertItem(peak_index, f'Peak {peak_index+1}')
+                self.peaks['peaks'][str(peak_index+1)] = {'position': self.energy_scale[1],
+                                                          'amplitude': 1000.0, 'width': 1.0,
+                                                          'type': 'Gauss', 'asymmetry': 0}
+                self.ui.list3.setCurrentIndex(peak_index)
         self.update()
 
     def set_action(self):

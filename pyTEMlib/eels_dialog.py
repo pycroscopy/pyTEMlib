@@ -20,6 +20,16 @@ class EELSDialog(QtWidgets.QDialog):
     def __init__(self, dataset=None):
         super().__init__(None, QtCore.Qt.WindowStaysOnTopHint)
         # Create an instance of the GUI
+        if dataset is None:
+            # make a dummy dataset
+            dataset = ft.make_dummy_dataset(sidpy.DataTypes.SPECTRUM)
+        if not isinstance(dataset, sidpy.Dataset):
+            raise TypeError('dataset has to be a sidpy dataset')
+        self.spec_dim = ft.get_dimensions_by_type('spectral', dataset)
+        if len(self.spec_dim) != 1:
+            raise TypeError('We need exactly one SPECTRAL dimension')
+        self.spec_dim = self.spec_dim[0]
+
         self.ui = eels_dlg.UiDialog(self)
         # Run the .setup_ui() method to show the GUI
         # self.ui.setup_ui(self)
@@ -33,13 +43,6 @@ class EELSDialog(QtWidgets.QDialog):
         self.axis = None
         self.show_regions = False
         self.show()
-
-        if dataset is None:
-            # make a dummy dataset
-            dataset = ft.make_dummy_dataset(sidpy.DataTypes.SPECTRUM)
-
-        if not isinstance(dataset, sidpy.Dataset):
-            raise TypeError('dataset has to be a sidpy dataset')
 
         self.set_dataset(dataset)
         # TODO: set elements does not work correctly for periodic table
@@ -63,7 +66,6 @@ class EELSDialog(QtWidgets.QDialog):
         elif hasattr(self.dataset.view, 'axis'):
             self.axis = self.dataset.view.axis
         self.figure = self.axis.figure
-
         self.cid = self.figure.canvas.mpl_connect('draw_event', self.plot)
 
         self.plot()
@@ -85,8 +87,8 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.spec_dim = spec_dim
         self.energy_scale = dataset._axes[spec_dim].values
-
         self.ui.edit2.setText(f"{self.energy_scale[-2]:.3f}")
+
         if 'fit_area' not in self.edges:
             self.edges['fit_area'] = {}
         if 'fit_start' not in self.edges['fit_area']:

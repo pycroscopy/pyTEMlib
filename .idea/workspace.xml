@@ -24,7 +24,10 @@
   <component name="ChangeListManager">
     <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyTEMlib/sidpy_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/sidpy_tools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/4_2_2_Analysis_Core_Loss-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/.ipynb_checkpoints/4_2_2_Analysis_Core_Loss-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notebooks/4_2_2_Analysis_Core_Loss.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/4_2_2_Analysis_Core_Loss.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/eels_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/eels_dialog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyTEMlib/peak_dialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -229,7 +232,14 @@
       <option name="project" value="LOCAL" />
       <updated>1604787955028</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code">
+      <created>1604788163643</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1604788163643</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -295,11 +305,11 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604787957781">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604788166516">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603986530699" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604787957781" />
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604788166516" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
@@ -308,9 +318,9 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="499" y="173" key="git4idea.branch.GitSmartOperationDialog/0.0.1440.920@0.0.1440.920" timestamp="1603824037840" />
-    <state x="385" y="198" width="672" height="678" key="search.everywhere.popup" timestamp="1604004912904">
+    <state x="386" y="199" width="672" height="678" key="search.everywhere.popup" timestamp="1604788574029">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
-    <state x="385" y="198" width="672" height="678" key="search.everywhere.popup/0.0.1440.920@0.0.1440.920" timestamp="1604004912904" />
+    <state x="386" y="199" width="672" height="678" key="search.everywhere.popup/0.0.1440.920@0.0.1440.920" timestamp="1604788574029" />
   </component>
 </project>
