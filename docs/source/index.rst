@@ -13,7 +13,7 @@ Jump to our `GitHub project page <https://github.com/gduscher/pyTEMlib>`_
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: p
+   :caption: pyTEMlib
 
    about
    install
@@ -27,6 +27,7 @@ Source code API
    :toctree: _autosummary
    :template: custom-module-template.rst
    :recursive:
+
    pyTEMlib
 
 * :ref:`modindex`
