@@ -1,9 +1,9 @@
 EELS_tools
-===========
+==========
 
 part of
 
-pyTEMlib, a pycroscopy library
+pyTEMlib, a `pycroscopy library <https://pycroscopy.github.io/>`_
 
 by
 

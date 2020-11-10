@@ -24,6 +24,7 @@
   <component name="ChangeListManager">
     <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="added docs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/source/index.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/index.rst" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,12 +55,10 @@
     </favorite-branches>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="gerd-docs2" />
         <entry key="$PROJECT_DIR$" value="gerd_dev2" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="ProjectId" id="1jTCw4id0oLsWjpoAwqIpTsg1YO" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
@@ -272,7 +271,21 @@
       <option name="project" value="LOCAL" />
       <updated>1604967021044</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="added docs">
+      <created>1604967459868</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1604967459868</updated>
+    </task>
+    <task id="LOCAL-00024" summary="added docs">
+      <created>1605027878712</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1605027878712</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -340,15 +353,15 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1604967419929">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1605027894125">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603986530699" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1604967419929" />
-    <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603822466317">
+    <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1605027894125" />
+    <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1604967544791">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
-    <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1440.920@0.0.1440.920" timestamp="1603822466317" />
+    <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.0.1440.920@0.0.1440.920" timestamp="1604967544791" />
     <state x="499" y="173" key="git4idea.branch.GitSmartOperationDialog" timestamp="1603824037840">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
