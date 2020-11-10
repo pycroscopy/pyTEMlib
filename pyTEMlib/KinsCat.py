@@ -7,38 +7,22 @@ The University of Tennessee, Knoxville
 Department of Materials Science & Engineering
 
 Sources:
-           Scattering Theory:
-           Zuo and Spence, "Advanced TEM", 2017
+   Scattering Theory:
+   Zuo and Spence, "Advanced TEM", 2017
 
-           Spence and Zuo, Electron Microdiffraction, Plenum 1992
-  
-           Atomic Form Factor:
-           Kirkland: Advanced Computing in Electron Microscopy 2nd edition
-           Appendix C
+   Spence and Zuo, Electron Microdiffraction, Plenum 1992
 
-Units: everything is in SI units, except length is given in nm.
+   Atomic Form Factor:
+       Kirkland: Advanced Computing in Electron Microscopy 2nd edition
+       Appendix C
+
+Units:
+    everything is in SI units, except length is given in nm.
 
 Usage:
+    See the notebooks for examples of these routines
+
 All the input and output is done through a dictionary
-    (See Zuo_fig_3_18 for full example input)
-
-Available Subroutines:
-
-    Kinematic_Scattering(tags, verbose=False ) # Main Routine
-
-    CsCl()
-    Silicon()
-    Zuo_fig_3_18()
-    
-    feq(element, q) # atomic form factor at reciprocal distance q   
-    get_rotation_matrix(zone, verbose = False):
-    zone_mistilt (zone, angles):
-    vector_norm(g)  # Length of vector
-    get_wavelength(E0) # Wavelength in 1/nm
-
-    plotSAED(tags, grey=False)
-    holzLZ(tags, grey=False)
-    plotKikuchi(tags, grey=False)
 """
 # numerical packages used
 import numpy as np
@@ -50,11 +34,11 @@ import sidpy
 # plotting package used
 import matplotlib.pylab as plt  # basic plotting
 import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
-from matplotlib.patches import Circle, Ellipse, Rectangle
+# from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
+from matplotlib.patches import Circle  # , Ellipse, Rectangle
 from matplotlib.collections import PatchCollection
 
-from ase.io import read, write
+from ase.io import read  # , write
 import pyTEMlib.file_tools as ft
 import os
 
@@ -74,7 +58,10 @@ else:
     print('spglib not installed; Symmetry functions of spglib disabled')
 
 
-def read_poscar():  # open file dialog to select poscar file
+def read_poscar():
+    """
+    Open file dialog to select a POSCAR file from VASP
+    """
     file_name = ft.openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
     # use ase package to read file
     
@@ -92,13 +79,23 @@ def read_poscar():  # open file dialog to select poscar file
 
 
 def example():
+    """
+    same as Zuo_fig_3_18
+    """
     return Zuo_fig_3_18()
 
 
 def Zuo_fig_3_18():
-    
-    # Create Silicon structure (Could be produced with Silicon routine)
+    """
+    Input for Figure 3.18 in Zuo and Spence \"Advanced TEM\", 2017
+
+    This input acts as an example as well as a reference
+
+    Returns:
+        dictionary: tags is the dictionary of all input and output paramter needed to reproduce that figure.
+    """
     # INPUT
+    # Create Silicon structure (Could be produced with Silicon routine)
     print('Sample Input for Figure 3.18 in Zuo and Spence \"Advanced TEM\", 2017')
     tags = {'crystal_name': 'Silicon'}
     print('tags[\'crystal\'] = ', tags['crystal_name'])
@@ -232,7 +229,9 @@ def cubic(a):
 
 
 def from_parameters(a, b, c, alpha, beta, gamma):
-    """ Create a Lattice using unit cell lengths and angles (in degrees)."""
+    """
+    Create a unit cell  using lengths and angles (in degrees).
+    """
 
     alpha_r = np.radians(alpha)
     beta_r = np.radians(beta)
@@ -255,11 +254,23 @@ def from_parameters(a, b, c, alpha, beta, gamma):
 
 
 def tetragonal(a, c):
-    """Tetragonal lattice of dimensions a x a x c."""
+    """
+    Tetragonal unit cell of dimensions a x a x c.
+    """
     return from_parameters(a, a, c, 90, 90, 90)
 
 
 def bcc(lattice_parameter, elements):
+    """
+    BCC structure
+
+    Input:
+        lattice parameter in nm and
+        elements as a list or a string of a single element
+
+    Returns:
+        unit cell , base and relative atom positions
+    """
     unit_cell = cubic(lattice_parameter)
     base = np.array([(0., 0., 0.), (0.5, 0.5, 0.5)])
     if len(elements) > 1:
@@ -270,6 +281,16 @@ def bcc(lattice_parameter, elements):
         
    
 def fcc(lattice_parameter, elements):
+    """
+    FCC structure
+
+    Input:
+        lattice parameter in nm and
+        elements as a list or a string of a single element
+
+    Returns:
+        unit cell , base and relative atom positions
+    """
     unit_cell = cubic(lattice_parameter)
     base = np.array([(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.0), (0., 0.5, 0.5)])
     if len(elements) > 3:
@@ -282,6 +303,17 @@ def fcc(lattice_parameter, elements):
 
 
 def dichalcogenide(a, c, u, elements):
+    """
+    Dichalcogenide structure
+
+    Input:
+        a, c: floats - lattice parameters
+        u: float - relative shift parameter
+        elements: string of element or list of strings of elements
+
+    Returns:
+        unit_cell, base, atoms
+    """
     unit_cell = from_parameters(a, a, c, 90., 90., 120.)
     base = [(1/3., 2/3., 1/4.), (2/3., 1/3., 3/4.),
             (2/3., 1/3., 1/4.+u), (2/3., 1/3., 1/4.-u),
@@ -295,6 +327,16 @@ def dichalcogenide(a, c, u, elements):
 
 
 def wurzite(a, c, u, elements):
+    """
+    Wurzite structure
+
+    Input:
+        a, c: floats - lattice parameters in nm
+        elements: string of element or list of strings of elements
+
+    Returns:
+        unit_cell, base, atoms
+    """
     unit_cell = from_parameters(a, a, c, 90., 90., 120.)
     base = [(2./3., 1./3., .500), (1./3., 2./3., 0.000), (2./3., 1./3., 0.5+u), (1./3., 2./3., u)]
     if len(elements) > 1:
@@ -305,6 +347,15 @@ def wurzite(a, c, u, elements):
 
 
 def rocksalt(lattice_parameter, elements):
+    """
+        Rocksalt structure
+
+        Input:
+            lattice_parameter: float in nm
+            elements: string of element or list of strings of elements
+        Returns:
+            unit_cell, base, atoms
+        """
     unit_cell = np.identity(3) * lattice_parameter
     base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)]
     base2 = np.array(base)+(0.5, 0.5, 0.5)
@@ -318,6 +369,16 @@ def rocksalt(lattice_parameter, elements):
 
 
 def zinc_blende(lattice_parameter, elements):
+    """
+    Zinc blende structure
+
+    Input:
+        lattice_parameter: float in nm
+        elements: string of element or list of strings of elements
+
+    Returns:
+        unit_cell, base, atoms
+    """
     unit_cell = np.identity(3) * lattice_parameter
     base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)]
     base = base + (np.array(base) + (.25, .25, .25)).tolist()
@@ -332,6 +393,16 @@ def zinc_blende(lattice_parameter, elements):
 
 
 def perovskite(lattice_parameter, elements):
+    """
+    Perovskite structure
+
+    Input:
+        lattice_parameter: float in nm
+        elements: string of element or list of strings of elements
+
+    Returns:
+        unit_cell, base, atoms
+    """
     unit_cell = cubic(lattice_parameter)
     base = np.array([(0., 0., 0.), (0.5, 0.5, 0.5), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)])
     if len(elements) > 2:
@@ -344,6 +415,17 @@ def perovskite(lattice_parameter, elements):
 
 
 def zone_mistilt(zone, angles):
+    """
+    Rotation of zone axis by mistilt
+
+    Input:
+        zone: zone axis in Miller indices
+        angles: list of mistilt angles in degree
+
+    Returns:
+        rotation matrix (3x3)
+
+    """
     alpha, beta, gamma = np.radians(angles)
 
     # first we rotate alpha about x axis
@@ -422,6 +504,11 @@ def structure_by_name(crystal):
 
 
 def get_symmetry(unit_cell, base, atoms):
+    """
+    Symmetry analysis with spglib
+
+    spglib must be installed
+    """
     if _spglib_present:
 
         print('#####################')
@@ -455,42 +542,40 @@ def get_symmetry(unit_cell, base, atoms):
 def ball_and_stick(tags, extend=1, max_bond_length=0.):
     
     """
-    calculates the data to plot a ball and stick model
+    Calculates the data to plot a ball and stick model
     
     Input:
-    ------
-    tags: dictionary containing the 'unit_cell', 'base' and 'elements' tags.
-    
-    extend: 1 or 3 integers
-        The *extend* argument scales the effective cell in which atoms
-        will be included. It must either be a list of three integers or a single
-        integer scaling all 3 directions.  By setting this value to one, 
-        all  corner and edge atoms will be included in the returned cell.  
-        This will of cause make the returned cell non-repeatable, but this is 
-        very useful for visualisation.
-    
-    max_bond_length: 1 float
-        The max_bond_length argument defines the distance for which a bond will be shown.
-        If max_bond_length is zero, the tabulated atom radii will be used.
-        
-        
+        tags: dictionary containing the 'unit_cell', 'base' and 'elements' tags.
+
+        extend: 1 or 3 integers
+            The *extend* argument scales the effective cell in which atoms
+            will be included. It must either be a list of three integers or a single
+            integer scaling all 3 directions.  By setting this value to one,
+            all  corner and edge atoms will be included in the returned cell.
+            This will of cause make the returned cell non-repeatable, but this is
+            very useful for visualisation.
+
+        max_bond_length: 1 float
+            The max_bond_length argument defines the distance for which a bond will be shown.
+            If max_bond_length is zero, the tabulated atom radii will be used.
+
     Output:
-    -------
-    corners,balls, Z, bonds: lists
-        These lists can be used to plot the 
-        unit cell:
-            for x, y, z in corners:
-                l=mlab.plot3d( x,y,z, tube_radius=0.002)
-        bonds:
-            for x, y, z in bonds:
-                mlab.plot3d( x,y,z, tube_radius=0.02)
-        and atoms:
-            for i,atom in enumerate(balls):
-                mlab.points3d(atom[0],atom[1],atom[2],
-                              scale_factor=0.1,##ks.vdw_radii[Z[i]]/5,
-                              resolution=20,
-                              color=tuple(ks.jmol_colors [Z[i]]),
-                              scale_mode='none')
+
+        corners,balls, Z, bonds: lists
+            These lists can be used to plot the
+            unit cell:
+                for x, y, z in corners:
+                    l=mlab.plot3d( x,y,z, tube_radius=0.002)
+            bonds:
+                for x, y, z in bonds:
+                    mlab.plot3d( x,y,z, tube_radius=0.02)
+            and atoms:
+                for i,atom in enumerate(balls):
+                    mlab.points3d(atom[0],atom[1],atom[2],
+                                  scale_factor=0.1,##ks.vdw_radii[Z[i]]/5,
+                                  resolution=20,
+                                  color=tuple(ks.jmol_colors [Z[i]]),
+                                  scale_mode='none')
                               
         Please note that you'll need the *Z* list for coloring, or for radii that depend on elements
     
@@ -582,15 +667,15 @@ def plot_unitcell_mayavi(tags):
         Makes a 3D plot of crystal structure
 
         Input:
-        ------
+
             Dictionary with tags: 'unit_cell, 'elements', 'base'
 
         Output:
-        -------
+
             3D plot
 
         Dependencies:
-        -------------
+
             ball_and_stick function of KinsCat
             mlab of mayavi 
     """
@@ -643,6 +728,9 @@ def plot_unitcell_mayavi(tags):
     
 
 def plot_unitcell(tags):
+    """
+    Simple plot of unit cell
+    """
 
     if 'max_bond_length' not in tags:
         max_bond_length = 0.
@@ -695,30 +783,34 @@ def plot_unitcell(tags):
     
 # The metric tensor of the lattice.
 def metric_tensor(matrix):
-    # Use like: metric_tensor(unit_cell)
+    """
+    The metric tensor of the lattice.
+
+    Usage:
+        metric_tensor(unit_cell)
+    """
     metric_tensor2 = np.dot(matrix, matrix.T)
     return metric_tensor2
 
 
-# Length of vector
 def vector_norm(g):
+    """
+    Length of vector
+    """
     return np.sqrt(g[:, 0]**2+g[:, 1]**2+g[:, 2]**2)
 
 
 def make_pretty_labels(hkls, hex_label=False):
     """
-    ###########################
-    # Make pretty labels
-    ###########################
+    Make pretty labels
+
     Input:
-    ------
         hkls: a numpy array with all the Miller indices to be labeled
+
     Optional:
-    ---------
         hex_label: if True this will make for Miller indices.
 
     Output:
-    ------
         list of labels in Latex format
     """
     hkl_label = []
@@ -765,25 +857,6 @@ def get_wavelength(e0):
     return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
     
 
-# Rotation of zone axis by mistilt
-def zone_mistilt(zone, angles):
-    alpha, beta, gamma = np.radians(angles)
-
-    # first we rotate alpha about x axis
-    c, s = np.cos(alpha), np.sin(alpha)
-    rotx = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-    
-    # second we rotate beta about y axis
-    c, s = np.cos(beta), np.sin(beta)
-    roty = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
-    
-    # third we rotate gamma about z-axis
-    c, s = np.cos(gamma), np.sin(gamma)
-    rotz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
-
-    return np.dot(np.dot(np.dot(zone, rotx), roty), rotz)
-
-
 # Determine rotation matrix to tilt zone axis onto z-axis
 # We determine spherical coordinates to do that
 def get_rotation_matrix(zone, verbose=False):
@@ -795,10 +868,12 @@ def get_rotation_matrix(zone, verbose=False):
      axis (Rodrigues Formula)
 
      INPUT:
+     ------
       - zone axis has to be in cartesian coordinates also. 
      The dot product of zone axis  and unit cell will accomplish that.
 
-    Output: 
+    Output:
+    -------
      - rotation_matrix
      - theta (degrees)
      - phi (degrees)
@@ -830,9 +905,9 @@ def get_rotation_matrix(zone, verbose=False):
 
 
 def check_sanity(tags):
-    ############################################
-    # Check sanity
-    ############################################
+    """
+    Check sanity of input parameters
+    """
     stop = False
     if 'unit_cell' not in tags:
         print(' No unit_cell defined')
@@ -870,6 +945,15 @@ def check_sanity(tags):
 
 
 def ring_pattern_calculation(tags, verbose=False):
+    """
+    Calculate the ring diffraction pattern of a crystal structure
+
+    Input:
+        tags: dictionary of crystal structure
+    Output:
+        tags: dictionary with diffraction information added
+
+    """
     # Reciprocal Lattice 
     # We use the linear algebra package of numpy to invert the unit_cell "matrix"
     reciprocal_unit_cell = np.linalg.inv(tags['unit_cell']).T  # transposed of inverted unit_cell
@@ -949,39 +1033,34 @@ def ring_pattern_calculation(tags, verbose=False):
     return out_tags  
         
             
-# All the kinematic scattering
-# Calculates SAED, Kikuchi, and HOLZ pattern
 def kinematic_scattering(tags, verbose=False):
     """
         All kinematic scattering calculation
+
         Calculates Bragg spots, Kikuchi lines, excess, and deficient HOLZ lines
 
         Input:
-        ------
             a dictionary with crystal structure:
                 'unit_cell', 'base' 'elements'
             and with experimental parameters:
                 'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max'
             Optional parameters are:
                 'mistilt', convergence_angle_mrad', and 'crystal_name'
-
             vebose = True will give extended output of the calculation
-
         Output to dictionary:
-        ---------------------
+            There are three sub_dictionaries:
+                ['allowed'], ['forbidden'], and ['HOLZ']
+                ['allowed'] and ['forbidden'] dictionaries contain:
+                    ['Sg'], ['hkl'], ['g'], ['structure factor'], ['intensities'],
+                    ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], ['HHOLZ'], ['label'], and ['Laue_zone']
+                the ['HOLZ'] dictionary contains:
+                    ['slope'], ['distance'], ['theta'], ['g deficient'], ['g excess'], ['hkl'], ['intensities'],
+                    ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], and  ['HHOLZ']
+                Please note that the Kikuchi lines are the HOLZ lines of ZOLZ
 
-        There are three sub_dictionaries: ['allowed'], ['forbidden'], and ['HOLZ']
-        ['allowed'] and ['forbidden'] dictionaries contain:
-            ['Sg'], ['hkl'], ['g'], ['structure factor'], ['intensities'],
-            ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], ['HHOLZ'], ['label'], and ['Laue_zone']
-        the ['HOLZ'] dictionary contains:
-            ['slope'], ['distance'], ['theta'], ['g deficient'], ['g excess'], ['hkl'], ['intensities'],
-            ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], and  ['HHOLZ']
-        Please note that the Kikuchi lines are the HOLZ lines of ZOLZ
-
-        There are also a few parameters stored in the main dictionary:
-            ['wave_length_nm'], ['reciprocal_unit_cell'], ['inner_potential_V'], ['incident_wave_vector'],
-            ['volume'], ['theta'], ['phi'], and ['incident_wave_vector_vacuum']
+                There are also a few parameters stored in the main dictionary:
+                    ['wave_length_nm'], ['reciprocal_unit_cell'], ['inner_potential_V'], ['incident_wave_vector'],
+                    ['volume'], ['theta'], ['phi'], and ['incident_wave_vector_vacuum']
     """
 
     if check_sanity(tags):
@@ -991,9 +1070,9 @@ def kinematic_scattering(tags, verbose=False):
 
     tags['wave_length_nm'] = get_wavelength(tags['acceleration_voltage_V'])
     
-    ############################################
+    # ###########################################
     # reciprocal_unit_cell 
-    ############################################
+    # ###########################################
     unit_cell = np.array(tags['unit_cell'])
     # We use the linear algebra package of numpy to invert the unit_cell "matrix"
     reciprocal_unit_cell = np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
@@ -1003,9 +1082,9 @@ def kinematic_scattering(tags, verbose=False):
         print('reciprocal_unit_cell')
         print(np.round(reciprocal_unit_cell, 3))
         
-    ############################################
+    # ###########################################
     # Incident wave vector K0 in vacuum and material 
-    ############################################
+    # ###########################################
 
     # Incident wave vector K0 in vacuum and material 
     U0 = 0
@@ -1038,9 +1117,9 @@ def kinematic_scattering(tags, verbose=False):
         print('The convergence angle of {0}mrad = {1:.2f} 1/nm'.format(tags['convergence_angle_mrad'], 
                                                                        tags['convergence_angle_nm-1']))
 
-    #############
+    # ############
     # Rotate
-    #############
+    # ############
     
     # first we take care of mistilt: zone axis is then in fractional Miller indices
     zone = tags['zone'] = zone_mistilt(tags['zone_hkl'], tags['mistilt'])
@@ -1063,10 +1142,10 @@ def kinematic_scattering(tags, verbose=False):
     if verbose:
         print('Center of Ewald sphere ', K0_vector)
 
-    ########################
+    # #######################
     # Find all Miller indices whose reciprocal point lays near the Ewald sphere with radius K0 
     # within a maximum excitation error Sg
-    ########################
+    # #######################
     
     hkl_max = tags['hkl_max']
     Sg_max = tags['Sg_max']  # 1/nm  maximum allowed excitation error
@@ -1082,9 +1161,9 @@ def kinematic_scattering(tags, verbose=False):
     g_non_rot = g
     g = np.dot(g, rotation_matrix)
     
-    ########################
+    # #######################
     # Calculate excitation errors for all reciprocal_unit_cell points
-    ########################
+    # #######################
     
     # Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
     # S=(K0**2-np.linalg.norm(g - K0_vector, axis=1)**2)/(2*K0)
@@ -1094,9 +1173,9 @@ def kinematic_scattering(tags, verbose=False):
     in_sqrt[in_sqrt < 0] = 0.
     S = -gMz[:, 2] - np.sqrt(in_sqrt)
     
-    ########################
+    # #######################
     # Determine reciprocal_unit_cell points with excitation error less than the maximum allowed one: Sg_max
-    ########################
+    # #######################
     
     reflections = abs(S) < Sg_max   # This is now a boolean array with True for all possible reflections
     
@@ -1110,9 +1189,9 @@ def kinematic_scattering(tags, verbose=False):
         print('Of the {0} tested reciprocal_unit_cell points, {1} have an excitation error less than {2:.2f} 1/nm'.
               format(len(g), len(g_hkl), Sg_max))
         
-    ##################################
+    # #################################
     # Calculate Structure Factors
-    #################################
+    # ################################
     
     structure_factors = []
     """for j  in range(len(g_hkl)):
@@ -1136,9 +1215,9 @@ def kinematic_scattering(tags, verbose=False):
         structure_factors.append(F)
     F = structure_factors = np.array(structure_factors)
     
-    ############################################
+    # ###########################################
     # Sort reflection in allowed and forbidden #
-    ############################################
+    # ###########################################
     
     allowed = np.absolute(F) > 0.000001    # allowed within numerical error 
 
@@ -1169,26 +1248,26 @@ def kinematic_scattering(tags, verbose=False):
     tags['forbidden']['hkl'] = hkl_forbidden
     tags['forbidden']['g'] = g_forbidden
 
-    ###########################
+    # ##########################
     # Make pretty labels
-    ###########################
+    # ##########################
     hkl_label = make_pretty_labels(hkl_allowed)
     tags['allowed']['label'] = hkl_label
     
     # hkl_label = make_pretty_labels(hkl_forbidden)
     # tags['forbidden']['label'] = hkl_label
     
-    ############################
+    # ###########################
     # Calculate Intensities (of allowed reflections)
-    ############################
+    # ###########################
     
     intensities = np.absolute(F_allowed)**2
     
     tags['allowed']['intensities'] = intensities
     
-    ############################
+    # ###########################
     # Calculate Laue Zones (of allowed reflections)
-    ############################
+    # ###########################
     # Below is the expression given in most books.
     # However, that would only work for orthogonal crystal systems
     # Laue_Zone = abs(np.dot(hkl_allowed,tags['zone_hkl']))  # works only for orthogonal systems
@@ -1228,9 +1307,9 @@ def kinematic_scattering(tags, verbose=False):
                                                                              intensities[i], np.log(intensities[i]+1), 
                                                                              g_norm_allowed[i]))  
    
-    ###########################
+    # ##########################
     # Dynamically Activated forbidden reflections
-    ###########################
+    # ##########################
    
     double_diffraction = (np.sum(np.array(list(itertools.combinations(hkl_allowed[ZOLZ], 2))), axis=1))
     
@@ -1249,9 +1328,9 @@ def kinematic_scattering(tags, verbose=False):
         print(f'There are {len(dynamical_allowed)} forbidden but dynamical activated diffraction spots:')
         # print(tags['forbidden']['hkl'][dynamical_allowed])
 
-    ####################################
+    # ###################################
     # Calculate HOLZ and Kikuchi Lines #
-    ####################################
+    # ###################################
 
     # Dynamic Correction
 
@@ -1307,10 +1386,10 @@ def kinematic_scattering(tags, verbose=False):
         print('KinsCat\'s  \"Kinematic_Scattering\" finished')
 
 
-#####################
-# Plot SAED Pattern #
-#####################
 def plotSAED(tags, gray=False):
+    """
+    Plot SAED Pattern of single crystal
+    """
 
     saed = tags.copy()
     saed['convergence_angle_nm-1'] = 0
@@ -1343,10 +1422,10 @@ def plotSAED(tags, gray=False):
     plot_diffraction_pattern(saed, True)
 
 
-########################
-# Plot Kikuchi Pattern #
-########################
 def plotKikuchi(tags, grey=False):
+    """
+    Plot Kikuchi Pattern
+    """
     Kikuchi = tags.copy()
     
     Kikuchi['background'] = 'black'   # 'white'  'grey'
@@ -1378,10 +1457,10 @@ def plotKikuchi(tags, grey=False):
     plot_diffraction_pattern(Kikuchi, True)
 
 
-########################
-# Plot HOLZ Pattern #
-########################
 def plotHOLZ(tags, grey=False):
+    """
+    Plot HOLZ Pattern
+    """
     holz = tags.copy()
     
     holz['background'] = 'black'   # 'white'  'grey'
@@ -1412,10 +1491,10 @@ def plotHOLZ(tags, grey=False):
     plot_diffraction_pattern(holz, True)
 
 
-########################
-# Plot CBED Pattern #
-########################
 def plotCBED(tags, grey=False):
+    """
+    Plot CBED Pattern
+    """
     cbed = tags.copy()
     
     cbed['background'] = 'black'   # 'white'  'grey'
@@ -1448,46 +1527,46 @@ def plotCBED(tags, grey=False):
     plot_diffraction_pattern(cbed, True)
 
     
-########################
+# #######################
 # Plot HOLZ Pattern #
-########################
+# #######################
 def circles(x, y, s, c='b', vmin=None, vmax=None, **kwargs):
     """
-    Make a scatter plot of circles. 
+    Make a scatter plot of circles.
+
     Similar to plt.scatter, but the size of circles are in data scale.
+
     Parameters
-    ----------
-    x, y : scalar or array_like, shape (n, )
-        Input data
-    s : scalar or array_like, shape (n, ) 
-        Radius of circles.
-    c : color or sequence of color, optional, default : 'b'
-        `c` can be a single color format string, or a sequence of color
-        specifications of length `N`, or a sequence of `N` numbers to be
-        mapped to colors using the `cmap` and `norm` specified via kwargs.
-        Note that `c` should not be a single numeric RGB or RGBA sequence 
-        because that is indistinguishable from an array of values
-        to be colormapped. (If you insist, use `color` instead.)  
-        `c` can be a 2-D array in which the rows are RGB or RGBA, however. 
-    vmin, vmax : scalar, optional, default: None
-        `vmin` and `vmax` are used in conjunction with `norm` to normalize
-        luminance data.  If either are `None`, the min and max of the
-        color array is used.
-    kwargs : `~matplotlib.collections.Collection` properties
-        Eg. alpha, edgecolor(ec), facecolor(fc), linewidth(lw), linestyle(ls), 
-        norm, cmap, transform, etc.
+
+        x, y : scalar or array_like, shape (n, )
+            Input data
+        s : scalar or array_like, shape (n, )
+            Radius of circles.
+        c : color or sequence of color, optional, default : 'b'
+            `c` can be a single color format string, or a sequence of color
+            specifications of length `N`, or a sequence of `N` numbers to be
+            mapped to colors using the `cmap` and `norm` specified via kwargs.
+            Note that `c` should not be a single numeric RGB or RGBA sequence
+            because that is indistinguishable from an array of values
+            to be colormapped. (If you insist, use `color` instead.)
+            `c` can be a 2-D array in which the rows are RGB or RGBA, however.
+        vmin, vmax : scalar, optional, default: None
+            `vmin` and `vmax` are used in conjunction with `norm` to normalize
+            luminance data.  If either are `None`, the min and max of the
+            color array is used.
+        kwargs : `~matplotlib.collections.Collection` properties
+            Eg. alpha, edgecolor(ec), facecolor(fc), linewidth(lw), linestyle(ls),
+            norm, cmap, transform, etc.
     Returns
-    -------
-    paths : `~matplotlib.collections.PathCollection`
+
+        paths : `~matplotlib.collections.PathCollection`
     Examples
-    --------
-    a = np.arange(11)
-    circles(a, a, s=a*0.2, c=a, alpha=0.5, ec='none')
-    plt.colorbar()
+        a = np.arange(11)
+        circles(a, a, s=a*0.2, c=a, alpha=0.5, ec='none')
+        plt.colorbar()
     License
-    --------
-    This code is under [The BSD 3-Clause License]
-    (http://opensource.org/licenses/BSD-3-Clause)
+        This code is under [The BSD 3-Clause License]
+        (http://opensource.org/licenses/BSD-3-Clause)
     """
 
     if np.isscalar(c):
@@ -1524,6 +1603,9 @@ def circles(x, y, s, c='b', vmin=None, vmax=None, **kwargs):
 
 
 def plot_diffraction_pattern(tags, grey=False):
+    """
+    Plot any diffraction pattern based on content in dictionary
+    """
     if 'plot_rotation' not in tags:
         tags['plot_rotation'] = 0.
 
@@ -1548,6 +1630,16 @@ def plot_diffraction_pattern(tags, grey=False):
 
 
 def diffraction_pattern(tags, grey=False):
+    """
+    Determines how to plot diffraction pattern from kinematic scattering data.
+
+    Input:
+        tags : dictionary of kinematic scattering data
+
+    Returns:
+        tags: dictionary that now contains all information of how to plot any diffraction pattern
+        plot
+    """
     
     # Get information from dictionary
     HOLZ = tags['allowed']['HOLZ']
@@ -1623,9 +1715,9 @@ def diffraction_pattern(tags, grey=False):
         intensity_HOLZ = intensity*4./intensity[tags['HOLZ']['HOLZ']].max()*.75
         tags['HOLZ lines']['intensity_HOLZ'] = intensity_HOLZ
     tags['Kikuchi lines']['intensity_Kikuchi'] = intensity_Kikuchi
-    ########
+    # #######
     # Plot #
-    ########
+    # #######
     cms = mpl.cm
     # cm = cms.plasma#jet#, cms.gray, cms.autumn]
     cm = plt.get_cmap(tags['color map']) 
@@ -2318,8 +2410,18 @@ electronFF = {
 # Using equation Kirkland C.15
 
 def feq(element, q):
-    # form factor parametrized in 1/Angstrom    
-    # but we think in 1/nm
+    """
+    Atomic form factor parametrized in 1/Angstrom but converted to 1/nm
+
+    The atomic form factor is from Kirkland: Advanced Computing in Electron Microscopy 2nd edition, Appendix C.
+
+    Input:
+        element: string of element name
+        q:  now magnitude of scattering vector in 1/nm -- (=> exp(-i*g.r), physics negative convention)
+
+
+    """
+
     q = q/10
     # q is now magnitude of scattering vector in 1/A -- (=> exp(-i*g.r), physics negative convention)
     param = electronFF[element]

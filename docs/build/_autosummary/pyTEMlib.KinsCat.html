@@ -1,0 +1,378 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.KinsCat &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>pyTEMlib.KinsCat</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_autosummary/pyTEMlib.KinsCat.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-pyTEMlib.KinsCat">
+<span id="pytemlib-kinscat"></span><h1>pyTEMlib.KinsCat<a class="headerlink" href="#module-pyTEMlib.KinsCat" title="Permalink to this headline">¶</a></h1>
+<p>KinsCat
+Kinematic Scattering Theory
+Copyright by Gerd Duscher</p>
+<p>The University of Tennessee, Knoxville
+Department of Materials Science &amp; Engineering</p>
+<dl>
+<dt>Sources:</dt><dd><p>Scattering Theory:
+Zuo and Spence, “Advanced TEM”, 2017</p>
+<p>Spence and Zuo, Electron Microdiffraction, Plenum 1992</p>
+<dl class="simple">
+<dt>Atomic Form Factor:</dt><dd><p>Kirkland: Advanced Computing in Electron Microscopy 2nd edition
+Appendix C</p>
+</dd>
+</dl>
+</dd>
+<dt>Units:</dt><dd><p>everything is in SI units, except length is given in nm.</p>
+</dd>
+<dt>Usage:</dt><dd><p>See the notebooks for examples of these routines</p>
+</dd>
+</dl>
+<p>All the input and output is done through a dictionary</p>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.Zuo_fig_3_18.html#pyTEMlib.KinsCat.Zuo_fig_3_18" title="pyTEMlib.KinsCat.Zuo_fig_3_18"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Zuo_fig_3_18</span></code></a></p></td>
+<td><p>Input for Figure 3.18 in Zuo and Spence “Advanced TEM”, 2017</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.ball_and_stick.html#pyTEMlib.KinsCat.ball_and_stick" title="pyTEMlib.KinsCat.ball_and_stick"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ball_and_stick</span></code></a></p></td>
+<td><p>Calculates the data to plot a ball and stick model</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.bcc.html#pyTEMlib.KinsCat.bcc" title="pyTEMlib.KinsCat.bcc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bcc</span></code></a></p></td>
+<td><p>BCC structure</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.check_sanity.html#pyTEMlib.KinsCat.check_sanity" title="pyTEMlib.KinsCat.check_sanity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_sanity</span></code></a></p></td>
+<td><p>Check sanity of input parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.circles.html#pyTEMlib.KinsCat.circles" title="pyTEMlib.KinsCat.circles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">circles</span></code></a></p></td>
+<td><p>Make a scatter plot of circles.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.cubic.html#pyTEMlib.KinsCat.cubic" title="pyTEMlib.KinsCat.cubic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cubic</span></code></a></p></td>
+<td><p>Cubic lattice of dimensions a x a x a.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.dichalcogenide.html#pyTEMlib.KinsCat.dichalcogenide" title="pyTEMlib.KinsCat.dichalcogenide"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dichalcogenide</span></code></a></p></td>
+<td><p>Dichalcogenide structure</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.diffraction_pattern.html#pyTEMlib.KinsCat.diffraction_pattern" title="pyTEMlib.KinsCat.diffraction_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">diffraction_pattern</span></code></a></p></td>
+<td><p>Determines how to plot diffraction pattern from kinematic scattering data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.example.html#pyTEMlib.KinsCat.example" title="pyTEMlib.KinsCat.example"><code class="xref py py-obj docutils literal notranslate"><span class="pre">example</span></code></a></p></td>
+<td><p>same as Zuo_fig_3_18</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.fcc.html#pyTEMlib.KinsCat.fcc" title="pyTEMlib.KinsCat.fcc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fcc</span></code></a></p></td>
+<td><p>FCC structure</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.feq.html#pyTEMlib.KinsCat.feq" title="pyTEMlib.KinsCat.feq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feq</span></code></a></p></td>
+<td><p>Atomic form factor parametrized in 1/Angstrom but converted to 1/nm</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.from_parameters.html#pyTEMlib.KinsCat.from_parameters" title="pyTEMlib.KinsCat.from_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_parameters</span></code></a></p></td>
+<td><p>Create a unit cell  using lengths and angles (in degrees).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.get_rotation_matrix.html#pyTEMlib.KinsCat.get_rotation_matrix" title="pyTEMlib.KinsCat.get_rotation_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rotation_matrix</span></code></a></p></td>
+<td><p>Calculates the rotation matrix to rotate the zone axis parallel to the cartasian z-axis.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.get_symmetry.html#pyTEMlib.KinsCat.get_symmetry" title="pyTEMlib.KinsCat.get_symmetry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_symmetry</span></code></a></p></td>
+<td><p>Symmetry analysis with spglib</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.get_wavelength.html#pyTEMlib.KinsCat.get_wavelength" title="pyTEMlib.KinsCat.get_wavelength"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wavelength</span></code></a></p></td>
+<td><p>Calculates the relativistic corrected de Broglie wave length of an electron</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.h5_add_crystal_structure.html#pyTEMlib.KinsCat.h5_add_crystal_structure" title="pyTEMlib.KinsCat.h5_add_crystal_structure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h5_add_crystal_structure</span></code></a></p></td>
+<td><p>Adds the basic crystal information to a pyNSID style hdf5 file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.h5_add_to_structure.html#pyTEMlib.KinsCat.h5_add_to_structure" title="pyTEMlib.KinsCat.h5_add_to_structure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h5_add_to_structure</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.kinematic_scattering.html#pyTEMlib.KinsCat.kinematic_scattering" title="pyTEMlib.KinsCat.kinematic_scattering"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kinematic_scattering</span></code></a></p></td>
+<td><p>All kinematic scattering calculation</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.make_pretty_labels.html#pyTEMlib.KinsCat.make_pretty_labels" title="pyTEMlib.KinsCat.make_pretty_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_pretty_labels</span></code></a></p></td>
+<td><p>Make pretty labels</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.metric_tensor.html#pyTEMlib.KinsCat.metric_tensor" title="pyTEMlib.KinsCat.metric_tensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">metric_tensor</span></code></a></p></td>
+<td><p>The metric tensor of the lattice.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.perovskite.html#pyTEMlib.KinsCat.perovskite" title="pyTEMlib.KinsCat.perovskite"><code class="xref py py-obj docutils literal notranslate"><span class="pre">perovskite</span></code></a></p></td>
+<td><p>Perovskite structure</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.plotCBED.html#pyTEMlib.KinsCat.plotCBED" title="pyTEMlib.KinsCat.plotCBED"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotCBED</span></code></a></p></td>
+<td><p>Plot CBED Pattern</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.plotHOLZ.html#pyTEMlib.KinsCat.plotHOLZ" title="pyTEMlib.KinsCat.plotHOLZ"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotHOLZ</span></code></a></p></td>
+<td><p>Plot HOLZ Pattern</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.plotKikuchi.html#pyTEMlib.KinsCat.plotKikuchi" title="pyTEMlib.KinsCat.plotKikuchi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotKikuchi</span></code></a></p></td>
+<td><p>Plot Kikuchi Pattern</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.plotSAED.html#pyTEMlib.KinsCat.plotSAED" title="pyTEMlib.KinsCat.plotSAED"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotSAED</span></code></a></p></td>
+<td><p>Plot SAED Pattern of single crystal</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.plot_diffraction_pattern.html#pyTEMlib.KinsCat.plot_diffraction_pattern" title="pyTEMlib.KinsCat.plot_diffraction_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_diffraction_pattern</span></code></a></p></td>
+<td><p>Plot any diffraction pattern based on content in dictionary</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.plot_unitcell.html#pyTEMlib.KinsCat.plot_unitcell" title="pyTEMlib.KinsCat.plot_unitcell"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_unitcell</span></code></a></p></td>
+<td><p>Simple plot of unit cell</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.plot_unitcell_mayavi.html#pyTEMlib.KinsCat.plot_unitcell_mayavi" title="pyTEMlib.KinsCat.plot_unitcell_mayavi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_unitcell_mayavi</span></code></a></p></td>
+<td><p>Makes a 3D plot of crystal structure</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.read_poscar.html#pyTEMlib.KinsCat.read_poscar" title="pyTEMlib.KinsCat.read_poscar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_poscar</span></code></a></p></td>
+<td><p>Open file dialog to select a POSCAR file from VASP</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.ring_pattern_calculation.html#pyTEMlib.KinsCat.ring_pattern_calculation" title="pyTEMlib.KinsCat.ring_pattern_calculation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ring_pattern_calculation</span></code></a></p></td>
+<td><p>Calculate the ring diffraction pattern of a crystal structure</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.rocksalt.html#pyTEMlib.KinsCat.rocksalt" title="pyTEMlib.KinsCat.rocksalt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rocksalt</span></code></a></p></td>
+<td><p>Rocksalt structure</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.structure_by_name.html#pyTEMlib.KinsCat.structure_by_name" title="pyTEMlib.KinsCat.structure_by_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">structure_by_name</span></code></a></p></td>
+<td><p>Provides unit cell as a structure matrix, the list of elements and the atom base</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.tetragonal.html#pyTEMlib.KinsCat.tetragonal" title="pyTEMlib.KinsCat.tetragonal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tetragonal</span></code></a></p></td>
+<td><p>Tetragonal unit cell of dimensions a x a x c.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.vector_norm.html#pyTEMlib.KinsCat.vector_norm" title="pyTEMlib.KinsCat.vector_norm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_norm</span></code></a></p></td>
+<td><p>Length of vector</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.wurzite.html#pyTEMlib.KinsCat.wurzite" title="pyTEMlib.KinsCat.wurzite"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wurzite</span></code></a></p></td>
+<td><p>Wurzite structure</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.zinc_blende.html#pyTEMlib.KinsCat.zinc_blende" title="pyTEMlib.KinsCat.zinc_blende"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zinc_blende</span></code></a></p></td>
+<td><p>Zinc blende structure</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.KinsCat.zone_mistilt.html#pyTEMlib.KinsCat.zone_mistilt" title="pyTEMlib.KinsCat.zone_mistilt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zone_mistilt</span></code></a></p></td>
+<td><p>Rotation of zone axis by mistilt</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

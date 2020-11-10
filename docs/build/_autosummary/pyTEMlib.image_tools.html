@@ -1,0 +1,330 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.image_tools &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>pyTEMlib.image_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_autosummary/pyTEMlib.image_tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-pyTEMlib.image_tools">
+<span id="pytemlib-image-tools"></span><h1>pyTEMlib.image_tools<a class="headerlink" href="#module-pyTEMlib.image_tools" title="Permalink to this headline">¶</a></h1>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.adaptive_fourier_filter.html#pyTEMlib.image_tools.adaptive_fourier_filter" title="pyTEMlib.image_tools.adaptive_fourier_filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">adaptive_fourier_filter</span></code></a></p></td>
+<td><p>Use spots in diffractogram for a Fourier Filter</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.align_crystal_reflections.html#pyTEMlib.image_tools.align_crystal_reflections" title="pyTEMlib.image_tools.align_crystal_reflections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">align_crystal_reflections</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.calculate_ctf.html#pyTEMlib.image_tools.calculate_ctf" title="pyTEMlib.image_tools.calculate_ctf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_ctf</span></code></a></p></td>
+<td><p>Calculate Contrast Transfer Function everything in nm</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.calculate_scherzer.html#pyTEMlib.image_tools.calculate_scherzer" title="pyTEMlib.image_tools.calculate_scherzer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_scherzer</span></code></a></p></td>
+<td><p>Calculate the Scherzer defocus.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.calibrate_image_scale.html#pyTEMlib.image_tools.calibrate_image_scale" title="pyTEMlib.image_tools.calibrate_image_scale"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibrate_image_scale</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.cart2pol.html#pyTEMlib.image_tools.cart2pol" title="pyTEMlib.image_tools.cart2pol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cart2pol</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.cartesian2polar.html#pyTEMlib.image_tools.cartesian2polar" title="pyTEMlib.image_tools.cartesian2polar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cartesian2polar</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.clean_svd.html#pyTEMlib.image_tools.clean_svd" title="pyTEMlib.image_tools.clean_svd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clean_svd</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.complete_registration.html#pyTEMlib.image_tools.complete_registration" title="pyTEMlib.image_tools.complete_registration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">complete_registration</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.crop_image_stack.html#pyTEMlib.image_tools.crop_image_stack" title="pyTEMlib.image_tools.crop_image_stack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">crop_image_stack</span></code></a></p></td>
+<td><p>## Crop images</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.decon_lr.html#pyTEMlib.image_tools.decon_lr" title="pyTEMlib.image_tools.decon_lr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decon_lr</span></code></a></p></td>
+<td><p># This task generates a restored image from an input image and point spread function (PSF) using # the algorithm developed independently by Lucy (1974, Astron.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.demon_registration.html#pyTEMlib.image_tools.demon_registration" title="pyTEMlib.image_tools.demon_registration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">demon_registration</span></code></a></p></td>
+<td><p>Diffeomorphic Demon Non-Rigid Registration Usage: —— dem_reg = demon_reg(cube, verbose = False)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.diffractogram_spots.html#pyTEMlib.image_tools.diffractogram_spots" title="pyTEMlib.image_tools.diffractogram_spots"><code class="xref py py-obj docutils literal notranslate"><span class="pre">diffractogram_spots</span></code></a></p></td>
+<td><p>Find spots in diffractogram and sort them by distance from center</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.fourier_transform.html#pyTEMlib.image_tools.fourier_transform" title="pyTEMlib.image_tools.fourier_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fourier_transform</span></code></a></p></td>
+<td><p>Reads information into dictionary ‘tags’, performs ‘FFT’, and provides a smoothed FT and reciprocal and intensity limits for visualization.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.get_wavelength.html#pyTEMlib.image_tools.get_wavelength" title="pyTEMlib.image_tools.get_wavelength"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wavelength</span></code></a></p></td>
+<td><p>Calculates the relativistic corrected de Broglie wave length of an electron</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.histogram_plot.html#pyTEMlib.image_tools.histogram_plot" title="pyTEMlib.image_tools.histogram_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">histogram_plot</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.pol2cart.html#pyTEMlib.image_tools.pol2cart" title="pyTEMlib.image_tools.pol2cart"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pol2cart</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.power_spectrum.html#pyTEMlib.image_tools.power_spectrum" title="pyTEMlib.image_tools.power_spectrum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">power_spectrum</span></code></a></p></td>
+<td><p>Calculate power spectrum</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.rebin.html#pyTEMlib.image_tools.rebin" title="pyTEMlib.image_tools.rebin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rebin</span></code></a></p></td>
+<td><p>rebin an image by the number of pixels in x and y direction given by binning</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.rig_reg_drift.html#pyTEMlib.image_tools.rig_reg_drift" title="pyTEMlib.image_tools.rig_reg_drift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rig_reg_drift</span></code></a></p></td>
+<td><p>Uses relative drift to shift images ontop of each other Shifting is done with shift routine of ndimage from scipy</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.rigid_registration.html#pyTEMlib.image_tools.rigid_registration" title="pyTEMlib.image_tools.rigid_registration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rigid_registration</span></code></a></p></td>
+<td><p>Rigid registration of image stack with sub-pixel accuracy used phase_cross_correlation from skimage.registration (we determine drift from one image to next)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.rotational_symmetry_diffractogram.html#pyTEMlib.image_tools.rotational_symmetry_diffractogram" title="pyTEMlib.image_tools.rotational_symmetry_diffractogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rotational_symmetry_diffractogram</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.warp.html#pyTEMlib.image_tools.warp" title="pyTEMlib.image_tools.warp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">warp</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.image_tools.xy2polar.html#pyTEMlib.image_tools.xy2polar" title="pyTEMlib.image_tools.xy2polar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xy2polar</span></code></a></p></td>
+<td><p>Conversion from carthesian to polar coordinates</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.image_tools.ImageWithLineProfile.html#pyTEMlib.image_tools.ImageWithLineProfile" title="pyTEMlib.image_tools.ImageWithLineProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ImageWithLineProfile</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

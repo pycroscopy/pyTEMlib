@@ -1,0 +1,507 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.nion_reader &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pyTEMlib.nion_reader</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyTEMlib.nion_reader</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: iso-8859-1 -*-</span>
+
+<span class="c1">################################################################################</span>
+<span class="c1"># Python class for reading Nion Swift files into sidpy Dataset</span>
+<span class="c1"># and extracting all metadata</span>
+<span class="c1">#</span>
+<span class="c1"># Written by Gerd Duscher, UTK 2020</span>
+<span class="c1">#</span>
+<span class="c1"># Works for python 3</span>
+<span class="c1">#</span>
+<span class="c1">################################################################################</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<span class="kn">import</span> <span class="nn">sidpy</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;NionReader&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">]</span>
+
+<span class="n">version</span> <span class="o">=</span> <span class="s1">&#39;0.1beta&#39;</span>
+
+<span class="n">debugLevel</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># 0=none, 1-3=basic, 4-5=simple, 6-10 verbose</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="n">unicode</span> <span class="o">=</span> <span class="nb">str</span>
+
+<span class="c1"># ### utility functions ###</span>
+
+
+<div class="viewcode-block" id="parse_zip"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.nion_reader.parse_zip.html#pyTEMlib.nion_reader.parse_zip">[docs]</a><span class="k">def</span> <span class="nf">parse_zip</span><span class="p">(</span><span class="n">fp</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse the zip file headers at fp</span>
+<span class="sd">        :param fp: the file pointer from which to parse the zip file</span>
+<span class="sd">        :return: A tuple of local files, directory headers, and end of central directory</span>
+<span class="sd">        The local files are dictionary where the keys are the local file offset and the</span>
+<span class="sd">        values are each a tuple consisting of the name, data position, data length, and crc32.</span>
+<span class="sd">        The directory headers are a dictionary where the keys are the names of the files</span>
+<span class="sd">        and the values are a tuple consisting of the directory header position, and the</span>
+<span class="sd">        associated local file position.</span>
+<span class="sd">        The end of central directory is a tuple consisting of the location of the end of</span>
+<span class="sd">        central directory header and the location of the first directory header.</span>
+<span class="sd">        This method will seek to location 0 of fp and leave fp at end of file.</span>
+
+<span class="sd">        This function is copied from  nionswift/nion/swift/model/NDataHandler.py</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">local_files</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">dir_files</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">eocd</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+        <span class="n">signature</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">signature</span> <span class="o">==</span> <span class="mh">0x04034b50</span><span class="p">:</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">14</span><span class="p">)</span>
+            <span class="n">crc32</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">18</span><span class="p">)</span>
+            <span class="n">data_len</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">26</span><span class="p">)</span>
+            <span class="n">name_len</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">extra_len</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">name_bytes</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">name_len</span><span class="p">)</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">extra_len</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">SEEK_CUR</span><span class="p">)</span>
+            <span class="n">data_pos</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">data_len</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">SEEK_CUR</span><span class="p">)</span>
+            <span class="n">local_files</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">name_bytes</span><span class="p">,</span> <span class="n">data_pos</span><span class="p">,</span> <span class="n">data_len</span><span class="p">,</span> <span class="n">crc32</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">signature</span> <span class="o">==</span> <span class="mh">0x02014b50</span><span class="p">:</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">28</span><span class="p">)</span>
+            <span class="n">name_len</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">extra_len</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">comment_len</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">2</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">42</span><span class="p">)</span>
+            <span class="n">pos2</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">name_bytes</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">name_len</span><span class="p">)</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">46</span> <span class="o">+</span> <span class="n">name_len</span> <span class="o">+</span> <span class="n">extra_len</span> <span class="o">+</span> <span class="n">comment_len</span><span class="p">)</span>
+            <span class="n">dir_files</span><span class="p">[</span><span class="n">name_bytes</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">pos2</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">signature</span> <span class="o">==</span> <span class="mh">0x06054b50</span><span class="p">:</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="mi">16</span><span class="p">)</span>
+            <span class="n">pos2</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">unpack</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">eocd</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">pos2</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">local_files</span><span class="p">,</span> <span class="n">dir_files</span><span class="p">,</span> <span class="n">eocd</span></div>
+
+
+<div class="viewcode-block" id="NionReader"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.nion_reader.NionReader.html#pyTEMlib.nion_reader.NionReader">[docs]</a><span class="k">class</span> <span class="nc">NionReader</span><span class="p">(</span><span class="n">sidpy</span><span class="o">.</span><span class="n">Reader</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        file_path: filepath to dm3 file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+        <span class="c1"># initialize variables ##</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__filename</span> <span class="o">=</span> <span class="n">file_path</span>
+
+        <span class="n">path</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basename</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">original_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extension</span> <span class="o">==</span> <span class="s1">&#39;.ndata&#39;</span><span class="p">:</span>
+
+            <span class="c1"># - open file for reading</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;File not found&#39;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">local_files</span><span class="p">,</span> <span class="n">dir_files</span><span class="p">,</span> <span class="n">eocd</span> <span class="o">=</span> <span class="n">parse_zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> does not seem to be of Nion`s .ndata format&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">extension</span> <span class="o">==</span> <span class="s1">&#39;.h5&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">fp</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;data&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fp</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> does not seem to be of Nion`s .h5 format&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">))</span>
+                <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;File </span><span class="si">{}</span><span class="s2"> does not seem to be of Nion`s .h5 format&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">))</span>
+
+<div class="viewcode-block" id="NionReader.read"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.nion_reader.NionReader.html#pyTEMlib.nion_reader.NionReader.read">[docs]</a>    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extension</span> <span class="o">==</span> <span class="s1">&#39;.ndata&#39;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s1">&#39;File not found&#39;</span><span class="p">)</span>
+            <span class="n">local_files</span><span class="p">,</span> <span class="n">dir_files</span><span class="p">,</span> <span class="n">eocd</span> <span class="o">=</span> <span class="n">parse_zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="p">)</span>
+
+            <span class="n">contains_data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;data.npy&quot;</span> <span class="ow">in</span> <span class="n">dir_files</span>
+            <span class="n">contains_metadata</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;metadata.json&quot;</span> <span class="ow">in</span> <span class="n">dir_files</span>
+            <span class="n">file_count</span> <span class="o">=</span> <span class="n">contains_data</span> <span class="o">+</span> <span class="n">contains_metadata</span>  <span class="c1"># use fact that True is 1, False is 0</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">local_files</span><span class="p">[</span><span class="n">dir_files</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;data.npy&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]][</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="p">)</span>
+
+            <span class="n">json_pos</span> <span class="o">=</span> <span class="n">local_files</span><span class="p">[</span><span class="n">dir_files</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;metadata.json&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">json_len</span> <span class="o">=</span> <span class="n">local_files</span><span class="p">[</span><span class="n">dir_files</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;metadata.json&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]][</span><span class="mi">2</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">json_pos</span><span class="p">)</span>
+            <span class="n">json_properties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">json_len</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">original_metadata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_properties</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">extension</span> <span class="o">==</span> <span class="s1">&#39;.h5&#39;</span><span class="p">:</span>
+            <span class="c1"># TODO: use lazy load for large datasets</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f</span> <span class="o">=</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;data&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="p">:</span>
+                <span class="n">json_properties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;properties&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][:]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">original_metadata</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_properties</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_dimensions</span><span class="p">()</span>
+        <span class="c1">## Need to switch image dimensions in Nion format</span>
+        <span class="n">image_dims</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">dimension_type</span> <span class="o">==</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">SPATIAL</span><span class="p">:</span>
+                <span class="n">image_dims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;image_dims&#39;</span><span class="p">,</span> <span class="n">image_dims</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image_dims</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span><span class="p">,</span> <span class="n">image_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">image_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="n">image_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="n">image_dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="n">image_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">[</span><span class="n">image_dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">temp</span>
+
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="p">):</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">set_dimension</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
+
+        <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_metadata</span>
+        <span class="k">if</span> <span class="s1">&#39;dimensional_calibrations&#39;</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">[</span><span class="s1">&#39;dimensional_calibrations&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">dim</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">dim</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;pixels&#39;</span>
+
+        <span class="n">dataset</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="s1">&#39;intensity&#39;</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s1">&#39;counts&#39;</span>
+        <span class="k">if</span> <span class="s1">&#39;description&#39;</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">][</span><span class="s1">&#39;title&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">&#39;title&#39;</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">path</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__filename</span><span class="p">)</span>
+                <span class="n">basename</span><span class="p">,</span> <span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">basename</span>
+
+        <span class="k">if</span> <span class="s1">&#39;data_source&#39;</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span><span class="p">[</span><span class="s1">&#39;data_source&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;NionReader&#39;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_data_type</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="s1">&#39;STEM data&#39;</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">h5_dataset</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">dataset</span></div>
+
+    <span class="k">def</span> <span class="nf">set_data_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+
+        <span class="n">spectral_dim</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">_axes</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">dimension_type</span> <span class="o">==</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">SPECTRAL</span><span class="p">:</span>
+                <span class="n">spectral_dim</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Data_type not implemented yet&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">spectral_dim</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="s1">&#39;spectrum_image&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="s1">&#39;IMAGE_STACK&#39;</span>
+                <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">_axes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">dimension_type</span> <span class="o">!=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">SPATIAL</span><span class="p">:</span>
+                        <span class="n">dataset</span><span class="o">.</span><span class="n">set_dimension</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                                                                   <span class="n">name</span><span class="o">=</span><span class="s1">&#39;frame&#39;</span><span class="p">,</span>
+                                                                   <span class="n">units</span><span class="o">=</span><span class="s1">&#39;frame&#39;</span><span class="p">,</span>
+                                                                   <span class="n">quantity</span><span class="o">=</span><span class="s1">&#39;stack&#39;</span><span class="p">,</span>
+                                                                   <span class="n">dimension_type</span><span class="o">=</span><span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">TEMPORAL</span><span class="p">))</span>
+                        <span class="k">break</span>
+
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">spectral_dim</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DataTypes</span><span class="o">.</span><span class="n">SPECTRAL_IMAGE</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DataTypes</span><span class="o">.</span><span class="n">IMAGE</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">spectral_dim</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DataTypes</span><span class="o">.</span><span class="n">SPECTRUM</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DataTypes</span><span class="o">.</span><span class="n">LINE_PLOT</span>
+
+    <span class="k">def</span> <span class="nf">get_dimensions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">dic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_metadata</span>
+
+        <span class="n">reciprocal_name</span> <span class="o">=</span> <span class="s1">&#39;u&#39;</span>
+        <span class="n">spatial_name</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span>
+
+        <span class="k">if</span> <span class="s1">&#39;dimensional_calibrations&#39;</span> <span class="ow">in</span> <span class="n">dic</span><span class="p">:</span>
+
+            <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dic</span><span class="p">[</span><span class="s1">&#39;dimensional_calibrations&#39;</span><span class="p">])):</span>
+                <span class="n">dimension_tags</span> <span class="o">=</span> <span class="n">dic</span><span class="p">[</span><span class="s1">&#39;dimensional_calibrations&#39;</span><span class="p">][</span><span class="n">dim</span><span class="p">]</span>
+                <span class="n">units</span> <span class="o">=</span> <span class="n">dimension_tags</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_cube</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">dim</span><span class="p">)])</span> <span class="o">-</span> <span class="n">dimension_tags</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">dimension_tags</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="s1">&#39;eV&#39;</span> <span class="o">==</span> <span class="n">units</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;energy_loss&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                                                           <span class="n">quantity</span><span class="o">=</span><span class="s1">&#39;energy-loss&#39;</span><span class="p">,</span> <span class="n">dimension_type</span><span class="o">=</span><span class="s1">&#39;spectral&#39;</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="s1">&#39;eV&#39;</span> <span class="ow">in</span> <span class="n">units</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;energy&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                                                           <span class="n">quantity</span><span class="o">=</span><span class="s1">&#39;energy&#39;</span><span class="p">,</span> <span class="n">dimension_type</span><span class="o">=</span><span class="s1">&#39;spectral&#39;</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="s1">&#39;1/&#39;</span> <span class="ow">in</span> <span class="n">units</span> <span class="ow">or</span> <span class="n">units</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;mrad&#39;</span><span class="p">,</span> <span class="s1">&#39;rad&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">reciprocal_name</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                                                           <span class="n">quantity</span><span class="o">=</span><span class="s1">&#39;reciprocal distance&#39;</span><span class="p">,</span><span class="n">dimension_type</span><span class="o">=</span><span class="s1">&#39;reciprocal&#39;</span><span class="p">))</span>
+                    <span class="n">reciprocal_name</span> <span class="o">=</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">reciprocal_name</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="s1">&#39;nm&#39;</span> <span class="ow">in</span> <span class="n">units</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">spatial_name</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">units</span><span class="p">,</span>
+                                                           <span class="n">quantity</span><span class="o">=</span><span class="s1">&#39;distance&#39;</span><span class="p">,</span> <span class="n">dimension_type</span><span class="o">=</span><span class="s1">&#39;spatial&#39;</span><span class="p">))</span>
+                    <span class="n">spatial_name</span> <span class="o">=</span> <span class="nb">chr</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">spatial_name</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dimensions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;generic&#39;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s1">&#39;generic&#39;</span><span class="p">,</span>
+                                                           <span class="n">quantity</span><span class="o">=</span><span class="s1">&#39;generic&#39;</span><span class="p">,</span> <span class="n">dimension_type</span><span class="o">=</span><span class="s1">&#39;UNKNOWN&#39;</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">get_filename</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__filename</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_filename</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_raw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">original_metadata</span>
+
+    <span class="n">tags</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">get_tags</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

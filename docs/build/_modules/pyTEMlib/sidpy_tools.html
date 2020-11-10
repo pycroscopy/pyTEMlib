@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.sidpy_tools &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pyTEMlib.sidpy_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyTEMlib.sidpy_tools</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sidpy</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">pyNSID</span>
+<span class="kn">import</span> <span class="nn">ipywidgets</span> <span class="k">as</span> <span class="nn">widgets</span>
+<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
+
+<span class="kn">from</span> <span class="nn">PyQt5</span> <span class="kn">import</span> <span class="n">QtWidgets</span><span class="p">,</span> <span class="n">QtCore</span>
+
+
+<div class="viewcode-block" id="ProgressDialog"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.ProgressDialog.html#pyTEMlib.sidpy_tools.ProgressDialog">[docs]</a><span class="k">class</span> <span class="nc">ProgressDialog</span><span class="p">(</span><span class="n">QtWidgets</span><span class="o">.</span><span class="n">QDialog</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simple dialog that consists of a Progress Bar and a Button.</span>
+<span class="sd">    Clicking on the button results in the start of a timer and</span>
+<span class="sd">    updates the progress bar.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Progress&#39;</span><span class="p">,</span> <span class="n">number_of_counts</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setWindowFlags</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">WindowStaysOnTopHint</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QProgressBar</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">setGeometry</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">setMaximum</span><span class="p">(</span><span class="n">number_of_counts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+        <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QApplication</span><span class="o">.</span><span class="n">processEvents</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ChooseDataset"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.ChooseDataset.html#pyTEMlib.sidpy_tools.ChooseDataset">[docs]</a><span class="k">class</span> <span class="nc">ChooseDataset</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_object</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_object</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_object</span><span class="o">.</span><span class="n">h5_dataset</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_channel</span> <span class="o">=</span> <span class="n">input_object</span><span class="o">.</span><span class="n">h5_dataset</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_object</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_channel</span> <span class="o">=</span> <span class="n">input_object</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">input_object</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_channel</span> <span class="o">=</span> <span class="n">input_object</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Need hdf5 group or sidpy Dataset to determine image choices&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reader</span> <span class="o">=</span> <span class="n">pyNSID</span><span class="o">.</span><span class="n">NSIDReader</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_channel</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset_list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">select_image</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Dropdown</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_names</span><span class="p">,</span>
+                                             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                             <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Select image:&#39;</span><span class="p">,</span>
+                                             <span class="n">disabled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                             <span class="n">button_style</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">select_image</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">select_image</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_dataset</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">select_image</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_names</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_dataset_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reader</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">dset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dataset_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dataset_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">dset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_type</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dataset_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">dataset_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_image</span><span class="o">.</span><span class="n">index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_list</span><span class="p">[</span><span class="n">index</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="get_dimensions_by_order"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.get_dimensions_by_order.html#pyTEMlib.sidpy_tools.get_dimensions_by_order">[docs]</a><span class="k">def</span> <span class="nf">get_dimensions_by_order</span><span class="p">(</span><span class="n">dims_in</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dims_in</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">dims_in</span> <span class="o">=</span> <span class="p">[</span><span class="n">dims_in</span><span class="p">]</span>
+    <span class="n">dims_out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">dims_in</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">_axes</span><span class="p">:</span>
+                <span class="n">dims_out</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">item</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">_axes</span><span class="p">[</span><span class="n">item</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">dims_out</span></div>
+
+
+<div class="viewcode-block" id="get_dimensions_by_type"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.get_dimensions_by_type.html#pyTEMlib.sidpy_tools.get_dimensions_by_type">[docs]</a><span class="k">def</span> <span class="nf">get_dimensions_by_type</span><span class="p">(</span><span class="n">dims_in</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dims_in</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="p">)):</span>
+        <span class="n">dims_in</span> <span class="o">=</span> <span class="p">[</span><span class="n">dims_in</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dims_in</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dims_in</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">dims_in</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="p">[</span><span class="n">dims_in</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span>
+    <span class="n">dims_out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">_axes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">dimension_type</span> <span class="ow">in</span> <span class="n">dims_in</span><span class="p">:</span>
+            <span class="n">dims_out</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">dim</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">_axes</span><span class="p">[</span><span class="n">dim</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">dims_out</span></div>
+
+
+<div class="viewcode-block" id="make_dummy_dataset"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.make_dummy_dataset.html#pyTEMlib.sidpy_tools.make_dummy_dataset">[docs]</a><span class="k">def</span> <span class="nf">make_dummy_dataset</span><span class="p">(</span><span class="n">value_type</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value_type</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DataTypes</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">type</span> <span class="o">==</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DataTypes</span><span class="o">.</span><span class="n">SPECTRUM</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="s1">&#39;spectrum&#39;</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s1">&#39;counts&#39;</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="s1">&#39;intensity&#39;</span>
+
+        <span class="n">dataset</span><span class="o">.</span><span class="n">set_dimension</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">70</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;energy_scale&#39;</span><span class="p">))</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">dim_0</span><span class="o">.</span><span class="n">dimension_type</span> <span class="o">=</span> <span class="s1">&#39;spectral&#39;</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">dim_0</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s1">&#39;eV&#39;</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">dim_0</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="s1">&#39;energy loss&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;not implemented&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dataset</span></div>
+
+
+<div class="viewcode-block" id="plot"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.plot.html#pyTEMlib.sidpy_tools.plot">[docs]</a><span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="get_image_dims"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.get_image_dims.html#pyTEMlib.sidpy_tools.get_image_dims">[docs]</a><span class="k">def</span> <span class="nf">get_image_dims</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+    <span class="n">image_dims</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">dim</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">_axes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">dimension_type</span> <span class="o">==</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">SPATIAL</span><span class="p">:</span>
+            <span class="n">image_dims</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">image_dims</span></div>
+
+
+<div class="viewcode-block" id="get_extent"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.sidpy_tools.get_extent.html#pyTEMlib.sidpy_tools.get_extent">[docs]</a><span class="k">def</span> <span class="nf">get_extent</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+    <span class="n">image_dims</span> <span class="o">=</span> <span class="n">get_image_dims</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dataset</span><span class="o">.</span><span class="n">get_extent</span><span class="p">(</span><span class="n">image_dims</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,695 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.hdf_utils &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pyTEMlib.hdf_utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyTEMlib.hdf_utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Lower-level and simpler NSID-specific HDF5 utilities that facilitate</span>
+<span class="sd">higher-level data operations</span>
+
+<span class="sd">Created on Tue Aug  3 21:14:25 2020</span>
+
+<span class="sd">@author: Gerd Duscher, and Suhas Somnath</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">dask.array</span> <span class="k">as</span> <span class="nn">da</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">sidpy</span>
+<span class="kn">from</span> <span class="nn">sidpy.base.num_utils</span> <span class="kn">import</span> <span class="n">contains_integers</span>
+<span class="kn">from</span> <span class="nn">sidpy.hdf.hdf_utils</span> <span class="kn">import</span> <span class="n">get_attr</span><span class="p">,</span> <span class="n">copy_dataset</span>
+<span class="kn">from</span> <span class="nn">sidpy.hdf</span> <span class="kn">import</span> <span class="n">hdf_utils</span> <span class="k">as</span> <span class="n">hut</span>
+<span class="kn">from</span> <span class="nn">sidpy</span> <span class="kn">import</span> <span class="n">Dimension</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="n">unicode</span> <span class="o">=</span> <span class="nb">str</span>
+
+
+<div class="viewcode-block" id="get_all_main"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.get_all_main.html#pyTEMlib.hdf_utils.get_all_main">[docs]</a><span class="k">def</span> <span class="nf">get_all_main</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simple function to recursively print the contents of an hdf5 group</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    parent : :class:`h5py.Group`</span>
+<span class="sd">        HDF5 Group to search within</span>
+<span class="sd">    verbose : bool, optional. Default = False</span>
+<span class="sd">        If true, extra print statements (usually for debugging) are enabled</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    main_list : list of h5py.Dataset</span>
+<span class="sd">        The datasets found in the file that meet the &#39;Main Data&#39; criteria.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="p">(</span><span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;parent should be a h5py.File or h5py.Group object&#39;</span><span class="p">)</span>
+
+    <span class="n">main_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__check</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;is an HDF5 Dataset.&#39;</span><span class="p">)</span>
+            <span class="n">ismain</span> <span class="o">=</span> <span class="n">check_if_main</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ismain</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;is a `Main` dataset.&#39;</span><span class="p">)</span>
+                <span class="n">main_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Checking the group </span><span class="si">{}</span><span class="s1"> for `Main` datasets.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+    <span class="n">parent</span><span class="o">.</span><span class="n">visititems</span><span class="p">(</span><span class="n">__check</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">main_list</span></div>
+
+
+<div class="viewcode-block" id="find_dataset"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.find_dataset.html#pyTEMlib.hdf_utils.find_dataset">[docs]</a><span class="k">def</span> <span class="nf">find_dataset</span><span class="p">(</span><span class="n">h5_group</span><span class="p">,</span> <span class="n">dset_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Uses visit() to find all datasets with the desired name</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    h5_group : :class:`h5py.Group`</span>
+<span class="sd">        Group to search within for the Dataset</span>
+<span class="sd">    dset_name : str</span>
+<span class="sd">        Name of the dataset to search for</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    datasets : list</span>
+<span class="sd">        List of [Name, object] pairs corresponding to datasets that match `ds_name`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># print &#39;Finding all instances of&#39;, ds_name</span>
+    <span class="n">datasets</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">hut</span><span class="o">.</span><span class="n">find_dataset</span><span class="p">(</span><span class="n">h5_group</span><span class="p">,</span> <span class="n">dset_name</span><span class="p">):</span>
+        <span class="n">datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">datasets</span></div>
+
+
+<div class="viewcode-block" id="validate_main_dset"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.validate_main_dset.html#pyTEMlib.hdf_utils.validate_main_dset">[docs]</a><span class="k">def</span> <span class="nf">validate_main_dset</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="n">must_be_h5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks to make sure that the provided object is a NSID main dataset</span>
+<span class="sd">    Errors in parameters will result in Exceptions</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    h5_main : h5py.Dataset or numpy.ndarray or Dask.array.core.array</span>
+<span class="sd">        object that represents the NSID main data</span>
+<span class="sd">    must_be_h5 : bool</span>
+<span class="sd">        Set to True if the expecting an h5py.Dataset object.</span>
+<span class="sd">        Set to False if expecting a numpy.ndarray or Dask.array.core.array</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check that h5_main is a dataset</span>
+    <span class="k">if</span> <span class="n">must_be_h5</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> is not an HDF5 Dataset object.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">h5_main</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">da</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">Array</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;raw_data should either be a np.ndarray or a &#39;</span>
+                            <span class="s1">&#39;da.core.Array&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Check dimensionality</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">h5_main</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">h5_main</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Main data does not have full set of dimensional &#39;</span>
+                         <span class="s1">&#39;scales. Provided object has shape: </span><span class="si">{}</span><span class="s1"> but only </span><span class="si">{}</span><span class="s1"> &#39;</span>
+                         <span class="s1">&#39;dimensional scales&#39;</span>
+                         <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">h5_main</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">h5_main</span><span class="o">.</span><span class="n">dims</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="validate_anc_h5_dsets"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.validate_anc_h5_dsets.html#pyTEMlib.hdf_utils.validate_anc_h5_dsets">[docs]</a><span class="k">def</span> <span class="nf">validate_anc_h5_dsets</span><span class="p">(</span><span class="n">h5_inds</span><span class="p">,</span> <span class="n">h5_vals</span><span class="p">,</span> <span class="n">main_shape</span><span class="p">,</span> <span class="n">is_spectroscopic</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks ancillary HDF5 datasets against shape of a main dataset.</span>
+<span class="sd">    Errors in parameters will result in Exceptions</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    h5_inds : h5py.Dataset</span>
+<span class="sd">        HDF5 dataset corresponding to the ancillary Indices dataset</span>
+<span class="sd">    h5_vals : h5py.Dataset</span>
+<span class="sd">        HDF5 dataset corresponding to the ancillary Values dataset</span>
+<span class="sd">    main_shape : array-like</span>
+<span class="sd">        Shape of the main dataset expressed as a tuple or similar</span>
+<span class="sd">    is_spectroscopic : bool, Optional. Default = True</span>
+<span class="sd">        set to True if ``dims`` correspond to Spectroscopic Dimensions.</span>
+<span class="sd">        False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_inds</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;h5_inds must be a h5py.Dataset object&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_vals</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;h5_vals must be a h5py.Dataset object&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">h5_inds</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">h5_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;h5_inds: </span><span class="si">{}</span><span class="s1"> and h5_vals: </span><span class="si">{}</span><span class="s1"> should be of the same &#39;</span>
+                         <span class="s1">&#39;shape&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">h5_inds</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">h5_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">main_shape</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">contains_integers</span><span class="p">(</span><span class="n">main_shape</span><span class="p">,</span> <span class="n">min_val</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="ow">or</span> \
+                <span class="nb">len</span><span class="p">(</span><span class="n">main_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;main_shape&#39; must be a valid HDF5 dataset shape&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;main_shape should be of the following types:&#39;</span>
+                        <span class="s1">&#39;h5py.Dataset, tuple, or list. </span><span class="si">{}</span><span class="s1"> provided&#39;</span>
+                        <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">main_shape</span><span class="p">)))</span>
+
+    <span class="k">if</span> <span class="n">h5_inds</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">is_spectroscopic</span><span class="p">]</span> <span class="o">!=</span> <span class="n">main_shape</span><span class="p">[</span><span class="n">is_spectroscopic</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;index </span><span class="si">{}</span><span class="s1"> in shape of h5_inds: </span><span class="si">{}</span><span class="s1"> and main_data: </span><span class="si">{}</span><span class="s1"> &#39;</span>
+                         <span class="s1">&#39;should be equal&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">is_spectroscopic</span><span class="p">),</span>
+                                                  <span class="n">h5_inds</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">main_shape</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="validate_dims_against_main"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.validate_dims_against_main.html#pyTEMlib.hdf_utils.validate_dims_against_main">[docs]</a><span class="k">def</span> <span class="nf">validate_dims_against_main</span><span class="p">(</span><span class="n">main_shape</span><span class="p">,</span> <span class="n">dims</span><span class="p">,</span> <span class="n">is_spectroscopic</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks Dimension objects against a given shape for main datasets.</span>
+<span class="sd">    Errors in parameters will result in Exceptions</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    main_shape : array-like</span>
+<span class="sd">        Tuple or list with the shape of the main data</span>
+<span class="sd">    dims : iterable</span>
+<span class="sd">        List of Dimension objects</span>
+<span class="sd">    is_spectroscopic : bool, Optional. Default = True</span>
+<span class="sd">        set to True if ``dims`` correspond to Spectroscopic Dimensions.</span>
+<span class="sd">        False otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">main_shape</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;main_shape should be a list or tuple. Provided object&#39;</span>
+                        <span class="s1">&#39; was of type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">main_shape</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">main_shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;main_shape&quot; should be of length 2&#39;</span><span class="p">)</span>
+    <span class="n">contains_integers</span><span class="p">(</span><span class="n">main_shape</span><span class="p">,</span> <span class="n">min_val</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dims</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">):</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="n">dims</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dims</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;&quot;dims&quot; must be a list or tuple of nsid.Dimension &#39;</span>
+                        <span class="s1">&#39;objects. Provided object was of type: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                        <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">dims</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">dims</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;One or more objects in &quot;dims&quot; was not nsid.Dimension&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_spectroscopic</span><span class="p">:</span>
+        <span class="n">main_dim</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">dim_category</span> <span class="o">=</span> <span class="s1">&#39;Spectroscopic&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">main_dim</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">dim_category</span> <span class="o">=</span> <span class="s1">&#39;Position&#39;</span>
+
+    <span class="c1"># TODO: This is where the dimension type will need to be taken into account</span>
+    <span class="n">lhs</span> <span class="o">=</span> <span class="n">main_shape</span><span class="p">[</span><span class="n">main_dim</span><span class="p">]</span>
+    <span class="n">rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">product</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">dims</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">lhs</span> <span class="o">!=</span> <span class="n">rhs</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">dim_category</span> <span class="o">+</span>
+                         <span class="s1">&#39; dimensions in main data of size: </span><span class="si">{}</span><span class="s1"> do not match &#39;</span>
+                         <span class="s1">&#39;with product of values in provided Dimension objects&#39;</span>
+                         <span class="s1">&#39;: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="check_if_main"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.check_if_main.html#pyTEMlib.hdf_utils.check_if_main">[docs]</a><span class="k">def</span> <span class="nf">check_if_main</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks the input dataset to see if it has all the necessary</span>
+<span class="sd">    features to be considered a Main dataset.  This means it is</span>
+<span class="sd">    dataset has dimensions of correct size and has the following attributes:</span>
+<span class="sd">    * quantity</span>
+<span class="sd">    * units</span>
+<span class="sd">    * main_data_name</span>
+<span class="sd">    * data_type</span>
+<span class="sd">    * modality</span>
+<span class="sd">    * source</span>
+<span class="sd">    In addition, the shapes of the ancillary matrices should match with that of</span>
+<span class="sd">    h5_main</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    h5_main : HDF5 Dataset</span>
+<span class="sd">        Dataset of interest</span>
+<span class="sd">    verbose : Boolean (Optional. Default = False)</span>
+<span class="sd">        Whether or not to print statements</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    success : Boolean</span>
+<span class="sd">        True if all tests pass</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">validate_main_dset</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exep</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">exep</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># h5_name = h5_main.name.split(&#39;/&#39;)[-1]</span>
+    <span class="n">h5_group</span> <span class="o">=</span> <span class="n">h5_main</span><span class="o">.</span><span class="n">parent</span>
+
+    <span class="c1"># success = True</span>
+
+    <span class="c1"># Check for Datasets</span>
+
+    <span class="n">attrs_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;dimension_type&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;nsid_version&#39;</span><span class="p">,</span> <span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="p">]</span>
+    <span class="n">attr_success</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Check for all required attributes in dataset</span>
+    <span class="n">main_attrs_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="s1">&#39;main_data_name&#39;</span><span class="p">,</span> <span class="s1">&#39;data_type&#39;</span><span class="p">,</span> <span class="s1">&#39;modality&#39;</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span><span class="p">]</span>
+    <span class="n">main_attr_success</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">att</span> <span class="ow">in</span> <span class="n">h5_main</span><span class="o">.</span><span class="n">attrs</span> <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">main_attrs_names</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;All Attributes in dataset: &#39;</span><span class="p">,</span> <span class="n">main_attr_success</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">main_attr_success</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> does not have the mandatory attributes&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">h5_main</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">for</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="n">main_attrs_names</span><span class="p">:</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">get_attr</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">unicode</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Attribute </span><span class="si">{}</span><span class="s1"> of </span><span class="si">{}</span><span class="s1"> found to be </span><span class="si">{}</span><span class="s1">. Expected a string&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">attr_name</span><span class="p">,</span> <span class="n">h5_main</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="n">length_success</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dset_success</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Check for Validity of Dimensional Scales</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dimension</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">h5_main</span><span class="o">.</span><span class="n">dims</span><span class="p">):</span>
+        <span class="c1"># check for all required attributes</span>
+        <span class="n">h5_dim_dset</span> <span class="o">=</span> <span class="n">h5_group</span><span class="p">[</span><span class="n">dimension</span><span class="o">.</span><span class="n">label</span><span class="p">]</span>
+        <span class="n">attr_success</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">att</span> <span class="ow">in</span> <span class="n">h5_dim_dset</span><span class="o">.</span><span class="n">attrs</span> <span class="k">for</span> <span class="n">att</span> <span class="ow">in</span> <span class="n">attrs_names</span><span class="p">]))</span>
+        <span class="n">dset_success</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">attr_success</span><span class="p">,</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_dim_dset</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)]))</span>
+        <span class="c1"># dimensional scale has to be 1D</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">h5_dim_dset</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># and of the same length as the shape of the dataset</span>
+            <span class="n">length_success</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">h5_main</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">h5_dim_dset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">length_success</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="c1"># We have the list now and can get error messages according to which dataset is bad or not.</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">attr_success</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">length_success</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">dset_success</span><span class="p">)]):</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dimensions: All Attributes: &#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">attr_success</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dimensions: All Correct Length: &#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">length_success</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dimensions: All h5 Datasets: &#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">dset_success</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;length of dimension scale {length_success.index(False)} is wrong&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;attributes in dimension scale {attr_success.index(False)} are wrong&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;dimension scale {dset_success.index(False)} is not a dataset&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="n">main_attr_success</span></div>
+
+
+<div class="viewcode-block" id="link_as_main"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.link_as_main.html#pyTEMlib.hdf_utils.link_as_main">[docs]</a><span class="k">def</span> <span class="nf">link_as_main</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="n">dim_dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Attaches datasets as h5 Dimensional Scales to  `h5_main`</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    h5_main : h5py.Dataset</span>
+<span class="sd">        N-dimensional Dataset which will have the references added as h5 Dimensional Scales</span>
+<span class="sd">    dim_dict: dictionary with dimensional order as key and items are datasets to be used as h5 Dimensional Scales</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pyNSID.NSIDataset</span>
+<span class="sd">        NSIDataset version of h5_main now that it is a NSID Main dataset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_main</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;h5_main should be a h5py.Dataset object&#39;</span><span class="p">)</span>
+
+    <span class="n">h5_parent_group</span> <span class="o">=</span> <span class="n">h5_main</span><span class="o">.</span><span class="n">parent</span>
+    <span class="n">main_shape</span> <span class="o">=</span> <span class="n">h5_main</span><span class="o">.</span><span class="n">shape</span>
+    <span class="c1">######################</span>
+    <span class="c1"># Validate Dimensions</span>
+    <span class="c1">######################</span>
+    <span class="c1"># An N dimensional dataset should have N items in the dimension dictionary</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dim_dict</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">main_shape</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Incorrect number of dimensions: </span><span class="si">{}</span><span class="s1"> provided to support main data, of shape: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dim_dict</span><span class="p">),</span> <span class="n">main_shape</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">main_shape</span><span class="p">)))</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">(</span><span class="n">dim_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+    
+    <span class="n">dim_names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">dim_exp_size</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">main_shape</span><span class="p">):</span>
+        <span class="n">this_dim</span> <span class="o">=</span> <span class="n">dim_dict</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="n">validate_dimensions</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">main_shape</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Dimension </span><span class="si">{}</span><span class="s1"> has the following error_message:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">error_message</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># if this_dim.name not in dim_names:</span>
+                <span class="k">if</span> <span class="n">this_dim</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dim_names</span><span class="p">:</span>  <span class="c1"># names must be unique</span>
+                    <span class="n">dim_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;All dimension names must be unique, found </span><span class="si">{}</span><span class="s1"> twice&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">this_dim</span><span class="o">.</span><span class="n">file</span> <span class="o">!=</span> <span class="n">h5_parent_group</span><span class="o">.</span><span class="n">file</span><span class="p">:</span>
+                    <span class="n">copy_dataset</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">h5_parent_group</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Items in dictionary must all  be h5py.Datasets !&#39;</span><span class="p">)</span>
+
+    <span class="c1">################</span>
+    <span class="c1"># Attach Scales</span>
+    <span class="c1">################</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">this_dim_dset</span> <span class="ow">in</span> <span class="n">dim_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">this_dim_dset</span><span class="o">.</span><span class="n">make_scale</span><span class="p">(</span><span class="n">this_dim_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="n">h5_main</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">this_dim_dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="n">h5_main</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">attach_scale</span><span class="p">(</span><span class="n">this_dim_dset</span><span class="p">)</span>
+        
+    <span class="k">return</span> <span class="n">h5_main</span></div>
+
+
+<div class="viewcode-block" id="get_source_dataset"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.get_source_dataset.html#pyTEMlib.hdf_utils.get_source_dataset">[docs]</a><span class="k">def</span> <span class="nf">get_source_dataset</span><span class="p">(</span><span class="n">h5_group</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the name of the source dataset used to create the input `h5_group`,</span>
+<span class="sd">    so long as the source dataset is in the same HDF5 file</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    h5_group : :class:`h5py.Group`</span>
+<span class="sd">        Child group whose source dataset will be returned</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    h5_source : NSIDataset object</span>
+<span class="sd">        Main dataset from which this group was generated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_group</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;h5_group should be a h5py.Group object&#39;</span><span class="p">)</span>
+
+    <span class="n">h5_parent_group</span> <span class="o">=</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">parent</span>
+    <span class="n">group_name</span> <span class="o">=</span> <span class="n">h5_group</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># What if the group name was not formatted according to Pycroscopy rules?</span>
+    <span class="n">name_split</span> <span class="o">=</span> <span class="n">group_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name_split</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The provided group&#39;s name could not be split by &#39;-&#39; as expected in &quot;</span>
+                         <span class="s2">&quot;SourceDataset-ProcessName_000&quot;</span><span class="p">)</span>
+    <span class="n">h5_source</span> <span class="o">=</span> <span class="n">h5_parent_group</span><span class="p">[</span><span class="n">name_split</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_source</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Source object was not a dataset!&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">h5_source</span></div>
+
+
+<div class="viewcode-block" id="validate_dimensions"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.validate_dimensions.html#pyTEMlib.hdf_utils.validate_dimensions">[docs]</a><span class="k">def</span> <span class="nf">validate_dimensions</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">dim_shape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if the provided object is an h5 dataset.</span>
+<span class="sd">    A valid dataset to be uses as dimension must be 1D not a compound data type but &#39;simple&#39;.</span>
+<span class="sd">    Such a dataset must have  ancillary attributes &#39;name&#39;, quantity&#39;, &#39;units&#39;, and &#39;dimension_type&#39;,</span>
+<span class="sd">    which have to be of  types str, str, str, and bool respectively and not empty</span>
+<span class="sd">    If it is not valid of dataset, Exceptions are raised.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    this_dim : h5 dataset</span>
+<span class="sd">        with non empty attributes &#39;name&#39;, quantity&#39;, &#39;units&#39;, and &#39;dimension_type&#39;</span>
+<span class="sd">    dim_shape : required length of dataset</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    error_message: string, empty if ok.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="n">error_message</span> <span class="o">=</span> <span class="s1">&#39;this Dimension must be a h5 Dataset&#39;</span>
+        <span class="k">return</span> <span class="n">error_message</span>
+
+    <span class="n">error_message</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="c1"># Is it 1D?</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">error_message</span> <span class="o">+=</span> <span class="s1">&#39; High dimensional datasets are not allowed as dimensions;</span><span class="se">\n</span><span class="s1">&#39;</span>
+    <span class="c1"># Does this dataset have a &quot;simple&quot; dtype - no compound data type allowed!</span>
+    <span class="c1"># is the shape matching with the main dataset?</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">this_dim</span><span class="p">)</span> <span class="o">!=</span> <span class="n">dim_shape</span><span class="p">:</span>
+        <span class="n">error_message</span> <span class="o">+=</span> <span class="s1">&#39; Dimension has wrong length;</span><span class="se">\n</span><span class="s1">&#39;</span>
+    <span class="c1"># Does it contain some ancillary attributes like &#39;name&#39;, quantity&#39;, &#39;units&#39;, and &#39;dimension_type&#39;</span>
+    <span class="n">necessary_attributes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;quantity&#39;</span><span class="p">,</span> <span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="s1">&#39;dimension_type&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">necessary_attributes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">this_dim</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="s1">&#39;Missing </span><span class="si">{}</span><span class="s1"> attribute in dimension;</span><span class="se">\n</span><span class="s1"> &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">error_message</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> attribute in dimension should be string;</span><span class="se">\n</span><span class="s1"> &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">error_message</span></div>
+
+
+<div class="viewcode-block" id="validate_main_dimensions"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.hdf_utils.validate_main_dimensions.html#pyTEMlib.hdf_utils.validate_main_dimensions">[docs]</a><span class="k">def</span> <span class="nf">validate_main_dimensions</span><span class="p">(</span><span class="n">main_shape</span><span class="p">,</span> <span class="n">dim_dict</span><span class="p">,</span> <span class="n">h5_parent_group</span><span class="p">):</span>
+    <span class="c1"># Each item could either be a Dimension object or a HDF5 dataset</span>
+    <span class="c1"># Collect the file within which these ancillary HDF5 objects are present if they are provided</span>
+    <span class="n">which_h5_file</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># Also collect the names of the dimensions. We want them to be unique</span>
+    <span class="n">dim_names</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">dimensions_correct</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">dim_exp_size</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">main_shape</span><span class="p">):</span>
+        <span class="n">this_dim</span> <span class="o">=</span> <span class="n">dim_dict</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="n">validate_dimensions</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">main_shape</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+
+            <span class="c1"># All these checks should live in a helper function for cleanliness</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dimension </span><span class="si">{}</span><span class="s1"> has the following error_message:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">error_message</span><span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">this_dim</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dim_names</span><span class="p">:</span>  <span class="c1"># names must be unique</span>
+                    <span class="n">dim_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;All dimension names must be unique, found&#39;</span>
+                                    <span class="s1">&#39; </span><span class="si">{}</span><span class="s1"> twice&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+                <span class="c1"># are all datasets in the same file?</span>
+                <span class="k">if</span> <span class="n">this_dim</span><span class="o">.</span><span class="n">file</span> <span class="o">!=</span> <span class="n">h5_parent_group</span><span class="o">.</span><span class="n">file</span><span class="p">:</span>
+                    <span class="n">copy_dataset</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">h5_parent_group</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">this_dim</span><span class="p">,</span> <span class="n">Dimension</span><span class="p">):</span>
+            <span class="c1"># is the shape matching with the main dataset?</span>
+            <span class="n">dimensions_correct</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="n">dim_exp_size</span><span class="p">)</span>
+            <span class="c1"># Is there a HDF5 dataset with the same name already in the provided group</span>
+            <span class="c1"># where this dataset will be created?</span>
+            <span class="k">if</span> <span class="n">this_dim</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">h5_parent_group</span><span class="p">:</span>
+                <span class="c1"># check if this object with the same name is a dataset and if it satisfies the above tests</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_parent_group</span><span class="p">[</span><span class="n">this_dim</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;needs more checking&#39;</span><span class="p">)</span>
+                    <span class="n">dimensions_correct</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dimensions_correct</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="c1"># Otherwise, just append the dimension name for the uniqueness test</span>
+            <span class="k">elif</span> <span class="n">this_dim</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dim_names</span><span class="p">:</span>
+                <span class="n">dim_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">this_dim</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">dimensions_correct</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Values of dim_dict should either be h5py.Dataset &#39;</span>
+                            <span class="s1">&#39;objects or Dimension. Object at index: </span><span class="si">{}</span><span class="s1"> was of &#39;</span>
+                            <span class="s1">&#39;type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">index</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">which_h5_file</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">which_h5_file</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span> <span class="o">!=</span> <span class="n">h5_parent_group</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;need to copy dimension&#39;</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dim_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dim_names</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">dim_name</span> <span class="ow">in</span> <span class="n">dim_names</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:]:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">dim_name</span><span class="p">,</span> <span class="s1">&#39; is not unique&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">dimensions_correct</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

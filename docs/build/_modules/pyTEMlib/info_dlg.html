@@ -1,0 +1,419 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.info_dlg &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pyTEMlib.info_dlg</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyTEMlib.info_dlg</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># Form implementation generated from reading ui file &#39;untitled.ui&#39;</span>
+<span class="c1">#</span>
+<span class="c1"># Created by: PyQt5 UI code generator 5.12.3</span>
+<span class="c1">#</span>
+<span class="c1"># WARNING! All changes made in this file will be lost!</span>
+
+<span class="kn">from</span> <span class="nn">PyQt5</span> <span class="kn">import</span> <span class="n">QtCore</span><span class="p">,</span> <span class="n">QtGui</span><span class="p">,</span> <span class="n">QtWidgets</span>
+<span class="kn">from</span> <span class="nn">pyTEMlib.microscope</span> <span class="kn">import</span> <span class="n">microscope</span>
+
+
+<div class="viewcode-block" id="UiDialog"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.info_dlg.UiDialog.html#pyTEMlib.info_dlg.UiDialog">[docs]</a><span class="k">class</span> <span class="nc">UiDialog</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialog</span><span class="p">):</span>
+        <span class="n">dialog</span><span class="o">.</span><span class="n">setObjectName</span><span class="p">(</span><span class="s1">&#39;Spectrum Info&#39;</span><span class="p">)</span>
+        <span class="n">dialog</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">371</span><span class="p">,</span> <span class="mi">184</span><span class="p">)</span>
+
+        <span class="n">valid_float</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QDoubleValidator</span><span class="p">()</span>
+        <span class="n">valid_int</span> <span class="o">=</span> <span class="n">QtGui</span><span class="o">.</span><span class="n">QIntValidator</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">TEM</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TEM</span> <span class="o">=</span> <span class="n">microscope</span><span class="o">.</span><span class="n">get_available_microscope_names</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QGridLayout</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">setVerticalSpacing</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator1</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="n">dialog</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">setAutoFillBackground</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">palette</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">palette</span><span class="p">()</span>
+        <span class="n">palette</span><span class="o">.</span><span class="n">setColor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">backgroundRole</span><span class="p">(),</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">blue</span><span class="p">)</span>
+        <span class="n">palette</span><span class="o">.</span><span class="n">setColor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">foregroundRole</span><span class="p">(),</span> <span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">white</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">setMaximumHeight</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">setPalette</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span>
+        <span class="c1">######################################################################</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;Energy Scale&quot;</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator1</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="c1">######################################################################</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offsetLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Offset&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offsetEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 1.00&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offsetEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">offsetUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;eV&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offsetUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispersionLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Dispersion&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispersionEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 1.00&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispersionEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dispersionUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;eV/channel&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dispersionLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dispersionEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dispersionUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy_button</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QPushButton</span><span class="p">(</span><span class="s1">&#39;Set Energy Scale&#39;</span><span class="p">,</span> <span class="n">dialog</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy_button</span><span class="o">.</span><span class="n">setCheckable</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_button</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Exp. Time&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 100.0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;s&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator2</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="n">dialog</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator2</span><span class="o">.</span><span class="n">setAutoFillBackground</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator2</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator2</span><span class="o">.</span><span class="n">setMaximumHeight</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator2</span><span class="o">.</span><span class="n">setPalette</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1">######################################################################</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator2</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;Microscope&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator2</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="c1">######################################################################</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TEMList</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QComboBox</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TEMList</span><span class="o">.</span><span class="n">setEditable</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TEMList</span><span class="o">.</span><span class="n">addItems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TEM</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">TEMList</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">convLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Conv. Angle&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">convEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 100.0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">convEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">convUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;mrad&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">convLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">convEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">convUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">collLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Coll. Angle&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">collEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 10.0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">collEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">collUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;mrad&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">collLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">collEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">collUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">E0Label</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Acc. Voltage&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">E0Edit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 100.0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">E0Edit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">E0Unit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;kV&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">E0Label</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">E0Edit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">E0Unit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator3</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="n">dialog</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator3</span><span class="o">.</span><span class="n">setAutoFillBackground</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator3</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator3</span><span class="o">.</span><span class="n">setMaximumHeight</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator3</span><span class="o">.</span><span class="n">setPalette</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1">######################################################################</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator3</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;Quantification&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator3</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="c1">######################################################################</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binningLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Binning&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binningEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 1&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binningEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_int</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binningLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binningEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conversionLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Conversion&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conversionEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 25.0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conversionEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conversionUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;e&lt;sup&gt;-&lt;/sup&gt;/counts&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conversionLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conversionEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conversionUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fluxLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Flux&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fluxEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 100.0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fluxEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fluxUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;e&lt;sup&gt;-&lt;/sup&gt;/s&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fluxLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fluxEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fluxUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">VOALabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;Measurement&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">VOAEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s2">&quot; 10.0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">VOAEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">VOAUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s2">&quot;pA&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VOALabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VOAEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">VOAUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator4</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="n">dialog</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator4</span><span class="o">.</span><span class="n">setAutoFillBackground</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator4</span><span class="o">.</span><span class="n">setAlignment</span><span class="p">(</span><span class="n">QtCore</span><span class="o">.</span><span class="n">Qt</span><span class="o">.</span><span class="n">AlignCenter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator4</span><span class="o">.</span><span class="n">setMaximumHeight</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator4</span><span class="o">.</span><span class="n">setPalette</span><span class="p">(</span><span class="n">palette</span><span class="p">)</span>
+        <span class="c1">######################################################################</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">separator4</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="s2">&quot;Spectrum Image&quot;</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator4</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="c1">######################################################################</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">binXLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;Bin X:&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binXEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binXEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_int</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binXUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;pixel&#39;</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binXLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binXEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binXUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">binYLabel</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;Bin Y:&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binYEdit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLineEdit</span><span class="p">(</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binYEdit</span><span class="o">.</span><span class="n">setValidator</span><span class="p">(</span><span class="n">valid_int</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">binYUnit</span> <span class="o">=</span> <span class="n">QtWidgets</span><span class="o">.</span><span class="n">QLabel</span><span class="p">(</span><span class="s1">&#39;pixel&#39;</span><span class="p">)</span>
+
+        <span class="n">row</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binYLabel</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binYEdit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binYUnit</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">dialog</span><span class="o">.</span><span class="n">setLayout</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layout</span><span class="p">)</span>
+
+        <span class="n">dialog</span><span class="o">.</span><span class="n">setWindowTitle</span><span class="p">(</span><span class="s2">&quot;Spectrum Info&quot;</span><span class="p">)</span>
+
+        <span class="n">QtCore</span><span class="o">.</span><span class="n">QMetaObject</span><span class="o">.</span><span class="n">connectSlotsByName</span><span class="p">(</span><span class="n">dialog</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

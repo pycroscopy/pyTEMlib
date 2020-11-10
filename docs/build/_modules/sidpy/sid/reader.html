@@ -1,0 +1,353 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>sidpy.sid.reader &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../credits.html">Credits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>sidpy.sid.reader</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for sidpy.sid.reader</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Abstract :class:`~sidpy.Reader` base-class</span>
+
+<span class="sd">Created on Sun Aug 22 11:07:16 2020</span>
+
+<span class="sd">@author: Suhas Somnath</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">sidpy.base.string_utils</span> <span class="kn">import</span> <span class="n">validate_single_string_arg</span><span class="p">,</span> \
+    <span class="n">validate_list_of_strings</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="n">unicode</span> <span class="o">=</span> <span class="nb">str</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="ne">FileNotFoundError</span> <span class="o">=</span> <span class="ne">ValueError</span>
+
+
+<span class="k">class</span> <span class="nc">Reader</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract class that defines the most basic functionality of a data format</span>
+<span class="sd">    Reader.</span>
+<span class="sd">    A Reader extracts measurement data and metadata from binary / proprietary</span>
+<span class="sd">    data formats into a single or set of sipy.Dataset objects</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        -----------</span>
+<span class="sd">        file_path : str</span>
+<span class="sd">            Path to the file that needs to be read</span>
+<span class="sd">            </span>
+<span class="sd">        Attributes</span>
+<span class="sd">        ----------</span>
+<span class="sd">        self._input_file_path : str</span>
+<span class="sd">            Path to the file that will be read</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        * This method will check to make sure that the provided file_path is</span>
+<span class="sd">          indeed a string and a valid file path.</span>
+<span class="sd">        * Consider calling ``can_read()`` within ``__init__()`` for validating</span>
+<span class="sd">          the provided file</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        FileNotFoundError</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">validate_single_string_arg</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s1">&#39;file_path&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">file_path</span> <span class="o">+</span> <span class="s1">&#39; does not exist&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_file_path</span> <span class="o">=</span> <span class="n">file_path</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extracts the data and metadata from the provided file and embeds this</span>
+<span class="sd">        information in one or more ``sidpy.Dataset`` objects that are returned</span>
+<span class="sd">        from this method</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        objs : ``sidpy.Dataset`` or list of ``sidpy.Dataset`` objects</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError : if the child class does not implement this method</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Do **not** accept the file path at ``read``. Use self._input_file_path</span>
+<span class="sd">        when implementing this method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;The read method needs to be &#39;</span>
+                                  <span class="s1">&#39;implemented by the child class&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">can_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks whether the provided file can be read by this reader.</span>
+
+<span class="sd">        This basic function compares the file extension against the</span>
+<span class="sd">        ``extension`` keyword argument. If the extension matches, this function</span>
+<span class="sd">        returns True</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        extension : str or iterable of str, Optional. Default = None</span>
+<span class="sd">            File extension for the input file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        file_path : str</span>
+<span class="sd">            Path to the file that needs to be provided to read()</span>
+<span class="sd">            if the provided file was indeed a valid file</span>
+<span class="sd">            Else, None</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        NotImplementedError : if this function is called for this or a child</span>
+<span class="sd">        class that does not provide the ``extension`` keyword argument</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        It is recommended to add additional checks as necessary to ensure that</span>
+<span class="sd">        the translator can indeed read the given file such as by validating the</span>
+<span class="sd">        headers or similar metadata.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">targ_ext</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;extension&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">targ_ext</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Either can_read() has not been &#39;</span>
+                                      <span class="s1">&#39;implemented by this Reader or the &#39;</span>
+                                      <span class="s1">&#39;&quot;extension&quot; keyword argument was &#39;</span>
+                                      <span class="s1">&#39;missing&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">targ_ext</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">unicode</span><span class="p">)):</span>
+            <span class="n">targ_ext</span> <span class="o">=</span> <span class="p">[</span><span class="n">targ_ext</span><span class="p">]</span>
+        <span class="n">targ_ext</span> <span class="o">=</span> <span class="n">validate_list_of_strings</span><span class="p">(</span><span class="n">targ_ext</span><span class="p">,</span>
+                                            <span class="n">parm_name</span><span class="o">=</span><span class="s1">&#39;(keyword argument) &#39;</span>
+                                                      <span class="s1">&#39;&quot;extension&quot;&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Get rid of any &#39;.&#39; separators that may be in the list of extensions</span>
+        <span class="c1"># Also turn to lower case for case insensitive comparisons</span>
+        <span class="n">targ_ext</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">targ_ext</span><span class="p">]</span>
+
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_input_file_path</span><span class="p">)</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">file_path</span><span class="p">)[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="c1"># Ensure extension is lower case just like targets above</span>
+        <span class="n">extension</span> <span class="o">=</span> <span class="n">extension</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">extension</span> <span class="ow">in</span> <span class="n">targ_ext</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">file_path</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
