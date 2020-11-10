@@ -21,9 +21,10 @@ help:
 # Create a .py (percent format with multiline comments) from an .ipynb in the first place:
 # jupytext --update-metadata '{"jupytext": {"cell_markers": "\"\"\""}}' --to py:percent <name-of-notebook>.ipynb
 
+# rm -rf build
+#	rm -rf source/_autosummary
+#	rm -rf source/notebooks
 # Convert .py to .ipynb (don't seem to need to --execute? perhaps sphinx-build does it...), then build html:
 %: Makefile
-	rm -rf build
-	rm -rf source/_autosummary
-	rm -rf source/notebooks
+
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

@@ -39,7 +39,6 @@ class PeriodicTableDialog(QtWidgets.QDialog):
     energy_scale: list or numpy array
         energy-scale of spectrum/spectra to determine likely edges
 
-
     Returns:
     list of strings: elements.
     Usage:

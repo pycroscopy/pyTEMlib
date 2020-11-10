@@ -32,9 +32,9 @@ def zero_loss_peak_weight():
 # ## Aberration Function for Probe calculations
 def make_chi1(phi, theta, wl, ab, c1_include):
     """
-    ###
+    # ##
     # Aberration function chi without defocus
-    ###
+    # ##
     """
     t0 = np.power(theta, 1) / 1 * (float(ab['C01a']) * np.cos(1 * phi) + float(ab['C01b']) * np.sin(1 * phi))
 
@@ -76,7 +76,7 @@ def make_chi1(phi, theta, wl, ab, c1_include):
 
 def probe2(ab, size_x, size_y, tags, verbose=False):
     """
-    **********************************************
+
     * This function creates a incident STEM probe
     * at position (0,0)
     * with parameters given in ab dictionary
@@ -104,8 +104,8 @@ def probe2(ab, size_x, size_y, tags, verbose=False):
     *    "Towards sub-Angstroem Electron Beams",
     *    Ultramicroscopy 78, 1-11 (1999)
     *
-    *********************************************'''
-    ####
+
+
     # Internally reciprocal lattice vectors in 1/nm or rad.
     # All calculations of chi in angles.
     # All aberration coefficients in nm

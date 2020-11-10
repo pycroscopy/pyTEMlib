@@ -147,11 +147,11 @@ def power_spectrum(dset, smoothing=3):
     Calculate power spectrum
 
     Input:
-    ======
+    ------
             channel: channnel in h5f file with image content
 
     Output:
-    =======
+    -------
             tags: dictionary with
                 ['data']: fourier transformed image
                 ['axis']: scale of reciprocal image
@@ -193,13 +193,13 @@ def diffractogram_spots(dset, spot_threshold):
     Find spots in diffractogram and sort them by distance from center
 
     Input:
-    ======
+    ------
             fft_tags: dictionary with
                 ['spatial_***']: information of scale of fourier pattern
                 ['data']: power_spectrum
             spot_threshold: threshold for blob finder
     Output:
-    =======
+    -------
             spots: numpy array with sorted position (x,y) and radius (r) of all spots
 
     """
@@ -236,7 +236,7 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
     Use spots in diffractogram for a Fourier Filter
 
     Input:
-    ======
+    ------
             image:  image to be filtered
             tags: dictionary with
                 ['spatial_***']: information of scale of fourier pattern
@@ -244,7 +244,7 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
             low_pass: low pass filter in center of diffractogrm
 
     Output:
-    =======
+    -------
             Fourier filtered image
     """
     # prepare mask
@@ -677,11 +677,11 @@ def rebin(im, binning=2):
     rebin an image by the number of pixels in x and y direction given by binning
     
     Input:
-    ======
+    ------
             image: numpy array in 2 dimensions
     
     Output:
-    =======
+    -------
             binned image 
     """
     if len(im.shape) == 2:

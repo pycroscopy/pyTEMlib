@@ -1,0 +1,519 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.interactive_eels.RangeSelector &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>pyTEMlib.interactive_eels.RangeSelector</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_autosummary/pyTEMlib.interactive_eels.RangeSelector.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="pytemlib-interactive-eels-rangeselector">
+<h1>pyTEMlib.interactive_eels.RangeSelector<a class="headerlink" href="#pytemlib-interactive-eels-rangeselector" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="pyTEMlib.interactive_eels.RangeSelector">
+<em class="property">class </em><code class="sig-prename descclassname">pyTEMlib.interactive_eels.</code><code class="sig-name descname">RangeSelector</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ax</span></em>, <em class="sig-param"><span class="n">onselect</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyTEMlib/interactive_eels.html#RangeSelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://matplotlib.org/api/widgets_api.html#matplotlib.widgets.RectangleSelector" title="(in Matplotlib v3.3.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.widgets.RectangleSelector</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<cite>~matplotlib.axes.Axes</cite>) – The parent axes for the widget.</p></li>
+<li><p><strong>onselect</strong> (<em>function</em>) – <p>A callback function that is called after a selection is completed.
+It must have the signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">onselect</span><span class="p">(</span><span class="n">eclick</span><span class="p">:</span> <span class="n">MouseEvent</span><span class="p">,</span> <span class="n">erelease</span><span class="p">:</span> <span class="n">MouseEvent</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>where <em>eclick</em> and <em>erelease</em> are the mouse click and release
+<cite>.MouseEvent</cite>s that start and complete the selection.</p>
+</p></li>
+<li><p><strong>drawtype</strong> (<em>{&quot;box&quot;</em><em>, </em><em>&quot;line&quot;</em><em>, </em><em>&quot;none&quot;}</em><em>, </em><em>default: &quot;box&quot;</em>) – Whether to draw the full rectangle box, the diagonal line of the
+rectangle, or nothing at all.</p></li>
+<li><p><strong>minspanx</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a><em>, </em><em>default: 0</em>) – Selections with an x-span less than <em>minspanx</em> are ignored.</p></li>
+<li><p><strong>minspany</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a><em>, </em><em>default: 0</em>) – Selections with an y-span less than <em>minspany</em> are ignored.</p></li>
+<li><p><strong>useblit</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a><em>, </em><em>default: False</em>) – Whether to use blitting for faster drawing (if supported by the
+backend).</p></li>
+<li><p><strong>lineprops</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a><em>, </em><em>optional</em>) – <p>Properties with which the line is drawn, if <code class="docutils literal notranslate"><span class="pre">drawtype</span> <span class="pre">==</span> <span class="pre">&quot;line&quot;</span></code>.
+Default:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><strong>rectprops</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a><em>, </em><em>optional</em>) – <p>Properties with which the rectangle is drawn, if <code class="docutils literal notranslate"><span class="pre">drawtype</span> <span class="pre">==</span>
+<span class="pre">&quot;box&quot;</span></code>.  Default:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><strong>spancoords</strong> (<em>{&quot;data&quot;</em><em>, </em><em>&quot;pixels&quot;}</em><em>, </em><em>default: &quot;data&quot;</em>) – Whether to interpret <em>minspanx</em> and <em>minspany</em> in data or in pixel
+coordinates.</p></li>
+<li><p><strong>button</strong> (<cite>.MouseButton</cite>, list of <cite>.MouseButton</cite>, default: all buttons) – Button(s) that trigger rectangle selection.</p></li>
+<li><p><strong>maxdist</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a><em>, </em><em>default: 10</em>) – Distance in pixels within which the interactive tool handles can be
+activated.</p></li>
+<li><p><strong>marker_props</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – Properties with which the interactive handles are drawn.  Currently
+not implemented and ignored.</p></li>
+<li><p><strong>interactive</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a><em>, </em><em>default: False</em>) – Whether to draw a set of handles that allow interaction with the
+widget after it is drawn.</p></li>
+<li><p><strong>state_modifier_keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a><em>, </em><em>optional</em>) – <p>Keyboard modifiers which affect the widget’s behavior.  Values
+amend the defaults.</p>
+<ul>
+<li><p>”move”: Move the existing shape, default: no modifier.</p></li>
+<li><p>”clear”: Clear the current shape, default: “escape”.</p></li>
+<li><p>”square”: Makes the shape square, default: “shift”.</p></li>
+<li><p>”center”: Make the initial point the center of the shape,
+default: “ctrl”.</p></li>
+</ul>
+<p>”square” and “center” can be combined.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.connect_default_events" title="pyTEMlib.interactive_eels.RangeSelector.connect_default_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connect_default_events</span></code></a></p></td>
+<td><p>Connect the major canvas events to methods.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.connect_event" title="pyTEMlib.interactive_eels.RangeSelector.connect_event"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connect_event</span></code></a></p></td>
+<td><p>Connect callback with an event.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.disconnect_events" title="pyTEMlib.interactive_eels.RangeSelector.disconnect_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">disconnect_events</span></code></a></p></td>
+<td><p>Disconnect all events created by this widget.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_shape</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.get_active" title="pyTEMlib.interactive_eels.RangeSelector.get_active"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_active</span></code></a></p></td>
+<td><p>Get whether the widget is active.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.ignore" title="pyTEMlib.interactive_eels.RangeSelector.ignore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ignore</span></code></a></p></td>
+<td><p>Return whether <em>event</em> should be ignored.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.on_key_press" title="pyTEMlib.interactive_eels.RangeSelector.on_key_press"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_key_press</span></code></a></p></td>
+<td><p>Key press event handler and validator for all selection widgets.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.on_key_release" title="pyTEMlib.interactive_eels.RangeSelector.on_key_release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_key_release</span></code></a></p></td>
+<td><p>Key release event handler and validator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.on_scroll" title="pyTEMlib.interactive_eels.RangeSelector.on_scroll"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_scroll</span></code></a></p></td>
+<td><p>Mouse scroll event handler and validator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.onmove" title="pyTEMlib.interactive_eels.RangeSelector.onmove"><code class="xref py py-obj docutils literal notranslate"><span class="pre">onmove</span></code></a></p></td>
+<td><p>Cursor move event handler and validator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.press" title="pyTEMlib.interactive_eels.RangeSelector.press"><code class="xref py py-obj docutils literal notranslate"><span class="pre">press</span></code></a></p></td>
+<td><p>Button press handler and validator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.release" title="pyTEMlib.interactive_eels.RangeSelector.release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">release</span></code></a></p></td>
+<td><p>Button release event handler and validator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.set_active" title="pyTEMlib.interactive_eels.RangeSelector.set_active"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_active</span></code></a></p></td>
+<td><p>Set whether the widget is active.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.set_visible" title="pyTEMlib.interactive_eels.RangeSelector.set_visible"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_visible</span></code></a></p></td>
+<td><p>Set the visibility of our artists.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.update" title="pyTEMlib.interactive_eels.RangeSelector.update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update</span></code></a></p></td>
+<td><p>Draw using blit() or draw_idle(), depending on <code class="docutils literal notranslate"><span class="pre">self.useblit</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.update_background" title="pyTEMlib.interactive_eels.RangeSelector.update_background"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_background</span></code></a></p></td>
+<td><p>Force an update of the background.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.active" title="pyTEMlib.interactive_eels.RangeSelector.active"><code class="xref py py-obj docutils literal notranslate"><span class="pre">active</span></code></a></p></td>
+<td><p>Is the widget active?</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.center" title="pyTEMlib.interactive_eels.RangeSelector.center"><code class="xref py py-obj docutils literal notranslate"><span class="pre">center</span></code></a></p></td>
+<td><p>Center of rectangle</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.corners" title="pyTEMlib.interactive_eels.RangeSelector.corners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corners</span></code></a></p></td>
+<td><p>Corners of rectangle from lower left, moving clockwise.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">drawon</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.edge_centers" title="pyTEMlib.interactive_eels.RangeSelector.edge_centers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edge_centers</span></code></a></p></td>
+<td><p>Midpoint of rectangle edges from left, moving clockwise.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">eventson</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.extents" title="pyTEMlib.interactive_eels.RangeSelector.extents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extents</span></code></a></p></td>
+<td><p>Return (xmin, xmax, ymin, ymax).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.interactive_eels.RangeSelector.geometry" title="pyTEMlib.interactive_eels.RangeSelector.geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">geometry</span></code></a></p></td>
+<td><p>Return an array of shape (2, 5) containing the x (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[1,</span> <span class="pre">:]</span></code>) and y (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[0,</span> <span class="pre">:]</span></code>) coordinates of the four corners of the rectangle starting and ending in the top left corner.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.active">
+<em class="property">property </em><code class="sig-name descname">active</code><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is the widget active?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.center">
+<em class="property">property </em><code class="sig-name descname">center</code><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Center of rectangle</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.connect_default_events">
+<code class="sig-name descname">connect_default_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.connect_default_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect the major canvas events to methods.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.connect_event">
+<code class="sig-name descname">connect_event</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em>, <em class="sig-param"><span class="n">callback</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.connect_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect callback with an event.</p>
+<p>This should be used in lieu of <code class="docutils literal notranslate"><span class="pre">figure.canvas.mpl_connect</span></code> since this
+function stores callback ids for later clean up.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.corners">
+<em class="property">property </em><code class="sig-name descname">corners</code><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.corners" title="Permalink to this definition">¶</a></dt>
+<dd><p>Corners of rectangle from lower left, moving clockwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.disconnect_events">
+<code class="sig-name descname">disconnect_events</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.disconnect_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disconnect all events created by this widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.edge_centers">
+<em class="property">property </em><code class="sig-name descname">edge_centers</code><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.edge_centers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Midpoint of rectangle edges from left, moving clockwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.extents">
+<em class="property">property </em><code class="sig-name descname">extents</code><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.extents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return (xmin, xmax, ymin, ymax).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.geometry">
+<em class="property">property </em><code class="sig-name descname">geometry</code><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an array of shape (2, 5) containing the
+x (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[1,</span> <span class="pre">:]</span></code>) and
+y (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[0,</span> <span class="pre">:]</span></code>) coordinates
+of the four corners of the rectangle starting and ending
+in the top left corner.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.get_active">
+<code class="sig-name descname">get_active</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.get_active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get whether the widget is active.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.ignore">
+<code class="sig-name descname">ignore</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.ignore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return whether <em>event</em> should be ignored.</p>
+<p>This method should be called at the beginning of any event callback.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.on_key_press">
+<code class="sig-name descname">on_key_press</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.on_key_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key press event handler and validator for all selection widgets.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.on_key_release">
+<code class="sig-name descname">on_key_release</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.on_key_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key release event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.on_scroll">
+<code class="sig-name descname">on_scroll</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.on_scroll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mouse scroll event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.onmove">
+<code class="sig-name descname">onmove</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.onmove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cursor move event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.press">
+<code class="sig-name descname">press</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Button press handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.release">
+<code class="sig-name descname">release</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Button release event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.set_active">
+<code class="sig-name descname">set_active</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">active</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.set_active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set whether the widget is active.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.set_visible">
+<code class="sig-name descname">set_visible</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">visible</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.set_visible" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the visibility of our artists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw using blit() or draw_idle(), depending on <code class="docutils literal notranslate"><span class="pre">self.useblit</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyTEMlib.interactive_eels.RangeSelector.update_background">
+<code class="sig-name descname">update_background</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">event</span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.interactive_eels.RangeSelector.update_background" title="Permalink to this definition">¶</a></dt>
+<dd><p>Force an update of the background.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

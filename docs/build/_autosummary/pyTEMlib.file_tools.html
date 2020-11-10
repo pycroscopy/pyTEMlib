@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.file_tools &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>pyTEMlib.file_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/_autosummary/pyTEMlib.file_tools.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="module-pyTEMlib.file_tools">
+<span id="pytemlib-file-tools"></span><h1>pyTEMlib.file_tools<a class="headerlink" href="#module-pyTEMlib.file_tools" title="Permalink to this headline">¶</a></h1>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.flatten_dict.html#pyTEMlib.file_tools.flatten_dict" title="pyTEMlib.file_tools.flatten_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flatten_dict</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.file_tools.get_h5_filename.html#pyTEMlib.file_tools.get_h5_filename" title="pyTEMlib.file_tools.get_h5_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_h5_filename</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.get_last_path.html#pyTEMlib.file_tools.get_last_path" title="pyTEMlib.file_tools.get_last_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_last_path</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.file_tools.get_main_channel.html#pyTEMlib.file_tools.get_main_channel" title="pyTEMlib.file_tools.get_main_channel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_main_channel</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.get_qt_app.html#pyTEMlib.file_tools.get_qt_app" title="pyTEMlib.file_tools.get_qt_app"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_qt_app</span></code></a></p></td>
+<td><p>will start QT Application if not running yet</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.file_tools.get_start_channel.html#pyTEMlib.file_tools.get_start_channel" title="pyTEMlib.file_tools.get_start_channel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_start_channel</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.h5_tree.html#pyTEMlib.file_tools.h5_tree" title="pyTEMlib.file_tools.h5_tree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">h5_tree</span></code></a></p></td>
+<td><p>Just a wrapper for the sidpy function print_tree, so that sidpy does not have to be loaded in notebook</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.file_tools.log_results.html#pyTEMlib.file_tools.log_results" title="pyTEMlib.file_tools.log_results"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_results</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.open_file.html#pyTEMlib.file_tools.open_file" title="pyTEMlib.file_tools.open_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open_file</span></code></a></p></td>
+<td><p>Opens a file if the extension is .hf5, .dm3 or .dm4 If no filename is provided the qt open_file windows opens</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.file_tools.openfile_dialog.html#pyTEMlib.file_tools.openfile_dialog" title="pyTEMlib.file_tools.openfile_dialog"><code class="xref py py-obj docutils literal notranslate"><span class="pre">openfile_dialog</span></code></a></p></td>
+<td><p>Opens a File dialog which is used in open_file() function This function uses tkinter or pyQt5.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.read_old_h5group.html#pyTEMlib.file_tools.read_old_h5group" title="pyTEMlib.file_tools.read_old_h5group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_old_h5group</span></code></a></p></td>
+<td><p>make a  sidpy dataset from pyUSID style hdf5 group input     current_channel: h5_group return     sidpy Dataset</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.file_tools.save_path.html#pyTEMlib.file_tools.save_path" title="pyTEMlib.file_tools.save_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_path</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.savefile_dialog.html#pyTEMlib.file_tools.savefile_dialog" title="pyTEMlib.file_tools.savefile_dialog"><code class="xref py py-obj docutils literal notranslate"><span class="pre">savefile_dialog</span></code></a></p></td>
+<td><p>Opens a save dialog in QT and returns an “<a href="#id1"><span class="problematic" id="id2">*</span></a>.hf5” file. New now with initial file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.file_tools.set_dimensions.html#pyTEMlib.file_tools.set_dimensions" title="pyTEMlib.file_tools.set_dimensions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_dimensions</span></code></a></p></td>
+<td><p>Attaches correct dimension from old pyTEMlib style.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.file_tools.set_directory.html#pyTEMlib.file_tools.set_directory" title="pyTEMlib.file_tools.set_directory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_directory</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

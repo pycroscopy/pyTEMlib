@@ -1,0 +1,379 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyTEMlib.nsi_reader &mdash; pyTEMlib 0.2020.11.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2020.11.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">p</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pyTEMlib.nsi_reader</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyTEMlib.nsi_reader</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Reader capable of reading one or all NSID datasets present in a given HDF5 file</span>
+
+<span class="sd">Created on Fri May 22 16:29:25 2020</span>
+
+<span class="sd">@author: Gerd Duscher, Suhas Somnath</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># pyNSID function</span>
+<span class="kn">import</span> <span class="nn">sidpy</span>
+
+<span class="kn">from</span> <span class="nn">pyTEMlib.hdf_utils</span> <span class="kn">import</span> <span class="n">get_all_main</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="n">unicode</span> <span class="o">=</span> <span class="nb">str</span>
+
+
+<div class="viewcode-block" id="NSIDReader"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.nsi_reader.NSIDReader.html#pyTEMlib.nsi_reader.NSIDReader">[docs]</a><span class="k">class</span> <span class="nc">NSIDReader</span><span class="p">(</span><span class="n">sidpy</span><span class="o">.</span><span class="n">Reader</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">h5_object</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        h5_object - hdf5 dataset</span>
+<span class="sd">            specific Main dataset that needs to be read into a sidpy Dataset.</span>
+<span class="sd">            # If no path is specified, read all available NSID Main datasets</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_object</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;we can only read h5py datasets&#39;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">NSIDReader</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">file_path</span><span class="o">=</span><span class="n">h5_object</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dset</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_datasets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_object</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dset</span> <span class="o">=</span> <span class="n">h5_object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">h5_group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dset</span><span class="o">.</span><span class="n">parent</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">h5_object</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">h5_group</span> <span class="o">=</span> <span class="n">h5_object</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;we can only read h5py datasets&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Find all main datasets is done in read as the file may change between readings</span>
+        <span class="c1"># DO NOT close HDF5 file. Dask array will fail if you do so.</span>
+        <span class="c1"># TODO: sidpy.Dataset may need the ability to close a HDF5 file</span>
+        <span class="c1"># Perhaps this would be done by reading all contents into memory..</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">read_h5py_dataset</span><span class="p">(</span><span class="n">dset</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;can only read single Dataset, use read_all_in_group or read_all function instead&#39;</span><span class="p">)</span>
+        <span class="c1"># create vanilla dask array</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dset</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s1">&#39;title&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">if</span> <span class="s1">&#39;units&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">units</span> <span class="o">=</span> <span class="s1">&#39;generic&#39;</span>
+
+        <span class="k">if</span> <span class="s1">&#39;quantity&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="s1">&#39;generic&#39;</span>
+
+        <span class="k">if</span> <span class="s1">&#39;data_type&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;data_type&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="s1">&#39;generic&#39;</span>
+
+        <span class="k">if</span> <span class="s1">&#39;modality&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;modality&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">modality</span> <span class="o">=</span> <span class="s1">&#39;generic&#39;</span>
+
+        <span class="k">if</span> <span class="s1">&#39;source&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="s1">&#39;generic&#39;</span>
+
+        <span class="n">dataset</span><span class="o">.</span><span class="n">axes</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dset</span><span class="p">)</span><span class="o">.</span><span class="n">ndim</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">label</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;dimension </span><span class="si">{}</span><span class="s1"> not NSID type using generic&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">dset</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="n">dim</span><span class="p">][</span><span class="n">label</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">dim_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;quantity&#39;</span><span class="p">:</span> <span class="s1">&#39;generic&#39;</span><span class="p">,</span> <span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;generic&#39;</span><span class="p">,</span> <span class="s1">&#39;dimension_type&#39;</span><span class="p">:</span> <span class="s1">&#39;generic&#39;</span><span class="p">}</span>
+            <span class="n">h5_dim_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;quantity&#39;</span> <span class="ow">in</span> <span class="n">h5_dim_dict</span><span class="p">:</span>
+                <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">h5_dim_dict</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;NAME&#39;</span> <span class="ow">in</span> <span class="n">h5_dim_dict</span><span class="p">:</span>
+                    <span class="n">param</span> <span class="o">=</span> <span class="n">h5_dim_dict</span><span class="p">[</span><span class="s1">&#39;NAME&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">)</span>
+                    <span class="c1"># print(param)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">param</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">param</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;frame&#39;</span><span class="p">:</span>
+                            <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;stack&#39;</span>
+                            <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;frame&#39;</span>
+                            <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;dimension_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">TEMPORAL</span>
+                    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">param</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+                        <span class="k">if</span> <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;nm&#39;</span><span class="p">:</span>
+                            <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;dimension_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">SPATIAL</span>
+                        <span class="k">elif</span> <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;eV&#39;</span><span class="p">:</span>
+                            <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;dimension_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">DimensionTypes</span><span class="o">.</span><span class="n">SPECTRAL</span>
+
+            <span class="k">if</span> <span class="s1">&#39;units&#39;</span> <span class="ow">in</span> <span class="n">h5_dim_dict</span><span class="p">:</span>
+                <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">h5_dim_dict</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;dimension_type&#39;</span> <span class="ow">in</span> <span class="n">h5_dim_dict</span><span class="p">:</span>
+                <span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;dimension_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">h5_dim_dict</span><span class="p">[</span><span class="s1">&#39;dimension_type&#39;</span><span class="p">]</span>
+
+            <span class="n">dim_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">))</span>
+
+            <span class="n">dataset</span><span class="o">.</span><span class="n">set_dimension</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dimension</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="n">name</span><span class="p">][()]),</span> <span class="n">name</span><span class="o">=</span><span class="n">dset</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="n">dim</span><span class="p">]</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                                                       <span class="n">quantity</span><span class="o">=</span><span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;quantity&#39;</span><span class="p">],</span> <span class="n">units</span><span class="o">=</span><span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">],</span>
+                                                       <span class="n">dimension_type</span><span class="o">=</span><span class="n">dim_dict</span><span class="p">[</span><span class="s1">&#39;dimension_type&#39;</span><span class="p">]))</span>
+
+        <span class="k">if</span> <span class="s1">&#39;metadata&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">dict_utils</span><span class="o">.</span><span class="n">nest_dict</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;metadata&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">))</span>
+
+        <span class="n">dataset</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">attrs</span><span class="p">))</span>
+
+        <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="s1">&#39;original_metadata&#39;</span> <span class="ow">in</span> <span class="n">dset</span><span class="o">.</span><span class="n">parent</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">original_metadata</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">dict_utils</span><span class="o">.</span><span class="n">nest_dict</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">dset</span><span class="o">.</span><span class="n">parent</span><span class="p">[</span><span class="s1">&#39;original_metadata&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">))</span>
+
+        <span class="c1"># hdf5 information</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">h5_dataset</span> <span class="o">=</span> <span class="n">dset</span>
+
+        <span class="k">return</span> <span class="n">dataset</span>
+
+<div class="viewcode-block" id="NSIDReader.can_read"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.nsi_reader.NSIDReader.html#pyTEMlib.nsi_reader.NSIDReader.can_read">[docs]</a>    <span class="k">def</span> <span class="nf">can_read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="NSIDReader.read"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.nsi_reader.NSIDReader.html#pyTEMlib.nsi_reader.NSIDReader.read">[docs]</a>    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5_group</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;This function needs to be initialised with a hdf5 group or dataset first&#39;</span><span class="p">)</span>
+        <span class="n">list_of_main</span> <span class="o">=</span> <span class="n">get_all_main</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">h5_group</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Go through each of the identified</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">list_of_datasets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">dset</span> <span class="ow">in</span> <span class="n">list_of_main</span><span class="p">:</span>
+            <span class="n">list_of_datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_h5py_dataset</span><span class="p">(</span><span class="n">dset</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">list_of_datasets</span></div>
+
+    <span class="k">def</span> <span class="nf">read_all_in_group</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Gerd Duscher, and Mark Oxeley
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

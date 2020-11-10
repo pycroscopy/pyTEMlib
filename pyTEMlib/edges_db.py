@@ -26,7 +26,6 @@ from pyTEMlib.config_dir import config_path
 
 
 file_path = os.path.join(config_path, 'edges_db.csv')
-#print file_path
 f = open(file_path, 'r')
 reader = csv.reader(f)
 edges_dict = {}
@@ -34,11 +33,12 @@ for row in reader:
     twin_subshell = None
     element, subshell = row[0].split('.')
     Z = row[1]
-    if (element in edges_dict) is not True :
-        edges_dict[element]={}
+    if (element in edges_dict) is not True:
+        edges_dict[element] = {}
         edges_dict[element]['subshells'] = {}
         edges_dict[element]['Z'] = Z
-    if row[3] is not '':
+    factor = 1.0
+    if row[3] != '':
         if subshell == "L3":
             twin_subshell = "L2"
             factor = 0.5
@@ -67,10 +67,9 @@ for row in reader:
     edges_dict[element]['subshells'][subshell]['relevance'] = row[4]
     edges_dict[element]['subshells'][subshell]['factor'] = 1
     
-    if twin_subshell is not None :
+    if twin_subshell is not None:
         edges_dict[element]['subshells'][twin_subshell] = {}
-        edges_dict[element]['subshells'][twin_subshell]['onset_energy'] = \
-        float(row[3])
+        edges_dict[element]['subshells'][twin_subshell]['onset_energy'] = float(row[3])
         edges_dict[element]['subshells'][twin_subshell]['filename'] = row[0]
         edges_dict[element]['subshells'][twin_subshell]['relevance'] = row[4]
         edges_dict[element]['subshells'][twin_subshell]['factor'] = factor
