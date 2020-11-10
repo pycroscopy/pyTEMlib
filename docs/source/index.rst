@@ -6,7 +6,7 @@
 pyTEMlib Documentation
 ======================
 
-**Framework for storing, visualizing, and processing N-Dimensional Spectroscopic and Imaging Data (TEMlib)**
+**Model Based Analysis of TEM/STEM Data**
 
 Jump to our `GitHub project page <https://github.com/gduscher/pyTEMlib>`_
 
