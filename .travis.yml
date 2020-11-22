@@ -10,7 +10,7 @@ before_install:
 dist: xenial
 sudo: true
 install: pip install .
-script: ls #coverage run --source pyTEMlib setup.py test
+script: coverage run --source pyTEMlib setup.py test
 stages:
   - name: after_success
     if: env(python) = "3.7"
