@@ -8,7 +8,7 @@ pyTEMlib Documentation
 
 **Model Based Analysis of TEM/STEM Data**
 
-Jump to our `GitHub project page <https://github.com/gduscher/pyTEMlib>`_
+Jump to our `GitHub project page <https://github.com/pycroscopy/pyTEMlib>`_
 
 .. toctree::
    :glob:
@@ -17,7 +17,6 @@ Jump to our `GitHub project page <https://github.com/gduscher/pyTEMlib>`_
 
    about
    install
-   pyTEMlib
    contact
    credits
 
