@@ -1,9 +1,9 @@
 Installation
 ============
 
-Preparing for pyNSID
+Preparing for pyTEMlib
 --------------------
-`pyNSID <https://github.com/pycroscopy/pyNSID>`_ requires many commonly used scientific and numeric python packages such as numpy, h5py etc.
+`pyTEMlib <https://github.com/pycroscopy/pyTEMlib>`_ requires many commonly used scientific and numeric python packages such as numpy, h5py etc.
 To simplify the installation process, we recommend the installation of
 `Anaconda <https://www.anaconda.com/distribution/>`_ which contains most of the prerequisite packages,
 `conda <https://conda.io/docs/>`_ - a package / environment manager,
@@ -25,17 +25,17 @@ Do you already have Anaconda installed?
       - Restart computer
     - Yes?
 
-      - Proceed to install pyNSID
+      - Proceed to install pyTEMlib
 
 Compatibility
 ~~~~~~~~~~~~~
-* pyNSID is compatible with python 2.7, and 3.4 onwards. Please raise an issue if you find a bug.
+* pyTEMlib is compatible with python 3.5 onwards. Please raise an issue if you find a bug.
 * We do not support 32 bit architectures
 * We only support text that is UTF-8 compliant due to restrictions posed by HDF5
 
 Terminal
 --------
-Installing, uninstalling, or updating pyNSID (or any other python package for that matter) can be performed using the ``Terminal`` application.
+Installing, uninstalling, or updating pyTEMlib (or any other python package for that matter) can be performed using the ``Terminal`` application.
 You will need to open the Terminal to type any command shown on this page.
 Here is how you can access the Terminal on your computer:
 
@@ -49,45 +49,25 @@ Here is how you can access the Terminal on your computer:
 * Linux (e.g - Ubuntu) - Open the Dash by clicking the Ubuntu (or equivalent) icon in the upper-left, type "terminal".
   Select the Terminal application from the results that appear.
 
-Installing pyNSID
+Installing pyTEMlib
 -----------------
 1. Ensure that a compatible Anaconda distribution has been successfully installed
 2. Open a `terminal <#terminal>`_ window.
-3. You can now install pyNSID via **either** the ``pip`` or ``conda`` methods shown below.
-   Type the following commands into the terminal / command prompt and hit the Return / Enter key:
+3. You can now install pyTEMlib via  ``pip`` as shown below.
+   Type the following command into the terminal / command prompt and hit the Return / Enter key:
 
    * pip:
 
      .. code:: bash
 
-        pip install pyNSID
+        pip install pyTEMlib
 
-Offline installation
-~~~~~~~~~~~~~~~~~~~~
-In certain cases, you may need your python packages to work on a computer
-(typically the computer that controls a scientific instrument) that is not connected to the internet.
-In such cases, the aforementioned routes will not work. Please follow these instructions instead:
 
-#. Recall that pyNSID requires python and several other packages. Therefore, you will need to:
-
-   #. Download the `Anaconda installer <https://www.anaconda.com/download/>`_ from a computer is online
-   #. Copy the installer onto the target computer via a USB pen drive
-   #. Install Anaconda
-#. Download the pyNSID repository from GitHub via `this link <https://github.com/pycroscopy/pyNSID/archive/master.zip>`_
-#. Copy the resultant zip file to the offline computer via a portable storage device like a USB pen drive
-#. Unzip the zip file in the offline computer.
-#. Open a `terminal <#terminal>`_ window
-#. Navigate to the folder where you unzipped the contents of the zip file via ``cd`` commands
-#. Type the following command:
-
-   .. code:: bash
-
-     python setup.py install
 
   
 Installing from a specific branch (advanced users **ONLY**)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Note that we do not recommend installing pyNSID this way since branches other than the master branch may contain bugs.
+Note that we do not recommend installing pyTEMlib this way since branches other than the master branch may contain bugs.
 
 .. note::
    Windows users will need to install ``git`` before proceeding. Please type the following command in the Command Prompt:
@@ -96,33 +76,31 @@ Note that we do not recommend installing pyNSID this way since branches other th
 
      conda install git
 
-Install a specific branch of pyNSID (``dev`` in this case):
+Install a specific branch of pyTEMlib (``dev`` in this case):
 
 .. code:: bash
 
-  pip install -U git+https://github.com/pycroscopy/pyNSID@dev
+  pip install -U git+https://github.com/pycroscopy/pyTEMlib@dev
 
   
-Updating pyNSID
+Updating pyTEMlib
 ---------------
 
 We recommend periodically updating your conda / anaconda distribution. Please see `these instructions to update anaconda <./external_guides.html#Updating-packages>`_.
 
-If you already have pyNSID installed and want to update to the latest version, use the following command in a terminal window:
+If you already have pyTEMlib installed and want to update to the latest version, use the following command in a terminal window:
 
-* If you originally installed pyNSID via ``pip``:
+.. code:: bash
 
-  .. code:: bash
-
-    pip install -U --no-deps pyNSID
+   pip install -U --no-deps pyTEMlib
   
-  If it does not work try reinstalling the package:
+If it does not work try reinstalling the package:
 
-  .. code:: bash
+.. code:: bash
 
-    pip uninstall pyNSID
-    pip install pyNSID
+   pip uninstall pyTEMlib
+   pip install pyTEMlib
 
 Other software
 --------------
-We recommend `HDF View <https://support.hdfgroup.org/products/java/hdfview/>`_ for exploring HDF5 files generated by and used in pyNSID.
+We recommend `HDF View <https://support.hdfgroup.org/products/java/hdfview/>`_ for exploring HDF5 files generated by and used in pyTEMlib.

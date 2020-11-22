@@ -3,8 +3,8 @@ Contact us
 Here are a few options for you to get in touch with the developers and the user community
 to ask questions, report bugs, request features etc:
 
-* If you have a GitHub account (free), please raise an `issue <https://github.com/pycroscopy/pyNSID/issues>`_.
-* If you have a GMail account (free), please start a new thread in our `google group <https://groups.google.com/forum/#!forum/pynsid>`_
+* If you have a GitHub account (free), please raise an `issue <https://github.com/pycroscopy/pyTEMlib/issues>`_.
+* If you have a GMail account (free), please start a new thread in our `google group <https://groups.google.com/forum/#!forum/pycroscopy>`_
 
 #. When reporting a bug / asking certain questions, we will be able to respond faster if you can provide:
 
