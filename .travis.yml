@@ -1,0 +1,61 @@
+language: python
+python:
+  - '3.7'
+  - '3.8'
+  - '3.6'
+  - '3.5'
+before_install:
+  - sudo apt-get update -qq
+  - pip  install coveralls pytest
+dist: xenial
+sudo: true
+install: pip install .
+script: coverage run --source pyTEMlib setup.py test
+stages:
+  - name: after_success
+    if: env(python) = "3.7"
+after_success:
+  - pip list
+  - pip install sphinx>=3.1.1 sphinx-gallery sphinx-rtd-theme>=0.5.0 sphinx-autodoc-typehints numpydoc wget pysptools cvxopt scipy nbsphinx
+  - sudo apt-get install pandoc
+  - sphinx-build -b html -aET docs/source docs/_build/html
+  - touch docs/_build/html/.nojekyll
+  - coverage report -m
+  - coveralls
+before_deploy:
+  - python setup.py sdist
+  - python setup.py bdist_wheel
+deploy:
+# Github pages deployment
+  - provider: pages
+    skip_cleanup: true
+    github-token: $GITHUBTOKEN
+    local_dir: docs/_build/html
+    on:
+      branch: master
+      python: 3.7
+# Github releases deployment
+  - provider: releases
+    skip_cleanup: true
+    api_key: $GITHUBTOKEN
+    file_glob: true
+    file: dist/*
+    on:
+      tags: true
+      branch: master
+# PyPi deployment
+  - provider: pypi
+    skip_cleanup: true
+    user:
+      secure: $PYPIUSER
+    password:
+      secure: $PYPIPASS
+    distributions: "sdist bdist_wheel"
+    file_glob: true
+    file:
+      - dist/*.whl
+      - dist/*.tar.gz
+    on:
+      tags: true
+      branch: master
+      python: 3.7

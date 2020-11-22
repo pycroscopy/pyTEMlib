@@ -26,5 +26,7 @@ help:
 #	rm -rf source/notebooks
 # Convert .py to .ipynb (don't seem to need to --execute? perhaps sphinx-build does it...), then build html:
 %: Makefile
-
+	rm -rf build
+	rm -rf source/_autosummary
+	rm -rf source/notebooks
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
