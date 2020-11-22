@@ -24,7 +24,6 @@
   <component name="ChangeListManager">
     <list default="true" id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="added docs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/index.rst" beforeDir="false" afterPath="$PROJECT_DIR$/docs/source/index.rst" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,7 +54,7 @@
     </favorite-branches>
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="gerd_dev2" />
+        <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -73,6 +72,7 @@
     <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../EELS_Analysis/advanced_eels_tools.py" />
     <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
@@ -108,7 +108,10 @@
       <method v="2" />
     </configuration>
   </component>
-  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SpellCheckerSettings" BundledDictionaries="0" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" Dictionaries="0" CorrectionsLimit="5" DefaultDictionary="application-level" UseSingleDictionary="true" />
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="b0cecad4-a248-44b8-9640-cd9cb5d0ecf4" name="Default Changelist" comment="" />
@@ -285,7 +288,21 @@
       <option name="project" value="LOCAL" />
       <updated>1605027878712</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="Swapped from md to rst">
+      <created>1606060105189</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1606060105189</updated>
+    </task>
+    <task id="LOCAL-00026" summary="added docs">
+      <created>1606060228065</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1606060228065</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -311,6 +328,7 @@
     <MESSAGE value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog" />
     <MESSAGE value="fixed bug in dm3reader and file_tools.py&#10;added peak_fit dialog&#10;cleaned code" />
     <MESSAGE value="copy of old pyTEMlib" />
+    <MESSAGE value="Swapped from md to rst" />
     <MESSAGE value="added docs" />
     <option name="LAST_COMMIT_MESSAGE" value="added docs" />
   </component>
@@ -328,6 +346,10 @@
     </state>
     <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603923191457" />
     <state x="451" y="207" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1440.920@0.0.1440.920" timestamp="1603823834351" />
+    <state x="1091" y="421" width="1060" height="975" key="CommitChangelistDialog2" timestamp="1606060227809">
+      <screen x="0" y="0" width="3008" height="1692" />
+    </state>
+    <state x="1091" y="421" width="1060" height="975" key="CommitChangelistDialog2/0.0.3008.1692@0.0.3008.1692" timestamp="1606060227809" />
     <state x="138" y="75" key="DiffContextDialog" timestamp="1603824011156">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
@@ -353,11 +375,12 @@
       <screen x="0" y="0" width="1440" height="920" />
     </state>
     <state x="222" y="105" key="SettingsEditor/0.0.1440.920@0.0.1440.920" timestamp="1603820372927" />
-    <state x="313" y="193" key="Vcs.Push.Dialog.v2" timestamp="1605027894125">
-      <screen x="0" y="0" width="1440" height="920" />
+    <state x="654" y="355" key="Vcs.Push.Dialog.v2" timestamp="1606060290125">
+      <screen x="0" y="0" width="3008" height="1692" />
     </state>
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920/2880.0.1920.1040@0.0.1440.920" timestamp="1603986530699" />
     <state x="313" y="193" key="Vcs.Push.Dialog.v2/0.0.1440.920@0.0.1440.920" timestamp="1605027894125" />
+    <state x="654" y="355" key="Vcs.Push.Dialog.v2/0.0.3008.1692@0.0.3008.1692" timestamp="1606060290125" />
     <state x="538" y="374" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1604967544791">
       <screen x="0" y="0" width="1440" height="920" />
     </state>
