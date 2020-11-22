@@ -18,8 +18,8 @@ import shutil
 import matplotlib
 import sphinx_rtd_theme
 matplotlib.use('agg')
+import sphinx_rtd_theme
 sys.path.insert(0, os.path.abspath('../..'))
-#sys.setrecursionlimit(1500)
 from pyTEMlib import __version__ as pyTEMlib_version
 
 
