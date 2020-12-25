@@ -3,32 +3,9 @@ import numpy as np
 import sidpy
 import h5py
 import pyNSID
+import os
 import ipywidgets as widgets
 from IPython.display import display
-
-from PyQt5 import QtWidgets, QtCore
-
-
-class ProgressDialog(QtWidgets.QDialog):
-    """
-    Simple dialog that consists of a Progress Bar and a Button.
-    Clicking on the button results in the start of a timer and
-    updates the progress bar.
-    """
-
-    def __init__(self, title='Progress', number_of_counts=100):
-        super().__init__()
-        self.setWindowTitle(title)
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-
-        self.progress = QtWidgets.QProgressBar(self)
-        self.progress.setGeometry(10, 10, 500, 50)
-        self.progress.setMaximum(number_of_counts)
-        self.show()
-
-    def set_value(self, count):
-        self.progress.setValue(count)
-        QtWidgets.QApplication.processEvents()
 
 
 class ChooseDataset(object):
@@ -132,3 +109,119 @@ def get_image_dims(dataset):
 def get_extent(dataset):
     image_dims = get_image_dims(dataset)
     return dataset.get_extent(image_dims)
+
+
+class FileWidget_sidpy(object):
+    """Widget to select directories or widgets from a list
+
+    Works in google colab.
+
+    The widgets converts the name of the nion file to the one in Nion's swift software,
+    because it is otherwise incomprehensible
+    Use as:
+    >>from google.colab import drive
+    >>drive.mount("/content/drive")
+    >>file_list = pyTEMlib.FileWidget()
+    next code cell:
+    >>dataset = pyTEMlib.open_file(file_list.file_name)
+
+    """
+
+    def __init__(self, dir_name='.', extension=['*']):
+
+        if dir_name == '.':
+            self.get_directory('.')
+            """elif dir_name == None:
+            fp = open(config_path+'\\path.txt','r')
+            path = fp.read()
+            fp.close()
+            self.get_directory(path)
+            self.dir_name = path
+            """
+        elif os.path.isdir(dir_name):
+            self.get_directory(dir_name)
+            self.dir_name = dir_name
+        else:
+            self.dir_name = '.'
+            self.get_directory(self.dir_name)
+
+        self.dir_list == ['.']
+        self.extensions = extension
+        self.file_name = ''
+
+        self.select_files = widgets.Select(
+            options=self.dir_list,
+            value=self.dir_list[0],
+            description='Select file:',
+            disabled=False,
+            rows=10,
+            layout=widgets.Layout(width='70%')
+        )
+        display(self.select_files)
+        self.set_options()
+        self.select_files.observe(self.get_file_name, names='value')
+
+    def get_directory(self, directory=None):
+        self.dir_name = directory
+        self.dir_dictionary = {}
+        self.dir_list = []
+        i = 0
+        self.dir_list = ['.', '..'] + os.listdir(directory)
+
+    def set_options(self):
+        self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
+        dir_list = os.listdir(self.dir_name)
+
+        file_list = []
+        display_file_list = []
+        directory_list = []
+
+        for i in range(len(dir_list)):
+            name = dir_list[i]
+            full_name = os.path.join(self.dir_name, name)
+
+            if os.path.isfile(full_name):
+                size = os.path.getsize(full_name) * 2 ** -20
+                basename, extension = os.path.splitext(name)
+                if self.extensions[0] == 'hf5':
+                    if extension in ['.hf5']:
+                        file_list.append(dir_list[i])
+                        display_file_list.append(f" {name}  - {size:.1f} MB")
+                else:
+                    file_list.append(dir_list[i])
+                    #if extension in ['.h5', '.ndata']:
+                    #    # tags = open_file(os.path.join(self.dir_name, name))
+                    #    display_file_list.append(f" {tags['original_name']}{extension}  - {size:.1f} MB")
+                    if extension in ['.hf5']:
+                        display_file_list.append(f" {name}  -- {size:.1f} MB")
+                    else:
+                        display_file_list.append(f' {name}  - {size:.1f} MB')
+            else:
+                directory_list.append(name)
+
+        sort = np.argsort(directory_list)
+        self.dir_list = ['.', '..']
+        self.display_list = ['.', '..']
+        for j in sort:
+            self.display_list.append(f' * {directory_list[j]}')
+            self.dir_list.append(directory_list[j])
+
+        sort = np.argsort(display_file_list)
+
+        for i, j in enumerate(sort):
+            if '--' in dir_list[j]:
+                self.display_list.append(f' {i:3} {display_file_list[j]}')
+            else:
+                self.display_list.append(f' {i:3}   {display_file_list[j]}')
+            self.dir_list.append(file_list[j])
+
+        self.dir_label = os.path.split(self.dir_name)[-1] + ':'
+        self.select_files.options = self.display_list
+
+    def get_file_name(self, b):
+
+        if os.path.isdir(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
+            self.set_options()
+
+        elif os.path.isfile(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
+            self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])

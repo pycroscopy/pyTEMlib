@@ -44,6 +44,7 @@ def make_chi1(phi, theta, wl, ab, c1_include):
         t1 = np.power(theta, 2) / 2 * (ab['C12a'] * np.cos(2 * phi) + ab['C12b'] * np.sin(2 * phi))
     else:  # none for zero
         t1 = t0 * 0.
+
     t2 = np.power(theta, 3) / 3 * (ab['C21a'] * np.cos(1 * phi) + ab['C21b'] * np.sin(1 * phi)
                                    + ab['C23a'] * np.cos(3 * phi) + ab['C23b'] * np.sin(3 * phi))
 
@@ -71,6 +72,7 @@ def make_chi1(phi, theta, wl, ab, c1_include):
     chi = t0 + t1 + t2 + t3 + t4 + t5
     if 'C70' in ab:
         chi += np.power(theta, 8) / 8 * (ab['C70'])
+
     return chi * 2 * np.pi / wl  # np.power(theta,6)/6*(  ab['C50'] )
 
 
