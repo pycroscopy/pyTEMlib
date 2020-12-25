@@ -286,7 +286,7 @@ class DM3Reader(sidpy.Reader):
         spectral_dim = False
         # print(dataset._axes)
         for dim, axis in dataset._axes.items():
-            if axis.dimension_type == sidpy.DimensionTypes.SPECTRAL:
+            if axis.dimension_type == sidpy.DimensionType.SPECTRAL:
                 spectral_dim = True
 
         dataset.data_type = 'unknown'
@@ -294,32 +294,32 @@ class DM3Reader(sidpy.Reader):
             image_tags = dataset.original_metadata['ImageList'][str(self.__chosen_image)]['ImageTags']
             if 'SI' in image_tags:
                 if len(dataset.shape) == 3:
-                    dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
+                    dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE
                 else:
                     if spectral_dim:
-                        dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE  # 'linescan'
+                        dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE  # 'linescan'
                     else:
-                        dataset.data_type = sidpy.DataTypes.IMAGE
+                        dataset.data_type = sidpy.DataType.IMAGE
                         dataset.metadata['image_type'] = 'survey image'
 
-        if dataset.data_type == sidpy.DataTypes.UNKNOWN:
+        if dataset.data_type == sidpy.DataType.UNKNOWN:
             if len(dataset.shape) > 3:
                 raise NotImplementedError('Data_type not implemented yet')
             elif len(dataset.shape) == 3:
                 if spectral_dim:
-                    dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
+                    dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE
                 else:
                     dataset.data_type = 'image_stack'
             elif len(dataset.shape) == 2:
                 if spectral_dim:
-                    dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
+                    dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE
                 else:
                     dataset.data_type = 'image'
             elif len(dataset.shape) == 1:
                 if spectral_dim:
-                    dataset.data_type = sidpy.DataTypes.SPECTRUM
+                    dataset.data_type = sidpy.DataType.SPECTRUM
                 else:
-                    dataset.data_type = sidpy.DataTypes.LINE_PLOT
+                    dataset.data_type = sidpy.DataType.LINE_PLOT
 
     def set_dimensions(self, dataset):
         dimensions_dict = dataset.original_metadata['ImageList'][str(self.__chosen_image)]['ImageData']['Calibrations'][
@@ -344,21 +344,21 @@ class DM3Reader(sidpy.Reader):
             if 'eV' == units:
                 dataset.set_dimension(int(dim), sidpy.Dimension(values, name='energy_loss', units=units,
                                                                 quantity='energy-loss',
-                                                                dimension_type=sidpy.DimensionTypes.SPECTRAL))
+                                                                dimension_type=sidpy.DimensionType.SPECTRAL))
             elif 'eV' in units:
                 dataset.set_dimension(int(dim), sidpy.Dimension(values, name='energy', units=units,
                                                                 quantity='energy',
-                                                                dimension_type=sidpy.DimensionTypes.SPECTRAL))
+                                                                dimension_type=sidpy.DimensionType.SPECTRAL))
             elif '1/' in units or units in ['mrad', 'rad']:
                 dataset.set_dimension(int(dim), sidpy.Dimension(values, name=reciprocal_name, units=units,
                                                                 quantity='reciprocal distance',
-                                                                dimension_type=sidpy.DimensionTypes.RECIPROCAL))
+                                                                dimension_type=sidpy.DimensionType.RECIPROCAL))
                 reciprocal_name = chr(ord(reciprocal_name) + 1)
             else:
                 units = 'counts'
                 dataset.set_dimension(int(dim), sidpy.Dimension(values, name=spatial_name, units=units,
                                                                 quantity='distance',
-                                                                dimension_type=sidpy.DimensionTypes.SPATIAL))
+                                                                dimension_type=sidpy.DimensionType.SPATIAL))
                 spatial_name = chr(ord(spatial_name) + 1)
 
     # utility functions

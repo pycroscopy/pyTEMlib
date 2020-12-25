@@ -163,11 +163,11 @@ class NionReader(sidpy.Reader):
                 self.original_metadata = json.loads(json_properties)
 
         self.get_dimensions()
-        ## Need to switch image dimensions in Nion format
+        # Need to switch image dimensions in Nion format
         image_dims = []
         for dim, axis in enumerate(self.dimensions):
             print(dim, axis)
-            if axis.dimension_type == sidpy.DimensionTypes.SPATIAL:
+            if axis.dimension_type == sidpy.DimensionType.SPATIAL:
                 image_dims.append(dim)
         print('image_dims', image_dims)
         print(self.data_cube.shape)
@@ -215,7 +215,7 @@ class NionReader(sidpy.Reader):
 
         spectral_dim = False
         for axis in dataset._axes.values():
-            if axis.dimension_type == sidpy.DimensionTypes.SPECTRAL:
+            if axis.dimension_type == sidpy.DimensionType.SPECTRAL:
                 spectral_dim = True
 
         if len(dataset.shape) > 3:
@@ -226,24 +226,24 @@ class NionReader(sidpy.Reader):
             else:
                 dataset.data_type = 'IMAGE_STACK'
                 for dim, axis in dataset._axes.items():
-                    if axis.dimension_type != sidpy.DimensionTypes.SPATIAL:
+                    if axis.dimension_type != sidpy.DimensionType.SPATIAL:
                         dataset.set_dimension(dim, sidpy.Dimension(axis.values,
                                                                    name='frame',
                                                                    units='frame',
                                                                    quantity='stack',
-                                                                   dimension_type=sidpy.DimensionTypes.TEMPORAL))
+                                                                   dimension_type=sidpy.DimensionType.TEMPORAL))
                         break
 
         elif len(dataset.shape) == 2:
             if spectral_dim:
-                dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
+                dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE
             else:
-                dataset.data_type = sidpy.DataTypes.IMAGE
+                dataset.data_type = sidpy.DataType.IMAGE
         elif len(dataset.shape) == 1:
             if spectral_dim:
-                dataset.data_type = sidpy.DataTypes.SPECTRUM
+                dataset.data_type = sidpy.DataType.SPECTRUM
             else:
-                dataset.data_type = sidpy.DataTypes.LINE_PLOT
+                dataset.data_type = sidpy.DataType.LINE_PLOT
 
     def get_dimensions(self):
         dic = self.original_metadata
@@ -256,7 +256,7 @@ class NionReader(sidpy.Reader):
             for dim in range(len(dic['dimensional_calibrations'])):
                 dimension_tags = dic['dimensional_calibrations'][dim]
                 units = dimension_tags['units']
-                values = (np.arange(self.data_cube.shape[int(dim)]) - dimension_tags['offset']) * dimension_tags['scale']
+                values = (np.arange(self.data_cube.shape[int(dim)])-dimension_tags['offset']) * dimension_tags['scale']
 
                 if 'eV' == units:
                     self.dimensions.append(sidpy.Dimension(values, name='energy_loss', units=units,
@@ -266,7 +266,8 @@ class NionReader(sidpy.Reader):
                                                            quantity='energy', dimension_type='spectral'))
                 elif '1/' in units or units in ['mrad', 'rad']:
                     self.dimensions.append(sidpy.Dimension(values, name=reciprocal_name, units=units,
-                                                           quantity='reciprocal distance',dimension_type='reciprocal'))
+                                                           quantity='reciprocal distance',
+                                                           dimension_type='reciprocal'))
                     reciprocal_name = chr(ord(reciprocal_name) + 1)
                 elif 'nm' in units:
                     self.dimensions.append(sidpy.Dimension(values, name=spatial_name, units=units,
@@ -275,7 +276,6 @@ class NionReader(sidpy.Reader):
                 else:
                     self.dimensions.append(sidpy.Dimension(values, name='generic', units='generic',
                                                            quantity='generic', dimension_type='UNKNOWN'))
-
 
     def get_filename(self):
         return self.__filename
