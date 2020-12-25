@@ -28,8 +28,10 @@ import pyNSID
 
 import ipywidgets as widgets
 from IPython.display import display
-
 from .sidpy_tools import *
+
+if QT_available:
+    from .qt_sidpy_tools import *
 # import sys
 # sys.path.insert(0, "../../sidpy/")
 import sidpy
@@ -227,11 +229,18 @@ def open_file(filename=None, save_file=False, h5_group=None):
             - get_additional tags
 
     """
-    get_qt_app()
     if filename is None:
-        filename = openfile_dialog()
-        if filename == '':
-            return
+        if QT_available:
+            get_qt_app()
+            filename = openfile_dialog()
+        else:
+            raise TypeError('filename must be provided if QT is not installed')
+    else:
+        if not isinstance(filename, str):
+            raise TypeError('filename must be a non-empty string or None (to a QT open file dialog)')
+        elif filename == '':
+            raise TypeError('filename must be a non-empty string or None (to a QT open file dialog)')
+
     path, file_name = os.path.split(filename)
     basename, extension = os.path.splitext(file_name)
 
@@ -261,10 +270,9 @@ def open_file(filename=None, save_file=False, h5_group=None):
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = DM3Reader(filename)
-        elif extension in ['.ndata', '.h5']:
+        else:   # extension in ['.ndata', '.h5']:
             reader = NionReader(filename)
-        else:
-            IOError('problem')
+
         path, file_name = os.path.split(filename)
         basename, _ = os.path.splitext(file_name)
         dset = reader.read()
