@@ -421,6 +421,7 @@ def read_old_h5group(current_channel):
         else:
             sid_dataset.data_type = sidpy.DataTypes.IMAGE
     else:
+
         sid_dataset.data_type = sidpy.DataTypes.SPECTRUM
 
     sid_dataset.quantity = 'intensity'
