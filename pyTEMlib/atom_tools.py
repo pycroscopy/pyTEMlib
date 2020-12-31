@@ -17,9 +17,7 @@ from .file_tools import *
 
 def find_atoms(image, tags):
     """
-    ######################################
-    # Find atoms
-    ######################################
+    Find atoms - old please do not use
     """
     image = image - image.min()
     image = image / image.max()
@@ -87,6 +85,9 @@ def find_atoms(image, tags):
 
 
 def atoms_clustering(atoms, mid_atoms, number_of_clusters=3, nearest_neighbours=7):
+    """
+    A wrapper for scipy kmeans clustering of atoms.
+    """
     # get distances
     nn_tree = cKDTree(np.array(atoms)[:, 0:2])
 
@@ -100,13 +101,38 @@ def atoms_clustering(atoms, mid_atoms, number_of_clusters=3, nearest_neighbours=
 
 
 def gauss_difference(params, area):
+    """
+    Difference between part of an image and a Gaussian
+    This function is used int he atom refine function of pyTEMlib
+
+    Input:
+    params: list of Gaussian parameters [width, position_x, position_y, intensity]
+    area:  numpy array of 2D matrix = part of an image
+
+    Output:
+    numpy array: flattened array of difference
+
+    """
     gauss = make_gauss(area.shape[0], area.shape[1], width=params[0], x0=params[1], y0=params[2], intensity=params[3])
     return (area - gauss).flatten()
 
 
 def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     """
-        fits a Gaussian in a blob
+        fits a Gaussian in a blob of an image
+
+    Input:
+    image: np.array or sidpy Dataset
+    atoms: positions of atoms
+    radius: radius of circular mask to define fitting of Gaussian
+
+    optional
+    max_int: maximum intensity to be considered for fitting (to exclude contaminated areas for example)
+    min_int: minimum intensity to be considered for fitting (to exclude contaminated holes for example)
+    max_dist: maximum distance of movement of Gaussian during fitting
+
+    Output:
+    dictionary: contains new atom positions and other output such as intensity of the fitted Gaussian
     """
     rr = int(radius + 0.5)  # atom radius
     print('using radius ', rr, 'pixels')
@@ -204,6 +230,9 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
 
 
 def intensity_area(image, atoms, radius):
+    """
+    integrated intensity of atoms in an image with a mask around each atom of radius radius
+    """
     rr = int(radius + 0.5)  # atom radius
     print('using radius ', rr, 'pixels')
 
