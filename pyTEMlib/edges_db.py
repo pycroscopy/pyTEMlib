@@ -1,3 +1,5 @@
+"""EEL edge database from EELSLab, not longer used
+"""
 # -*- coding: utf-8 -*-
 # Copyright © 2007 Francisco Javier de la Peña
 #
