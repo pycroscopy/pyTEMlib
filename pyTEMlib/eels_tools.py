@@ -772,15 +772,20 @@ def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
 
 
 def find_maxima(y, number_of_peaks):
-    """
-    find the first most prominent peaks
+    """ find the first most prominent peaks
+
     peaks are then sorted by energy
 
-    input:
-        y: array of (part) of spectrum
-        number_of_peaks: int
-    output:
-        array of indices of peaks
+    Parameters
+    ----------
+    y: numpy array
+        (part) of spectrum
+    number_of_peaks: int
+
+    Returns
+    -------
+    numpy array
+        indices of peaks
     """
     blurred2 = gaussian_filter(y, sigma=2)
     peaks, _ = scipy.signal.find_peaks(blurred2)
@@ -793,7 +798,9 @@ def find_maxima(y, number_of_peaks):
 
 
 def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
-    """
+    """Gaussian Function
+
+        p[0]==mean, p[1]= amplitude p[2]==fwhm
         area = np.sqrt(2* np.pi)* p[1] * np.abs(p[2] / 2.3548)
         FWHM = 2 * np.sqrt(2 np.log(2)) * sigma = 2.3548 * sigma
         sigma = FWHM/3548
@@ -805,11 +812,13 @@ def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
 
 
 def lorentz(x, p):
+    """lorentzian function"""
     lorentz_peak = 0.5 * p[2] / np.pi / ((x - p[0]) ** 2 + (p[2] / 2) ** 2)
     return p[1] * lorentz_peak / lorentz_peak.max()
 
 
 def zl(x, p, p_zl):
+    """zero-loss function"""
     p_zl_local = p_zl.copy()
     p_zl_local[2] += p[0]
     p_zl_local[5] += p[0]
@@ -818,6 +827,7 @@ def zl(x, p, p_zl):
 
 
 def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, restrict_width=0):
+    """ model for fitting low-loss spectrum"""
     if pin is None:
         pin = p
 
@@ -853,6 +863,7 @@ def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, re
 
 
 def sort_peaks(p, peak_shape):
+    """sort fitting parameters by peak position"""
     number_of_peaks = int(len(p) / 3)
     p3 = np.reshape(p, (number_of_peaks, 3))
     sort_pin = np.argsort(p3[:, 0])
@@ -864,6 +875,7 @@ def sort_peaks(p, peak_shape):
 
 
 def add_peaks(x, y, peaks, pin_in=None, peak_shape_in=None, shape='Gaussian'):
+    """ add peaks to fitting parameters"""
     if pin_in is None:
         return
     if peak_shape_in is None:
@@ -887,6 +899,8 @@ def add_peaks(x, y, peaks, pin_in=None, peak_shape_in=None, shape='Gaussian'):
 
 
 def fit_model(x, y, pin, number_of_peaks, peak_shape, p_zl, restrict_pos=0, restrict_width=0):
+    """model for fitting low-loss spectrum"""
+
     pin_original = pin.copy()
 
     def residuals3(pp, xx, yy):
@@ -906,6 +920,7 @@ def fit_model(x, y, pin, number_of_peaks, peak_shape, p_zl, restrict_pos=0, rest
 
 
 def fix_energy_scale(spec, energy):
+    """Shift energy scale according to zero-loss peak position"""
     # determine start and end fitting region in pixels
     start = np.searchsorted(energy, -10)
     end = np.searchsorted(energy, 10)
@@ -939,6 +954,8 @@ def fix_energy_scale(spec, energy):
 
 
 def resolution_function(energy_scale, spectrum, width, verbose=False):
+    """get resolution function (zero-loss peak shape) from low-loss spectrum"""
+
     guess = [0.2, 1000, 0.02, 0.2, 1000, 0.2]
     p0 = np.array(guess)
 
@@ -999,6 +1016,7 @@ def resolution_function(energy_scale, spectrum, width, verbose=False):
 
 
 def get_energy_shifts(spectrum_image, energy_scale, zero_loss_fit_width):
+    """get shift of spectrum form zero-loss peak position"""
     shifts = np.zeros(spectrum_image.shape[0:2])
     for x in range(spectrum_image.shape[0]):
         for y in range(spectrum_image.shape[1]):
@@ -1011,6 +1029,8 @@ def get_energy_shifts(spectrum_image, energy_scale, zero_loss_fit_width):
 
 
 def shift_on_same_scale(spectrum_image, shift, energy_scale, master_energy_scale):
+    """shift spectrum in energy"""
+
     new_si = np.zeros(spectrum_image.shape)
     for x in range(spectrum_image.shape[0]):
         for y in range(spectrum_image.shape[1]):
@@ -1020,16 +1040,22 @@ def shift_on_same_scale(spectrum_image, shift, energy_scale, master_energy_scale
 
 
 def get_wave_length(e0):
+    """get deBroglie wavelength of electron accelerated by energy (in eV) e0"""
+
     ev = constants.e * e0
     return constants.h / np.sqrt(2 * constants.m_e * ev * (1 + ev / (2 * constants.m_e * constants.c ** 2)))
 
 
 def drude(ep, eb, gamma, e):
+    """dielectric function according to Drude theory"""
+
     eps = 1 - (ep ** 2 - eb * e * 1j) / (e ** 2 + 2 * e * gamma * 1j)  # Mod drude term
     return eps
 
 
 def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
+    """dielectric function according to Drude-Lorentz theory"""
+
     eps = eps_inf
     for i in range(leng):
         eps = eps + amplitude[i] * (1 / (e + ep[i] + gamma[i] * 1j) - 1 / (e - ep[i] + gamma[i] * 1j))
@@ -1037,6 +1063,8 @@ def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
 
 
 def plot_dispersion(plotdata, units, a_data, e_data, title, max_p, ee, ef=4., ep=16.8, es=0, ibt=[]):
+    """Plot loss function """
+
     [x, y] = np.meshgrid(e_data + 1e-12, a_data[1024:2048] * 1000)
 
     z = plotdata
@@ -1095,6 +1123,8 @@ def plot_dispersion(plotdata, units, a_data, e_data, title, max_p, ee, ef=4., ep
 
 
 def zl_func(p, x):
+    """zero-loss peak function"""
+
     p[0] = abs(p[0])
 
     gauss1 = np.zeros(len(x))
@@ -1112,20 +1142,29 @@ def zl_func(p, x):
 
 
 def drude2(tags, e, p):
+    """dielectric function according to Drude theory for fitting"""
+
     return drude(e, p[0], p[1], p[2], p[3])
 
 
 def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
-    """
-    Calculate momentum-integrated cross-section for EELS from X-ray photoaborption  cross-sections.
+    """ Calculate momentum-integrated cross-section for EELS from X-ray photo-absorption cross-sections.
 
-    Input:
-    ------
-    energy_scale: energyscale of spectrum to be analyzed
-    e0: acceleration voltage in keV
-    z: atomic number of element
-    beta: effective collection angle in mrad
-    shift: chemical shift of edge in eV
+    X-ray photo-absorption cross-sections from NIST.
+    Momentum-integrated cross-section for EELS according to Egerton Ultramicroscopy 50 (1993) 13-28 equation (4)
+
+    Parameters
+    ----------
+    energy_scale: numpy array
+        energy scale of spectrum to be analyzed
+    e0: float
+        acceleration voltage in keV
+    z: int
+        atomic number of element
+    beta: float
+        effective collection angle in mrad
+    shift: float
+        chemical shift of edge in eV
     """
     beta = beta * 0.001  # collection half angle theta [rad]
     # thetamax = self.parent.spec[0].convAngle * 0.001  # collection half angle theta [rad]
@@ -1162,7 +1201,8 @@ def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
 
 
 def drude_simulation(dset, e, ep, ew, tnm, eb):
-    """
+    """probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)
+
     Gives probabilities of dielectric function eps relative to zero-loss integral (i0 = 1) per eV
     Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011)
 
@@ -1277,7 +1317,8 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
 
 
 def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
-    """
+    """Calculates the effective collection angle in mrad:
+
     Translate from original Fortran program
     Calculates the effective collection angle in mrad:
     Input:
@@ -1398,9 +1439,8 @@ def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
 
 
 def kroeger_core(e_data, a_data, eps_data, ee, thick, relativistic=True):
-    """
+    """This function calculates the differential scattering probability
 
-    This function calculates the differential scattering probability
      .. math::
         \\frac{d^2P}{d \\Omega d_e}
     of the low-loss region for total loss and volume plasmon loss
@@ -1532,9 +1572,8 @@ def kroeger_core(e_data, a_data, eps_data, ee, thick, relativistic=True):
 
 
 def kroeger_core2(e_data, a_data, eps_data, acceleration_voltage_kev, thickness, relativistic=True):
-    """
+    """This function calculates the differential scattering probability
 
-    This function calculates the differential scattering probability
      .. math::
         \\frac{d^2P}{d \\Omega d_e}
     of the low-loss region for total loss and volume plasmon loss
@@ -1553,6 +1592,7 @@ def kroeger_core2(e_data, a_data, eps_data, acceleration_voltage_kev, thickness,
 
        return P, P*scale*1e2,p_vol*1e2, p_simple*1e2
     """
+
     # $d^2P/(dEd\Omega) = \frac{1}{\pi^2 a_0 m_0 v^2} \Im \left[ \frac{t\mu^2}{\varepsilon \phi^2 } \right]
     """
     # Internally everything is calculated in si units
@@ -1678,6 +1718,7 @@ def kroeger_core2(e_data, a_data, eps_data, acceleration_voltage_kev, thickness,
 
 
 def read_msa(msa_string):
+    """read msa formated file"""
     parameters = {}
     y = []
     x = []
