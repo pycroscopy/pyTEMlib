@@ -216,6 +216,8 @@ def h5_add_crystal_structure(h5_file, crystal_tags):
 
 
 def h5_add_to_structure(structure_group, crystal_tags):
+    """add dictionary as structure group"""
+
     for key in crystal_tags:
         if key in structure_group.keys():
             print(key, ' not written; use new name')
@@ -225,6 +227,7 @@ def h5_add_to_structure(structure_group, crystal_tags):
 
 def cubic(a):
     """ Cubic lattice of dimensions a x a x a. """
+
     return np.identity(3)*a
 
 
