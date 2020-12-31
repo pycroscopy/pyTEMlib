@@ -8,13 +8,8 @@
 import numpy as np
 import h5py
 import os
+import sys
 
-# Open/Save File dialog
-try:
-    from PyQt5 import QtGui, QtWidgets, QtCore
-    QT_available = True
-except ImportError:
-    QT_available = False
 
 # =============================================================
 #   Include sidpy and other pyTEMlib Libraries                                      #
@@ -30,6 +25,16 @@ import ipywidgets as widgets
 from IPython.display import display
 from .sidpy_tools import *
 
+# Open/Save File dialog
+try:
+    from PyQt5 import QtGui, QtWidgets, QtCore
+    QT_available = True
+except ImportError:
+    QT_available = False
+
+if "google.colab" in sys.modules:
+    QT_available = False
+
 if QT_available:
     from .qt_sidpy_tools import *
 # import sys
@@ -43,30 +48,7 @@ nest_dict = sidpy.base.dict_utils.nest_dict
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '10.30.2020'
 
-# TODO: new sidpy-version, uncomment and delete function below.
 flatten_dict = sidpy.dict_utils.flatten_dict
-
-
-def flatten_dict2(d, parent_key='', sep='-'):
-    items = []
-    for k, v in d.items():
-        if sep in k:
-            k = k.replace(sep, '_')
-        new_key = parent_key + sep + k if parent_key else k
-        if isinstance(v, dict):
-            items.extend(flatten_dict(v, new_key, sep=sep).items())
-        elif isinstance(v, list):
-            for i in range(len(v)):
-                if isinstance(v[i], dict):
-                    for kk in v[i]:
-                        items.append(('dim-'+kk+'-'+str(i), v[i][kk]))
-                else:
-                    if type(v) != bytes:
-                        items.append((new_key, v))
-        else:
-            if type(v) != bytes:
-                items.append((new_key, v))
-    return dict(items)
 
 
 class FileWidget(object):
@@ -80,13 +62,15 @@ class FileWidget(object):
     >>from google.colab import drive
     >>drive.mount("/content/drive")
     >>file_list = pyTEMlib.FileWidget()
+
     next code cell:
     >>dataset = pyTEMlib.open_file(file_list.file_name)
-
     """
 
     def __init__(self, dir_name=None, extension=['*']):
         self.save_path = False
+        self.dir_dictionary = {}
+
         if dir_name is None:
             dir_name = get_last_path()
             self.save_path = True
