@@ -54,6 +54,8 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
 
 
 def read_dm3_eels_info(original_metadata):
+    """Reed dm3 file from a nested dictionary like original_metadata of sidpy.Dataset"""
+
     if 'DM' not in original_metadata:
         return {}
     main_image = original_metadata['DM']['chosen_image']
@@ -90,6 +92,8 @@ def read_dm3_eels_info(original_metadata):
 
 
 def set_previous_quantification(current_dataset):
+    """Set previous qunatifications from a sidpy.Dataset"""
+
     current_channel = current_dataset.h5_dataset.parent
     found_metadata = False
     for key in current_channel:
@@ -119,11 +123,15 @@ def set_previous_quantification(current_dataset):
 
 
 def residuals_smooth(p, x, y, only_positive_intensity):
+    """part of fit"""
+
     err = (y - model_smooth(x, p, only_positive_intensity))
     return err
 
 
 def model_smooth(x, p, only_positive_intensity=False):
+    """part of fit"""
+
     y = np.zeros(len(x))
 
     number_of_peaks = int(len(p) / 3)
@@ -140,16 +148,22 @@ def model_smooth(x, p, only_positive_intensity=False):
 
 
 def residuals_ll(p, x, y, only_positive_intensity):
+    """part of fit"""
+
     err = (y - model_ll(x, p, only_positive_intensity)) / np.sqrt(np.abs(y))
     return err
 
 
 def residuals_ll2(p, x, y, only_positive_intensity):
+    """part of fit"""
+
     err = (y - model_ll(x, p, only_positive_intensity))
     return err
 
 
 def model_ll(x, p, only_positive_intensity):
+    """part of fit"""
+
     y = np.zeros(len(x))
 
     number_of_peaks = int(len(p) / 3)
@@ -166,6 +180,8 @@ def model_ll(x, p, only_positive_intensity):
 
 
 def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_intensity=False):
+    """fit peaks to spectrum"""
+
     # TODO: remove zero_loss_fit_width add absolute
 
     fit_energy = energy_scale[start_fit:end_fit]
@@ -189,13 +205,17 @@ def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_int
 
 
 def get_x_sections(z=0):
-    """
-    ####
-    # reads X-ray fluorescent cross sections from a pickle file.
-    ####
-    Input: nothing or atomic number
-    Output: dictionary
-            of a element or of all elements if z = 0
+    """Reads X-ray fluorescent cross sections from a pickle file.
+
+    Parameters
+    ----------
+    z: int
+        atomic number if zero all cross sections will be returned
+
+    Returns
+    -------
+    dictionary
+        cross section of a element or of all elements if z = 0
 
     """
     pkl_file = open(data_path + '/edges_db.pkl', 'rb')
@@ -215,11 +235,12 @@ def get_x_sections(z=0):
 
 
 def get_z(z):
-    """
-    returns the atomic number independent of input as a string or number
+    """Returns the atomic number independent of input as a string or number
 
-    input:
-    z: atomic number of chemical symbol (0 if not valid)
+    Parameter
+    ---------
+    z: int, str
+        atomic number of chemical symbol (0 if not valid)
     """
     x_sections = get_x_sections()
 
@@ -234,6 +255,8 @@ def get_z(z):
 
 
 def list_all_edges(z):
+    """List all ionization edges of an element with atomic number z"""
+
     element = str(z)
     x_sections = get_x_sections()
     print('Major edges')
@@ -243,7 +266,22 @@ def list_all_edges(z):
                 print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
 
 
-def find_major_edges(edge_onset, maximal_chemical_shift=5):
+def find_major_edges(edge_onset, maximal_chemical_shift=5.):
+    """Find all major edges within an energy range
+
+    Parameters
+    ----------
+    edge_onset: float
+        approximate energy of ionization edge
+    maximal_chemical_shift: float
+        optional, range of energy window around edge_onset to look for major edges
+
+    Returns
+    -------
+    text: str
+        string with all major edges in energy range
+
+    """
     text = ''
     x_sections = get_x_sections()
     for element in x_sections:
@@ -261,6 +299,22 @@ def find_major_edges(edge_onset, maximal_chemical_shift=5):
 
 
 def find_all_edges(edge_onset, maximal_chemical_shift=5):
+    """Find all (major and minor) edges within an energy range
+
+    Parameters
+    ----------
+    edge_onset: float
+        approximate energy of ionization edge
+    maximal_chemical_shift: float
+        optional, range of energy window around edge_onset to look for major edges
+
+    Returns
+    -------
+    text: str
+        string with all edges in energy range
+
+    """
+
     text = ''
     x_sections = get_x_sections()
     for element in x_sections:
@@ -276,6 +330,8 @@ def find_all_edges(edge_onset, maximal_chemical_shift=5):
 
 
 def second_derivative(dataset, sensitivity):
+    """Calculates second derivative of a sidpy.dataset"""
+
     dim = ft.get_dimensions_by_type('spectral', dataset)
     energy_scale = np.array(dim[0][1])
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
@@ -309,6 +365,8 @@ def second_derivative(dataset, sensitivity):
 
 
 def find_edges(dataset, sensitivity=2.5):
+    """find edges within a sidpy.Dataset"""
+
     dim = ft.get_dimensions_by_type('spectral', dataset)
     energy_scale = np.array(dim[0][1])
 
@@ -360,8 +418,23 @@ def find_edges(dataset, sensitivity=2.5):
 
 
 def make_edges(edges_present, energy_scale, e_0, coll_angle):
-    """
-    Makes the edges dictionary
+    """Makes the edges dictionary for quantification
+
+    Parameters
+    ----------
+    edges_present: list
+        list of edges
+    energy_scale: numpy array
+        energy scale on which to make cross section
+    e_0: float
+        acceleration voltage (in V)
+    coll_angle: float
+        collection angle in mrad
+
+    Returns
+    -------
+    edges: dict
+        dictionary with all information on cross section
     """
     x_sections = get_x_sections()
     edges = {}
@@ -402,8 +475,7 @@ def make_edges(edges_present, energy_scale, e_0, coll_angle):
 
 
 def make_cross_sections(edges, energy_scale, e_0, coll_angle):
-    """
-    Updates the edges dictionary with collection angle-integrated X-ray photoabsorption cross-sections
+    """Updates the edges dictionary with collection angle-integrated X-ray photoabsorption cross-sections
     """
     for key in edges:
         if key.isdigit():
@@ -417,10 +489,12 @@ def make_cross_sections(edges, energy_scale, e_0, coll_angle):
 
 
 def power_law(energy, a, r):
+    """power law for power_law_background"""
     return a * np.power(energy, -r)
 
 
 def power_law_background(spectrum, energy_scale, fit_area, verbose=False):
+    """fit of power law to spectrum """
     # Determine energy window  for background fit in pixels
 
     startx = np.searchsorted(energy_scale, fit_area[0])
@@ -454,6 +528,7 @@ def power_law_background(spectrum, energy_scale, fit_area, verbose=False):
 
 
 def cl_model(x, p, number_of_edges, xsec):
+    """ core loss model for fitting"""
     y = (p[9] * np.power(x, (-p[10]))) + p[7] * x + p[8] * x * x
     for i in range(number_of_edges):
         y = y + p[i] * xsec[i, :]
@@ -461,6 +536,8 @@ def cl_model(x, p, number_of_edges, xsec):
 
 
 def fit_edges2(spectrum, energy_scale, edges):
+    """fit edges for quantification"""
+
     dispersion = energy_scale[1] - energy_scale[0]
     # Determine fitting ranges and masks to exclude ranges
     mask = np.ones(len(spectrum))
@@ -547,6 +624,8 @@ def fit_edges2(spectrum, energy_scale, edges):
 
 
 def fit_edges(spectrum, energy_scale, region_tags, edges):
+    """fit edges for quantification"""
+
     # Determine fitting ranges and masks to exclude ranges
     mask = np.ones(len(spectrum))
 
@@ -625,6 +704,8 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
 
 
 def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
+    """find peaks in spectrum"""
+
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
         spectrum = dataset.view.get_spectrum()
     else:
