@@ -1,3 +1,6 @@
+"""
+Default files will be copied to default directory when installed for first time
+"""
 # Gleaned from
 # Copyright © 2007 Francisco Javier de la Peña
 # file of EELSLab.

@@ -3,7 +3,9 @@
 # Copyright © 2007 Francisco Javier de la Peña
 # file of EELSLab.
 #
-
+"""
+config_dir: setup of directory ~/.pyTEMlib for custom sources and database
+"""
 import os
 import shutil
 
