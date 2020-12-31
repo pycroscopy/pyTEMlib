@@ -433,7 +433,9 @@ def get_main_channel(h5_file):
 def h5_tree(input_object):
     """Just a wrapper for the sidpy function print_tree,
 
-    so that sidpy does not have to be loaded in notebook"""
+    so that sidpy does not have to be loaded in notebook
+
+    """
 
     if isinstance(input_object, sidpy.Dataset):
         if not isinstance(input_object.h5_dataset, h5py.Dataset):
@@ -470,6 +472,14 @@ def log_results(h5_group, dataset=None, attributes=None):
         group in hdf5 file with results.
 
     """
+    if isinstance(h5_group, sidpy.Dataset):
+        h5_group = h5_group.h5_dataset
+        if not isinstance(h5_group, h5py.Dataset):
+            raise TypeError('Use h5_dataset of sidpy.Dataset is not a valid h5py.Dataset')
+        h5_group = h5_group.parent.parent
+
+    if not isinstance(h5_group, h5py.Group):
+        raise TypeError('Need a valid h5py.Group for logging results')
 
     if dataset is None:
         log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Log_')
