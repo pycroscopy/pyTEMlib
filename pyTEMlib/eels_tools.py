@@ -1,3 +1,23 @@
+"""
+eels_tools
+Model based quantification of electron energy-loss data
+Copyright by Gerd Duscher
+
+The University of Tennessee, Knoxville
+Department of Materials Science & Engineering
+
+Sources:
+   M. Tian et al.
+
+Units:
+    everything is in SI units, except length is given in nm and angles in mrad.
+
+Usage:
+    See the notebooks for examples of these routines
+
+All the input and output is done through a dictionary which is to be found in the meta_data
+attribute of the sidpy.Dataset
+"""
 import numpy as np
 
 import scipy
