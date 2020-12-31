@@ -8,6 +8,22 @@
 import numpy as np
 import h5py
 import os
+import sys
+
+
+# =============================================
+#   Include sidpy and other pyTEMlib Libraries                                      #
+# =============================================
+from .config_dir import config_path
+
+# from .nsi_reader import NSIDReader
+from .dm3_reader import DM3Reader
+from .nion_reader import NionReader
+import pyNSID
+import sidpy
+
+
+from .sidpy_tools import *
 
 # Open/Save File dialog
 try:
@@ -16,25 +32,11 @@ try:
 except ImportError:
     QT_available = False
 
-# =============================================================
-#   Include sidpy and other pyTEMlib Libraries                                      #
-# =============================================================
-from .config_dir import config_path
-
-from .nsi_reader import NSIDReader
-from .dm3_reader import DM3Reader
-from .nion_reader import NionReader
-import pyNSID
-
-import ipywidgets as widgets
-from IPython.display import display
-from .sidpy_tools import *
+if "google.colab" in sys.modules:
+    QT_available = False
 
 if QT_available:
     from .qt_sidpy_tools import *
-# import sys
-# sys.path.insert(0, "../../sidpy/")
-import sidpy
 
 
 Dimension = sidpy.Dimension
@@ -43,50 +45,45 @@ nest_dict = sidpy.base.dict_utils.nest_dict
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '10.30.2020'
 
-# TODO: new sidpy-version, uncomment and delete function below.
 flatten_dict = sidpy.dict_utils.flatten_dict
-
-
-def flatten_dict2(d, parent_key='', sep='-'):
-    items = []
-    for k, v in d.items():
-        if sep in k:
-            k = k.replace(sep, '_')
-        new_key = parent_key + sep + k if parent_key else k
-        if isinstance(v, dict):
-            items.extend(flatten_dict(v, new_key, sep=sep).items())
-        elif isinstance(v, list):
-            for i in range(len(v)):
-                if isinstance(v[i], dict):
-                    for kk in v[i]:
-                        items.append(('dim-'+kk+'-'+str(i), v[i][kk]))
-                else:
-                    if type(v) != bytes:
-                        items.append((new_key, v))
-        else:
-            if type(v) != bytes:
-                items.append((new_key, v))
-    return dict(items)
 
 
 class FileWidget(object):
     """Widget to select directories or widgets from a list
 
     Works in google colab.
-
     The widgets converts the name of the nion file to the one in Nion's swift software,
     because it is otherwise incomprehensible
-    Use as:
+
+    Attributes
+    ----------
+    dir_name: str
+        name of starting directory
+    extension: list of str
+        extensions of files to be listed  in widget
+
+    Methods
+    -------
+    get_directory
+    set_options
+    get_file_name
+
+    Example
+    -------
     >>from google.colab import drive
     >>drive.mount("/content/drive")
-    >>file_list = pyTEMlib.FileWidget()
+    >>file_list = pyTEMlib.file_tools.FileWidget()
     next code cell:
-    >>dataset = pyTEMlib.open_file(file_list.file_name)
+    >>dataset = pyTEMlib.file_tools.open_file(file_list.file_name)
 
     """
 
     def __init__(self, dir_name=None, extension=['*']):
         self.save_path = False
+        self.dir_dictionary = {}
+        self.dir_list = ['.', '..']
+        self.display_list = ['.', '..']
+
         if dir_name is None:
             dir_name = get_last_path()
             self.save_path = True
@@ -118,7 +115,6 @@ class FileWidget(object):
         self.dir_name = directory
         self.dir_dictionary = {}
         self.dir_list = []
-        i = 0
         self.dir_list = ['.', '..'] + os.listdir(directory)
 
     def set_options(self):
@@ -186,12 +182,7 @@ class FileWidget(object):
 
 
 def get_qt_app():
-    """
-    will start QT Application if not running yet
-
-    :returns: QApplication
-
-    """
+    """will start QT Application if not running yet and returns QApplication """
 
     # start qt event loop
     _instance = QtWidgets.QApplication.instance()
@@ -203,6 +194,7 @@ def get_qt_app():
 
 
 def get_last_path():
+    """Returns the path of the file last opened"""
     try:
         fp = open(config_path + '\\path.txt', 'r')
         path = fp.read()
@@ -216,6 +208,8 @@ def get_last_path():
 
 
 def save_path(filename):
+    """Save path of last opened file"""
+
     if len(filename) > 1:
         fp = open(config_path + '\\path.txt', 'w')
         path, fname = os.path.split(filename)
@@ -226,29 +220,9 @@ def save_path(filename):
     return path
 
 
-def set_directory():
-    path = get_last_path()
-
-    try:
-        get_qt_app()
-    except BaseException:
-        pass
-
-    options = QtWidgets.QFileDialog.Options()
-    options |= QtWidgets.QFileDialog.ShowDirsOnly
-
-    fname = str(QtWidgets.QFileDialog.getExistingDirectory(None, "Select Directory", path, options=options))
-
-    path = save_path(fname)
-
-    return path
-
-
 def savefile_dialog(initial_file='*.hf5', file_types=None):
-    """
-        Opens a save dialog in QT and returns an "*.hf5" file.
-        New now with initial file
-    """
+    """Opens a save dialog in QT and returns name of file. New now with initial file"""
+
     # Check whether QT is available
     if not QT_available:
         print('No QT dialog')
@@ -275,35 +249,33 @@ def savefile_dialog(initial_file='*.hf5', file_types=None):
 
 
 def openfile_dialog(file_types=None):  # , multiple_files=False):
-    """
-    Opens a File dialog which is used in open_file() function
-    This function uses tkinter or pyQt5.
-    The app of the Gui has to be running for QT so Tkinter is a safer bet.
-    In jupyter notebooks use %gui Qt early in the notebook.
+    """Opens a File dialog which is used in open_file() function
 
+    This function uses pyQt5.
+    The app of the Gui has to be running for QT. Tkinter does not run on Macs at this point in time.
+    In jupyter notebooks use %gui Qt early in the notebook.
 
     The file looks first for a path.txt file for the last directory you used.
 
     Parameters
     ----------
-    file_types : string of the file type filter
+    file_types : string
+        file type filter in the form of '*.hf5'
 
 
     Returns
     -------
-    filename : full filename with absolute path and extension as a string
+    filename : string
+        full filename with absolute path and extension as a string
 
-    Examples
-    --------
-
+    Example
+    -------
     >> import file_tools as ft
-    >>
     >> filename = ft.openfile_dialog()
-    >>
     >> print(filename)
 
-
     """
+
     # determine file types by extension
     if file_types is None:
         file_types = 'TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
@@ -314,30 +286,39 @@ def openfile_dialog(file_types=None):  # , multiple_files=False):
 
         # file_types = [("TEM files",["*.dm*","*.hf*","*.ndata" ]),("pyUSID files","*.hf5"),("DM files","*.dm*"),
         # ("Nion files",["*.h5","*.ndata"]),("all files","*.*")]
-    # Determine last path used
 
+    # Determine last path used
     path = get_last_path()
     _ = get_qt_app()
 
     filename = sidpy.io.interface_utils.openfile_dialog(file_types=file_types, file_path=path)
-    #
-    save_path(filename)
 
+    save_path(filename)
     return filename
 
 
-def open_file(filename=None, save_file=False, h5_group=None):
-    """
-    Opens a file if the extension is .hf5, .dm3 or .dm4
-    If no filename is provided the qt open_file windows opens
+def open_file(filename=None,  h5_group=None):  # save_file=False,
+    """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
 
+    If no filename is provided the QT open_file windows opens (if QT_available==True)
     Everything will be stored in a NSID style hf5 file.
-
     Subroutines used:
         - NSIDReader
         - nsid.write_
             - get_main_tags
             - get_additional tags
+
+    Parameters
+    ----------
+    filename: str
+        name of file to be opened, if filename is None, a QT file dialog will try to open
+    h5_group: hd5py.Group
+        not used yet #TODO: provide hook for usage of external chosen group
+
+    Returns
+    -------
+    sidpy.Dataset
+        sidpy dataset with location of hdf5 dataset as attribute
 
     """
     if filename is None:
@@ -364,14 +345,14 @@ def open_file(filename=None, save_file=False, h5_group=None):
             h5_dataset = h5_group['nDim_Data']
 
             h5_dataset.attrs['title'] = basename
-            reader = NSIDReader(h5_dataset)
+            reader = pyNSID.NSIDReader(h5_dataset)
             dataset = reader.read_h5py_dataset(h5_dataset)
             dataset.h5_file = h5_file
         elif 'Raw_Data' in h5_group:
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
         else:
-            reader = NSIDReader(h5_file['Measurement_000/Channel_000'])
+            reader = pyNSID.NSIDReader(h5_file['Measurement_000/Channel_000'])
             dataset = reader.read()[-1]
             dataset.h5_file = h5_file
         return dataset
@@ -412,6 +393,8 @@ def open_file(filename=None, save_file=False, h5_group=None):
 
 
 def get_h5_filename(fname):
+    """Determines file name of hdf5 file for newly converted data file"""
+
     path, filename = os.path.split(fname)
     basename, extension = os.path.splitext(filename)
     h5_file_name_original = os.path.join(path, basename + '.hf5')
@@ -431,10 +414,15 @@ def get_h5_filename(fname):
 
 
 def get_start_channel(h5_file):
+    """ Legacy for get start channel"""
+
+    DeprecationWarning('Depreciated: use function get_main_channel instead')
     return get_main_channel(h5_file)
 
 
 def get_main_channel(h5_file):
+    """Returns name of first channel group in hdf5-file"""
+
     current_channel = None
     if 'Measurement_000' in h5_file:
         if 'Measurement_000/Channel_000' in h5_file:
@@ -442,25 +430,47 @@ def get_main_channel(h5_file):
     return current_channel
 
 
-def h5_tree(input):
-    """
-    Just a wrapper for the sidpy function print_tree,
-    so that sidpy does not have to be loaded in notebook
-    """
-    if isinstance(input, sidpy.Dataset):
-        if not isinstance(input.h5_dataset, h5py.Dataset):
+def h5_tree(input_object):
+    """Just a wrapper for the sidpy function print_tree,
+
+    so that sidpy does not have to be loaded in notebook"""
+
+    if isinstance(input_object, sidpy.Dataset):
+        if not isinstance(input_object.h5_dataset, h5py.Dataset):
             raise ValueError('sidpy dataset does not have an associated h5py dataset')
-        h5_file = input.h5_dataset.file
-    elif isinstance(input, h5py.Dataset):
-        h5_file = input.file
-    elif isinstance(input, (h5py.Group, h5py.File)):
-        h5_file = input
+        h5_file = input_object.h5_dataset.file
+    elif isinstance(input_object, h5py.Dataset):
+        h5_file = input_object.file
+    elif isinstance(input_object, (h5py.Group, h5py.File)):
+        h5_file = input_object
     else:
         raise TypeError('should be a h5py.object or sidpy Dataset')
     sidpy.hdf_utils.print_tree(h5_file)
 
 
 def log_results(h5_group, dataset=None, attributes=None):
+    """Log Results in hdf5-file
+
+    Saves either a sidpy.Dataset or dictionary in a hdf5-file.
+    The group for the result will consist of 'Log_ and a running index.
+    That group will be placed in h5_group.
+
+    Parameters
+    ----------
+    h5_group: hd5py.Group
+        groups where result group are to be stored
+    dataset: sidpy.Dataset or None
+        sidpy dataset to be stored
+    attributes: dict
+        dictionary containing results that are not based on a sidpy.Dataset
+
+    Returns
+    -------
+    log_group: hd5py.Group
+        group in hdf5 file with results.
+
+    """
+
     if dataset is None:
         log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Log_')
     else:
@@ -487,17 +497,21 @@ def log_results(h5_group, dataset=None, attributes=None):
 ###############################################
 
 def read_old_h5group(current_channel):
-    """
-    make a  sidpy dataset from pyUSID style hdf5 group
-    input
+    """Make a  sidpy.Dataset from pyUSID style hdf5 group
+
+    Parameters
+    ----------
         current_channel: h5_group
-    return
-        sidpy Dataset
+
+    Returns
+    -------
+        sidpy.Dataset
     """
+
     dim_dir = []
     if 'nDim_Data' in current_channel:
         h5_dataset = current_channel['nDim_Data']
-        reader = NSIDReader(h5_dataset)
+        reader = pyNSID.NSIDReader(h5_dataset)
         dataset = reader.read_h5py_dataset(h5_dataset)
         dataset.h5_file = current_channel.file
         return dataset
@@ -534,13 +548,13 @@ def read_old_h5group(current_channel):
 
     if 'SPATIAL' in dim_dir:
         if 'SPECTRAL' in dim_dir:
-            sid_dataset.data_type = sidpy.DataTypes.SPECTRAL_IMAGE
+            sid_dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE
         elif 'TEMPORAL' in dim_dir:
-            sid_dataset.data_type = sidpy.DataTypes.IMAGE_STACK
+            sid_dataset.data_type = sidpy.DataType.IMAGE_STACK
         else:
-            sid_dataset.data_type = sidpy.DataTypes.IMAGE
+            sid_dataset.data_type = sidpy.DataType.IMAGE
     else:
-        sid_dataset.data_type = sidpy.DataTypes.SPECTRUM
+        sid_dataset.data_type = sidpy.DataType.SPECTRUM
 
     sid_dataset.quantity = 'intensity'
     sid_dataset.units = 'counts'
@@ -553,14 +567,15 @@ def read_old_h5group(current_channel):
 
 
 def set_dimensions(dset, current_channel):
-    """
-    Attaches correct dimension from old pyTEMlib style.
-    Input:
-    dset: sidpy Dataset
-    current_channel: hdf5 group
+    """Attaches correct dimension from old pyTEMlib style.
+
+    Parameters
+    ----------
+    dset: sidpy.Dataset
+    current_channel: hdf5.Group
     """
     dim = 0
-    if dset.data_type == sidpy.DataTypes.IMAGE_STACK:
+    if dset.data_type == sidpy.DataType.IMAGE_STACK:
         dset.set_dimension(dim, sidpy.Dimension(np.arange(dset.shape[dim]), name='frame',
                                                 units='frame', quantity='stack',
                                                 dimension_type='TEMPORAL'))
@@ -589,7 +604,7 @@ def set_dimensions(dset, current_channel):
                                                 units=units_x, quantity='Length',
                                                 dimension_type='SPATIAL'))
         dim += 1
-    if dset.data_type in [sidpy.DataTypes.SPECTRUM, sidpy.DataTypes.SPECTRAL_IMAGE]:
+    if dset.data_type in [sidpy.DataType.SPECTRUM, sidpy.DataType.SPECTRAL_IMAGE]:
         if 'spectral_scale_x' in current_channel:
             scale_s = current_channel['spectral_scale_x'][()]
         else:
