@@ -132,6 +132,8 @@ class PeriodicTableDialog(QtWidgets.QDialog):
 
 
 class EnergySelector(QtWidgets.QDialog):
+    """Dialog and cursor to set energy scale"""
+
     signal_selected = QtCore.pyqtSignal(bool)
 
     def __init__(self, dset=None):
@@ -155,7 +157,7 @@ class EnergySelector(QtWidgets.QDialog):
 
         self.spec_dim = -1
         for dim, axis in self.dataset._axes.items():
-            if axis.dimension_type == sidpy.DimensionTypes.SPECTRAL:
+            if axis.dimension_type == sidpy.DimensionType.SPECTRAL:
                 self.spec_dim = dim
         if self.spec_dim < 0:
             raise TypeError('We need at least one SPECTRAL dimension')
@@ -331,9 +333,8 @@ class EnergySelector(QtWidgets.QDialog):
         self.axis.figure.canvas.draw()
 
 
-class RegionSelector(object):
-    """
-        Selects fitting region and the regions that are excluded for each edge.
+class Region_selector(object):
+    """Selects fitting region and the regions that are excluded for each edge.
 
         Select a region with a spanSelector and then type 'a' for all of the fitting region or a number for the edge
         you want to define the region excluded from the fit (solid state effects).
@@ -349,12 +350,12 @@ class RegionSelector(object):
         self.xmin = 0
         self.width = 0
 
-        self.span = SpanSelector(ax, self.onselect1, 'horizontal', useblit=True,
+        self.span = SpanSelector(ax, self.on_select1, 'horizontal', useblit=True,
                                  rectprops=dict(alpha=0.5, facecolor='red'), span_stays=True)
         self.cid = ax.figure.canvas.mpl_connect('key_press_event', self.click)
         self.draw = ax.figure.canvas.mpl_connect('draw_event', self.onresize)
 
-    def onselect1(self, xmin, xmax):
+    def on_select1(self, xmin, xmax):
         self.xmin = xmin
         self.width = xmax - xmin
 
@@ -462,12 +463,13 @@ class RegionSelector(object):
 
 
 class RangeSelector(RectangleSelector):
-    def __init__(self, ax, onselect):
+    """Select ranges of edge fitting interactively"""
+    def __init__(self, ax, on_select):
         drawtype = 'box'
         spancoords = 'data'
         rectprops = dict(facecolor="blue", edgecolor="black", alpha=0.2, fill=True)
 
-        super().__init__(ax, onselect, drawtype=drawtype,
+        super().__init__(ax, on_select, drawtype=drawtype,
                          minspanx=0, minspany=0, useblit=False,
                          lineprops=None, rectprops=rectprops, spancoords=spancoords,
                          button=None, maxdist=10, marker_props=None,
@@ -495,6 +497,7 @@ class RangeSelector(RectangleSelector):
 
 
 def get_likely_edges(energy_scale):
+    """get likely ionization edges within energy_scale"""
     x_sections = eels.get_x_sections()
     # print(energy_scale)
     energy_origin = energy_scale[0]
@@ -536,6 +539,7 @@ def get_likely_edges(energy_scale):
 
 
 def get_periodic_table_info():
+    """Info for periodic table dialog"""
     pt_info = \
         {'H': {'PT_row': 0, 'PT_col': 0, 'Z': 0},
          'He': {'PT_row': 0, 'PT_col': 17, 'Z': 2}, 'Li': {'PT_row': 1, 'PT_col': 0, 'Z': 3},
@@ -600,13 +604,14 @@ def get_periodic_table_info():
 
 
 class InteractiveSpectrumImage(object):
-    """
-    ### Interactive spectrum imaging plot
+    """Interactive spectrum imaging plot
 
-    Input tags: dictionary with a minimum of the following keys:
+    Attributes:
+    -----------
+    dictionary with a minimum of the following keys:
         ['image']: displayed image
         ['data']:  data cube
-        [if ]'intensity_scale_ppm']: intensity scale
+        ['intensity_scale_ppm']: intensity scale
         ['ylabel']: intensity label
         ['spectra'] dictionary which contains dictionaries for each spectrum style ['1-2']:
             ['spectrum'] = tags['cube'][y,x,:]
@@ -891,28 +896,28 @@ class InteractiveSpectrumImage(object):
     def get_current_spectrum(self):
         return self.cube[self.y, self.x, :]
 
-    def set_Zcontrast_image(self, z_channel=None):
+    def set_z_contrast_image(self, z_channel=None):
         if z_channel is not None:
-            self.tags['Zcontrast_channel'] = z_channel
-        if 'Zcontrast_channel' not in self.tags:
+            self.tags['Z_contrast_channel'] = z_channel
+        if 'Z_contrast_channel' not in self.tags:
             print('add Z contrast channel group to dictionary first!')
             return
         # get dictionary from current channel in pyUSID file
-        z_tags = {}   # TODO change to sidpy datasetft.h5_get_dictionary(z_channel)
+        z_tags = {}   # TODO change to sidpy dataset ft.h5_get_dictionary(z_channel)
         extent = [self.rectangle[0], self.rectangle[0] + self.rectangle[1],
                   self.rectangle[2] + self.rectangle[3], self.rectangle[2]]
         self.ax1.imshow(z_tags['data'], extent=extent, cmap='gray')
 
-    def overlay_Zcontrast_image(self, z_channel=None):
+    def overlay_z_contrast_image(self, z_channel=None):
 
         if self.SI:
             if z_channel is not None:
-                self.tags['Zcontrast_channel'] = z_channel
-            if 'Zcontrast_channel' not in self.tags:
+                self.tags['Z_contrast_channel'] = z_channel
+            if 'Z_contrast_channel' not in self.tags:
                 print('add survey channel group to dictionary first!')
                 return
 
-            z_tags = {}  # TODO: change to sidpy ft.h5_get_dictionary(self.tags['Zcontrast_channel'])
+            z_tags = {}  # TODO: change to sidpy ft.h5_get_dictionary(self.tags['Z_contrast_channel'])
 
             xlim = self.ax1.get_xlim()
             ylim = self.ax1.get_ylim()
@@ -991,10 +996,7 @@ class InteractiveSpectrumImage(object):
 
 
 class ElementalEdges(object):
-    """
-        The necessary initialization parameter are:
-        ax: matplotlib axis
-
+    """ Adds ionization edges of element z to plot with axis ax
 
         There is an optional parameter maximum_chemical_shift which allows to change
         the energy range in which the edges are searched.
@@ -1079,23 +1081,27 @@ class ElementalEdges(object):
         self.ax.figure.canvas.mpl_disconnect(self.cid)
 
 
-class EdgesatCursor(object):
+class EdgesAtCursor(object):
     """
         Adds a Cursor to a plot, which plots all major (possible) ionization edges at
-        the cursor location if left (right) mosue button is clicked.
+        the cursor location if left (right) mouse button is clicked.
 
-        The necessary initializtion parameter are:
+        Attributes
+        ----------
         ax: matplotlib axis
-        x: energy_scale of spectrum
-        y: intensities of spectrum
+        x: numpy array
+            energy_scale of spectrum
+        y: numpy array
+            intensities of spectrum
+        maximal_chemical_shift: float
+            optional parameter maximum_chemical_shift which allows to change the energy range in which the edges
+            are searched.
 
-        There is an optional parameter maximum_chemical_shift which allows to change
-        the energy range in which the edges are searched.
-
-        usage:
+        Example
+        -------
         fig, ax = plt.subplots()
         ax.plot(energy_scale, spectrum)
-        cursor = EdgesatCursor(ax, energy_scale, spectrum)
+        cursor = EdgesAtCursor(ax, energy_scale, spectrum)
 
         see Chapter4 'CH4-Working_with_X-Sections' notebook
 
