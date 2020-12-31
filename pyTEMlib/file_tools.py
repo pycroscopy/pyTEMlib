@@ -488,7 +488,6 @@ def log_results(h5_group, dataset=None, attributes=None):
         for key, item in attributes.items():
             if key not in log_group:
                 log_group[key] = item
-
     return log_group
 
 
