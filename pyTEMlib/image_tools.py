@@ -82,7 +82,7 @@ def fourier_transform(dset):
 
         Input
         -----
-        dset: sidp Dataset
+        dset: sidpy.Dataset
 
         Usage
         -----
@@ -297,9 +297,11 @@ def rotational_symmetry_diffractogram(spots):
 
 
 def complete_registration(main_dataset):
+    """Rigid and then non-rigid (demon) registration"""
     rigid_registered_dataset = rigid_registration(main_dataset)
+    print('1')
     current_channel = main_dataset.h5_dataset.parent
-
+    print('2')
     registration_channel = log_results(current_channel, rigid_registered_dataset)
 
     print('Non-Rigid_Registration')
@@ -314,13 +316,19 @@ def complete_registration(main_dataset):
 def demon_registration(dataset, verbose=False):
     """
     Diffeomorphic Demon Non-Rigid Registration
+
     Usage:
     ------
     dem_reg = demon_reg(cube, verbose = False)
 
-    Input:
-        cube: stack of image after rigid registration and cropping
-    Output:
+    Parameters
+    ----------
+    dataset: sidpy.Dataset
+        stack of image after rigid registration and cropping
+    verbose: boolean
+        optional for increased output
+    Returns
+    -------
         dem_reg: stack of images with non-rigid registration
 
     Depends on:
@@ -404,9 +412,14 @@ def rigid_registration(dataset):
     used phase_cross_correlation from skimage.registration
     (we determine drift from one image to next)
 
-    Input hdf5 group with image_stack dataset
+    Parameters
+    ----------
+    dataset: sidpy.Datset
+        sidpy dataset with image_stack dataset
 
-    Output Registered Stack and drift (with respect to center image)
+    Returns
+    -------
+    Registered Stack and drift (with respect to center image)
 
     """
 
