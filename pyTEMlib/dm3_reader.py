@@ -1,8 +1,7 @@
-"""
-Will move to Scope Reader
-"""
 #!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
+"""
+Will move to Scope Reader
 
 ################################################################################
 # Python class for reading GATAN DM3 (DigitalMicrograph) files
@@ -22,6 +21,8 @@ Will move to Scope Reader
 # Works for python 3
 #
 ################################################################################
+"""
+
 from __future__ import division, print_function, absolute_import, unicode_literals
 
 import struct
