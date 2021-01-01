@@ -141,8 +141,9 @@ class FileWidget(object):
                 else:
                     file_list.append(dir_list[i])
                     if extension in ['.h5', '.ndata']:
-                        tags = open_file(os.path.join(self.dir_name, name))
-                        display_file_list.append(f" {tags['original_name']}{extension}  - {size:.1f} MB")
+                        reader = NionReader(full_name)
+                        dataset_nion = reader.read()
+                        display_file_list.append(f" {dataset_nion.title}{extension}  - {size:.1f} MB")
                     elif extension in ['.hf5']:
                         display_file_list.append(f" {name}  -- {size:.1f} MB")
                     else:

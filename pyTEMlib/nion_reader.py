@@ -166,11 +166,11 @@ class NionReader(sidpy.Reader):
         # Need to switch image dimensions in Nion format
         image_dims = []
         for dim, axis in enumerate(self.dimensions):
-            print(dim, axis)
+            # print(dim, axis)
             if axis.dimension_type == sidpy.DimensionType.SPATIAL:
                 image_dims.append(dim)
-        print('image_dims', image_dims)
-        print(self.data_cube.shape)
+        # print('image_dims', image_dims)
+        # print(self.data_cube.shape)
         if len(image_dims) == 2:
             self.data_cube = np.swapaxes(self.data_cube, image_dims[0], image_dims[1])
             temp = self.dimensions[image_dims[0]].copy()
@@ -179,6 +179,7 @@ class NionReader(sidpy.Reader):
 
         dataset = sidpy.Dataset.from_array(self.data_cube)
 
+        dim_names = []
         for dim, axis in enumerate(self.dimensions):
             dataset.set_dimension(dim, axis)
 
@@ -274,7 +275,7 @@ class NionReader(sidpy.Reader):
                                                            quantity='distance', dimension_type='spatial'))
                     spatial_name = chr(ord(spatial_name) + 1)
                 else:
-                    self.dimensions.append(sidpy.Dimension(values, name='generic', units='generic',
+                    self.dimensions.append(sidpy.Dimension(values, name=f'generic_{dim}', units='generic',
                                                            quantity='generic', dimension_type='UNKNOWN'))
 
     def get_filename(self):
