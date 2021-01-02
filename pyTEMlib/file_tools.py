@@ -496,7 +496,7 @@ def log_results(h5_group, dataset=None, attributes=None):
             if 'analysis' in dataset.meta_data:
                 log_group['analysis'] = dataset.meta_data['analysis']
 
-        dataset.h5_dataset = log_group[dataset.title.replace('-', '_')]
+        dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
     if attributes is not None:
         for key, item in attributes.items():
             if key not in log_group:
