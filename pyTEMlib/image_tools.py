@@ -299,15 +299,12 @@ def rotational_symmetry_diffractogram(spots):
 def complete_registration(main_dataset):
     """Rigid and then non-rigid (demon) registration"""
     rigid_registered_dataset = rigid_registration(main_dataset)
-    print('1')
-    current_channel = main_dataset.h5_dataset.parent
-    print('2')
+    current_channel = main_dataset.h5_dataset.parent.parent
     registration_channel = log_results(current_channel, rigid_registered_dataset)
 
     print('Non-Rigid_Registration')
 
     non_rigid_registered = demon_registration(rigid_registered_dataset)
-
     registration_channel = log_results(current_channel, non_rigid_registered)
 
     return non_rigid_registered, rigid_registered_dataset
