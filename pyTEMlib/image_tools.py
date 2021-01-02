@@ -96,12 +96,12 @@ def fourier_transform(dset):
     selection = []
     image_dim = []
     # image_dim = get_image_dims(sidpy.DimensionTypes.SPATIAL)
-    if dset.data_type == sidpy.DataTypes.IMAGE_STACK:
+    if dset.data_type == sidpy.DataType.IMAGE_STACK:
         for dim, axis in dset._axes.items():
-            if axis.dimension_type == sidpy.DimensionTypes.SPATIAL:
+            if axis.dimension_type == sidpy.DimensionType.SPATIAL:
                 selection.append(slice(None))
                 image_dim.append(dim)
-            elif axis.dimension_type == sidpy.DimensionTypes.TEMPORAL or len(dset) == 3:
+            elif axis.dimension_type == sidpy.DimensionType.TEMPORAL or len(dset) == 3:
                 selection.append(slice(None))
                 stack_dim = dim
             else:
@@ -110,7 +110,7 @@ def fourier_transform(dset):
             raise ValueError('need at least two SPATIAL dimension for an image stack')
         image_stack = np.squeeze(np.array(dset)[selection])
         image = np.sum(np.array(image_stack), axis=stack_dim)
-    elif dset.data_type == sidpy.DataTypes.IMAGE:
+    elif dset.data_type == sidpy.DataType.IMAGE:
         image = np.array(dset)
     else:
         return
@@ -218,7 +218,7 @@ def diffractogram_spots(dset, spot_threshold):
     except ValueError:
         spots_random = (peak_local_max(np.array(data.T), min_distance=3, threshold_rel=spot_threshold) - center[:2]) \
                        * rec_scale
-        spots_random = np.hstack(spots_random,np.zeros((spots_random.shape[0],1)))
+        spots_random = np.hstack(spots_random, np.zeros((spots_random.shape[0], 1)))
 
     print(f'Found {spots_random.shape[0]} reflections')
 
@@ -584,8 +584,6 @@ class ImageWithLineProfile:
 
 def histogram_plot(image_tags):
     nbins = 75
-    minbin = 0.
-    maxbin = 1.
     color_map_list = ['gray', 'viridis', 'jet', 'hot']
     
     if 'minimum_intensity' not in image_tags: 
@@ -840,6 +838,7 @@ def align_crystal_reflections(spots, crystals):
         
     return crystal_reflections_polar, angles
 
+
 # Deconvolution
 def decon_lr(o_image, probe, tags, verbose=False):
     """
@@ -955,7 +954,6 @@ def decon_lr(o_image, probe, tags, verbose=False):
                 count = 0
             progress.set_value(count)
 
-
         if i > 1000:
             dest = 0.0
             print('terminate')
@@ -967,4 +965,3 @@ def decon_lr(o_image, probe, tags, verbose=False):
     # plt.show()
     print(est2.shape)
     return est2
-
