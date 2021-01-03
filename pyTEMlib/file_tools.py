@@ -372,7 +372,7 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
         basename, _ = os.path.splitext(file_name)
         dset = reader.read()
 
-        if  extension in ['.dm3', '.dm4']:
+        if extension in ['.dm3', '.dm4']:
             dset.title = basename.strip().replace('-', '_')
         dset.filename = basename.strip().replace('-', '_')
         dset.original_metadata = flatten_dict(dset.original_metadata)
@@ -498,7 +498,7 @@ def log_results(h5_group, dataset=None, attributes=None):
             if 'analysis' in dataset.meta_data:
                 log_group['analysis'] = dataset.meta_data['analysis']
 
-        dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
+        dataset.h5_dataset = log_group[dataset.title.replace('-', '_')]
     if attributes is not None:
         for key, item in attributes.items():
             if key not in log_group:
