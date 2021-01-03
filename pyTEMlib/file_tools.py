@@ -372,8 +372,8 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
         basename, _ = os.path.splitext(file_name)
         dset = reader.read()
 
-
-        dset.title = basename.strip().replace('-', '_')
+        if  extension in ['.dm3', '.dm4']:
+            dset.title = basename.strip().replace('-', '_')
         dset.filename = basename.strip().replace('-', '_')
         dset.original_metadata = flatten_dict(dset.original_metadata)
         filename = os.path.join(path,  dset.title+extension)
