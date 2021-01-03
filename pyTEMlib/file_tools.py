@@ -371,10 +371,12 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
         path, file_name = os.path.split(filename)
         basename, _ = os.path.splitext(file_name)
         dset = reader.read()
+
+
         dset.title = basename.strip().replace('-', '_')
         dset.filename = basename.strip().replace('-', '_')
         dset.original_metadata = flatten_dict(dset.original_metadata)
-
+        filename = os.path.join(path,  dset.title+extension)
         h5_filename = get_h5_filename(filename)
         h5_file = h5py.File(h5_filename, mode='a')
 
