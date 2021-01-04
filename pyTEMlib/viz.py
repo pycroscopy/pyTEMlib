@@ -9,12 +9,14 @@ from bokeh.models import LinearColorMapper, ColorBar
 
 def plot(dataset, palette='Viridis256'):
     if dataset.data_type.name == 'IMAGE_STACK':
-        plot_stack(dataset, palette=palette)
+        p = plot_stack(dataset, palette=palette)
     elif dataset.data_type.name == 'IMAGE':
-        plot_image(dataset, palette=palette)
+        p = plot_image(dataset, palette=palette)
     elif dataset.data_type.name == 'SPECTRUM':
-        plot_spectrum(dataset, palette=palette)
-
+        p = plot_spectrum(dataset, palette=palette)
+    else:
+        p = None
+    return p
 
 def plot_stack(dataset, palette="Viridis256"):
     """Plotting a stack of images
