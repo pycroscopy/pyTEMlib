@@ -358,6 +358,7 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
             reader = pyNSID.NSIDReader(h5_file['Measurement_000/Channel_000'])
             dataset = reader.read()[-1]
             dataset.h5_file = h5_file
+        dataset.h5_dataset = h5_file[dataset.title]
         return dataset
 
     elif extension in ['.dm3', '.dm4', '.ndata', '.h5']:
@@ -375,7 +376,7 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
         if extension in ['.dm3', '.dm4']:
             dset.title = basename.strip().replace('-', '_')
         dset.filename = basename.strip().replace('-', '_')
-        dset.original_metadata = flatten_dict(dset.original_metadata)
+        # dset.original_metadata = flatten_dict(dset.original_metadata)
         filename = os.path.join(path,  dset.title+extension)
         h5_filename = get_h5_filename(filename)
         h5_file = h5py.File(h5_filename, mode='a')
@@ -385,10 +386,10 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
         else:
             if not isinstance(h5_group, h5py.Group):
                 h5_group = h5_file.create_group('Measurement_000/Channel_000')
-            dset.axes = dset._axes
-            dset.attrs = {}
+            # dset.axes = dset._axes
+            # dset.attrs = {}
             h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dset, h5_group)
-            dset.original_metadata = nest_dict(dset.original_metadata)
+            # dset.original_metadata = nest_dict(dset.original_metadata)
 
             dset.h5_dataset = h5_dataset
         return dset
