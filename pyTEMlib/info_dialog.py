@@ -49,7 +49,7 @@ class InfoDialog(QtWidgets.QDialog):
 
         if dataset is None:
             # make a dummy dataset for testing
-            dataset = ft.make_dummy_dataset(sidpy.DataTypes.SPECTRUM)
+            dataset = ft.make_dummy_dataset(sidpy.DataType.SPECTRUM)
         if not isinstance(dataset, sidpy.Dataset):
             raise TypeError('dataset has to be a sidpy dataset')
 
@@ -71,7 +71,7 @@ class InfoDialog(QtWidgets.QDialog):
         if not hasattr(self.dataset, 'meta_data'):
             self.dataset.meta_data = {}
 
-        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionTypes.SPECTRAL, dataset)
+        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, dataset)
         if len(self.spec_dim) != 1:
             raise TypeError('We need exactly one SPECTRAL dimension')
         self.spec_dim = self.spec_dim[0]
@@ -92,12 +92,12 @@ class InfoDialog(QtWidgets.QDialog):
                 self.experiment[key] = item
 
     def set_dimension(self):
-        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionTypes.SPECTRAL, self.dataset)
+        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, self.dataset)
         self.spec_dim = self.spec_dim[0]
         old_energy_scale = self.spec_dim[1]
         self.dataset.set_dimension(self.spec_dim[0], sidpy.Dimension(np.array(self.energy_scale),
                                                                      name=old_energy_scale.name,
-                                                                     dimension_type=sidpy.DimensionTypes.SPECTRAL,
+                                                                     dimension_type=sidpy.DimensionType.SPECTRAL,
                                                                      units='eV',
                                                                      quantity='energy loss'))
 
@@ -154,7 +154,7 @@ class InfoDialog(QtWidgets.QDialog):
             self.experiment['acceleration_voltage'] = value
             sender.setText(f"{value:.2f}")
         elif sender == self.ui.binXEdit or sender == self.ui.binYEdit:
-            if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+            if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
                 bin_x = int(self.ui.binXEdit.displayText())
                 bin_y = int(self.ui.binYEdit.displayText())
                 self.dataset.view.set_bin([bin_x, bin_y])
@@ -164,7 +164,7 @@ class InfoDialog(QtWidgets.QDialog):
             print('not supported yet')
 
     def plot(self):
-        if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
             self.axis = self.dataset.view.axes[1]
         else:
@@ -197,7 +197,7 @@ class InfoDialog(QtWidgets.QDialog):
         self.energy_dlg.show()
 
     def set_energy(self, k):
-        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionTypes.SPECTRAL, self.dataset)
+        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, self.dataset)
         self.spec_dim = self.spec_dim[0]
 
         self.energy_scale = self.spec_dim[1]

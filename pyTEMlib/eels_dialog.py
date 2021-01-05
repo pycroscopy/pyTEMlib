@@ -22,7 +22,7 @@ class EELSDialog(QtWidgets.QDialog):
         # Create an instance of the GUI
         if dataset is None:
             # make a dummy dataset
-            dataset = ft.make_dummy_dataset(sidpy.DataTypes.SPECTRUM)
+            dataset = ft.make_dummy_dataset(sidpy.DataType.SPECTRUM)
         if not isinstance(dataset, sidpy.Dataset):
             raise TypeError('dataset has to be a sidpy dataset')
         self.spec_dim = ft.get_dimensions_by_type('spectral', dataset)
@@ -80,7 +80,7 @@ class EELSDialog(QtWidgets.QDialog):
 
         spec_dim = -1
         for dim, axis in dataset._axes.items():
-            if axis.dimension_type == sidpy.DimensionTypes.SPECTRAL:
+            if axis.dimension_type == sidpy.DimensionType.SPECTRAL:
                 spec_dim = dim
         if spec_dim < 0:
             raise TypeError('We need at least one SPECTRAL dimension')
@@ -232,8 +232,8 @@ class EELSDialog(QtWidgets.QDialog):
 
         arg_sorted = np.argsort(onsets)
         edges = self.edges.copy()
-        for index, isorted in enumerate(arg_sorted):
-            self.edges[str(index)] = edges[str(isorted)].copy()
+        for index, i_sorted in enumerate(arg_sorted):
+            self.edges[str(index)] = edges[str(i_sorted)].copy()
 
         index = 0
         edge = self.edges['0']
@@ -264,7 +264,7 @@ class EELSDialog(QtWidgets.QDialog):
 
     def plot(self):
         self.energy_scale = self.dataset._axes[self.spec_dim].values
-        if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
             self.axis = self.dataset.view.axes[1]
         else:
@@ -446,7 +446,7 @@ class EELSDialog(QtWidgets.QDialog):
 
         edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta)
 
-        if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
         else:
             spectrum = self.dataset

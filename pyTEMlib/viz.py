@@ -5,6 +5,7 @@ from bokeh.layouts import column
 from bokeh.models import CustomJS, Slider
 from bokeh.plotting import figure  # , show, output_notebook
 from bokeh.models import LinearColorMapper, ColorBar
+from bokeh.palettes import Spectral11
 
 
 def plot(dataset, palette='Viridis256'):
@@ -137,4 +138,26 @@ def plot_image(dataset, palette="Viridis256"):
 
 
 def plot_spectrum(dataset):
-    pass
+    if not isinstance(dataset, sidpy.Dataset):
+        raise TypeError('Need a sidpy dataset for plotting')
+
+    if dataset.data_type.name not in ['SPECTRUM']:
+        raise TypeError('Need an sidpy.Dataset of data_type SPECTRUM for plotting a spectrum ')
+
+    # self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
+
+    p = figure(x_axis_type="linear", plot_width=800, plot_height=400)
+
+    # first line is dataset
+    p.line(dataset.dim_0, np.array(dataset), legend_label=dataset.title, color=Spectral11[0], line_width=2)
+    # add other lines if available
+    if 'add2plot' in dataset.metadata:
+        data = dataset.metadata['add2plot']
+        for key, line in data.items():
+            p.line(dataset.dim_0.values, line['data'], legend_label=line['legend'], color=Spectral11[key], line_width=2)
+    p.legend.click_policy = "hide"
+    p.xaxis.axis_label = dataset.labels[0]
+    p.yaxis.axis_label = dataset.data_descriptor
+    p.title.text = dataset.title
+    return p
+
