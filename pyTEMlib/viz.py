@@ -19,6 +19,7 @@ def plot(dataset, palette='Viridis256'):
         p = None
     return p
 
+
 def plot_stack(dataset, palette="Viridis256"):
     """Plotting a stack of images
 
@@ -137,7 +138,7 @@ def plot_image(dataset, palette="Viridis256"):
     return p
 
 
-def plot_spectrum(dataset):
+def plot_spectrum(dataset, palette=Spectral11):
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('Need a sidpy dataset for plotting')
 
@@ -149,15 +150,15 @@ def plot_spectrum(dataset):
     p = figure(x_axis_type="linear", plot_width=800, plot_height=400)
 
     # first line is dataset
-    p.line(dataset.dim_0, np.array(dataset), legend_label=dataset.title, color=Spectral11[0], line_width=2)
+    p.line(dataset.dim_0, np.array(dataset), legend_label=dataset.title, color=palette[0], line_width=2)
     # add other lines if available
     if 'add2plot' in dataset.metadata:
         data = dataset.metadata['add2plot']
         for key, line in data.items():
-            p.line(dataset.dim_0.values, line['data'], legend_label=line['legend'], color=Spectral11[key], line_width=2)
+            p.line(dataset.dim_0.values, line['data'], legend_label=line['legend'], color=palette[key], line_width=2)
     p.legend.click_policy = "hide"
     p.xaxis.axis_label = dataset.labels[0]
     p.yaxis.axis_label = dataset.data_descriptor
     p.title.text = dataset.title
-    return p
 
+    return p
