@@ -16,7 +16,7 @@ The University of Tennessee, Knoxville
 Usage of the EELS Tools of pyTEMlib
 
 * `Edge Onset <Edge_Onset.ipynb>`_
-* [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pycrosccopy/pyTEMlib/blob/master/notebooks/EELS/Edge_Onset.ipynb)
+* [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/pycrosccopy/pyTEMlib/blob/master/notebooks/EELS/Edge_Onset.ipynb)]
 * `Chemical Composition <Analysis_Core_Loss.ipynb>`_
 
 .. toctree::
