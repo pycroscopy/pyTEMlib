@@ -65,11 +65,11 @@ def get_dimensions_by_order(dims_in, dataset):
 
 
 def get_dimensions_by_type(dims_in, dataset):
-    if isinstance(dims_in, (str, sidpy.DimensionTypes)):
+    if isinstance(dims_in, (str, sidpy.DimensionType)):
         dims_in = [dims_in]
     for i in range(len(dims_in)):
         if isinstance(dims_in[i], str):
-            dims_in[i] = sidpy.DimensionTypes[dims_in[i].upper()]
+            dims_in[i] = sidpy.DimensionType[dims_in[i].upper()]
     dims_out = []
     for dim, axis in dataset._axes.items():
         if axis.dimension_type in dims_in:
@@ -78,8 +78,8 @@ def get_dimensions_by_type(dims_in, dataset):
 
 
 def make_dummy_dataset(value_type):
-    assert isinstance(value_type, sidpy.DataTypes)
-    if type == sidpy.DataTypes.SPECTRUM:
+    assert isinstance(value_type, sidpy.DataType)
+    if type == sidpy.DataType.SPECTRUM:
         dataset = sidpy.Dataset.from_array(np.arange(100))
         dataset.data_type = 'spectrum'
         dataset.units = 'counts'
@@ -101,7 +101,7 @@ def plot(dataset):
 def get_image_dims(dataset):
     image_dims = []
     for dim, axis in dataset._axes.items():
-        if axis.dimension_type == sidpy.DimensionTypes.SPATIAL:
+        if axis.dimension_type == sidpy.DimensionType.SPATIAL:
             image_dims.append(dim)
     return image_dims
 

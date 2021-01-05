@@ -118,10 +118,10 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.ui.edit8.setText(f"{self.peaks['peaks'][str(peak_index)]['asymmetry']:.2f}")
 
     def plot(self):
-        spec_dim = ft.get_dimensions_by_type(sidpy.DimensionTypes.SPECTRAL, self.dataset)
+        spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, self.dataset)
         spec_dim = spec_dim[0]
         self.energy_scale = spec_dim[1].values
-        if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
             self.axis = self.dataset.view.axes[1]
         else:
@@ -153,7 +153,7 @@ class PeakFitDialog(QtWidgets.QDialog):
                 p_in.append(peak['position'])
                 p_in.append(peak['amplitude'])
                 p_in.append(peak['width'])
-        if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
         else:
             spectrum = np.array(self.dataset)
