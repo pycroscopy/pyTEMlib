@@ -14,6 +14,7 @@ Joint Institute of Advanced Materials
 The University of Tennessee, Knoxville
 
 Usage of the EELS Tools of pyTEMlib
+
 * `Edge Onset <Edge_Onset.ipynb>`_
 * `Chemical Composition <Analysis_Core_Loss.ipynb>`_
 
