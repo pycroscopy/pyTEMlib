@@ -2,9 +2,9 @@ import numpy as np
 import sidpy
 
 from bokeh.layouts import column
-from bokeh.models import CustomJS, Slider
 from bokeh.plotting import figure  # , show, output_notebook
-from bokeh.models import LinearColorMapper, ColorBar
+from bokeh.models import CustomJS, Slider, Span
+from bokeh.models import LinearColorMapper, ColorBar, ColumnDataSource, BoxSelectTool
 from bokeh.palettes import Spectral11
 
 
@@ -138,19 +138,24 @@ def plot_image(dataset, palette="Viridis256"):
     return p
 
 
-def plot_spectrum(dataset, palette=Spectral11):
+
+def plot_spectrum(dataset, selected_range, palette=Spectral11):
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('Need a sidpy dataset for plotting')
 
     if dataset.data_type.name not in ['SPECTRUM']:
         raise TypeError('Need an sidpy.Dataset of data_type SPECTRUM for plotting a spectrum ')
 
-    # self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
-
-    p = figure(x_axis_type="linear", plot_width=800, plot_height=400)
+    p = figure(x_axis_type="linear", plot_width=800, plot_height=400,
+               tooltips=[("index", "$index"),("(x,y)", "($x, $y)")],
+               tools="pan,wheel_zoom,box_zoom,reset, hover, lasso_select")
+    p.add_tools(BoxSelectTool(dimensions="width"))
 
     # first line is dataset
-    p.line(dataset.dim_0, np.array(dataset), legend_label=dataset.title, color=palette[0], line_width=2)
+    spectrum = ColumnDataSource(data=dict(x=dataset.dim_0, y=np.array(dataset)))
+    p.scatter('x', 'y', color='blue', size=1, alpha=0., source=spectrum,
+              selection_color="firebrick", selection_alpha=0.)
+    p.line(x='x', y='y', source=spectrum, legend_label=dataset.title, color=palette[0], line_width=2)
     # add other lines if available
     if 'add2plot' in dataset.metadata:
         data = dataset.metadata['add2plot']
@@ -161,4 +166,88 @@ def plot_spectrum(dataset, palette=Spectral11):
     p.yaxis.axis_label = dataset.data_descriptor
     p.title.text = dataset.title
 
-    return p
+    my_span = Span(location=0, dimension='width', line_color='gray', line_width=1)
+    p.add_layout(my_span)
+
+    callback = CustomJS(args=dict(s1=spectrum), code="""
+        var inds = s1.selected.indices;
+        if (inds.length == 0)
+            return;
+        var kernel = IPython.notebook.kernel;
+        kernel.execute("selected_range = " + [inds[0], inds[inds.length-1]]);""")
+
+    spectrum.selected.js_on_change('indices', callback)
+    return p, selected_range
+
+class CurveVisualizer(object):
+    def __init__(self, dataset, spectrum_number=None, fig=None, **kwargs):
+
+        if not isinstance(dataset, sidpy.Dataset):
+            raise TypeError('dset should be a sidpy.Dataset object')
+        if not isinstance(dataset, sidpy.Dataset):
+            raise TypeError('Need a sidpy dataset for plotting')
+
+        if dataset.data_type.name not in ['SPECTRUM']:
+            raise TypeError('Need an sidpy.Dataset of data_type SPECTRUM for plotting a spectrum ')
+
+
+        fig_args = dict()
+
+        if fig is None:
+            self.fig = figure(x_axis_type="linear", plot_width=800, plot_height=400,
+                              tooltips=[("index", "$index"),("(x,y)", "($x, $y)")],
+                              tools="pan,wheel_zoom,box_zoom, reset, hover")
+            self.fig.add_tools(BoxSelectTool(dimensions="width"))
+        else:
+            self.fig = fig
+
+        self.dataset = dataset
+        self.selection = []
+        self.spectral_dims = []
+
+        for dim, axis in dataset._axes.items():
+            if axis.dimension_type.name == 'SPECTRAL':
+                self.selection.append(slice(None))
+                self.spectral_dims.append(dim)
+            else:
+                if spectrum_number <= dataset.shape[dim]:
+                    self.selection.append(slice(spectrum_number, spectrum_number + 1))
+                else:
+                    self.spectrum_number = 0
+                    self.selection.append(slice(0, 1))
+
+
+        self.dim = self.dataset._axes[self.spectral_dims[0]]
+        self.palette = Spectral11
+        # first line is dataset
+        self.spectrum = ColumnDataSource(data=dict(x=dataset.dim_0, y=np.array(dataset)))
+        self.fig.scatter('x', 'y', color='blue', size=1, alpha=0., source=self.spectrum,
+                  selection_color="firebrick", selection_alpha=0.)
+        self.fig.line(x='x', y='y', source=self.spectrum, legend_label=dataset.title, color=self.palette[0], line_width=2)
+        # add other lines if available
+        if 'add2plot' in dataset.metadata:
+            data = dataset.metadata['add2plot']
+            for key, line in data.items():
+                self.fig.line(dataset.dim_0.values, line['data'], legend_label=line['legend'], color=self.palette[key],
+                       line_width=2)
+        self.fig.legend.click_policy = "hide"
+        self.fig.xaxis.axis_label = dataset.labels[0]
+        self.fig.yaxis.axis_label = dataset.data_descriptor
+        self.fig.title.text = dataset.title
+
+        my_span = Span(location=0, dimension='width', line_color='gray', line_width=1)
+        self.fig.add_layout(my_span)
+        self.dataset.selected_range = []
+
+        callback = CustomJS(args=dict(s1=self.spectrum), code="""
+                var inds = s1.selected.indices;
+                if (inds.length == 0)
+                    return;
+                var kernel = IPython.notebook.kernel;
+                kernel.execute("dataset.selected_range = " + [inds[0], inds[inds.length-1]]);""")
+
+
+
+        self.spectrum.selected.js_on_change('indices', callback)
+
+

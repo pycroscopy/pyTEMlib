@@ -167,6 +167,7 @@ class EELSDialog(QtWidgets.QDialog):
 
         start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
         end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
+        end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
 
         self.edges[str(index)] = {'Z': zz, 'symmetry': key, 'element': eels.elements[zz],
                                   'onset': x_section[key]['onset'], 'end_exclude': end_exclude,
