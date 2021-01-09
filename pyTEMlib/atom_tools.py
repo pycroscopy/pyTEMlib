@@ -154,16 +154,12 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     gauss_amplitude = []
     gauss_intensity = []
     if QT_available:
-        progress = QtWidgets.QProgressDialog("Refine Atom Positions", "Abort", 0, len(atoms))
-        progress.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-        # progress.setWindowModality(Qt.WindowModal);
-        progress.show()
+        progress = ProgressDialog("Refine Atom Positions")
 
     done = 0
     for i in range(len(atoms)):
         if QT_available:
-            progress.setValue(i)
-            progress.processEvents()
+            progress.set_value(i)
         else:
             if done < int((i + 1) / len(atoms) * 50):
                 done = int((i + 1) / len(atoms) * 50)
@@ -201,7 +197,7 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
             if (x - rr) < 0 or y - rr < 0 or x + rr + 1 > image.shape[0] or y + rr + 1 > image.shape[1]:
                 pass
             else:
-                [pout, _] = optimization.leastsq(gauss_difference, guess, args=(area, area))
+                [pout, _] = optimization.leastsq(gauss_difference, guess, args=(area))
 
             if (abs(pout[1]) > max_dist) or (abs(pout[2]) > max_dist):
                 pout = [0, 0, 0, 0]
@@ -216,7 +212,8 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
             gauss_intensity.append((gauss * mask).sum())
         gauss_width.append(pout[0])
         gauss_amplitude.append(pout[3])
-
+    if QT_available:
+        progress.close()
     sym['inside'] = position
     sym['intensity_area'] = intensities
     sym['maximum_area'] = maximum_area

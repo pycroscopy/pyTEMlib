@@ -1097,7 +1097,8 @@ def kinematic_scattering(tags, verbose=False):
         U0 += feq(a, 0)*0.023933754
 
     tags['volume'] = np.linalg.det(tags['unit_cell'])
-    volume = tags['volume']*1000,  # Needs to be in Angstrom for form factors
+    volume  = tags['volume']*1000  # Needs to be in Angstrom for form factors
+
     AngstromConversion = 1.0e10  # So [1A (in m)] * AngstromConversion = 1
     NanometerConversion = 1.0e9 
 
