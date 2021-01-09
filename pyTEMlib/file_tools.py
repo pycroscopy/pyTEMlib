@@ -340,26 +340,21 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
     basename, extension = os.path.splitext(file_name)
 
     if extension == '.hf5':
-        h5_file = h5py.File(filename, mode='a')
 
-        h5_group = get_start_channel(h5_file)
-        print()
-        if 'nDim_Data' in h5_group:
-            h5_dataset = h5_group['nDim_Data']
+        reader = pyNSID.NSIDReader(filename)
+        datasets = reader.read()
+        if len(datasets)<1:
+            print('no hdf5 dataset found in file')
+            return
+        else:
+            return datasets[0]
 
-            h5_dataset.attrs['title'] = basename
-            reader = pyNSID.NSIDReader(h5_dataset)
-            dataset = reader.read_h5py_dataset(h5_dataset)
-            dataset.h5_file = h5_file
-        elif 'Raw_Data' in h5_group:
+        """ should go to no dataset found
+        if 'Raw_Data' in h5_group:
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
-        else:
-            reader = pyNSID.NSIDReader(h5_file['Measurement_000/Channel_000'])
-            dataset = reader.read()[-1]
-            dataset.h5_file = h5_file
-        dataset.h5_dataset = h5_file[dataset.title]
-        return dataset
+        """
+
 
     elif extension in ['.dm3', '.dm4', '.ndata', '.h5']:
 
@@ -505,6 +500,42 @@ def log_results(h5_group, dataset=None, attributes=None):
             if key not in log_group:
                 log_group[key] = item
     return log_group
+
+
+###
+# Crystal Structure Read and Write
+###
+def h5_add_crystal_structure(h5_file, crystal_tags):
+    structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
+
+    structure_group['unit_cell'] = crystal_tags['unit_cell']
+    structure_group['relative_positions'] = crystal_tags['base']
+    structure_group['title'] = str(crystal_tags['crystal_name'])
+    structure_group['_' + crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
+    structure_group['elements'] = np.array(crystal_tags['elements'], dtype='S')
+    if 'zone_axis' in structure_group:
+        structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
+    else:
+        structure_group['zone_axis'] = np.array([1., 0., 0.], dtype=float)
+    h5_file.flush()
+    return structure_group
+
+
+def h5_get_crystal_structure(structure_group):
+    crystal_tags = {}
+    crystal_tags['unit_cell'] = structure_group['unit_cell'][()]
+    crystal_tags['base'] = structure_group['relative_positions'][()]
+    crystal_tags['crystal_name'] = structure_group['title'][()]
+    if '2D' in structure_group:
+        crystal_tags['2D'] = structure_group['2D'][()]
+    elements = structure_group['elements'][()]
+    crystal_tags['elements'] = []
+    for e in elements:
+        crystal_tags['elements'].append(e.astype(str, copy=False))
+
+    if 'zone_axis' in structure_group:
+        crystal_tags['zone_axis'] = structure_group['zone_axis'][()]
+    return crystal_tags
 
 
 ###############################################

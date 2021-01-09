@@ -23,6 +23,7 @@ all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', '
 first_close_edges = ['K1', 'L3', 'M5', 'M3', 'N5', 'N3']
 
 CompositionDialog = eels_dialog.EELSDialog
+CurveVisualizer = eels_dialog.CurveVisualizer
 InfoDialog = info_dialog.InfoDialog
 PeakFitDialog = peak_dialog.PeakFitDialog
 
@@ -306,7 +307,7 @@ class EnergySelector(QtWidgets.QDialog):
         self.accept()
 
     def plot(self):
-        if self.dataset.data_type == sidpy.DataTypes.SPECTRAL_IMAGE:
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             self.spectrum = self.dataset.view.get_spectrum()
         else:
             self.spectrum = np.array(self.dataset)

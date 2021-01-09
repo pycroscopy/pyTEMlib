@@ -209,7 +209,7 @@ def diffractogram_spots(dset, spot_threshold):
     rec_scale = np.array([get_slope(dset.u.values), get_slope(dset.v.values), 1])
 
     # spot detection ( for future referece there is no symmetry assumed here)
-    data = np.array(dset).T
+    data = np.array(np.log(1+np.abs(dset))).T
     data = (data - data.min())
     data = data/data.max()
     # some images are strange and blob_log does not work on the power spectrum
@@ -296,16 +296,18 @@ def rotational_symmetry_diffractogram(spots):
 #####################################################
 
 
-def complete_registration(main_dataset):
+def complete_registration(main_dataset, storage_channel=None):
     """Rigid and then non-rigid (demon) registration"""
     rigid_registered_dataset = rigid_registration(main_dataset)
-    current_channel = main_dataset.h5_dataset.parent.parent
-    registration_channel = log_results(current_channel, rigid_registered_dataset)
+    if storage_channel is None:
+        storage_channel = main_dataset.h5_dataset.parent.parent
+
+    registration_channel = log_results(storage_channel, rigid_registered_dataset)
 
     print('Non-Rigid_Registration')
 
     non_rigid_registered = demon_registration(rigid_registered_dataset)
-    registration_channel = log_results(current_channel, non_rigid_registered)
+    registration_channel = log_results(storage_channel, non_rigid_registered)
 
     return non_rigid_registered, rigid_registered_dataset
 
@@ -394,9 +396,10 @@ def demon_registration(dataset, verbose=False):
     demon_registered.source = dataset.title
 
     demon_registered.metadata = {'analysis': 'non-rigid demon registration'}
-    if 'boundaries' in dataset.metadata:
-        demon_registered.metadata['boundaries'] = dataset.metadata['boundaries']
-
+    if 'input_crop' in dataset.metadata:
+        demon_registered.metadata['input_crop'] = dataset.metadata['input_crop']
+    if 'input_shape' in dataset.metadata:
+        demon_registered.metadata['input_shape'] = dataset.metadata['input_shape']
     return demon_registered
 
 
@@ -460,12 +463,13 @@ def rigid_registration(dataset):
         progress.close()
     rig_reg, drift = rig_reg_drift(dataset, relative_drift)
 
-    crop_reg, boundaries = crop_image_stack(rig_reg, drift)
+    crop_reg, input_crop = crop_image_stack(rig_reg, drift)
 
     rigid_registered = dataset.like_data(crop_reg)
     rigid_registered.title = 'Rigid Registration'
     rigid_registered.source = dataset.title
-    rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift, 'boundaries': boundaries}
+    rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
+                                 'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
 
     return rigid_registered
 
@@ -837,7 +841,7 @@ def align_crystal_reflections(spots, crystals):
 
 
 # Deconvolution
-def decon_lr(o_image, probe, tags, verbose=False):
+def decon_lr(o_image, probe,  verbose=False):
     """
     # This task generates a restored image from an input image and point spread function (PSF) using
     # the algorithm developed independently by Lucy (1974, Astron. J. 79, 745) and Richardson
@@ -881,23 +885,17 @@ def decon_lr(o_image, probe, tags, verbose=False):
 
     response_ft = fftpack.fft2(probe_c)
 
-    if 'ImageScanned' in tags:
-        ab = tags['ImageScanned']
-    elif 'aberrations' in tags:
-        ab = tags['aberrations']
-    if 'convAngle' not in ab:
-        ab['convAngle'] = 30
-    ap_angle = ab['convAngle'] / 1000.0
+    ap_angle = o_image.metadata['experiment']['convergence_angle'] / 1000.0  # now in rad
 
-    e0 = float(ab['EHT'])
+    e0 = float(o_image.metadata['experiment']['acceleration_voltage'])
 
     wl = get_wavelength(e0)
-    ab['wavelength'] = wl
+    o_image.metadata['experiment']['wavelength'] = wl
 
     over_d = 2 * ap_angle / wl
 
-    dx = tags['pixel_size']
-    dk = 1.0 / float(tags['fov'])
+    dx = o_image.x[1]-o_image.x[0]
+    dk = 1.0 / float( o_image.x[-1])  # last value of x axis is field of view
     screen_width = 1 / dx
 
     aperture = np.ones(o_image.shape, dtype=np.complex64)
@@ -913,7 +911,7 @@ def decon_lr(o_image, probe, tags, verbose=False):
 
     tp1 = t_xv ** 2 + t_yv ** 2 >= app_ratio ** 2
     aperture[tp1.T] = 0.
-    print(app_ratio, screen_width, dk)
+    # print(app_ratio, screen_width, dk)
 
     if QT_available:
         progress = ProgressDialog("Lucy-Richardson", 100)
@@ -951,14 +949,15 @@ def decon_lr(o_image, probe, tags, verbose=False):
                 count = 0
             progress.set_value(count)
 
-        if i > 1000:
+        if i > 500:
             dest = 0.0
             print('terminate')
     if QT_available:
         progress.close()
     print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  Iterations')
     est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
-    # plt.imshow(np.real(np.log10(np.abs(fftpack.fftshift(fftpack.fft2(est)))+1)+aperture), origin='lower',)
-    # plt.show()
     print(est2.shape)
-    return est2
+    out_dataset =  o_image.like_data(est2)
+    out_dataset.title = 'Lucy Richardson deconvolution'
+    out_dataset.data_type = 'image'
+    return out_dataset

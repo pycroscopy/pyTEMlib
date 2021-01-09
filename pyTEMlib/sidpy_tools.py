@@ -9,7 +9,7 @@ from IPython.display import display
 
 
 class ChooseDataset(object):
-    def __init__(self, input_object):
+    def __init__(self, input_object, show_dialog=True):
         if isinstance(input_object, sidpy.Dataset):
             if isinstance(input_object.h5_dataset, h5py.Dataset):
                 self.current_channel = input_object.h5_dataset.parent
@@ -23,7 +23,7 @@ class ChooseDataset(object):
         self.dataset_list = []
         self.dataset_type = None
         self.dataset = None
-        self.reader = pyNSID.NSIDReader(self.current_channel)
+        self.reader = pyNSID.NSIDReader(self.current_channel.file.filename)
 
         self.get_dataset_list()
         self.select_image = widgets.Dropdown(options=self.dataset_names,
@@ -31,7 +31,8 @@ class ChooseDataset(object):
                                              description='Select image:',
                                              disabled=False,
                                              button_style='')
-        display(self.select_image)
+        if show_dialog:
+            display(self.select_image)
 
         self.select_image.observe(self.set_dataset, names='value')
         self.set_dataset(0)

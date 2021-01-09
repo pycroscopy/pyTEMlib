@@ -7,6 +7,19 @@ from bokeh.models import CustomJS, Slider, Span
 from bokeh.models import LinearColorMapper, ColorBar, ColumnDataSource, BoxSelectTool
 from bokeh.palettes import Spectral11
 
+from pyTEMlib.sidpy_tools import *
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+# from matplotlib.widgets import Slider, Button
+import matplotlib.patches as patches
+# import matplotlib.animation as animation
+
+if sys.version_info.major == 3:
+    unicode = str
+
+default_cmap = plt.cm.viridis
+
 
 def plot(dataset, palette='Viridis256'):
     if dataset.data_type.name == 'IMAGE_STACK':
@@ -177,77 +190,191 @@ def plot_spectrum(dataset, selected_range, palette=Spectral11):
         kernel.execute("selected_range = " + [inds[0], inds[inds.length-1]]);""")
 
     spectrum.selected.js_on_change('indices', callback)
-    return p, selected_range
+    return p
 
-class CurveVisualizer(object):
-    def __init__(self, dataset, spectrum_number=None, fig=None, **kwargs):
 
-        if not isinstance(dataset, sidpy.Dataset):
+class CurveVisualizer2(object):
+    def __init__(self, dset, spectrum_number=None, figure=None, axis=None, leg=None, **kwargs):
+        if not isinstance(dset, sidpy.Dataset):
             raise TypeError('dset should be a sidpy.Dataset object')
-        if not isinstance(dataset, sidpy.Dataset):
-            raise TypeError('Need a sidpy dataset for plotting')
-
-        if dataset.data_type.name not in ['SPECTRUM']:
-            raise TypeError('Need an sidpy.Dataset of data_type SPECTRUM for plotting a spectrum ')
-
 
         fig_args = dict()
+        temp = kwargs.pop('figsize', None)
+        if temp is not None:
+            fig_args['figsize'] = temp
 
-        if fig is None:
-            self.fig = figure(x_axis_type="linear", plot_width=800, plot_height=400,
-                              tooltips=[("index", "$index"),("(x,y)", "($x, $y)")],
-                              tools="pan,wheel_zoom,box_zoom, reset, hover")
-            self.fig.add_tools(BoxSelectTool(dimensions="width"))
+        if figure is None:
+            self.fig = plt.figure(**fig_args)
         else:
-            self.fig = fig
+            self.fig = figure
 
-        self.dataset = dataset
+        self.dset = dset
         self.selection = []
-        self.spectral_dims = []
+        self.spectral_dims = get_dimensions_by_type('spectral', self.dset)
 
-        for dim, axis in dataset._axes.items():
-            if axis.dimension_type.name == 'SPECTRAL':
-                self.selection.append(slice(None))
-                self.spectral_dims.append(dim)
-            else:
-                if spectrum_number <= dataset.shape[dim]:
-                    self.selection.append(slice(spectrum_number, spectrum_number + 1))
+        if self.dset.data_type.name=='SPECTRAL_IMAGE':
+            image_dims = get_image_dims(self.dset)
+
+            selection = []
+
+            for dim, axis in self.dset._axes.items():
+                # print(dim, axis.dimension_type)
+                if axis.dimension_type.name == 'SPATIAL':
+                    if dim == self.image_dims[0]:
+                        selection.append(slice(x, x + self.bin_x))
+                    else:
+                        selection.append(slice(y, y + self.bin_y))
+
+                elif axis.dimension_type.name == 'SPECTRAL':
+                    selection.append(slice(None))
                 else:
-                    self.spectrum_number = 0
-                    self.selection.append(slice(0, 1))
+                    selection.append(slice(0, 1))
+
+            self.spectrum = np.squeeze(np.sum(self.dset[tuple(selection)], axis=tuple(image_dims)))
+        else:
+            self.spectrum = self.dset
 
 
-        self.dim = self.dataset._axes[self.spectral_dims[0]]
-        self.palette = Spectral11
-        # first line is dataset
-        self.spectrum = ColumnDataSource(data=dict(x=dataset.dim_0, y=np.array(dataset)))
-        self.fig.scatter('x', 'y', color='blue', size=1, alpha=0., source=self.spectrum,
-                  selection_color="firebrick", selection_alpha=0.)
-        self.fig.line(x='x', y='y', source=self.spectrum, legend_label=dataset.title, color=self.palette[0], line_width=2)
-        # add other lines if available
-        if 'add2plot' in dataset.metadata:
-            data = dataset.metadata['add2plot']
+
+        print(self.spectral_dims[0])
+
+        self.dim = self.dset._axes[self.spectral_dims[0][0]]
+
+        if sidpy.hdf.dtype_utils.is_complex_dtype(dset.dtype):
+            # Plot real and image
+            fig, axes = plt.subplots(nrows=2, **fig_args)
+
+            axes[0].plot(self.dim.values, np.abs(np.squeeze(self.dset)), **kwargs)
+
+            axes[0].set_title(self.dset.title + '\n(Magnitude)', pad=15)
+            axes[0].set_xlabel(self.dset.labels[self.dim])
+            axes[0].set_ylabel(self.dset.data_descriptor)
+            axes[0].ticklabel_format(style='sci', scilimits=(-2, 3))
+
+            axes[1].set_title(self.dset.title + '\n(Phase)', pad=15)
+            axes[1].set_ylabel('Phase (rad)')
+            axes[1].set_xlabel(self.dset.labels[self.spectral_dims[0]])  # + x_suffix)
+            axes[1].ticklabel_format(style='sci', scilimits=(-2, 3))
+
+            fig.tight_layout()
+
+        else:
+            if axis is None:
+                self.axis = self.fig.add_subplot(1, 1, 1, **fig_args)
+            else:
+                self.axis = axis
+            self.axis.clear()
+            line1, = self.axis.plot(self.dim.values, self.dset, **kwargs)
+            lines = [line1]
+
+            if 'add2plot' in dset.metadata:
+                data = dset.metadata['add2plot']
+
+                for key, line in data.items():
+                    line_add, = self.axis.plot(self.dim.values,  line['data'], label=line['legend'])
+                    lines.append(line_add)
+                # we will set up a dict mapping legend line to orig line, and enable
+                # picking on the legend line
+                lined = dict()
+
+                legend = self.axis.legend(loc='upper right', fancybox=True, shadow=True)
+
+                legend.get_frame().set_alpha(0.4)
+                for legline, origline in zip(legend.get_lines(), lines):
+                    legline.set_pickradius (5)  # 5 pts tolerance
+                    lined[legline] = origline
+
+                self.fig.canvas.mpl_connect('pick_event', self.onpick)
+                print('here')
+
+
+            self.axis.set_xlabel(self.dset.labels[self.spectral_dims[0][0]])
+            self.axis.set_ylabel(self.dset.data_descriptor)
+            self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
+            self.fig.canvas.draw_idle()
+
+    def onpick(self, event):
+        print('here')
+        self.axis.set_title(self.dset.title, pad=15)
+        # on the pick event, find the orig line corresponding to the
+        # legend proxy line, and toggle the visibility
+        legline = event.artist
+        origline = self.lined[legline]
+        print(origline)
+        vis = not origline.get_visible()
+        origline.set_visible(vis)
+        # Change the alpha on the line in the legend so we can see what lines
+        # have been toggled
+        if vis:
+            legline.set_alpha(1.0)
+        else:
+            legline.set_alpha(0.2)
+        self.fig.canvas.draw()
+
+class CurveVisualizer(object):
+    """Plots a sidpy.Dataset with spectral
+
+    """
+    def __init__(self, dset, spectrum_number=None, axis=None, leg=None, **kwargs):
+        if not isinstance(dset, sidpy.Dataset):
+            raise TypeError('dset should be a sidpy.Dataset object')
+        if axis == None:
+            self.fig = plt.figure()
+            self.axis = self.fig.add_subplot(1, 1, 1)
+        else:
+            self.axis = axis
+            self.fig = axis.figure
+
+        self.dset = dset
+        self.selection = []
+        [self.spec_dim, self.energy_scale] = get_dimensions_by_type('spectral', self.dset)[0]
+
+        self.lined = dict()
+        self.plot(**kwargs)
+
+    def plot(self, **kwargs):
+        line1, = self.axis.plot(self.energy_scale.values, self.dset, label='spectrum', **kwargs)
+        lines = [line1]
+        if 'add2plot' in self.dset.metadata:
+            data = self.dset.metadata['add2plot']
             for key, line in data.items():
-                self.fig.line(dataset.dim_0.values, line['data'], legend_label=line['legend'], color=self.palette[key],
-                       line_width=2)
-        self.fig.legend.click_policy = "hide"
-        self.fig.xaxis.axis_label = dataset.labels[0]
-        self.fig.yaxis.axis_label = dataset.data_descriptor
-        self.fig.title.text = dataset.title
+                line_add, = self.axis.plot(self.energy_scale.values,  line['data'], label=line['legend'])
+                lines.append(line_add)
 
-        my_span = Span(location=0, dimension='width', line_color='gray', line_width=1)
-        self.fig.add_layout(my_span)
-        self.dataset.selected_range = []
+            legend = self.axis.legend(loc='upper right', fancybox=True, shadow=True)
+            legend.get_frame().set_alpha(0.4)
 
-        callback = CustomJS(args=dict(s1=self.spectrum), code="""
-                var inds = s1.selected.indices;
-                if (inds.length == 0)
-                    return;
-                var kernel = IPython.notebook.kernel;
-                kernel.execute("dataset.selected_range = " + [inds[0], inds[inds.length-1]]);""")
+            for legline, origline in zip(legend.get_lines(), lines):
+                legline.set_picker(True)
+                legline.set_pickradius(5)  # 5 pts tolerance
+                self.lined[legline] = origline
+            self.fig.canvas.mpl_connect('pick_event', self.onpick)
 
+        self.axis.axhline(0, color='gray', alpha=0.6)
+        self.axis.set_xlabel(self.dset.labels[0])
+        self.axis.set_ylabel(self.dset.data_descriptor)
+        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
+        self.fig.canvas.draw_idle()
 
+    def update(self, **kwargs):
+        x_limit = self.axis.get_xlim()
+        y_limit = self.axis.get_ylim()
+        self.axis.clear()
+        self.plot(**kwargs)
+        self.axis.set_xlim(x_limit)
+        self.axis.set_ylim(y_limit)
 
-        self.spectrum.selected.js_on_change('indices', callback)
-
-
+    def onpick(self, event):
+        # on the pick event, find the orig line corresponding to the
+        # legend proxy line, and toggle the visibility
+        legline = event.artist
+        origline = self.lined[legline]
+        vis = not origline.get_visible()
+        origline.set_visible(vis)
+        # Change the alpha on the line in the legend so we can see what lines
+        # have been toggled
+        if vis:
+            legline.set_alpha(1.0)
+        else:
+            legline.set_alpha(0.2)
+        self.fig.canvas.draw()

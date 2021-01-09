@@ -5,7 +5,9 @@ import numpy as np
 
 from pyTEMlib import eels_tools as eels
 from pyTEMlib import interactive_eels
+import matplotlib.pylab as plt
 import matplotlib.patches as patches
+
 from pyTEMlib import file_tools as ft
 import sidpy
 
@@ -40,7 +42,7 @@ class EELSDialog(QtWidgets.QDialog):
         self.energy_scale = np.array([])
         self.model = np.array([])
         self.edges = {}
-        self.axis = None
+
         self.show_regions = False
         self.show()
 
@@ -61,10 +63,12 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.dataset.plot()
 
+
         if hasattr(self.dataset.view, 'axes'):
             self.axis = self.dataset.view.axes[-1]
         elif hasattr(self.dataset.view, 'axis'):
             self.axis = self.dataset.view.axis
+        self.spectrum_plot = CurveVisualizer(self.dataset, axis=self.axis)
         self.figure = self.axis.figure
         self.cid = self.figure.canvas.mpl_connect('draw_event', self.plot)
 
@@ -302,12 +306,38 @@ class EELSDialog(QtWidgets.QDialog):
         y_limit = self.axis.get_ylim()
         self.axis.clear()
 
-        self.axis.plot(self.energy_scale, spectrum, label='spectrum')
+        line1, = self.axis.plot(self.energy_scale, spectrum, label='spectrum')
+        lines = [line1]
+
+        def onpick(event):
+            # on the pick event, find the orig line corresponding to the
+            # legend proxy line, and toggle the visibility
+            legline = event.artist
+            origline = lined[legline]
+            vis = not origline.get_visible()
+            origline.set_visible(vis)
+            # Change the alpha on the line in the legend so we can see what lines
+            # have been toggled
+            if vis:
+                legline.set_alpha(1.0)
+            else:
+                legline.set_alpha(0.2)
+            self.figure.canvas.draw()
+
         if len(self.model) > 1:
-            self.axis.plot(self.energy_scale, self.model, label='model')
-            self.axis.plot(self.energy_scale, spectrum - self.model, label='difference')
-            self.axis.plot(self.energy_scale, (spectrum - self.model) / np.sqrt(spectrum), label='Poisson')
-            self.axis.legend()
+            line2, = self.axis.plot(self.energy_scale, self.model, label='model')
+            line3, = self.axis.plot(self.energy_scale, spectrum - self.model, label='difference')
+            line4, = self.axis.plot(self.energy_scale, (spectrum - self.model) / np.sqrt(spectrum), label='Poisson')
+            lines = [line1, line2, line3, line4]
+            lined = dict()
+
+            legend =  self.axis.legend(loc='upper right', fancybox=True, shadow=True)
+
+            legend.get_frame().set_alpha(0.4)
+            for legline, origline in zip(legend.get_lines(), lines):
+                legline.set_picker(5)  # 5 pts tolerance
+                lined[legline] = origline
+            self.figure.canvas.mpl_connect('pick_event', onpick)
         self.axis.set_xlim(x_limit)
         self.axis.set_ylim(y_limit)
 
@@ -316,6 +346,8 @@ class EELSDialog(QtWidgets.QDialog):
         if self.show_regions:
             self.plot_regions()
         self.figure.canvas.draw_idle()
+
+
 
     def plot_regions(self):
         y_min, y_max = self.axis.get_ylim()
@@ -487,3 +519,71 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.ui.do_all_button.clicked.connect(self.do_all_button_click)
         self.ui.do_fit_button.clicked.connect(self.do_fit_button_click)
+
+class CurveVisualizer(object):
+    """Plots a sidpy.Dataset with spectral
+
+    """
+    def __init__(self, dset, spectrum_number=None, axis=None, leg=None, **kwargs):
+        if not isinstance(dset, sidpy.Dataset):
+            raise TypeError('dset should be a sidpy.Dataset object')
+        if axis == None:
+            self.fig = plt.figure()
+            self.axis = self.fig.add_subplot(1, 1, 1)
+        else:
+            self.axis = axis
+            self.fig = axis.figure
+
+        self.dset = dset
+        self.selection = []
+        [self.spec_dim, self.energy_scale] = ft.get_dimensions_by_type('spectral', self.dset)[0]
+
+        self.lined = dict()
+        self.plot(**kwargs)
+
+    def plot(self, **kwargs):
+        line1, = self.axis.plot(self.energy_scale.values, self.dset, label='spectrum', **kwargs)
+        lines = [line1]
+        if 'add2plot' in self.dset.metadata:
+            data = self.dset.metadata['add2plot']
+            for key, line in data.items():
+                line_add, = self.axis.plot(self.energy_scale.values,  line['data'], label=line['legend'])
+                lines.append(line_add)
+
+            legend = self.axis.legend(loc='upper right', fancybox=True, shadow=True)
+            legend.get_frame().set_alpha(0.4)
+
+            for legline, origline in zip(legend.get_lines(), lines):
+                legline.set_picker(True)
+                legline.set_pickradius(5)  # 5 pts tolerance
+                self.lined[legline] = origline
+            self.fig.canvas.mpl_connect('pick_event', self.onpick)
+
+        self.axis.axhline(0, color='gray', alpha=0.6)
+        self.axis.set_xlabel(self.dset.labels[0])
+        self.axis.set_ylabel(self.dset.data_descriptor)
+        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
+        self.fig.canvas.draw_idle()
+
+    def update(self, **kwargs):
+        x_limit = self.axis.get_xlim()
+        y_limit = self.axis.get_ylim()
+        self.axis.clear()
+        self.plot(**kwargs)
+        self.axis.set_xlim(x_limit)
+        self.axis.set_ylim(y_limit)
+
+    def onpick(self, event):
+        # on the pick event, find the orig line corresponding to the
+        # legend proxy line, and toggle the visibility
+        legline = event.artist
+        origline = self.lined[legline]
+        vis = not origline.get_visible()
+        origline.set_visible(vis)
+        # Change the alpha on the line in the legend so we can see what lines
+        # have been toggled
+        if vis:
+            legline.set_alpha(1.0)
+        else:
+            legline.set_alpha(0.2)
+        self.fig.canvas.draw()
