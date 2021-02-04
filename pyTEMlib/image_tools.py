@@ -51,7 +51,7 @@ from sklearn.utils.extmath import randomized_svd
 _SimpleITK_present = True
 try:
     import SimpleITK as sITK
-except ModuleNotFoundError:
+except ImportError:
     _SimpleITK_present = False
 
 if not _SimpleITK_present:
@@ -119,9 +119,6 @@ def fourier_transform(dset):
     fft_transform = (np.fft.fftshift(np.fft.fft2(image)))
 
     image_dims = get_image_dims(dset)
-    extent = dset.get_extent(image_dims)
-    scale_x = 1 / abs(extent[1] - extent[0])
-    scale_y = 1 / abs(extent[2] - extent[3])
 
     units_x = '1/' + dset._axes[image_dims[0]].units
     units_y = '1/' + dset._axes[image_dims[1]].units
@@ -132,10 +129,12 @@ def fourier_transform(dset):
     fft_dset.data_type = 'IMAGE'
     fft_dset.source = dset.title
     fft_dset.modality = 'fft'
-    fft_dset.set_dimension(0, sidpy.Dimension((np.arange(fft_dset.shape[0]) - fft_dset.shape[0] / 2) * scale_x,
+
+    fft_dset.set_dimension(0, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(image.shape[0], d=get_slope(dset.x.values))),
+
                                               name='u', units=units_x, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
-    fft_dset.set_dimension(1, sidpy.Dimension((np.arange(fft_dset.shape[1]) - fft_dset.shape[1] / 2) * scale_y,
+    fft_dset.set_dimension(1, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(image.shape[1], d=get_slope(dset.y.values))),
                                               name='v', units=units_y, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
 
@@ -203,25 +202,24 @@ def diffractogram_spots(dset, spot_threshold):
             spots: numpy array with sorted position (x,y) and radius (r) of all spots
 
     """
-    # Needed for conversion from pixel to Reciprocal space
-    # we'll have to switch x- and y-coordinates due to the differences in numpy and matrix
-    center = np.array([int(dset.shape[0]/2.), int(dset.shape[1]/2.), 1])
-    rec_scale = np.array([get_slope(dset.u.values), get_slope(dset.v.values), 1])
+    #
 
-    # spot detection ( for future referece there is no symmetry assumed here)
-    data = np.array(np.log(1+np.abs(dset))).T
+# spot detection (for future reference there is no symmetry assumed here)
+    data = np.array(np.log(1+np.abs(dset)))
     data = (data - data.min())
     data = data/data.max()
     # some images are strange and blob_log does not work on the power spectrum
     try:
-        spots_random = (blob_log(data, max_sigma=5, threshold=spot_threshold) - center) * rec_scale
+        spots_random = blob_log(data, max_sigma=5, threshold=spot_threshold)
     except ValueError:
-        spots_random = (peak_local_max(np.array(data.T), min_distance=3, threshold_rel=spot_threshold) - center[:2]) \
-                       * rec_scale
+        spots_random = peak_local_max(np.array(data.T), min_distance=3, threshold_rel=spot_threshold)
         spots_random = np.hstack(spots_random, np.zeros((spots_random.shape[0], 1)))
 
     print(f'Found {spots_random.shape[0]} reflections')
 
+    # Needed for conversion from pixel to Reciprocal space
+    rec_scale = np.array([get_slope(dset.u.values), get_slope(dset.v.values)])
+    spots_random[:, :2] = spots_random[:, :2]*rec_scale+[dset.u.values[0], dset.v.values[0]]
     # sort reflections
     spots_random[:, 2] = np.linalg.norm(spots_random[:, 0:2], axis=1)
     spots_index = np.argsort(spots_random[:, 2])
@@ -705,6 +703,14 @@ def rebin(im, binning=2):
 
 
 def cart2pol(points):
+    """Cartesian to polar coordinate conversion
+
+    :param points: points to be converted
+    :type points: numpy  array
+
+    :returns: distance and angle
+    :rtype: numpy arrays
+    """
     rho = np.linalg.norm(points[:, 0:2], axis=1)
     phi = np.arctan2(points[:, 1], points[:, 0])
     return rho, phi
@@ -809,7 +815,7 @@ def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
         return np.sqrt((xdata * dgx) ** 2 + (ydata * dgy) ** 2) - dist_reference.min()
 
     x0 = [1.001, 0.999]
-    dg, sig = optimization.leastsq(func, x0, args=(closest_exp_reflections[:, 0], closest_exp_reflections[:, 1]))
+    [dg, sig] = optimization.leastsq(func, x0, args=(closest_exp_reflections[:, 0], closest_exp_reflections[:, 1]))
     return dg
 
 

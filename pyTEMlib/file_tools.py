@@ -300,6 +300,60 @@ def openfile_dialog(file_types=None):  # , multiple_files=False):
     return filename
 
 
+def save_dataset(dataset, filename=None,  h5_group=None):
+    """Saves a dataset to a file in pyNSID format
+    Parameters
+    ----------
+    dataset: sidpy.Dataset
+        the data
+    filename: str
+        name of file to be opened, if filename is None, a QT file dialog will try to open
+    h5_group: hd5py.Group
+        not used yet
+
+    """
+    if filename is None:
+        if QT_available:
+            get_qt_app()
+            filename = savefile_dialog()
+        else:
+            raise TypeError('filename must be provided if QT is not installed')
+    h5_filename = get_h5_filename(filename)
+    h5_file = h5py.File(h5_filename, mode='a')
+    path, file_name = os.path.split(filename)
+    basename, _ = os.path.splitext(file_name)
+
+    if h5_group is None:
+        if 'Measurement_000' in h5_file:
+            h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Measurement_')
+        else:
+            h5_group = h5_file.create_group('Measurement_000')
+
+        if 'Channel_000' in h5_group:
+            h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
+        else:
+            h5_group = h5_group.create_group('Channel_000')
+
+    elif isinstance(h5_group, str):
+        if h5_group not in h5_file:
+            h5_group = h5_file.create_group(h5_group)
+        else:
+
+            if h5_group[-1] == '/':
+                h5_group = h5_group[:-1]
+
+            channel = h5_group.split('/')[-1]
+            h5_group = h5_group[:-len(channel)]
+            h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
+    else:
+        raise ValueError('h5_group needs to be string or None')
+    dataset.original_metadata['original_title']= dataset.title
+    dataset.title = basename
+    h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, h5_group)
+    dataset.h5_dataset = h5_dataset
+    return h5_dataset
+
+
 def open_file(filename=None,  h5_group=None):  # save_file=False,
     """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
 
@@ -343,7 +397,7 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
 
         reader = pyNSID.NSIDReader(filename)
         datasets = reader.read()
-        if len(datasets)<1:
+        if len(datasets) < 1:
             print('no hdf5 dataset found in file')
             return
         else:
@@ -354,7 +408,6 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
         """
-
 
     elif extension in ['.dm3', '.dm4', '.ndata', '.h5']:
 
@@ -487,19 +540,54 @@ def log_results(h5_group, dataset=None, attributes=None):
     else:
         log_group = pyNSID.hdf_io.write_results(h5_group, dataset=dataset)
         if hasattr(dataset, 'meta_data'):
-            metadata = sidpy.dict_utils.flatten_dict(dataset.meta_data)
-            metadata_group = log_group.create_group('meta_data')
-            for key, item in metadata.items():
-                metadata_group.attrs[key] = item
             if 'analysis' in dataset.meta_data:
                 log_group['analysis'] = dataset.meta_data['analysis']
-
         dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
     if attributes is not None:
         for key, item in attributes.items():
             if key not in log_group:
                 log_group[key] = item
     return log_group
+
+
+def add_dataset(dataset, h5_group=None):
+    """Write data to hdf5 file
+
+    Parameters
+    ----------
+    dataset: sidpy.Dataset
+        data to write to file
+    h5_group: None, sidpy.Dataset, h5py.Group, h5py.Datset, h5py.File
+        identifier to which group the data are added (if None the dataset must have a valid h5_dataset)
+
+    Returns
+    -------
+    log_group: h5py.Dataset
+        reference the dataset has been written to. (is also stored in h5_dataset attribute of sipy.Dataset)
+    """
+
+    if h5_group is None:
+        if isinstance(dataset.h5_dataset, h5py.Dataset):
+            h5_group = dataset.h5_dataset.parent.parent.parent
+    if isinstance(h5_group, h5py.Dataset):
+        h5_group = h5_group.parent.parent.parent
+    elif isinstance(h5_group, sidpy.Dataset):
+        h5_group = h5_group.h5_dataset.parent.parent.parent
+    elif isinstance(h5_group, h5py.File):
+        h5_group = h5_group['Measurement_000']
+
+    if not isinstance(h5_group, h5py.Group):
+        raise TypeError('Need a valid indentifier for a hdf5 group to store data in')
+
+    log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
+    h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, log_group)
+
+    if hasattr(dataset, 'meta_data'):
+        if 'analysis' in dataset.meta_data:
+            log_group['analysis'] = dataset.meta_data['analysis']
+
+    dataset.h5_dataset = h5_dataset
+    return h5_dataset
 
 
 ###
@@ -513,7 +601,7 @@ def h5_add_crystal_structure(h5_file, crystal_tags):
     structure_group['title'] = str(crystal_tags['crystal_name'])
     structure_group['_' + crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
     structure_group['elements'] = np.array(crystal_tags['elements'], dtype='S')
-    if 'zone_axis' in structure_group:
+    if 'zone_axis' in crystal_tags:
         structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
     else:
         structure_group['zone_axis'] = np.array([1., 0., 0.], dtype=float)
@@ -522,10 +610,9 @@ def h5_add_crystal_structure(h5_file, crystal_tags):
 
 
 def h5_get_crystal_structure(structure_group):
-    crystal_tags = {}
-    crystal_tags['unit_cell'] = structure_group['unit_cell'][()]
-    crystal_tags['base'] = structure_group['relative_positions'][()]
-    crystal_tags['crystal_name'] = structure_group['title'][()]
+    crystal_tags = {'unit_cell': structure_group['unit_cell'][()],
+                    'base': structure_group['relative_positions'][()],
+                    'crystal_name': structure_group['title'][()]}
     if '2D' in structure_group:
         crystal_tags['2D'] = structure_group['2D'][()]
     elements = structure_group['elements'][()]
@@ -557,8 +644,8 @@ def read_old_h5group(current_channel):
     dim_dir = []
     if 'nDim_Data' in current_channel:
         h5_dataset = current_channel['nDim_Data']
-        reader = pyNSID.NSIDReader(h5_dataset)
-        dataset = reader.read_h5py_dataset(h5_dataset)
+        reader = pyNSID.NSIDReader(h5_dataset.file.filename)
+        dataset = reader.read(h5_dataset)
         dataset.h5_file = current_channel.file
         return dataset
     elif 'Raw_Data' in current_channel:
