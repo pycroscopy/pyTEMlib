@@ -60,11 +60,13 @@ else:
     print('spglib not installed; Symmetry functions of spglib disabled')
 
 
-def read_poscar():
+def read_poscar(file_name=None):
     """
     Open file dialog to select a POSCAR file from VASP
     """
-    file_name = ft.openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
+    if file_name is None:
+        file_name = ft.openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
+
     # use ase package to read file
     
     base = os.path.basename(file_name)
@@ -80,14 +82,14 @@ def read_poscar():
 # Some Structure Determination Routines
 
 
-def example():
+def example(verbose=True):
     """
     same as Zuo_fig_3_18
     """
-    return Zuo_fig_3_18()
+    return Zuo_fig_3_18(verbose=verbose)
 
 
-def Zuo_fig_3_18():
+def Zuo_fig_3_18(verbose=True):
     """
     Input for Figure 3.18 in Zuo and Spence \"Advanced TEM\", 2017
 
@@ -98,148 +100,152 @@ def Zuo_fig_3_18():
     """
     # INPUT
     # Create Silicon structure (Could be produced with Silicon routine)
-    print('Sample Input for Figure 3.18 in Zuo and Spence \"Advanced TEM\", 2017')
+    if verbose:
+        print('Sample Input for Figure 3.18 in Zuo and Spence \"Advanced TEM\", 2017')
     tags = {'crystal_name': 'Silicon'}
-    print('tags[\'crystal\'] = ', tags['crystal_name'])
+    if verbose:
+        print('tags[\'crystal\'] = ', tags['crystal_name'])
     a = 0.514  # nm
+
     tags['lattice_parameter_nm'] = a
-    print('tags[\'lattice_parameter_nm\'] =', tags['lattice_parameter_nm'])
+    if verbose:
+        print('tags[\'lattice_parameter_nm\'] =', tags['lattice_parameter_nm'])
     tags['unit_cell'] = [[a, 0, 0], [0, a, 0], [0, 0, a]]
-    print('tags[\'unit_cell\'] =', tags['unit_cell'])
+    if verbose:
+        print('tags[\'unit_cell\'] =', tags['unit_cell'])
     tags['elements'] = list(itertools.repeat('Si', 8))
-    print('tags[\'elements\'] =', tags['elements'])
+    if verbose:
+        print('tags[\'elements\'] =', tags['elements'])
     base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)]
     tags['base'] = np.array(base + (np.array(base) + (.25, .25, .25)).tolist())
-    print('tags[\'base\'] =', tags['base'])
+    if verbose:
+        print('tags[\'base\'] =', tags['base'])
 
     # Define Experimental Conditions
     tags['convergence_angle_mrad'] = 7
  
     tags['acceleration_voltage_V'] = 101.6*1000.0  # V
-    print('tags[\'acceleration_voltage_V\'] =', tags['acceleration_voltage_V'])
+    if verbose:
+        print('tags[\'acceleration_voltage_V\'] =', tags['acceleration_voltage_V'])
     
     tags['convergence_angle_mrad'] = 7.1  # mrad;  0 is parallel illumination
-    print('tags[\'convergence_angle_mrad\'] =', tags['convergence_angle_mrad'])
+    if verbose:
+        print('tags[\'convergence_angle_mrad\'] =', tags['convergence_angle_mrad'])
     
     tags['zone_hkl'] = np.array([-2, 2, 1])  # incident neares zone axis: defines Laue Zones!!!!
-    print('tags[\'zone_hkl\'] =', tags['zone_hkl'])
+    if verbose:
+        print('tags[\'zone_hkl\'] =', tags['zone_hkl'])
     tags['mistilt'] = np.array([0, 0, 0])  # mistilt in degrees
-    print('tags[\'mistilt\'] =', tags['mistilt'])
+    if verbose:
+        print('tags[\'mistilt\'] =', tags['mistilt'])
     
     # Define Simulation Parameters 
 
     tags['Sg_max'] = .2  # 1/nm  maximum allowed excitation error
-    print('tags[\'Sg_max\'] =', tags['Sg_max'])
+    if verbose:
+        print('tags[\'Sg_max\'] =', tags['Sg_max'])
     
     tags['hkl_max'] = 9   # Highest evaluated Miller indices
-    print('tags[\'hkl_max\'] =', tags['hkl_max'])
+    if verbose:
+        print('tags[\'hkl_max\'] =', tags['hkl_max'])
 
-    print('##################')
-    print('# Output Options #')
-    print('##################')
+        print('##################')
+        print('# Output Options #')
+        print('##################')
 
     # Output options
 
     tags['background'] = 'black'  # 'white'  'grey'
-    print('tags[\'background\'] =', tags['background'], '# \'white\',  \'grey\' ')
+    if verbose:
+        print('tags[\'background\'] =', tags['background'], '# \'white\',  \'grey\' ')
     tags['color map'] = 'plasma'
-    print('tags[\'color map\'] =', tags['color map'], '#,\'cubehelix\',\'Greys\',\'jet\' ')
+    if verbose:
+        print('tags[\'color map\'] =', tags['color map'], '#,\'cubehelix\',\'Greys\',\'jet\' ')
 
     tags['plot HOLZ'] = 1
-    print('tags[\'plot HOLZ\'] =', tags['plot HOLZ'])
+    if verbose:
+        print('tags[\'plot HOLZ\'] =', tags['plot HOLZ'])
     tags['plot HOLZ excess'] = 1
-    print('tags[\'plot HOLZ excess\'] =', tags['plot HOLZ excess'])
+    if verbose:
+        print('tags[\'plot HOLZ excess\'] =', tags['plot HOLZ excess'])
     tags['plot Kikuchi'] = 1
-    print('tags[\'plot Kikuchi\'] =', tags['plot Kikuchi'])
+    if verbose:
+        print('tags[\'plot Kikuchi\'] =', tags['plot Kikuchi'])
     tags['plot reflections'] = 1
-    print('tags[\'plot reflections\'] =', tags['plot reflections'])
+    if verbose:
+        print('tags[\'plot reflections\'] =', tags['plot reflections'])
     
     tags['label HOLZ'] = 0
-    print('tags[\'label HOLZ\'] =', tags['label HOLZ'])
+    if verbose:
+        print('tags[\'label HOLZ\'] =', tags['label HOLZ'])
     tags['label Kikuchi'] = 0
-    print('tags[\'label Kikuchi\'] =', tags['label Kikuchi'])
+    if verbose:
+        print('tags[\'label Kikuchi\'] =', tags['label Kikuchi'])
     tags['label reflections'] = 0
-    print('tags[\'label reflections\'] =', tags['label reflections'])
+    if verbose:
+        print('tags[\'label reflections\'] =', tags['label reflections'])
 
     tags['label color'] = 'black'
-    print('tags[\'label color\'] =', tags['label color'])
+    if verbose:
+        print('tags[\'label color\'] =', tags['label color'])
     tags['label size'] = 10
-    print('tags[\'label size\'] =', tags['label size'])
+    if verbose:
+        print('tags[\'label size\'] =', tags['label size'])
     
     tags['color Laue Zones'] = ['red',  'blue', 'green', 'blue', 'green']   # , 'green', 'red'] #for OLZ give a sequence
-    print('tags[\'color Laue Zones\'] =', tags['color Laue Zones'], ' #[\'red\', \'blue\', \'lightblue\']')
+    if verbose:
+        print('tags[\'color Laue Zones\'] =', tags['color Laue Zones'], ' #[\'red\', \'blue\', \'lightblue\']')
 
     tags['color Kikuchi'] = 'green'
-    print('tags[\'color Kikuchi\'] =', tags['color Kikuchi'])
+    if verbose:
+        print('tags[\'color Kikuchi\'] =', tags['color Kikuchi'])
     tags['linewidth HOLZ'] = -1  # -1: linewidth according to intensity (structure factor F^2
-    print('tags[\'linewidth HOLZ\'] =', tags['linewidth HOLZ'], '# -1: linewidth according to intensity '
+    if verbose:
+        print('tags[\'linewidth HOLZ\'] =', tags['linewidth HOLZ'], '# -1: linewidth according to intensity '
                                                                 '(structure factor F^2')
     tags['linewidth Kikuchi'] = -1  # -1: linewidth according to intensity (structure factor F^2
-    print('tags[\'linewidth Kikuchi\'] =', tags['linewidth Kikuchi'], '# -1: linewidth according to intensity '
+    if verbose:
+        print('tags[\'linewidth Kikuchi\'] =', tags['linewidth Kikuchi'], '# -1: linewidth according to intensity '
                                                                       '(structure factor F^2')
 
     tags['color reflections'] = 'intensity'  # 'Laue Zone'
-    print('tags[\'color reflections\'] =', tags['color reflections'], '#\'Laue Zone\' ')
+    if verbose:
+        print('tags[\'color reflections\'] =', tags['color reflections'], '#\'Laue Zone\' ')
     tags['color zero'] = 'white'  # 'None', 'white', 'blue'
-    print('tags[\'color zero\'] =', tags['color zero'], '#\'None\', \'white\', \'blue\' ')
+    if verbose:
+        print('tags[\'color zero\'] =', tags['color zero'], '#\'None\', \'white\', \'blue\' ')
     tags['color ring zero'] = 'None'  # 'Red' #'white' #, 'None'
-    print('tags[\'color ring zero\'] =', tags['color ring zero'], '#\'None\', \'white\', \'Red\' ')
+    if verbose:
+        print('tags[\'color ring zero\'] =', tags['color ring zero'], '#\'None\', \'white\', \'Red\' ')
 
-    print('########################')
-    print('# End of Example Input #')
-    print('########################\n\n')
+        print('########################')
+        print('# End of Example Input #')
+        print('########################\n\n')
     
     return tags
 
-
-def h5_add_crystal_structure(h5_file, crystal_tags):
-    """
-    Adds the basic crystal information to a pyNSID style hdf5 file.
-
-    example usage:
-    >> crystal_tags = ks.structure_by_name(h5_file, 'Graphite')
-    >> ks.add_crystal_structure(h5_file, crystal_tags)
-    """
-    structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure')
-    
-    structure_group['unit_cell'] = crystal_tags['unit_cell']
-    structure_group['relative_positions'] = crystal_tags['base']
-    structure_group['title'] = str(crystal_tags['crystal_name'])
-    structure_group['_'+crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
-    structure_group['elements'] = np.array(crystal_tags['elements'], dtype='S')
-    if 'zone_axis' in structure_group:
-        structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
-    else:
-        structure_group['zone_axis'] = np.array([1., 1., 1.], dtype=float)
-
-    h5_file.flush()
-    
-    return structure_group
-
-
-def h5_add_to_structure(structure_group, crystal_tags):
-    """add dictionary as structure group"""
-
-    for key in crystal_tags:
-        if key in structure_group.keys():
-            print(key, ' not written; use new name')
-        else:
-            structure_group[key] = crystal_tags[key]
-
-
-
 def zone_mistilt(zone, angles):
+    """ Rotation of zone axis by mistilt
+
+    Parameters
+    ----------
+    zone: list or numpy array of int
+        zone axis in Miller indices
+    angles: ist or numpy array of float
+        list of mistilt angles in degree
+
+    Returns
+    -------
+    new_zone_axis: np.ndarray (3)
+        new tilted zone axis
+
     """
-    Rotation of zone axis by mistilt
-
-    Input:
-        zone: zone axis in Miller indices
-        angles: list of mistilt angles in degree
-
-    Returns:
-        rotation matrix (3x3)
-
-    """
+    if not isinstance(angles, (np.ndarray, list)):
+        raise TypeError('angles must be a list of float of length 3')
+    if len(angles) != 3:
+        raise TypeError('angles must be a list of float of length 3')
+    if not isinstance(zone, (np.ndarray, list)):
+        raise TypeError('Miller indices must be a list of int of length 3')
     alpha, beta, gamma = np.radians(angles)
 
     # first we rotate alpha about x axis
@@ -257,31 +263,33 @@ def zone_mistilt(zone, angles):
     return np.dot(np.dot(np.dot(zone, rotx), roty), rotz)
 
 
-def get_symmetry(unit_cell, base, atoms):
+def get_symmetry(unit_cell, base, atoms, verbose=True):
     """
     Symmetry analysis with spglib
 
     spglib must be installed
     """
     if _spglib_present:
-
-        print('#####################')
-        print('# Symmetry Analysis #')
-        print('#####################')
+        if verbose:
+            print('#####################')
+            print('# Symmetry Analysis #')
+            print('#####################')
         
         atomic_number = []
         for i in range(len(atoms)):
             a = atoms[i]
             b = base[i]
             atomic_number.append(electronFF[a]['Z'])
-            print(f'{i+1}: {atomic_number[i]} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
+            if verbose:
+                print(f'{i+1}: {atomic_number[i]} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
                   
         lattice = (unit_cell, base, atomic_number)
         spgroup = spglib.get_spacegroup(lattice)
         sym = spglib.get_symmetry(lattice)
 
-        print("  Spacegroup  is %s." % spgroup)
-        print('  Crystal has {0} symmetry operation'.format(sym['rotations'].shape[0]))
+        if verbose:
+            print("  Spacegroup  is %s." % spgroup)
+            print('  Crystal has {0} symmetry operation'.format(sym['rotations'].shape[0]))
 
         p_lattice, p_positions, p_numbers = spglib.find_primitive(lattice, symprec=1e-5)
         print("\n########################\n #Basis vectors of primitive Cell:")
@@ -292,26 +300,30 @@ def get_symmetry(unit_cell, base, atoms):
     else:
         print('spglib is not installed')
 
+    return True
+
+
 
 def ball_and_stick(tags, extend=1, max_bond_length=0.):
     
-    """
-    Calculates the data to plot a ball and stick model
+    """Calculates the data to plot a ball and stick model
     
-    Input:
-        tags: dictionary containing the 'unit_cell', 'base' and 'elements' tags.
+    Parameters
+    ----------
+    tags: dict
+        dictionary containing the 'unit_cell', 'base' and 'elements' tags.
 
-        extend: 1 or 3 integers
-            The *extend* argument scales the effective cell in which atoms
-            will be included. It must either be a list of three integers or a single
-            integer scaling all 3 directions.  By setting this value to one,
-            all  corner and edge atoms will be included in the returned cell.
-            This will of cause make the returned cell non-repeatable, but this is
-            very useful for visualisation.
+    extend: 1 or 3 integers
+        The *extend* argument scales the effective cell in which atoms
+        will be included. It must either be a list of three integers or a single
+        integer scaling all 3 directions.  By setting this value to one,
+        all  corner and edge atoms will be included in the returned cell.
+        This will of cause make the returned cell non-repeatable, but this is
+        very useful for visualisation.
 
-        max_bond_length: 1 float
-            The max_bond_length argument defines the distance for which a bond will be shown.
-            If max_bond_length is zero, the tabulated atom radii will be used.
+    max_bond_length: 1 float
+        The max_bond_length argument defines the distance for which a bond will be shown.
+        If max_bond_length is zero, the tabulated atom radii will be used.
 
     Output:
 
@@ -548,23 +560,27 @@ def metric_tensor(matrix):
 
 
 def vector_norm(g):
+    """ Length of vector
+
+    depreciated - use np.linalg.norm
     """
-    Length of vector
-    """
+    g= np.array(g)
     return np.sqrt(g[:, 0]**2+g[:, 1]**2+g[:, 2]**2)
 
 
 def make_pretty_labels(hkls, hex_label=False):
-    """
-    Make pretty labels
+    """Make pretty labels
 
-    Input:
-        hkls: a numpy array with all the Miller indices to be labeled
+    Parameters
+    ----------
+    hkls: np.ndarray
+        a numpy array with all the Miller indices to be labeled
+    hex_label: boolean - optional
+        if True this will make for Miller indices.
 
-    Optional:
-        hex_label: if True this will make for Miller indices.
-
-    Output:
+    Returns
+    -------
+    hkl_label: list
         list of labels in Latex format
     """
     hkl_label = []
@@ -594,10 +610,9 @@ def make_pretty_labels(hkls, hex_label=False):
     return hkl_label
 
 
-# Wavelength in 1/nm
 def get_wavelength(e0):
     """
-    Calculates the relativistic corrected de Broglie wave length of an electron
+    Calculates the relativistic corrected de Broglie wavelength of an electron in nm
 
     Input:
     ------
@@ -606,7 +621,8 @@ def get_wavelength(e0):
     -------
         wave length in nm
     """
-
+    if not isinstance(e0, (int,float)):
+        raise TypeError('Acceleration voltage has to be a real number')
     eV = const.e * e0 
     return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
     
@@ -614,25 +630,29 @@ def get_wavelength(e0):
 # Determine rotation matrix to tilt zone axis onto z-axis
 # We determine spherical coordinates to do that
 def get_rotation_matrix(zone, verbose=False):
-    """
-     Calculates the rotation matrix to rotate the zone axis parallel to the cartasian z-axis.
+    """Calculates the rotation matrix to rotate the zone axis parallel to the cartasian z-axis.
      
      We use spherical coordinates to first rotate around the z-axis and then around the y-axis.
      This makes it easier to apply additional tilts, than to use the cross product to determine a single rotation 
      axis (Rodrigues Formula)
 
-     INPUT:
-     ------
-      - zone axis has to be in cartesian coordinates also. 
-     The dot product of zone axis  and unit cell will accomplish that.
+     We start from the dot product of zone axis  and unit cell will accomplish that.
 
-    Output:
+
+     Parameters
+     ----------
+     zone: list of int or np.ndarray of length 3
+        axis has to be in cartesian coordinates.
+
+    Returns
     -------
-     - rotation_matrix
-     - theta (degrees)
-     - phi (degrees)
+    rotation_matrix: np.ndarray(3,3)
+    theta: float (degrees)
+    phi: float (degrees)
     """
+
     # spherical coordinates of zone
+    zone = np.array(zone)
     r = np.sqrt((zone*zone).sum())
     theta = np.arccos(zone[2]/r)
     if zone[0] < 0:
@@ -666,46 +686,51 @@ def check_sanity(tags):
     if 'unit_cell' not in tags:
         print(' No unit_cell defined')
         stop = True
-    if 'base' not in tags:
+    elif 'base' not in tags:
         print(' No base defined')
         stop = True
-    if 'elements' not in tags:
+    elif 'elements' not in tags:
         print(' No atoms defined')
         stop = True
-    if 'acceleration_voltage_V' not in tags:
+    elif 'acceleration_voltage_V' not in tags:
         print(' No acceleration_voltage_V defined')
         stop = True
-    if 'zone_hkl' not in tags:
+    elif 'zone_hkl' not in tags:
         print(' No zone_hkl defined')
         stop = True
-    if 'Sg_max' not in tags:
+    elif 'Sg_max' not in tags:
         print(' No Sg_max defined')
         stop = True
-    if 'hkl_max' not in tags:
+    elif 'hkl_max' not in tags:
         print(' No hkl_max defined')
         stop = True
     
-    if 'crystal_name' not in tags:
+    elif 'crystal_name' not in tags:
         tags['crystal_name'] = 'undefined'
         print('tags[\'crystal\'] = \'undefined\'')
-    if 'mistilt' not in tags:
+    elif 'mistilt' not in tags:
         tags['mistilt'] = [0., 0., 0.]
         print('tags[\'mistilt\'] = [0., 0., 0.]')
-    if 'convergence_angle_mrad' not in tags:
+    elif 'convergence_angle_mrad' not in tags:
         tags['convergence_angle_mrad'] = 0. 
         print('tags[\'convergence_angle_mrad\'] = 0')
     
-    return stop
+    return not stop
 
 
 def ring_pattern_calculation(tags, verbose=False):
     """
     Calculate the ring diffraction pattern of a crystal structure
 
-    Input:
-        tags: dictionary of crystal structure
-    Output:
-        tags: dictionary with diffraction information added
+    Parameters
+    ----------
+    tags: dict
+        dictionary of crystal structure
+
+    Returns
+    -------
+    tags: dict
+        dictionary with diffraction information added
 
     """
     # Reciprocal Lattice 
@@ -817,7 +842,7 @@ def kinematic_scattering(tags, verbose=False):
                     ['volume'], ['theta'], ['phi'], and ['incident_wave_vector_vacuum']
     """
 
-    if check_sanity(tags):
+    if not check_sanity(tags):
         print('Input is not complete, stopping')
         print('Try \'example()\' for example input')
         return
@@ -1571,13 +1596,28 @@ def feq(element, q):
     Calculation of electron form factor for specific q:
     Using equation Kirkland C.15
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     element: string
         element name
     q: float
         magnitude of scattering vector in 1/nm -- (=> exp(-i*g.r), physics negative convention)
+
+    Returns
+    -------
+    fL+fG: float
+        atomic scattering vector
     """
+
+    if not isinstance(element, str):
+        raise TypeError('Element has to be a string')
+    if element not in electronFF:
+        if len(element) > 2:
+            raise TypeError('Please use standard convention for element abbreviation with not more than two letters')
+        else:
+            raise TypeError('Element {element} not known to electron diffraction should')
+    if not isinstance(q, (float, int)):
+        raise TypeError('Magnitude of scattering vector has to be a number of type float')
 
     q = q/10
     # q is now magnitude of scattering vector in 1/A -- (=> exp(-i*g.r), physics negative convention)

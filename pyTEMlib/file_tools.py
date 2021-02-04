@@ -610,6 +610,16 @@ def h5_add_crystal_structure(h5_file, crystal_tags):
     return structure_group
 
 
+def h5_add_to_structure(structure_group, crystal_tags):
+    """add dictionary as structure group"""
+
+    for key in crystal_tags:
+        if key in structure_group.keys():
+            print(key, ' not written; use new name')
+        else:
+            structure_group[key] = crystal_tags[key]
+
+
 def h5_get_crystal_structure(structure_group):
     crystal_tags = {'unit_cell': structure_group['unit_cell'][()],
                     'base': structure_group['relative_positions'][()],
