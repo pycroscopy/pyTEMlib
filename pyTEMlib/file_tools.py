@@ -544,9 +544,10 @@ def log_results(h5_group, dataset=None, attributes=None):
                 log_group['analysis'] = dataset.meta_data['analysis']
         dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
     if attributes is not None:
-        for key, item in attributes.items():
-            if key not in log_group:
-                log_group[key] = item
+        flat_dict = sidpy.hdf.hdf_utils.flatten_dict(attributes)
+        sidpy.hdf.hdf_utils.write_simple_attrs(log_group, flat_dict)
+        if 'analysis' in attributes:
+            log_group['analysis']  = attributes['analysis']
     return log_group
 
 
