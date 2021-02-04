@@ -162,6 +162,14 @@ class TestUtilityFunctions(unittest.TestCase):
         with self.assertRaises(TypeError):
             cs.perovskite(1, 1)
 
+    def test_structure_by_name(self):
+        actual = cs.structure_by_name('Gerd')
+        self.assertEqual(actual, {})
+
+        actual = cs.structure_by_name('FCC Fe')
+        self.assertIsInstance(actual, dict)
+        self.assertAlmostEqual(actual['a'], 0.3571)
+
 
 if __name__ == '__main__':
     unittest.main()
