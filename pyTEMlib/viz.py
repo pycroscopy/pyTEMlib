@@ -9,7 +9,6 @@ from bokeh.palettes import Spectral11
 
 from pyTEMlib.sidpy_tools import *
 import sys
-import numpy as np
 import matplotlib.pyplot as plt
 # from matplotlib.widgets import Slider, Button
 import matplotlib.patches as patches
@@ -151,7 +150,6 @@ def plot_image(dataset, palette="Viridis256"):
     return p
 
 
-
 def plot_spectrum(dataset, selected_range, palette=Spectral11):
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('Need a sidpy dataset for plotting')
@@ -160,7 +158,7 @@ def plot_spectrum(dataset, selected_range, palette=Spectral11):
         raise TypeError('Need an sidpy.Dataset of data_type SPECTRUM for plotting a spectrum ')
 
     p = figure(x_axis_type="linear", plot_width=800, plot_height=400,
-               tooltips=[("index", "$index"),("(x,y)", "($x, $y)")],
+               tooltips=[("index", "$index"), ("(x,y)", "($x, $y)")],
                tools="pan,wheel_zoom,box_zoom,reset, hover, lasso_select")
     p.add_tools(BoxSelectTool(dimensions="width"))
 
@@ -193,124 +191,6 @@ def plot_spectrum(dataset, selected_range, palette=Spectral11):
     return p
 
 
-class CurveVisualizer2(object):
-    def __init__(self, dset, spectrum_number=None, figure=None, axis=None, leg=None, **kwargs):
-        if not isinstance(dset, sidpy.Dataset):
-            raise TypeError('dset should be a sidpy.Dataset object')
-
-        fig_args = dict()
-        temp = kwargs.pop('figsize', None)
-        if temp is not None:
-            fig_args['figsize'] = temp
-
-        if figure is None:
-            self.fig = plt.figure(**fig_args)
-        else:
-            self.fig = figure
-
-        self.dset = dset
-        self.selection = []
-        self.spectral_dims = get_dimensions_by_type('spectral', self.dset)
-
-        if self.dset.data_type.name=='SPECTRAL_IMAGE':
-            image_dims = get_image_dims(self.dset)
-
-            selection = []
-
-            for dim, axis in self.dset._axes.items():
-                # print(dim, axis.dimension_type)
-                if axis.dimension_type.name == 'SPATIAL':
-                    if dim == self.image_dims[0]:
-                        selection.append(slice(x, x + self.bin_x))
-                    else:
-                        selection.append(slice(y, y + self.bin_y))
-
-                elif axis.dimension_type.name == 'SPECTRAL':
-                    selection.append(slice(None))
-                else:
-                    selection.append(slice(0, 1))
-
-            self.spectrum = np.squeeze(np.sum(self.dset[tuple(selection)], axis=tuple(image_dims)))
-        else:
-            self.spectrum = self.dset
-
-
-
-        print(self.spectral_dims[0])
-
-        self.dim = self.dset._axes[self.spectral_dims[0][0]]
-
-        if sidpy.hdf.dtype_utils.is_complex_dtype(dset.dtype):
-            # Plot real and image
-            fig, axes = plt.subplots(nrows=2, **fig_args)
-
-            axes[0].plot(self.dim.values, np.abs(np.squeeze(self.dset)), **kwargs)
-
-            axes[0].set_title(self.dset.title + '\n(Magnitude)', pad=15)
-            axes[0].set_xlabel(self.dset.labels[self.dim])
-            axes[0].set_ylabel(self.dset.data_descriptor)
-            axes[0].ticklabel_format(style='sci', scilimits=(-2, 3))
-
-            axes[1].set_title(self.dset.title + '\n(Phase)', pad=15)
-            axes[1].set_ylabel('Phase (rad)')
-            axes[1].set_xlabel(self.dset.labels[self.spectral_dims[0]])  # + x_suffix)
-            axes[1].ticklabel_format(style='sci', scilimits=(-2, 3))
-
-            fig.tight_layout()
-
-        else:
-            if axis is None:
-                self.axis = self.fig.add_subplot(1, 1, 1, **fig_args)
-            else:
-                self.axis = axis
-            self.axis.clear()
-            line1, = self.axis.plot(self.dim.values, self.dset, **kwargs)
-            lines = [line1]
-
-            if 'add2plot' in dset.metadata:
-                data = dset.metadata['add2plot']
-
-                for key, line in data.items():
-                    line_add, = self.axis.plot(self.dim.values,  line['data'], label=line['legend'])
-                    lines.append(line_add)
-                # we will set up a dict mapping legend line to orig line, and enable
-                # picking on the legend line
-                lined = dict()
-
-                legend = self.axis.legend(loc='upper right', fancybox=True, shadow=True)
-
-                legend.get_frame().set_alpha(0.4)
-                for legline, origline in zip(legend.get_lines(), lines):
-                    legline.set_pickradius (5)  # 5 pts tolerance
-                    lined[legline] = origline
-
-                self.fig.canvas.mpl_connect('pick_event', self.onpick)
-                print('here')
-
-
-            self.axis.set_xlabel(self.dset.labels[self.spectral_dims[0][0]])
-            self.axis.set_ylabel(self.dset.data_descriptor)
-            self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
-            self.fig.canvas.draw_idle()
-
-    def onpick(self, event):
-        print('here')
-        self.axis.set_title(self.dset.title, pad=15)
-        # on the pick event, find the orig line corresponding to the
-        # legend proxy line, and toggle the visibility
-        legline = event.artist
-        origline = self.lined[legline]
-        print(origline)
-        vis = not origline.get_visible()
-        origline.set_visible(vis)
-        # Change the alpha on the line in the legend so we can see what lines
-        # have been toggled
-        if vis:
-            legline.set_alpha(1.0)
-        else:
-            legline.set_alpha(0.2)
-        self.fig.canvas.draw()
-
 class CurveVisualizer(object):
     """Plots a sidpy.Dataset with spectral
 
@@ -318,7 +198,7 @@ class CurveVisualizer(object):
     def __init__(self, dset, spectrum_number=None, axis=None, leg=None, **kwargs):
         if not isinstance(dset, sidpy.Dataset):
             raise TypeError('dset should be a sidpy.Dataset object')
-        if axis == None:
+        if axis is None:
             self.fig = plt.figure()
             self.axis = self.fig.add_subplot(1, 1, 1)
         else:

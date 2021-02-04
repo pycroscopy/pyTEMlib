@@ -20,7 +20,6 @@ import sys
 import numpy as np
 import os
 
-
 import sidpy
 
 __all__ = ["NionReader", "version"]
