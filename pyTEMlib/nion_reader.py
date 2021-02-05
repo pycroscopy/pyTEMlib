@@ -15,7 +15,7 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import json
 import struct
 import h5py
-from warnings import warn
+# from warnings import warn
 import sys
 import numpy as np
 import os
@@ -109,7 +109,7 @@ class NionReader(sidpy.Reader):
         self.data_cube = None
         self.original_metadata = {}
         self.dimensions = []
-        if self.extension == '.ndata':
+        if 'ndata' in self.extension:
 
             # - open file for reading
             try:
@@ -131,7 +131,7 @@ class NionReader(sidpy.Reader):
                 raise IOError("File {} does not seem to be of Nion`s .h5 format".format(self.__filename))
 
     def read(self):
-        if self.extension == '.ndata':
+        if 'ndata' in self.extension:
             try:
                 self.__f = open(self.__filename, "rb")
             except FileNotFoundError:
@@ -164,12 +164,25 @@ class NionReader(sidpy.Reader):
         self.get_dimensions()
         # Need to switch image dimensions in Nion format
         image_dims = []
+        spectral_dims = []
         for dim, axis in enumerate(self.dimensions):
             # print(dim, axis)
             if axis.dimension_type == sidpy.DimensionType.SPATIAL:
                 image_dims.append(dim)
-        # print('image_dims', image_dims)
-        # print(self.data_cube.shape)
+            if axis.dimension_type == sidpy.DimensionType.SPECTRAL:
+                spectral_dims.append(dim)
+
+        # convert linescan to spectral_image
+        if len(spectral_dims) == 1:
+            if self.data_cube.ndim > 1:
+                self.data_cube = self.data_cube.reshape(1, self.data_cube.shape[0], self.data_cube.shape[1])
+                new_dims = [sidpy.Dimension([1], name='x', units='pixels',
+                                            quantity='distance', dimension_type='spatial'),
+                            sidpy.Dimension(np.arange(self.data_cube.shape[0]), name='y', units='pixels',
+                                            quantity='distance', dimension_type='spatial'),
+                            self.dimensions[spectral_dims[0]]]
+                self.dimensions = new_dims
+
         if len(image_dims) == 2:
             self.data_cube = np.swapaxes(self.data_cube, image_dims[0], image_dims[1])
             temp = self.dimensions[image_dims[0]].copy()
@@ -222,7 +235,7 @@ class NionReader(sidpy.Reader):
             raise NotImplementedError('Data_type not implemented yet')
         elif len(dataset.shape) == 3:
             if spectral_dim:
-                dataset.data_type = 'spectrum_image'
+                dataset.data_type = 'spectral_image'
             else:
                 dataset.data_type = 'IMAGE_STACK'
                 for dim, axis in dataset._axes.items():
@@ -252,30 +265,35 @@ class NionReader(sidpy.Reader):
         spatial_name = 'x'
 
         if 'dimensional_calibrations' in dic:
+            dimension_list = dic['dimensional_calibrations']
+        elif 'spatial_calibrations' in dic:
+            dimension_list = dic['spatial_calibrations']
+        else:
+            return
 
-            for dim in range(len(dic['dimensional_calibrations'])):
-                dimension_tags = dic['dimensional_calibrations'][dim]
-                units = dimension_tags['units']
-                values = (np.arange(self.data_cube.shape[int(dim)])-dimension_tags['offset']) * dimension_tags['scale']
+        for dim in range(len(dimension_list)):
+            dimension_tags = dimension_list[dim]
+            units = dimension_tags['units']
+            values = (np.arange(self.data_cube.shape[int(dim)])-dimension_tags['offset']) * dimension_tags['scale']
 
-                if 'eV' == units:
-                    self.dimensions.append(sidpy.Dimension(values, name='energy_loss', units=units,
-                                                           quantity='energy-loss', dimension_type='spectral'))
-                elif 'eV' in units:
-                    self.dimensions.append(sidpy.Dimension(values, name='energy', units=units,
-                                                           quantity='energy', dimension_type='spectral'))
-                elif '1/' in units or units in ['mrad', 'rad']:
-                    self.dimensions.append(sidpy.Dimension(values, name=reciprocal_name, units=units,
-                                                           quantity='reciprocal distance',
-                                                           dimension_type='reciprocal'))
-                    reciprocal_name = chr(ord(reciprocal_name) + 1)
-                elif 'nm' in units:
-                    self.dimensions.append(sidpy.Dimension(values, name=spatial_name, units=units,
-                                                           quantity='distance', dimension_type='spatial'))
-                    spatial_name = chr(ord(spatial_name) + 1)
-                else:
-                    self.dimensions.append(sidpy.Dimension(values, name=f'generic_{dim}', units='generic',
-                                                           quantity='generic', dimension_type='UNKNOWN'))
+            if 'eV' == units:
+                self.dimensions.append(sidpy.Dimension(values, name='energy_loss', units=units,
+                                                       quantity='energy-loss', dimension_type='spectral'))
+            elif 'eV' in units:
+                self.dimensions.append(sidpy.Dimension(values, name='energy', units=units,
+                                                       quantity='energy', dimension_type='spectral'))
+            elif '1/' in units or units in ['mrad', 'rad']:
+                self.dimensions.append(sidpy.Dimension(values, name=reciprocal_name, units=units,
+                                                       quantity='reciprocal distance',
+                                                       dimension_type='reciprocal'))
+                reciprocal_name = chr(ord(reciprocal_name) + 1)
+            elif 'nm' in units:
+                self.dimensions.append(sidpy.Dimension(values, name=spatial_name, units=units,
+                                                       quantity='distance', dimension_type='spatial'))
+                spatial_name = chr(ord(spatial_name) + 1)
+            else:
+                self.dimensions.append(sidpy.Dimension(values, name=f'generic_{dim}', units='generic',
+                                                       quantity='generic', dimension_type='UNKNOWN'))
 
     def get_filename(self):
         return self.__filename

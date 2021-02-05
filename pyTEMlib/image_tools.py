@@ -165,10 +165,10 @@ def power_spectrum(dset, smoothing=3):
     fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
 
     power_spec = fft_transform.like_data(np.log(1.+fft_mag2))
-
+    view = sidpy.viz.dataset_viz.SpectralImageVisualizer
     # prepare mask
 
-    x, y = np.meshgrid(power_spec.u.values, power_spec.v.values)
+    x, y = np.meshgrid(power_spec.v.values, power_spec.u.values)
     mask = np.zeros(power_spec.shape)
 
     mask_spot = x ** 2 + y ** 2 > 1 ** 2

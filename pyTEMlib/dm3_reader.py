@@ -268,17 +268,30 @@ class DM3Reader(sidpy.Reader):
 
         path, file_name = os.path.split(self.__filename)
         basename, extension = os.path.splitext(file_name)
-
         dataset = sidpy.Dataset.from_array(self.data_cube, name=basename)
         self.__stored_tags['DM']['chosen_image'] = self.__chosen_image
         dataset.original_metadata = self.get_tags()
 
-        dataset.quantity = 'intensity'
-        dataset.units = 'counts'
-
         self.set_dimensions(dataset)
         self.set_data_type(dataset)
+        # convert linescan to spectral image
+        if self.spectral_dim and dataset.ndim == 2:
+            old_dataset = dataset.copy()
+            meta = dataset.original_metadata.copy()
+            basename = dataset.name
+            data = np.array(dataset).reshape(dataset.shape[0], 1, dataset.shape[1])
+            dataset = sidpy.Dataset.from_array(data, name=basename)
+            dataset.original_metadata = meta
+            dataset.set_dimension(0, old_dataset.dim_0)
 
+            dataset.set_dimension(1, sidpy.Dimension([1], name='y', units='pixels',
+                                                     quantity='distance', dimension_type='spatial'))
+            dataset.set_dimension(2, old_dataset.dim_1)
+            dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE  # 'linescan'
+
+
+        dataset.quantity = 'intensity'
+        dataset.units = 'counts'
         dataset.title = basename
         dataset.modality = 'generic'
         dataset.source = 'DM3Reader'
@@ -292,6 +305,7 @@ class DM3Reader(sidpy.Reader):
         for dim, axis in dataset._axes.items():
             if axis.dimension_type == sidpy.DimensionType.SPECTRAL:
                 spectral_dim = True
+        self.spectral_dim = spectral_dim
 
         dataset.data_type = 'unknown'
         if 'ImageTags' in dataset.original_metadata['ImageList'][str(self.__chosen_image)]:
@@ -316,6 +330,7 @@ class DM3Reader(sidpy.Reader):
                     dataset.data_type = 'image_stack'
             elif len(dataset.shape) == 2:
                 if spectral_dim:
+                    basename = dataset.name
                     dataset.data_type = sidpy.DataType.SPECTRAL_IMAGE
                 else:
                     dataset.data_type = 'image'
