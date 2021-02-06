@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.fcc
+===========================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: fcc

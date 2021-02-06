@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.bcc
+===========================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: bcc

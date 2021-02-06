@@ -1,3 +1,6 @@
+"""
+utilities for crystal structures
+"""
 import numpy as np
 from math import gcd, ceil, atan
 from fractions import Fraction

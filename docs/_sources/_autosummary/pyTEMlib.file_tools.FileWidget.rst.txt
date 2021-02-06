@@ -1,0 +1,27 @@
+pyTEMlib.file\_tools.FileWidget
+===============================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autoclass:: FileWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~FileWidget.get_directory
+      ~FileWidget.get_file_name
+      ~FileWidget.set_options
+   
+   
+
+   
+   
+   
