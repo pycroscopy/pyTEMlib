@@ -1,11 +1,12 @@
+""" default microscope parameters from config file
+
+Read microscope CSV file
+Original by EELSLab Author: Francisco Javier de la Peña
+Made more flexible for load microscopes with csv.DictReader
+for pyTEMLib by Gerd
+copyright 2012, Gerd Duscher
+"""
 # -*- coding: cp1252 -*-
-#################################################################
-# Read microscope CSV file
-# Original by EELSLab Author: Francisco Javier de la Peña
-# Made more flexible for load microscopes with csv.DictReader
-# for pyTEMLib by Gerd
-# copyright 2012, Gerd Duscher
-################################################################
 
 import csv
 import os.path
@@ -17,6 +18,7 @@ microscopes_file = os.path.join(config_path, 'microscopes.csv')
 
 
 class Microscope(object):
+    """Class to read configuration file and provide microscope information"""
     microscopes = {}
     name = None
     E0 = None

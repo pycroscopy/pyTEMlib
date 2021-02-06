@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyTEMlib.eels_tools.effective_collection_angle &#8212; pyTEMlib 0.2021.02.05 documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="pytemlib-eels-tools-effective-collection-angle">
+<h1>pyTEMlib.eels_tools.effective_collection_angle<a class="headerlink" href="#pytemlib-eels-tools-effective-collection-angle" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="pyTEMlib.eels_tools.effective_collection_angle">
+<code class="sig-prename descclassname">pyTEMlib.eels_tools.</code><code class="sig-name descname">effective_collection_angle</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">energy_scale</span></em>, <em class="sig-param"><span class="n">alpha</span></em>, <em class="sig-param"><span class="n">beta</span></em>, <em class="sig-param"><span class="n">beam_kv</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyTEMlib/eels_tools.html#effective_collection_angle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyTEMlib.eels_tools.effective_collection_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the effective collection angle in mrad:</p>
+<p>Translate from original Fortran program
+Calculates the effective collection angle in mrad:
+Input:
+- energy_scale : numpy array (first and last energy loss of spectrum in eV)
+- alpha, beta: float  (collection and convergence angle in mrad)
+- beamKV: float (acceleration voltage in V)
+Output:
+- effective collection angle in mrad</p>
+<p># function y = effbeta(ene,  alpha, beta, beam_kv)
+#
+#       This program computes etha(alpha,beta), that is the collection
+#       efficiency associated to the following geometry :
+#
+#       alpha = half angle of illumination  (0 -&gt; pi/2)
+#       beta  = half angle of collection    (0 -&gt; pi/2)
+#                                           (pi/2 = 1570.795 mrad)
+#
+#           A constant angular distribution of incident electrons is assumed
+#       for any incident angle (-alpha,alpha). These electrons imping the
+#       target and a single energy-loss event occurs, with a characteristic
+#       angle theta-e (relativistic). The angular distribution of the
+#       electrons after the target is analytically derived.
+#           This program integrates this distribution from theta=0 up to
+#       theta=beta with an adjustable angular step.
+#           This program also computes beta* which is the theoretical
+#       collection angle which would give the same value of etha(alpha,beta)
+#       with a parallel incident beam.
+#
+#       subroutines and function subprograms required
+#       ———————————————
+#       none
+#
+#       comments
+#       ——–
+#
+#       The following parameters are asked as input :
+#        accelerating voltage (kV), energy loss range (eV) for the study,
+#        energy loss step (eV) in this range, alpha (mrad), beta (mrad).
+#       The program returns for each energy loss step :
+#        alpha (mrad), beta (mrad), theta-e (relativistic) (mrad),
+#        energy loss (eV), etha (#), beta * (mrad)
+#
+#       author :
+#       ——–
+#       Pierre TREBBIA
+#       US 41 : “Microscopie Electronique Analytique Quantitative”
+#       Laboratoire de Physique des Solides, Bat. 510
+#       Universite Paris-Sud, F91405 ORSAY Cedex
+#       Phone : (33-1) 69 41 53 68
+#
+#        real*8 pi,zx,zi,z1,z2,z3,z4,z5,z6,z7,x0,x1,x2,x3,x4,x5,x6,x7,x8
+#        real*8 x9,x10,theta,dtheta,eta,etha2,beta
+#        np.logical pr
+pi = np.pi  # 3.14159;
+#        pr=.true.               ! enable record of data</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">pyTEMlib</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Gerd Duscher, and Mark Oxeley.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/_autosummary/pyTEMlib.eels_tools.effective_collection_angle.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

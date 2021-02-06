@@ -1,17 +1,14 @@
-##################################
-#
-# image_tools.py
-# by Gerd Duscher, UTK
-# part of pyTEMlib
-# MIT license except where stated differently
-#
-###############################
+"""
+image_tools.py
+by Gerd Duscher, UTK
+part of pyTEMlib
+MIT license except where stated differently
+"""
+
 import numpy as np
 
 import matplotlib as mpl
 import matplotlib.pylab as plt
-from matplotlib.patches import Polygon  # plotting of polygons -- graph rings
-
 import matplotlib.widgets as mwidgets
 from matplotlib.widgets import RectangleSelector
 
@@ -63,12 +60,14 @@ def get_wavelength(e0):
     """
     Calculates the relativistic corrected de Broglie wave length of an electron
 
-    Input:
-    ------
-        acceleration voltage in volt
-    Output:
+    Parameters
+    ----------
+    e0: float
+      acceleration voltage in volt
+
+    Returns
     -------
-        wave length in 1/nm
+    wave length in 1/nm
     """
 
     eV = const.e * e0
@@ -80,15 +79,20 @@ def fourier_transform(dset):
         Reads information into dictionary 'tags', performs 'FFT', and provides a smoothed FT and reciprocal
         and intensity limits for visualization.
 
-        Input
-        -----
+        Parameters
+        ----------
         dset: sidpy.Dataset
+            image
 
-        Usage
-        -----
+        Returns
+        -------
+        fft_dset: sidpy.Dataset
+            Fourier transform with correct dimensions
 
-        fft_dataset = fourier_transform(sidpy_dataset)
-        fft+dataset.plot()
+        Example
+        -------
+        >>> fft_dataset = fourier_transform(sidpy_dataset)
+        >>> fft_dataset.plot()
     """
 
     assert isinstance(dset, sidpy.Dataset), 'Expected a sidpy Dataset'
@@ -145,29 +149,27 @@ def power_spectrum(dset, smoothing=3):
     """
     Calculate power spectrum
 
-    Input:
-    ------
-            channel: channnel in h5f file with image content
+    Parameters
+    ----------
+    dset: sidpy.Dataset
+        image
+    smoothing: int
+        Gaussian smoothing
 
-    Output:
+    Returns
     -------
-            tags: dictionary with
-                ['data']: fourier transformed image
-                ['axis']: scale of reciprocal image
-                ['power_spectrum']: power_spectrum
-                ['FOV']: field of view for extent parameter in plotting
-                ['minimum_intensity']: suggested minimum intensity for plotting
-                ['maximum_intensity']: suggested maximum intensity for plotting
+    power_spec: sidpy.Dataset
+        power spectrum with correct dimensions
 
     """
+
     fft_transform = fourier_transform(dset)
     fft_mag = np.abs(fft_transform)
     fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
 
     power_spec = fft_transform.like_data(np.log(1.+fft_mag2))
-    view = sidpy.viz.dataset_viz.SpectralImageVisualizer
-    # prepare mask
 
+    # prepare mask
     x, y = np.meshgrid(power_spec.v.values, power_spec.u.values)
     mask = np.zeros(power_spec.shape)
 
@@ -178,33 +180,34 @@ def power_spectrum(dset, smoothing=3):
 
     mask[np.where(mask == 1)] = 0  # just in case of overlapping disks
 
-    # minimum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].min() * 0.95
-    # maximum_intensity = np.log2(1 + fft_mag2)[np.where(mask == 2)].max() * 1.05
-    power_spec.metadata = {'smoothing': smoothing}
-    #                       'minimum_intensity': minimum_intensity, 'maximum_intensity': maximum_intensity}
+    minimum_intensity = power_spec[np.where(mask == 2)].min() * 0.95
+    maximum_intensity = power_spec[np.where(mask == 2)].max() * 1.05
+    power_spec.metadata = {'fft': {'smoothing': smoothing,
+                                   'minimum_intensity': minimum_intensity, 'maximum_intensity': maximum_intensity}}
     power_spec.title = 'power spectrum ' + power_spec.source
 
     return power_spec
 
 
 def diffractogram_spots(dset, spot_threshold):
-    """
-    Find spots in diffractogram and sort them by distance from center
+    """Find spots in diffractogram and sort them by distance from center
 
-    Input:
-    ------
-            fft_tags: dictionary with
-                ['spatial_***']: information of scale of fourier pattern
-                ['data']: power_spectrum
-            spot_threshold: threshold for blob finder
-    Output:
+    Uses blob_log from scipy.spatial
+
+    Parameters
+    ----------
+    dset: sidpy.Dataset
+        diffratogram
+    spot_threshold: float
+        threshold for blob finder
+
+    Returns
     -------
-            spots: numpy array with sorted position (x,y) and radius (r) of all spots
-
+    spots: numpy array
+        sorted position (x,y) and radius (r) of all spots
     """
-    #
 
-# spot detection (for future reference there is no symmetry assumed here)
+    # spot detection (for future reference there is no symmetry assumed here)
     data = np.array(np.log(1+np.abs(dset)))
     data = (data - data.min())
     data = data/data.max()
@@ -233,32 +236,36 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
     """
     Use spots in diffractogram for a Fourier Filter
 
-    Input:
-    ------
-            image:  image to be filtered
-            tags: dictionary with
-                ['spatial_***']: information of scale of fourier pattern
-                ['spots']: sorted spots in diffractogram in 1/nm
-            low_pass: low pass filter in center of diffractogrm
+    Parameters
+    ----------
+    dset: sidpu.Dataset
+        image to be filtered
+    spots: np.ndarray(N,2)
+        sorted spots in diffractogram in 1/nm
+    low_pass:  float
+        low pass filter in center of diffractogram in 1/nm
+    reflection_radius:  float
+        radius of masked reflections in 1/nm
 
     Output:
     -------
             Fourier filtered image
     """
-    # prepare mask
 
+    if not isinstance(dset, sidpy.Dataset):
+        raise TypeError('We need a sidpy.Dataset')
     fft_transform = fourier_transform(dset)
+
+    # prepare mask
     x, y = np.meshgrid(fft_transform.u.values, fft_transform.v.values)
     mask = np.zeros(dset.shape)
 
     # mask reflections
-    # reflection_radius = 0.3 # in 1/nm
     for spot in spots:
         mask_spot = (x - spot[0]) ** 2 + (y - spot[1]) ** 2 < reflection_radius ** 2  # make a spot
         mask = mask + mask_spot  # add spot to mask
 
     # mask zero region larger (low-pass filter = intensity variations)
-    # low_pass = 3 # in 1/nm
     mask_spot = x ** 2 + y ** 2 < low_pass ** 2
     mask = mask + mask_spot
     mask[np.where(mask > 1)] = 1
@@ -269,11 +276,12 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
     filtered_image.source = dset.title
     filtered_image.metadata = {'analysis': 'adaptive fourier filtered', 'spots': spots,
                                'low_pass': low_pass, 'reflection_radius': reflection_radius}
-
     return filtered_image
 
 
 def rotational_symmetry_diffractogram(spots):
+    """ Test rotational symmetry of diffraction spots"""
+
     rotation_symmetry = []
     for n in [2, 3, 4, 6]:
         cc = np.array(
@@ -295,7 +303,29 @@ def rotational_symmetry_diffractogram(spots):
 
 
 def complete_registration(main_dataset, storage_channel=None):
-    """Rigid and then non-rigid (demon) registration"""
+    """Rigid and then non-rigid (demon) registration
+
+    Performs rigid and then non-rigid registration, please see individual functions:
+    - rigid_registration
+    - demon_registration
+
+    Parameters
+    ----------
+    main_dataset: sidpy.Dataset
+        dataset of data_type 'IMAGE_STACK' to be registered
+
+    Returns
+    -------
+    non_rigid_registered: sidpy.Dataset
+    rigid_registered_dataset: sidpy.Dataset
+
+    """
+
+    if not isinstance(main_dataset, sidpy.Dataset):
+        raise TypeError('We need a sidpy.Dataset')
+    if main_dataset.data_type.name != 'IMAGE_STACK':
+        raise TypeError('Registration makes only sense for an image stack')
+
     rigid_registered_dataset = rigid_registration(main_dataset)
     if storage_channel is None:
         storage_channel = main_dataset.h5_dataset.parent.parent
@@ -314,9 +344,12 @@ def demon_registration(dataset, verbose=False):
     """
     Diffeomorphic Demon Non-Rigid Registration
 
-    Usage:
-    ------
-    dem_reg = demon_reg(cube, verbose = False)
+    Depends on:
+        simpleITK and numpy
+    Please Cite: http://www.simpleitk.org/SimpleITK/project/parti.html
+    and T. Vercauteren, X. Pennec, A. Perchant and N. Ayache
+    Diffeomorphic Demons Using ITK\'s Finite Difference Solver Hierarchy
+    The Insight Journal, http://hdl.handle.net/1926/510 2007
 
     Parameters
     ----------
@@ -328,14 +361,15 @@ def demon_registration(dataset, verbose=False):
     -------
         dem_reg: stack of images with non-rigid registration
 
-    Depends on:
-        simpleITK and numpy
-
-    Please Cite: http://www.simpleitk.org/SimpleITK/project/parti.html
-    and T. Vercauteren, X. Pennec, A. Perchant and N. Ayache
-    Diffeomorphic Demons Using ITK\'s Finite Difference Solver Hierarchy
-    The Insight Journal, http://hdl.handle.net/1926/510 2007
+    Example
+    -------
+    dem_reg = demon_reg(stack_dataset, verbose=False)
     """
+
+    if not isinstance(dataset, sidpy.Dataset):
+        raise TypeError('We need a sidpy.Dataset')
+    if dataset.data_type.name != 'IMAGE_STACK':
+        raise TypeError('Registration makes only sense for an image stack')
 
     dem_reg = np.zeros(dataset.shape)
     nimages = dataset.shape[0]
@@ -381,7 +415,6 @@ def demon_registration(dataset, verbose=False):
         resampler.SetTransform(out_tx)
         out = resampler.Execute(moving)
         dem_reg[i, :, :] = sITK.GetArrayFromImage(out)
-        # print('image ', i)
 
     if QT_available:
         progress.close()
@@ -407,19 +440,25 @@ def demon_registration(dataset, verbose=False):
 def rigid_registration(dataset):
     """
     Rigid registration of image stack with sub-pixel accuracy
-    used phase_cross_correlation from skimage.registration
+
+    Uses phase_cross_correlation from skimage.registration
     (we determine drift from one image to next)
 
     Parameters
     ----------
-    dataset: sidpy.Datset
+    dataset: sidpy.Dataset
         sidpy dataset with image_stack dataset
 
     Returns
     -------
-    Registered Stack and drift (with respect to center image)
-
+    rigid_registered: sidpy.Dataset
+        Registered Stack and drift (with respect to center image)
     """
+
+    if not isinstance(dataset, sidpy.Dataset):
+        raise TypeError('We need a sidpy.Dataset')
+    if dataset.data_type.name != 'IMAGE_STACK':
+        raise TypeError('Registration makes only sense for an image stack')
 
     nopix = dataset.shape[1]
     nopiy = dataset.shape[2]
@@ -473,16 +512,24 @@ def rigid_registration(dataset):
 
 
 def rig_reg_drift(dset, rel_drift):
-    """
-    Uses relative drift to shift images ontop of each other
-    Shifting is done with shift routine of ndimage from scipy
+    """ Shifting images on top of each other
 
-    is used by Rigid_Registration routine
+    Uses relative drift to shift images on top of each other,
+    with center image as reference.
+    Shifting is done with shift routine of ndimage from scipy.
+    This function is used by rigid_registration routine
 
-    Input image_channel with image_stack numpy array
-    relative_drift from image to image as list of [shiftx, shifty]
+    Parameters
+    ----------
+    dset: sidpy.Dataset
+        dataset with image_stack
+    rel_drift:
+        relative_drift from image to image as list of [shiftx, shifty]
 
-    output stack and drift
+    Returns
+    -------
+    stack: numpy array
+    drift: list of drift in pixel
     """
 
     rig_reg = np.zeros(dset.shape)
@@ -502,9 +549,19 @@ def rig_reg_drift(dset, rel_drift):
 
 
 def crop_image_stack(rig_reg, drift):
+    """Crop images in stack according to drift
+
+    This function is used by rigid_registration routine
+
+    Parameters
+    ----------
+    rig_reg: numpy array (N,x,y)
+    drift: list (2,B)
+
+    Returns:
+    numpy array
     """
-    ## Crop images
-    """
+
     xpmin = int(-np.floor(np.min(np.array(drift)[:, 0])))
     xpmax = int(rig_reg.shape[1] - np.ceil(np.max(np.array(drift)[:, 0])))
     ypmin = int(-np.floor(np.min(np.array(drift)[:, 1])))
@@ -514,6 +571,8 @@ def crop_image_stack(rig_reg, drift):
 
 
 class ImageWithLineProfile:
+    """Image with line profile"""
+
     def __init__(self, data, extent, title=''):
         fig, ax = plt.subplots(1, 1)
         self.figure = fig
@@ -582,6 +641,7 @@ class ImageWithLineProfile:
         
 
 def histogram_plot(image_tags):
+    """interactive histogram"""
     nbins = 75
     color_map_list = ['gray', 'viridis', 'jet', 'hot']
     
@@ -666,6 +726,7 @@ def histogram_plot(image_tags):
 
 
 def clean_svd(im, pixel_size=1, source_size=5):
+    """De-noising of image by using first component of single value decomposition"""
     patch_size = int(source_size/pixel_size)
     if patch_size < 3:
         patch_size = 3
@@ -687,53 +748,79 @@ def rebin(im, binning=2):
     """
     rebin an image by the number of pixels in x and y direction given by binning
     
-    Input:
-    ------
-            image: numpy array in 2 dimensions
+    Parameter
+    ---------
+    image: numpy array in 2 dimensions
     
-    Output:
+    Returns
     -------
-            binned image 
+    binned image as numpy array
     """
     if len(im.shape) == 2:
         return im.reshape((im.shape[0]//binning, binning, im.shape[1]//binning, binning)).mean(axis=3).mean(1)
     else:
-        print('not a 2D image')
+        raise TypeError('not a 2D image')
         return im
 
 
 def cart2pol(points):
     """Cartesian to polar coordinate conversion
 
-    :param points: points to be converted
-    :type points: numpy  array
+    Parameters
+    ---------
+    points: float or numpy array
+        points to be converted (Nx2)
 
-    :returns: distance and angle
-    :rtype: numpy arrays
+    Returns
+    -------
+    rho: float or numpy array
+        distance
+    phi: float or numpy array
+        angle
     """
+
     rho = np.linalg.norm(points[:, 0:2], axis=1)
     phi = np.arctan2(points[:, 1], points[:, 0])
     return rho, phi
 
 
 def pol2cart(rho, phi):
+    """Polar to Cartesian coordinate conversion
+
+    Parameters
+    ----------
+    rho: float or numpy array
+        distance
+    phi: float or numpy array
+        angle
+
+    Returns
+    -------
+    x: float or numpy array
+        x coordinates of converted points(Nx2)
+    """
+
     x = rho * np.cos(phi)
     y = rho * np.sin(phi)
     return x, y
 
 
 def xy2polar(points, rounding=1e-3):
-    """
-    Conversion from carthesian to polar coordinates
+    """ Conversion from carthesian to polar coordinates
     
     the angles and distances are sorted by r and then phi
     The indices of this sort is also returned
     
-    input points: numpy array with number of points in axis 0 first two elements in axis 1 are x and y
+    Parameters
+    ----------
+    points: numpy array
+        number of points in axis 0 first two elements in axis 1 are x and y
+    rounding: int
+        optional rounding in significant digits
     
-    optional rounding in significant digits 
-    
-    returns r,phi, sorted_indices
+    Returns
+    -------
+    r, phi, sorted_indices
     """
     
     r, phi = cart2pol(points)
@@ -749,6 +836,10 @@ def xy2polar(points, rounding=1e-3):
             
 
 def cartesian2polar(x, y, grid, r, t, order=3):
+    """Transform cartesian grid to polar grid
+
+    Used by warp
+    """
 
     rr, tt = np.meshgrid(r, t)
 
@@ -765,6 +856,8 @@ def cartesian2polar(x, y, grid, r, t, order=3):
 
 
 def warp(diff, center):
+    """Convert diffraction pattern to polar coordinates"""
+
     # Define original polar grid
     nx = diff.shape[0]
     ny = diff.shape[1]
@@ -784,7 +877,24 @@ def warp(diff, center):
 
 def calculate_ctf(wavelength, cs, defocus, k):
     """ Calculate Contrast Transfer Function
+
     everything in nm
+
+    Parameters
+    ----------
+    wavelength: float
+        deBroglie wavelength of electrons
+    cs: float
+        spherical aberration coefficient
+    defocus: float
+        defocus
+    k: numpy array
+        reciprocal scale
+
+    Returns:
+    ctf: numpy array
+        contrast transfer function
+
     """
     ctf = np.sin(np.pi*defocus*wavelength*k**2+0.5*np.pi*cs*wavelength**3*k**4)
     return ctf
@@ -793,13 +903,15 @@ def calculate_ctf(wavelength, cs, defocus, k):
 def calculate_scherzer(wavelength, cs):
     """
     Calculate the Scherzer defocus. Cs is in mm, lambda is in nm
-    # EInput and output in nm
+
+    # Input and output in nm
     """
     scherzer = -1.155*(cs*wavelength)**0.5  # in m
     return scherzer
 
 
 def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
+    """depreciated get change of scale from comparison of spots to Bragg angles """
     gx = fft_tags['spatial_scale_x']
     gy = fft_tags['spatial_scale_y']
 
@@ -820,6 +932,8 @@ def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
 
 
 def align_crystal_reflections(spots, crystals):
+    """ Depreciated - use diffraction spots"""
+
     crystal_reflections_polar = []
     angles = []
     exp_r, exp_phi = cart2pol(spots)  # just in polar coordinates

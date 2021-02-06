@@ -1,3 +1,7 @@
+"""
+GUI definitions for EEELS_dialog
+"""
+
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'untitled.ui'
@@ -10,6 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class UiDialog(object):
+    """ GUI definitions"""
     def __init__(self, dialog):
         dialog.setObjectName('Fit Composition Input')
         dialog.resize(371, 184)

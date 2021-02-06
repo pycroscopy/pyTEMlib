@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyTEMlib.eels_tools.kroeger_core &#8212; pyTEMlib 0.2021.02.05 documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="pytemlib-eels-tools-kroeger-core">
+<h1>pyTEMlib.eels_tools.kroeger_core<a class="headerlink" href="#pytemlib-eels-tools-kroeger-core" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="pyTEMlib.eels_tools.kroeger_core">
+<code class="sig-prename descclassname">pyTEMlib.eels_tools.</code><code class="sig-name descname">kroeger_core</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">e_data</span></em>, <em class="sig-param"><span class="n">a_data</span></em>, <em class="sig-param"><span class="n">eps_data</span></em>, <em class="sig-param"><span class="n">ee</span></em>, <em class="sig-param"><span class="n">thick</span></em>, <em class="sig-param"><span class="n">relativistic</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyTEMlib/eels_tools.html#kroeger_core"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyTEMlib.eels_tools.kroeger_core" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function calculates the differential scattering probability</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\frac{d^2P}{d \Omega d_e}\]</div>
+</div></blockquote>
+<p>of the low-loss region for total loss and volume plasmon loss</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>e_data</strong> (<em>array</em>) – energy scale [eV]</p></li>
+<li><p><strong>a_data</strong> (<em>array</em>) – angle or momentum range [rad]</p></li>
+<li><p><strong>eps_data</strong> (<em>array</em>) – dielectric function data</p></li>
+<li><p><strong>ee</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – acceleration voltage [keV]</p></li>
+<li><p><strong>thick</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)"><em>float</em></a>) – thickness in m</p></li>
+<li><p><strong>relativistic</strong> – boolean include relativistic corrections</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>total loss probability
+p_vol (numpy array 2d): volume loss probability</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>P (numpy array 2d)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">pyTEMlib</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Gerd Duscher, and Mark Oxeley.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/_autosummary/pyTEMlib.eels_tools.kroeger_core.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

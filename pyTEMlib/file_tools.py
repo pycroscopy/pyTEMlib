@@ -598,6 +598,8 @@ def add_dataset(dataset, h5_group=None):
 # Crystal Structure Read and Write
 ###
 def h5_add_crystal_structure(h5_file, crystal_tags):
+    """Write crystal structure to NSID file"""
+
     structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
 
     structure_group['unit_cell'] = crystal_tags['unit_cell']
@@ -624,6 +626,8 @@ def h5_add_to_structure(structure_group, crystal_tags):
 
 
 def h5_get_crystal_structure(structure_group):
+    """Read crystal structure  from NSID file"""
+
     crystal_tags = {'unit_cell': structure_group['unit_cell'][()],
                     'base': structure_group['relative_positions'][()],
                     'crystal_name': structure_group['title'][()]}

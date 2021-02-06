@@ -1,3 +1,5 @@
+"""plotting of sidpy Datasets with bokeh for google colab"""
+
 import numpy as np
 import sidpy
 
@@ -21,6 +23,7 @@ default_cmap = plt.cm.viridis
 
 
 def plot(dataset, palette='Viridis256'):
+    """plot according to data_type"""
     if dataset.data_type.name == 'IMAGE_STACK':
         p = plot_stack(dataset, palette=palette)
     elif dataset.data_type.name == 'IMAGE':
@@ -91,26 +94,26 @@ def plot_stack(dataset, palette="Viridis256"):
 def plot_image(dataset, palette="Viridis256"):
     """Plotting an image
 
-        Plotting an image contained in a sidpy.Dataset.
+    Plotting an image contained in a sidpy.Dataset.
 
-        Parameters
-        ----------
-        dataset: sidpy.Dataset
-            sidpy dataset with data_type 'IMAGE_STACK'
-        palette: bokeh palette
-            palette is optional
+    Parameters
+    ----------
+    dataset: sidpy.Dataset
+        sidpy dataset with data_type 'IMAGE_STACK'
+    palette: bokeh palette
+        palette is optional
 
-        Returns
-        -------
-        p: bokeh plot
+    Returns
+    -------
+    p: bokeh plot
 
-        Example
-        -------
-        >> import pyTEMlib
-        >> from bokeh.plotting import figure, show, output_notebook
-        >> output_notebook()
-        >> p = pyTEMlib.viz(dataset)
-        >> p.show(p)
+    Example
+    -------
+    >> import pyTEMlib
+    >> from bokeh.plotting import figure, show, output_notebook
+    >> output_notebook()
+    >> p = pyTEMlib.viz(dataset)
+    >> p.show(p)
 
 
         """
@@ -151,6 +154,7 @@ def plot_image(dataset, palette="Viridis256"):
 
 
 def plot_spectrum(dataset, selected_range, palette=Spectral11):
+    """Plot spectrum"""
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('Need a sidpy dataset for plotting')
 
@@ -192,7 +196,7 @@ def plot_spectrum(dataset, selected_range, palette=Spectral11):
 
 
 class CurveVisualizer(object):
-    """Plots a sidpy.Dataset with spectral
+    """Plots a sidpy.Dataset with spectral dimension
 
     """
     def __init__(self, dset, spectrum_number=None, axis=None, leg=None, **kwargs):
