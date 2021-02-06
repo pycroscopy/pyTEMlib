@@ -1,3 +1,9 @@
+""" Interactive routines for EELS analysis
+
+this file provides aditional dialogs for EELS quantification
+
+Author: Gerd Duscher
+"""
 
 import numpy as np
 
@@ -14,6 +20,7 @@ import ipywidgets as widgets
 
 from pyTEMlib import eels_tools as eels
 from pyTEMlib import eels_dialog
+
 from pyTEMlib import info_dialog
 from pyTEMlib import peak_dialog
 
@@ -29,20 +36,23 @@ PeakFitDialog = peak_dialog.PeakFitDialog
 
 
 class PeriodicTableDialog(QtWidgets.QDialog):
-    """
-    Modal dialog to get a selection of elements.
+    """ Modal dialog to get a selection of elements.
 
     Elements that are not having a valid cross sections are disabled.
 
-    optional input is:
+    Parameters
+    ----------
     initial_elements: list of str
         the elements that are already selected
     energy_scale: list or numpy array
         energy-scale of spectrum/spectra to determine likely edges
 
-    Returns:
+    Returns
+    -------
     list of strings: elements.
-    Usage:
+
+    Example
+    -------
     >> PT_dialog =  periodic_table_dialog(None, ['Mn', 'O'])
     >> if PT_dialog.exec_() == periodic_table_dialog.Accepted:
     >>     selected_elements = PT_dialog.get_output()

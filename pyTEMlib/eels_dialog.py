@@ -1,3 +1,8 @@
+"""
+QT dialog window for EELS compositional analysis
+
+Author: Gerd Duscher
+"""
 from PyQt5 import QtCore,  QtWidgets
 from pyTEMlib import eels_dlg
 
@@ -521,7 +526,7 @@ class EELSDialog(QtWidgets.QDialog):
         self.ui.do_fit_button.clicked.connect(self.do_fit_button_click)
 
 class CurveVisualizer(object):
-    """Plots a sidpy.Dataset with spectral
+    """Plots a sidpy.Dataset with spectral dimension-type
 
     """
     def __init__(self, dset, spectrum_number=None, axis=None, leg=None, **kwargs):

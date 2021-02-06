@@ -1,7 +1,14 @@
-#
-# All atom detection is done here
-# Everything is in unit of pixel!!
-#
+""" Atom detection
+
+All atom detection is done here
+Everything is in unit of pixel!!
+
+Autor: Gerd Duscher
+
+part of pyTEMlib
+
+a pycroscopy package
+"""
 
 import numpy as np
 import sys
@@ -16,9 +23,8 @@ from .file_tools import *
 
 
 def find_atoms(image, tags):
-    """
-    Find atoms - old please do not use
-    """
+    """ Find atoms - old please do not use """
+
     image = image - image.min()
     image = image / image.max()
 
@@ -85,9 +91,8 @@ def find_atoms(image, tags):
 
 
 def atoms_clustering(atoms, mid_atoms, number_of_clusters=3, nearest_neighbours=7):
-    """
-    A wrapper for scipy kmeans clustering of atoms.
-    """
+    """ A wrapper for scipy kmeans clustering of atoms."""
+
     # get distances
     nn_tree = cKDTree(np.array(atoms)[:, 0:2])
 
@@ -105,11 +110,15 @@ def gauss_difference(params, area):
     Difference between part of an image and a Gaussian
     This function is used int he atom refine function of pyTEMlib
 
-    Input:
-    params: list of Gaussian parameters [width, position_x, position_y, intensity]
-    area:  numpy array of 2D matrix = part of an image
+    Parameters
+    ----------
+    params: list
+        list of Gaussian parameters [width, position_x, position_y, intensity]
+    area:  numpy array
+        2D matrix = part of an image
 
-    Output:
+    Returns
+    -------
     numpy array: flattened array of difference
 
     """
@@ -118,21 +127,26 @@ def gauss_difference(params, area):
 
 
 def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
-    """
-        fits a Gaussian in a blob of an image
+    """Fits a Gaussian in a blob of an image
 
-    Input:
+    Parameters
+    ----------
     image: np.array or sidpy Dataset
-    atoms: positions of atoms
-    radius: radius of circular mask to define fitting of Gaussian
+    atoms: list or np.array
+        positions of atoms
+    radius: float
+        radius of circular mask to define fitting of Gaussian
+    max_int: float
+        optional - maximum intensity to be considered for fitting (to exclude contaminated areas for example)
+    min_int: float
+        optional - minimum intensity to be considered for fitting (to exclude contaminated holes for example)
+    max_dist: float
+        optional - maximum distance of movement of Gaussian during fitting
 
-    optional
-    max_int: maximum intensity to be considered for fitting (to exclude contaminated areas for example)
-    min_int: minimum intensity to be considered for fitting (to exclude contaminated holes for example)
-    max_dist: maximum distance of movement of Gaussian during fitting
-
-    Output:
-    dictionary: contains new atom positions and other output such as intensity of the fitted Gaussian
+    Returns
+    -------
+    sym: dict
+        dictionary containing new atom positions and other output such as intensity of the fitted Gaussian
     """
     rr = int(radius + 0.5)  # atom radius
     print('using radius ', rr, 'pixels')

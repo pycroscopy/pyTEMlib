@@ -111,17 +111,23 @@ def plus_minus_gen(start, end):
         yield i
         yield -i
 def get_csl_matrix(sigma, rotate_matrix):
-    """\
-    Find matrix that determines the coincidence site lattice
-    for cubic structures.
-    Parameters:
-        sigma: CSL sigma
-        R: rotation matrix
-        centering: "f" for f.c.c., "b" for b.c.c. and None for p.c.
-    Return value:
-        matrix, which column vectors are the unit vectors of the CSL.
+    """  Find matrix that determines the coincidence site lattice for cubic structures.
+
     Based on H. Grimmer et al., Acta Cryst. (1974) A30, 197
     https://doi.org/10.1107/S056773947400043X
+
+    Parameters
+    ----------
+    sigma: float:
+        CSL sigma
+    R: numpy array
+        rotation matrix
+    centering: string
+        "f" for f.c.c., "b" for b.c.c. and None for p.c.
+    Returns
+    -------
+    matrix: numpy array
+        which column vectors are the unit vectors of the CSL.
     """
 
     s = STRUCTURE_MATRIX[0]
@@ -153,13 +159,19 @@ def o_lattice_to_csl(o_lattice, n):
     1 2 -1  ->  1 2 0   ->  1 2 0   ->  1 2 0   ->  1 2 0
     1 -3 2      1 -3 2      1 -3 1      1 -3 0      2 -1 0
 
-    Args:
-     o_lattice (3x3 array): O-lattice in crystal coordinates
-     n (int): Number of O-lattice units per CSL unit
+    Parameters
+    ----------
+    o_lattice: (3x3 array)
+        O-lattice in crystal coordinates
+    n: int
+       Number of O-lattice units per CSL unit
 
-    Returns:
-     CSL matrix (3x3 array) in crystal coordinates
+    Returns
+    -------
+    csl: 3x3 array
+        CSL matrix in crystal coordinates
     """
+
     csl = o_lattice.copy()
     if n < 0:
         csl[0] *= -1
@@ -233,6 +245,7 @@ def orthogonalize_csl(csl, axis):
     u2 = y2/||y2||, y3 = v3 - [(v3 . u1)u1 + (v3 . u2)u2]
     u3 = y3/||y3||
     """
+
     axis = np.array(axis)
     c = np.linalg.solve(csl.transpose(), axis)
     if not is_integer(c):
@@ -312,5 +325,6 @@ def find_smallest_real_multiplier(a, max_n=1000):
     raise ValueError("Sorry, we can't make this matrix integer:\n%s" % a)
 
 def scale_to_integers(v):
+    """scale to integer"""
     return np.array(v * find_smallest_real_multiplier(v)).round().astype(int)
 

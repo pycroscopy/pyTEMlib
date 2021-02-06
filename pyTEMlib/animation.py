@@ -10,6 +10,19 @@ import matplotlib.patches as patches
 
 
 def geometric_ray_diagram(focal_length=1., magnification=False):
+    """ Sketch of geometric ray diagram od one lens
+
+    Parameters
+    ----------
+    focal_length: float
+        focal length of lens
+    magnification: boolean
+        draw magnification on the side
+
+    Returns
+    -------
+    matplotlib figure
+    """
 
     f = focal_length
 

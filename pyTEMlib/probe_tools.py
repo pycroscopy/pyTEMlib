@@ -1,7 +1,9 @@
+"""Functions to calculate electron probe"""
 import numpy as np
 
 
 def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
+    """Make a Gaussian shaped probe """
     size_x = size_x/2
     size_y = size_y/2
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
@@ -12,6 +14,8 @@ def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
 
 
 def make_lorentz(size_x, size_y, gamma=1.0, x0=0., y0=0., intensity=1.):
+    """Make a Lorentzian shaped probe """
+
     size_x = np.floor(size_x / 2)
     size_y = np.floor(size_y / 2)
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]

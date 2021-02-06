@@ -409,7 +409,7 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
             dataset.h5_dataset = h5_group['Raw_Data']
         """
 
-    elif extension in ['.dm3', '.dm4', '.ndata', '.h5']:
+    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5']:
 
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
@@ -544,10 +544,13 @@ def log_results(h5_group, dataset=None, attributes=None):
                 log_group['analysis'] = dataset.meta_data['analysis']
         dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
     if attributes is not None:
-        flat_dict = sidpy.hdf.hdf_utils.flatten_dict(attributes)
-        sidpy.hdf.hdf_utils.write_simple_attrs(log_group, flat_dict)
-        if 'analysis' in attributes:
-            log_group['analysis']  = attributes['analysis']
+        for key, item in attributes.items():
+            if not isinstance(item, dict):
+                log_group[key] = attributes[key]
+            else:
+                flat_dict = sidpy.hdf.hdf_utils.flatten_dict(attributes[key])
+                sidpy.hdf.hdf_utils.write_simple_attrs(log_group, flat_dict)
+
     return log_group
 
 
@@ -595,6 +598,8 @@ def add_dataset(dataset, h5_group=None):
 # Crystal Structure Read and Write
 ###
 def h5_add_crystal_structure(h5_file, crystal_tags):
+    """Write crystal structure to NSID file"""
+
     structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
 
     structure_group['unit_cell'] = crystal_tags['unit_cell']
@@ -621,6 +626,8 @@ def h5_add_to_structure(structure_group, crystal_tags):
 
 
 def h5_get_crystal_structure(structure_group):
+    """Read crystal structure  from NSID file"""
+
     crystal_tags = {'unit_cell': structure_group['unit_cell'][()],
                     'base': structure_group['relative_positions'][()],
                     'crystal_name': structure_group['title'][()]}

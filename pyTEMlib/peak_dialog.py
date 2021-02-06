@@ -1,3 +1,6 @@
+"""
+    EELS Input Dialog for ELNES Analysis
+"""
 from PyQt5 import QtCore,  QtWidgets
 
 import numpy as np
@@ -22,7 +25,7 @@ _version = .001
 
 class PeakFitDialog(QtWidgets.QDialog):
     """
-    EELS Input Dialog for Chemical Analysis
+    EELS Input Dialog for ELNES Analysis
     """
 
     def __init__(self, dataset=None):

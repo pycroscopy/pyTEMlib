@@ -1,3 +1,5 @@
+"""GUI definitions for peak_fit_dialog"""
+
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'untitled.ui'
@@ -10,6 +12,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class UiDialog(object):
+    """GUI definitions for peak_fit_dialog"""
+
     def __init__(self, dialog):
         dialog.setObjectName('Fit Peaks')
         dialog.resize(371, 184)

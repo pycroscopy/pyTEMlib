@@ -1,22 +1,21 @@
-###################################################################
-# Part of pyTEMlib
-# by Gerd Duscher
-# created 10/29/2020
-####################################################################
+""" dft simulations tools
 
-####################################################################
-# Supports the conversion of DFT data to simulated EELS spectra
-#
-# - exciting_get_spectra:  importing dielectric function from the exciting program
-# - final_state_broadening: apply final state broadening to loss-spectra
-#
-####################################################################
+Part of pyTEMlib
+by Gerd Duscher
+created 10/29/2020
+
+Supports the conversion of DFT data to simulated EELS spectra
+
+- exciting_get_spectra:  importing dielectric function from the exciting program
+- final_state_broadening: apply final state broadening to loss-spectra
+"""
 
 import numpy as np
 from lxml import etree
 
 
 def exciting_get_spectra(file):
+    """get EELS spectra from exciting calculation"""
     
     tags = {'data': {}}
 
@@ -49,6 +48,25 @@ def exciting_get_spectra(file):
 
 
 def final_state_broadening(x, y, start, instrument):
+    """Final state smearing of ELNES edges
+
+    Parameters
+    ----------
+    x: numpy array
+        x or energy loss axis of density of states
+    y: numpy array
+        y or intensity axis of density of states
+    start: float
+        start energy of edge
+    instrument: float
+        instrument broadening
+
+    Return
+    ------
+    out_data: numpy array
+        smeared intensity according to final state and instrument broadening
+    """
+
     # Getting the smearing
     a_i = 107.25*5
     b_i = 0.04688*2.

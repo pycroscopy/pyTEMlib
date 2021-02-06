@@ -1,3 +1,9 @@
+"""
+Gui for info_dialog
+
+Author: Gerd Duscher
+
+"""
 # -*- coding: utf-8 -*-
 
 # Form implementation generated from reading ui file 'untitled.ui'

@@ -1,9 +1,10 @@
+"""Will move to sidpy"""
 from PyQt5 import QtWidgets, QtCore
 
 
 class ProgressDialog(QtWidgets.QDialog):
-    """
-    Simple dialog that consists of a Progress Bar and a Button.
+    """Simple dialog that consists of a Progress Bar and a Button.
+
     Clicking on the button results in the start of a timer and
     updates the progress bar.
     """

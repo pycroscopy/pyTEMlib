@@ -1,4 +1,4 @@
-
+"""utility functions for sidpy; will move to sidpy"""
 import numpy as np
 import sidpy
 import h5py
@@ -9,6 +9,8 @@ from IPython.display import display
 
 
 class ChooseDataset(object):
+    """Widget to select dataset object """
+
     def __init__(self, input_object, show_dialog=True):
         if isinstance(input_object, sidpy.Dataset):
             if isinstance(input_object.h5_dataset, h5py.Dataset):
@@ -55,6 +57,19 @@ class ChooseDataset(object):
 
 
 def get_dimensions_by_order(dims_in, dataset):
+    """get dimension
+
+    Parameters
+    ----------
+    dims_in: int or list of int
+        the dimensions by numerical order
+    dataset: sidpy.Dataset
+
+    Returns
+    -------
+    dims_out: list of dimensions
+    """
+
     if isinstance(dims_in, int):
         dims_in = [dims_in]
     dims_out = []
@@ -66,6 +81,19 @@ def get_dimensions_by_order(dims_in, dataset):
 
 
 def get_dimensions_by_type(dims_in, dataset):
+    """ get dimension by dimension_type name
+
+    Parameters
+    ----------
+    dims_in: dimension_type or list of dimension_types
+        the dimensions by numerical order
+    dataset: sidpy.Dataset
+
+    Returns
+    -------
+    dims_out: list of dimensions
+    """
+
     if isinstance(dims_in, (str, sidpy.DimensionType)):
         dims_in = [dims_in]
     for i in range(len(dims_in)):
@@ -79,6 +107,8 @@ def get_dimensions_by_type(dims_in, dataset):
 
 
 def make_dummy_dataset(value_type):
+    """Make a dummy sidpy.Dataset """
+
     assert isinstance(value_type, sidpy.DataType)
     if type == sidpy.DataType.SPECTRUM:
         dataset = sidpy.Dataset.from_array(np.arange(100))
@@ -100,6 +130,8 @@ def plot(dataset):
 
 
 def get_image_dims(dataset):
+    """Get all spatial dimensions"""
+
     image_dims = []
     for dim, axis in dataset._axes.items():
         if axis.dimension_type == sidpy.DimensionType.SPATIAL:
@@ -108,6 +140,7 @@ def get_image_dims(dataset):
 
 
 def get_extent(dataset):
+    """get extent to plot with matplotlib"""
     image_dims = get_image_dims(dataset)
     return dataset.get_extent(image_dims)
 

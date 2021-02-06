@@ -1,7 +1,14 @@
-from PyQt5 import QtCore,  QtWidgets
+"""
+Input Dialog for Image Analysis
 
+Author: Gerd Duscher
+
+"""
 import numpy as np
 import sidpy
+
+from PyQt5 import QtCore,  QtWidgets
+
 from pyTEMlib import info_dlg
 import pyTEMlib.interactive_eels as ieels
 from pyTEMlib.microscope import microscope
@@ -12,25 +19,12 @@ _version = 000
 
 class InfoDialog(QtWidgets.QDialog):
     """
-    EELS Input Dialog for Chemical Analysis
+    Input Dialog for Image Analysis
 
     Opens a PyQt5 GUi Dialog that allows to set the experimental parameter necessary for a Quantification.
 
 
-    The dialog operates on a sidpy dataset which
-    -reads and sets the spectral dimension with ``offset`` and ``dispersion``.
-    -reads and writes an 'experiment' dictionary in the metadata of the sidpy Dataset.
-
-    access dimension with dataset.energy_scale
-    access experimental parameters with ``dataset.metadata['experiment']``
-
-    experimental parameters are:
-    -acquisition time
-    -convergence angle
-    -collection angle
-    -acceleration voltage
-
-    -flux of electrons
+    The dialog operates on a sidpy dataset
     """
 
     def __init__(self, dataset=None):
