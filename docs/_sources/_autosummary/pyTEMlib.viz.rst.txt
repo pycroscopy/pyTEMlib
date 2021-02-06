@@ -1,0 +1,43 @@
+pyTEMlib.viz
+============
+
+.. automodule:: pyTEMlib.viz
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      plot
+      plot_image
+      plot_spectrum
+      plot_stack
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      CurveVisualizer
+   
+   
+
+   
+   
+   
+
+
+

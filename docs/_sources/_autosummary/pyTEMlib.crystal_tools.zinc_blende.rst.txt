@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.zinc\_blende
+====================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: zinc_blende

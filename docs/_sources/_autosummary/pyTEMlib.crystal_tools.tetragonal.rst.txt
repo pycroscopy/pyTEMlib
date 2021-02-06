@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.tetragonal
+==================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: tetragonal

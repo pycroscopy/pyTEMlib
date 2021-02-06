@@ -1,0 +1,6 @@
+pyTEMlib.animation.geometric\_ray\_diagram
+==========================================
+
+.. currentmodule:: pyTEMlib.animation
+
+.. autofunction:: geometric_ray_diagram

@@ -1,0 +1,6 @@
+pyTEMlib.viz.plot\_stack
+========================
+
+.. currentmodule:: pyTEMlib.viz
+
+.. autofunction:: plot_stack

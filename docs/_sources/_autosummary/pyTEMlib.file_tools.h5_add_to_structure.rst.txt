@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.h5\_add\_to\_structure
+===========================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: h5_add_to_structure

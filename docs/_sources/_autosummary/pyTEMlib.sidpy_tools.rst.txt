@@ -1,0 +1,46 @@
+pyTEMlib.sidpy\_tools
+=====================
+
+.. automodule:: pyTEMlib.sidpy_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      get_dimensions_by_order
+      get_dimensions_by_type
+      get_extent
+      get_image_dims
+      make_dummy_dataset
+      plot
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      ChooseDataset
+      FileWidget_sidpy
+   
+   
+
+   
+   
+   
+
+
+
