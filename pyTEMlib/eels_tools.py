@@ -103,7 +103,6 @@ def read_dm3_eels_info(original_metadata):
                     # for val in item.values():
                     experiment['collection_angle'] = item
     if 'Microscope Info' in exp_dictionary:
-        # print(exp_dictionary['Microscope Info'].keys())
         if 'Voltage' in exp_dictionary['Microscope Info']:
             experiment['acceleration_voltage'] = exp_dictionary['Microscope Info']['Voltage']
         if 'Name' in exp_dictionary['Microscope Info']:
@@ -111,8 +110,10 @@ def read_dm3_eels_info(original_metadata):
     return experiment
 
 
+
+
 def set_previous_quantification(current_dataset):
-    """Set previous qunatifications from a sidpy.Dataset"""
+    """Set previous quantification from a sidpy.Dataset"""
 
     current_channel = current_dataset.h5_dataset.parent
     found_metadata = False
@@ -200,7 +201,28 @@ def model_ll(x, p, only_positive_intensity):
 
 
 def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_intensity=False):
-    """fit peaks to spectrum"""
+    """fit peaks to spectrum
+
+    Parameters
+    ----------
+    spectrum: numpy array
+        spectrum to be fitted
+    energy_scale: numpy array
+        energy scale of spectrum
+    pin: list of float
+        intial guess of peaks position amplitude width
+    start_fit: int
+        channel where fit starts
+    end_fit: int
+        channel where fit starts
+    only_positive_intensity: boolean
+        allows only for positive amplitueds if True; default = False)
+
+    Returns
+    -------
+    p: list of float
+        fitting parameters
+    """
 
     # TODO: remove zero_loss_fit_width add absolute
 
@@ -275,16 +297,30 @@ def get_z(z):
 
 
 def list_all_edges(z):
-    """List all ionization edges of an element with atomic number z"""
+    """List all ionization edges of an element with atomic number z
+
+    Parameters
+    ----------
+    z: int
+        atomic number
+
+    Returns
+    -------
+    out_string: str
+        string with all major edges in energy range
+    """
 
     element = str(z)
     x_sections = get_x_sections()
+    out_string = ''
     print('Major edges')
     for key in all_edges:
         if key in x_sections[element]:
             if 'onset' in x_sections[element][key]:
                 print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
-
+                out_string = outstring + \
+                             f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV /n"
+    return out_string
 
 def find_major_edges(edge_onset, maximal_chemical_shift=5.):
     """Find all major edges within an energy range
@@ -495,7 +531,8 @@ def make_edges(edges_present, energy_scale, e_0, coll_angle):
 
 
 def make_cross_sections(edges, energy_scale, e_0, coll_angle):
-    """Updates the edges dictionary with collection angle-integrated X-ray photoabsorption cross-sections
+    """Updates the edges dictionary with collection angle-integrated X-ray photo-absorption cross-sections
+
     """
     for key in edges:
         if key.isdigit():
@@ -515,8 +552,8 @@ def power_law(energy, a, r):
 
 def power_law_background(spectrum, energy_scale, fit_area, verbose=False):
     """fit of power law to spectrum """
-    # Determine energy window  for background fit in pixels
 
+    # Determine energy window  for background fit in pixels
     startx = np.searchsorted(energy_scale, fit_area[0])
     endx = np.searchsorted(energy_scale, fit_area[1])
 

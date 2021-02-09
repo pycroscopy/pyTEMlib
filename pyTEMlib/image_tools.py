@@ -73,6 +73,78 @@ def get_wavelength(e0):
     eV = const.e * e0
     return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
 
+def read_image_info(dataset):
+    """Updates dataset.metadata['experiment'] with essential information read from original metadata
+
+    This depends on whether it is originally a nion or a dm3 file
+    """
+    if not isinstance(dataset, sidpy.Dataset):
+        raise TypeError("we need a sidpy.Dataset")
+
+    if 'metadata' in dataset.original_metadata:
+        if 'hardware_source' in dataset.original_metadata['metadata']:
+            experiment_dictionary = read_nion_image_info(dataset.original_metadata)
+    if 'DM' in dataset.original_metadata:
+        experiment_dictionary = read_dm3_image_info(dataset.original_metadata)
+    if 'experiment' not in dataset.metadata:
+         dataset.metadata['experiment'] = {}
+    dataset.metadata['experiment'].update(experiment_dictionary)
+
+def read_dm3_image_info(original_metadata):
+    """Read essential parameter from original_metadata originating from a dm3 file"""
+    if not isinstance(original_metadata, dict):
+        raise TypeError('We need a dictionary to read')
+
+    if 'DM' not in original_metadata:
+        return {}
+    main_image = original_metadata['DM']['chosen_image']
+    exp_dictionary = original_metadata['ImageList'][str(main_image)]['ImageTags']
+    experiment = {}
+
+    if 'Acquisition' in exp_dictionary:
+        if 'Parameters' in exp_dictionary['Acquisition']:
+            if 'High Level' in exp_dictionary['Acquisition']['Parameters']:
+                if 'Exposure (s)' in exp_dictionary['Acquisition']['Parameters']['High Level']:
+                    experiment['exposure_time'] = exp_dictionary['Acquisition']['Parameters']['High Level'][
+                        'Exposure (s)']
+
+    if 'Microscope Info' in exp_dictionary:
+        if 'Microscope' in exp_dictionary['Microscope Info']:
+            experiment['microscope'] = exp_dictionary['Microscope Info']['Microscope']
+        if 'Voltage' in exp_dictionary['Microscope Info']:
+            experiment['acceleration_voltage'] = exp_dictionary['Microscope Info']['Voltage']
+        if 'Illumination Mode' in exp_dictionary['Microscope Info']:
+            if exp_dictionary['Microscope Info']['Illumination Mode'] == 'TEM':
+                experiment['convergence_angle'] = 0.0
+                experiment['collection_angle'] = 100.0
+            if exp_dictionary['Microscope Info']['Illumination Mode'] == 'SPOT':
+                experiment['convergence_angle'] = 10.0
+                experiment['collection_angle'] = 50.0
+    return experiment
+
+
+def read_nion_image_info(original_metadata):
+    """Read essential parameter from original_metadata originating from a dm3 file"""
+    if not isinstance(original_metadata, dict):
+        raise TypeError('We need a dictionary to read')
+    if 'metadata' not in original_metadata:
+        return {}
+    if 'hardware_source' not in original_metadata['metadata']:
+        return {}
+    if 'ImageScanned' not in original_metadata['metadata']['hardware_source']:
+        return {}
+
+    exp_dictionary = original_metadata['metadata']['hardware_source']['ImageScanned']
+    experiment = {}
+    print(exp_dictionary)
+    if 'autostem' in exp_dictionary:
+        print('auto')
+
+    print(exp_dictionary.keys())
+    print()
+
+    print(experiment)
+
 
 def fourier_transform(dset):
     """
@@ -180,8 +252,8 @@ def power_spectrum(dset, smoothing=3):
 
     mask[np.where(mask == 1)] = 0  # just in case of overlapping disks
 
-    minimum_intensity = power_spec[np.where(mask == 2)].min() * 0.95
-    maximum_intensity = power_spec[np.where(mask == 2)].max() * 1.05
+    minimum_intensity = np.array(power_spec)[np.where(mask == 2)].min() * 0.95
+    maximum_intensity = np.array(power_spec)[np.where(mask == 2)].max() * 1.05
     power_spec.metadata = {'fft': {'smoothing': smoothing,
                                    'minimum_intensity': minimum_intensity, 'maximum_intensity': maximum_intensity}}
     power_spec.title = 'power spectrum ' + power_spec.source
