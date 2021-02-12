@@ -47,7 +47,7 @@ def get_cubic_theta(hkl, m, n=1):
     if m > 0:
         return 2 * atan(np.sqrt(sqsum) * n / m)
     else:
-        return pi
+        return np.pi
 
 
 def get_theta_m_n_list(hkl, sigma, verbose=False):
