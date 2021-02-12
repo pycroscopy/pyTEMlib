@@ -1,6 +1,0 @@
-pyTEMlib.crystal\_tools.perovskite
-==================================
-
-.. currentmodule:: pyTEMlib.crystal_tools
-
-.. autofunction:: perovskite

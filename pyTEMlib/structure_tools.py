@@ -78,16 +78,16 @@ def get_theta_m_n_list(hkl, sigma, verbose=False):
 
 
 def rodrigues(a, angle, verbose=False):
-    "use Rodrigues' rotation formula to get rotation matrix"
+    """use Rodrigues' rotation formula to get rotation matrix"""
     a = np.array(a, dtype=float)
-    a /= np.sqrt(np.inner(a, a)) # make unit vector
+    a /= np.sqrt(np.inner(a, a))  # make unit vector
     #assert abs(sin_angle - sin(acos(cos_angle))) < 1e-6
     if verbose:
-        print ("rotation angle:", np.degrees(angle))
-        print ("rotation axis:", a)
-    omega = np.array([[   0., -a[2],  a[1]],
-                   [ a[2],    0., -a[0]],
-                   [-a[1],  a[0],    0.]])
+        print("rotation angle:", np.degrees(angle))
+        print("rotation axis:", a)
+    omega = np.array([[0., -a[2], a[1]],
+                     [a[2], 0., -a[0]],
+                     [-a[1], a[0], 0.]])
     rm = (np.identity(3) + omega * np.sin(angle)
                             + np.dot(omega, omega) * (1 - np.cos(angle)))
     if verbose:

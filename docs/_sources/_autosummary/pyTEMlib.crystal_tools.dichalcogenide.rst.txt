@@ -1,6 +1,0 @@
-pyTEMlib.crystal\_tools.dichalcogenide
-======================================
-
-.. currentmodule:: pyTEMlib.crystal_tools
-
-.. autofunction:: dichalcogenide
