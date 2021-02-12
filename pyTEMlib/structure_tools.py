@@ -28,6 +28,7 @@ STRUCTURE_MATRIX = np.array([np.identity(3),
                               [0, 0.5, 0.5],
                               [0.5, 0, 0.5]]])
 
+
 # 0 is coprime only with 1
 def coprime(a, b):
     return gcd(a,b) in (0, 1)
@@ -81,7 +82,7 @@ def rodrigues(a, angle, verbose=False):
     """use Rodrigues' rotation formula to get rotation matrix"""
     a = np.array(a, dtype=float)
     a /= np.sqrt(np.inner(a, a))  # make unit vector
-    #assert abs(sin_angle - sin(acos(cos_angle))) < 1e-6
+    # assert abs(sin_angle - sin(acos(cos_angle))) < 1e-6
     if verbose:
         print("rotation angle:", np.degrees(angle))
         print("rotation axis:", a)
@@ -95,7 +96,7 @@ def rodrigues(a, angle, verbose=False):
     return rm
 
 def is_integer(a, epsilon=1e-7):
-    "return true if numpy Float array consists off all integers"
+    """return true if numpy Float array consists off all integers"""
     return (np.abs(a - np.round(a)) < epsilon).all()
 
 def get_smallest_multiplier(a, max_n=1000):
