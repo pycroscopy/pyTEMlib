@@ -101,7 +101,7 @@ class TestUtilityFunctions(unittest.TestCase):
         u = 0.1
         actual_cell, actual_base, actual_atoms = cs.wurzite(1, 2, u, 'Fe')
         desired_cell = [[1.0,  0.0,  0.0], [-0.5, 0.866, 0.0], [0.0,  0.0,  2.0]]
-        desired_base =  [(2./3., 1./3., .500), (1./3., 2./3., 0.000), (2./3., 1./3., 0.5+u), (1./3., 2./3., u)]
+        desired_base = [(2./3., 1./3., .500), (1./3., 2./3., 0.000), (2./3., 1./3., 0.5+u), (1./3., 2./3., u)]
         desired_atoms = ['Fe'] * 4
 
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
@@ -113,12 +113,11 @@ class TestUtilityFunctions(unittest.TestCase):
         with self.assertRaises(TypeError):
             cs.wurzite(1, 2, 0., 1)
 
-
     def test_rocksalt(self):
         actual_cell, actual_base, actual_atoms = cs.rocksalt(1, 'Fe')
         desired_cell = np.identity(3)
-        desired_base =  [(0.0, 0.0, 0.0), (0.5, 0.0, 0.5), (0.5, 0.5, 0.0), (0.0, 0.5, 0.5),
-                         (0.5, 0.5, 0.5), (0.0, 0.5, 0.0), (0.0, 0.0, 0.5), (0.5, 0.0, 0.0)]
+        desired_base = [(0.0, 0.0, 0.0), (0.5, 0.0, 0.5), (0.5, 0.5, 0.0), (0.0, 0.5, 0.5),
+                        (0.5, 0.5, 0.5), (0.0, 0.5, 0.0), (0.0, 0.0, 0.5), (0.5, 0.0, 0.0)]
         desired_atoms = ['Fe'] * 8
 
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
@@ -133,8 +132,8 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_zincblende(self):
         actual_cell, actual_base, actual_atoms = cs.zincblende(1, 'Fe')
         desired_cell = np.identity(3)
-        desired_base =  [(0.00, 0.00, 0.00), (0.50, 0.00, 0.50), (0.50, 0.50, 0.00), (0.00, 0.50, 0.50),
-                         (0.25, 0.25, 0.25), (0.75, 0.25, 0.75), (0.75, 0.75, 0.25), (0.25, 0.75, 0.75)]
+        desired_base = [(0.00, 0.00, 0.00), (0.50, 0.00, 0.50), (0.50, 0.50, 0.00), (0.00, 0.50, 0.50),
+                        (0.25, 0.25, 0.25), (0.75, 0.25, 0.75), (0.75, 0.75, 0.25), (0.25, 0.75, 0.75)]
         desired_atoms = ['Fe'] * 8
 
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
@@ -145,7 +144,6 @@ class TestUtilityFunctions(unittest.TestCase):
             cs.zincblende('1', 'Fe')
         with self.assertRaises(TypeError):
             cs.zincblende(1, 1)
-
 
     def test_perovskite(self):
         actual_cell, actual_base, actual_atoms = cs.perovskite(1, 'Fe')

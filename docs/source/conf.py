@@ -14,12 +14,32 @@
 #
 import os
 import sys
+import shutil
 import matplotlib
-import sphinx_rtd_theme
-
-sys.path.insert(0, os.path.abspath('../'))
-import pyTEMlib 
 matplotlib.use('agg')
+import sphinx_rtd_theme
+sys.path.insert(0, os.path.abspath('../..'))
+import pyTEMlib
+matplotlib.use('agg')
+
+examples_source = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "..", "..", "notebooks"))
+examples_dest = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "notebooks"))
+
+if os.path.exists(examples_dest):
+    shutil.rmtree(examples_dest)
+os.mkdir(examples_dest)
+
+for root, dirs, files in os.walk(examples_source):
+    for dr in dirs:
+        os.mkdir(os.path.join(root.replace(examples_source, examples_dest), dr))
+    for fil in files:
+        if os.path.splitext(fil)[1] in [".ipynb", ".md", ".rst"]:
+            source_filename = os.path.join(root, fil)
+            dest_filename = source_filename.replace(examples_source, examples_dest)
+            shutil.copyfile(source_filename, dest_filename)
+
 
 # -- Project information -----------------------------------------------------
 
