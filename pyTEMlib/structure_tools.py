@@ -29,9 +29,10 @@ STRUCTURE_MATRIX = np.array([np.identity(3),
                               [0.5, 0, 0.5]]])
 
 
-# 0 is coprime only with 1
 def coprime(a, b):
-    return gcd(a,b) in (0, 1)
+    """0 is coprime only with 1"""
+
+    return gcd(a, b) in (0, 1)
 
 
 def get_cubic_sigma(hkl, m, n=1):
@@ -41,8 +42,9 @@ def get_cubic_sigma(hkl, m, n=1):
         sigma /= 2
     return (sigma if sigma > 1 else None)
 
+
 def get_cubic_theta(hkl, m, n=1):
-    h,k,l = hkl
+    h, k, l = hkl
     sqsum = h*h + k*k + l*l
     assert sqsum > 0
     if m > 0:
@@ -89,15 +91,16 @@ def rodrigues(a, angle, verbose=False):
     omega = np.array([[0., -a[2], a[1]],
                      [a[2], 0., -a[0]],
                      [-a[1], a[0], 0.]])
-    rm = (np.identity(3) + omega * np.sin(angle)
-                            + np.dot(omega, omega) * (1 - np.cos(angle)))
+    rm = (np.identity(3) + omega * np.sin(angle) + np.dot(omega, omega) * (1 - np.cos(angle)))
     if verbose:
         print("rotation matrix:", rm)
     return rm
 
+
 def is_integer(a, epsilon=1e-7):
     """return true if numpy Float array consists off all integers"""
     return (np.abs(a - np.round(a)) < epsilon).all()
+
 
 def get_smallest_multiplier(a, max_n=1000):
     """return the smallest positive integer n such that matrix a multiplied
@@ -106,7 +109,8 @@ def get_smallest_multiplier(a, max_n=1000):
     for i in range(1, max_n):
         if is_integer(i*a):
             return i
-        
+
+
 def plus_minus_gen(start, end):
     """
     Generate a list of plus and minus alternating integers
