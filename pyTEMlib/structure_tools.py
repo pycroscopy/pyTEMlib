@@ -288,9 +288,8 @@ def orthogonalize_csl(csl, axis):
             if new_vec[1] == new_vec[2]:
                 new_vec = [new_vec[0], new_vec[1], new_vec[3]]
             else:
-                new_vec = reduce_vector([new_vec[0] * new_vec[2],
-                                         new_vec[1] * new_vec[2],
-                                         new_vec[3] * new_vec[1]])
+                new_vec = new_vec  # Todo: where is reduce_vector function
+                # reduce_vector([new_vec[0] * new_vec[2], new_vec[1] * new_vec[2], new_vec[3] * new_vec[1]])
         assert is_integer(new_vec)
         return new_vec * vec_sign
 
