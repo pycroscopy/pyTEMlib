@@ -1,6 +1,0 @@
-pyTEMlib.crystal\_tools.cubic
-=============================
-
-.. currentmodule:: pyTEMlib.crystal_tools
-
-.. autofunction:: cubic

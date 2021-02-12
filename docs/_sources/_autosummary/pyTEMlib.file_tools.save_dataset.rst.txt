@@ -1,6 +1,0 @@
-pyTEMlib.file\_tools.save\_dataset
-==================================
-
-.. currentmodule:: pyTEMlib.file_tools
-
-.. autofunction:: save_dataset

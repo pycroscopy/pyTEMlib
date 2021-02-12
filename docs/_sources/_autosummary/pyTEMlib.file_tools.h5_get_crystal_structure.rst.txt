@@ -1,6 +1,0 @@
-pyTEMlib.file\_tools.h5\_get\_crystal\_structure
-================================================
-
-.. currentmodule:: pyTEMlib.file_tools
-
-.. autofunction:: h5_get_crystal_structure

@@ -318,7 +318,7 @@ def list_all_edges(z):
         if key in x_sections[element]:
             if 'onset' in x_sections[element][key]:
                 print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
-                out_string = outstring + \
+                out_string = out_string + \
                              f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV /n"
     return out_string
 

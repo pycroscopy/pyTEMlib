@@ -1,6 +1,0 @@
-pyTEMlib.viz.plot
-=================
-
-.. currentmodule:: pyTEMlib.viz
-
-.. autofunction:: plot

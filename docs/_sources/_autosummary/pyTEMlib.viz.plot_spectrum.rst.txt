@@ -1,6 +1,0 @@
-pyTEMlib.viz.plot\_spectrum
-===========================
-
-.. currentmodule:: pyTEMlib.viz
-
-.. autofunction:: plot_spectrum
