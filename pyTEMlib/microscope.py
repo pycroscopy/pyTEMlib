@@ -1,12 +1,12 @@
 """ default microscope parameters from config file
 
 Read microscope CSV file
-Original by EELSLab Author: Francisco Javier de la Peña
+Original by EELSLab Author: Francisco Javier de la Peï¿½a
 Made more flexible for load microscopes with csv.DictReader
 for pyTEMLib by Gerd
 copyright 2012, Gerd Duscher
 """
-# -*- coding: cp1252 -*-
+# -*- coding: utf-8 -*-
 
 import csv
 import os.path

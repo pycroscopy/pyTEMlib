@@ -1,5 +1,5 @@
 """
-Input Dialog for Image Analysis
+Input Dialog for EELS Analysis
 
 Author: Gerd Duscher
 
@@ -19,7 +19,7 @@ _version = 000
 
 class InfoDialog(QtWidgets.QDialog):
     """
-    Input Dialog for Image Analysis
+    Input Dialog for EELS Analysis
 
     Opens a PyQt5 GUi Dialog that allows to set the experimental parameter necessary for a Quantification.
 

@@ -19,8 +19,8 @@ import sys
 from .config_dir import config_path
 
 # from .nsi_reader import NSIDReader
-from .dm3_reader import DM3Reader
-from .nion_reader import NionReader
+from SciFiReaders import DM3Reader
+from SciFiReaders import NionReader
 import pyNSID
 import sidpy
 
