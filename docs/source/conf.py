@@ -291,7 +291,7 @@ latex_documents = [
 # latex_appendices = []
 
 # If false, no module index is generated.
-#latex_domain_indices = True
+# latex_domain_indices = True
 
 # -- Options for manual page output ------------------------------------------
 
@@ -317,13 +317,13 @@ texinfo_documents = [
 ]
 
 # Documents to append as an appendix to all manuals.
-#texinfo_appendices = []
+# texinfo_appendices = []
 
 # If false, no module index is generated.
 # texinfo_domain_indices = True
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
-#texinfo_show_urls = 'footnote'
+# texinfo_show_urls = 'footnote'
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 # texinfo_no_detailmenu = False
@@ -350,7 +350,7 @@ epub_copyright = copyright
 # epub_language = ''
 
 # The scheme of the identifier. Typical schemes are ISBN or URL.
-#epub_scheme = ''
+# epub_scheme = ''
 
 # The unique identifier of the text. This can be a ISBN number
 # or the project homepage.
@@ -365,7 +365,7 @@ epub_copyright = copyright
 # epub_cover = ()
 
 # A sequence of (type, uri, title) tuples for the guide element of content.opf.
-#epub_guide = ()
+# epub_guide = ()
 
 # HTML files that should be inserted before the pages created by sphinx.
 # The format is a list of tuples containing the path and title.
@@ -373,13 +373,13 @@ epub_copyright = copyright
 
 # HTML files that should be inserted after the pages created by sphinx.
 # The format is a list of tuples containing the path and title.
-#e pub_post_files = []
+# epub_post_files = []
 
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
 # The depth of the table of contents in toc.ncx.
-#epub_tocdepth = 3
+# epub_tocdepth = 3
 
 # Allow duplicate toc entries.
 # epub_tocdup = True
@@ -388,7 +388,7 @@ epub_exclude_files = ['search.html']
 # epub_tocscope = 'default'
 
 # Fix unsupported image types using the Pillow.
-#epub_fix_images = False
+# epub_fix_images = False
 
 # Scale large images.
 # epub_max_image_width = 0
