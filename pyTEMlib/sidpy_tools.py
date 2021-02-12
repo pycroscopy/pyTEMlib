@@ -41,15 +41,20 @@ class ChooseDataset(object):
         self.select_image.index = (len(self.dataset_names) - 1)
 
     def get_dataset_list(self):
+        """ Get by Log number sorted list of datasets"""
         datasets = self.reader.read()
-        for dset in datasets[::-1]:
-            if self.dataset_type is None:
-                self.dataset_names.append('/'.join(dset.title.replace('-', '_').split('/')[-2:]))
-                self.dataset_list.append(dset)
-            else:
-                if dset.data_type == self.data_type:
-                    self.dataset_names.append('/'.join(dset.title.replace('-', '_').split('/')[-2:]))
-                    self.dataset_list.append(dset)
+        order = []
+        for dset in datasets:
+            if self.dataset_type is None or dset.data_type == self.data_type:
+                if 'Log' in dset.title:
+                    position = dset.title.find(('Log_')) + 4
+                    order.append(int(dset.title[position:position + 3])+1)
+                else:
+                    order.append(0)
+        for index in np.argsort(order):
+            dset = datasets[index]
+            self.dataset_names.append('/'.join(dset.title.replace('-', '_').split('/')[-1:]))
+            self.dataset_list.append(dset)
 
     def set_dataset(self, b):
         index = self.select_image.index
