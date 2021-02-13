@@ -751,9 +751,9 @@ def ring_pattern_calculation(tags, verbose=False):
     for j in range(len(g_hkl)):
         F = 0
         for b in range(len(base)):
-            # Atomic formfactor for element and momentum change (g vector)
+            # Atomic form factor for element and momentum change (g vector)
             f = feq(tags['elements'][b], np.linalg.norm(g_hkl[j]))
-            F += f * np.exp(-2*np.pi*1j*(g_hkl[j]*base[b]).sum())        
+            F += f * np.exp(-2*np.pi*1j*(g_hkl[j]*base[b]).sum())
         structure_factors.append(F)
     F = structure_factors = np.array(structure_factors)
 
@@ -815,7 +815,7 @@ def kinematic_scattering(tags, verbose=False):
 
         Parameters
         ----------
-        a: dict
+        tags: dict
             dictionary with crystal structure:
             'unit_cell', 'base' 'elements'
             and with experimental parameters:
@@ -1552,11 +1552,11 @@ def diffraction_pattern(tags, grey=False):
             p = points[ix]
             inten = intensity[ix]
             if tags['color reflections'] == 'intensity':
-                circles(p[:, 0], p[:, 1], s=radius, c=np.log(inten+1), cmap=cm, alpha=0.9, edgecolor='') 
+                circles(p[:, 0], p[:, 1], s=radius, c=np.log(inten+1), cmap=cm, alpha=0.9, edgecolor='')
             else:
                 for i in range(len(Laue_Zone)):
                     color = Lauecolor[int(Laue_Zone[i])]
-                    circles(p[i, 0], p[i, 1], s=radius, c=color, cmap=cm, alpha=0.9, edgecolor='')          
+                    circles(p[i, 0], p[i, 1], s=radius, c=color, cmap=cm, alpha=0.9, edgecolor='')
 
     if not tags['color zero'] == 'None':
         circle = plt.Circle((0, 0), radius, color=tags['color zero'])

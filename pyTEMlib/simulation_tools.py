@@ -22,7 +22,7 @@ def exciting_get_spectra(file):
     tree = etree.ElementTree(file=file)
     root = tree.getroot()
 
-    data = tags['data'] 
+    data = tags['data']
 
     if root.tag in ['loss', 'dielectric']:
         print(' reading ', root.tag, ' function from file ', file)
@@ -95,7 +95,7 @@ def final_state_broadening(x, y, start, instrument):
             out_data[i] = 0.0
 
     p[1] = instrument
-    in_data = out_data.copy()   
+    in_data = out_data.copy()
     for i in range(zero-5, len(x)):
         p[0] = x[i]
         lor = lorentzian(x+1e-9, p)

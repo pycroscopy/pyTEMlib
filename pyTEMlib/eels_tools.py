@@ -40,7 +40,7 @@ from scipy.optimize import leastsq  # least square fitting routine fo scipy
 
 import pickle  # pkg_resources,
 
-# ## And we use the image tool library of Quantifit
+# ## And we use the image tool library of pyTEMlib
 import pyTEMlib.file_tools as ft
 from pyTEMlib.config_dir import data_path
 
@@ -108,8 +108,6 @@ def read_dm3_eels_info(original_metadata):
         if 'Name' in exp_dictionary['Microscope Info']:
             experiment['microscope'] = exp_dictionary['Microscope Info']['Name']
     return experiment
-
-
 
 
 def set_previous_quantification(current_dataset):
@@ -318,9 +316,10 @@ def list_all_edges(z):
         if key in x_sections[element]:
             if 'onset' in x_sections[element][key]:
                 print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
-                out_string = out_string + \
-                             f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV /n"
+                out_string = out_string + f" {x_sections[element]['name']}-{key}: " \
+                                          f"{x_sections[element][key]['onset']:8.1f} eV /n"
     return out_string
+
 
 def find_major_edges(edge_onset, maximal_chemical_shift=5.):
     """Find all major edges within an energy range

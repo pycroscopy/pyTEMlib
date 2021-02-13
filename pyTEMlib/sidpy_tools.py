@@ -204,7 +204,6 @@ class FileWidget_sidpy(object):
         self.dir_name = directory
         self.dir_dictionary = {}
         self.dir_list = []
-        i = 0
         self.dir_list = ['.', '..'] + os.listdir(directory)
 
     def set_options(self):
@@ -228,7 +227,7 @@ class FileWidget_sidpy(object):
                         display_file_list.append(f" {name}  - {size:.1f} MB")
                 else:
                     file_list.append(dir_list[i])
-                    #if extension in ['.h5', '.ndata']:
+                    # if extension in ['.h5', '.ndata']:
                     #    # tags = open_file(os.path.join(self.dir_name, name))
                     #    display_file_list.append(f" {tags['original_name']}{extension}  - {size:.1f} MB")
                     if extension in ['.hf5']:

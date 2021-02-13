@@ -35,7 +35,6 @@ for line in f:
                         value = value+' '+line_list[i]
                     else:
                         value = line_list[i]
-                    
                 defaults_dict[key] = value
             elif line_list[0] in bool_keys:
                 key, value = line_list[0:2]

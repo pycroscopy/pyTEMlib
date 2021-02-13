@@ -46,7 +46,7 @@ setuptools.setup(
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
     install_requires=['scipy', 'numpy', 'pillow', 'simpleITK', 'ase',
-                      'scikit-image', 'scikit-learn', 'pyNSID', 'sidpy', 'SciFiReaders'],   #  ,'PyQt5> 1.0'],#
+                      'scikit-image', 'scikit-learn', 'pyNSID', 'sidpy', 'SciFiReaders'],  # 'PyQt5> 1.0'],#
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     platforms=['Linux', 'Mac OSX', 'Windows 10/8.1/8/7'],

@@ -1160,8 +1160,7 @@ class EdgesAtCursor(object):
         self.ax.set_ylim(y_min, y_max)
 
     def mouse_move(self, event):
-
-        if not event.inaxes: 
+        if not event.inaxes:
             return
 
         x, y = event.xdata, event.ydata
