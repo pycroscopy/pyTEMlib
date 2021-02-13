@@ -150,7 +150,7 @@ def get_csl_matrix(sigma, rotate_matrix, centering=None):
     n = np.round(sigma / np.linalg.det(o_lattice), 6)
     csl_matrix = o_lattice_to_csl(o_lattice, n)
     return csl_matrix
-    
+
 
 def o_lattice_to_csl(o_lattice, n):
     """

@@ -669,7 +669,7 @@ class ImageWithLineProfile:
     def __call__(self, event):
         if event.inaxes != self.line.axes:
             return
-        self.start_x = self.end_x 
+        self.start_x = self.end_x
         self.start_y = self.end_y
 
         self.line.set_data([self.start_x, event.xdata], [self.start_y, event.ydata])
@@ -679,7 +679,7 @@ class ImageWithLineProfile:
         self.end_y = event.ydata
 
         self.update()
-        
+
     def update(self):
         if not self.line_plot:
             self.line_plot = True
@@ -720,15 +720,15 @@ def histogram_plot(image_tags):
     """interactive histogram"""
     nbins = 75
     color_map_list = ['gray', 'viridis', 'jet', 'hot']
-    if 'minimum_intensity' not in image_tags: 
+    if 'minimum_intensity' not in image_tags:
         image_tags['minimum_intensity'] = image_tags['plotimage'].min()
     minimum_intensity = image_tags['minimum_intensity']
-    if 'maximum_intensity' not in image_tags: 
+    if 'maximum_intensity' not in image_tags:
         image_tags['maximum_intensity'] = image_tags['plotimage'].max()
     data = image_tags['plotimage']
     vmin = image_tags['minimum_intensity']
     vmax = image_tags['maximum_intensity']
-    if 'color_map' not in image_tags: 
+    if 'color_map' not in image_tags:
         image_tags['color_map'] = color_map_list[0]
     cmap = plt.cm.get_cmap(image_tags['color_map'])
 
@@ -768,7 +768,7 @@ def histogram_plot(image_tags):
         event2 = event
         print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
               ('double' if event.dblclick else 'single', event.button,
-               event.x, event.y, event.xdata, event.ydata)) 
+               event.x, event.y, event.xdata, event.ydata))
         if event.inaxes == ax1:
             if event.button == 3:
                 ind = color_map_list.index(image_tags['color_map'])+1
@@ -808,7 +808,7 @@ def clean_svd(im, pixel_size=1, source_size=5):
     patches = patches.reshape(patches.shape[0], patches.shape[1]*patches.shape[2])
 
     num_components = 32
-    
+
     u, s, v = randomized_svd(patches, num_components)
     u_im_size = int(np.sqrt(u.shape[0]))
     reduced_image = u[:, 0].reshape(u_im_size, u_im_size)
@@ -896,7 +896,7 @@ def xy2polar(points, rounding=1e-3):
     """
 
     r, phi = cart2pol(points)
-    
+
     phi = phi-phi.min()  # only positive angles
     r = (np.floor(r/rounding))*rounding  # Remove rounding error differences
 
