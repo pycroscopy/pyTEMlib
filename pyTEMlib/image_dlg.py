@@ -31,7 +31,7 @@ class UiDialog(object):
         dialog.resize(371, 184)
 
         valid_float = QtGui.QDoubleValidator()
-        valid_int = QtGui.QIntValidator()
+        # valid_int = QtGui.QIntValidator()
         self.histogram = MySICanvas(parent, width=10, height=10, dpi=70)
 
         # Defining a plot instance (axes) and assigning a variable to it
@@ -45,7 +45,7 @@ class UiDialog(object):
         # Adding histogram
         plot_layout.addWidget(self.histogram, 0, 0)
 
-        # making a single widget out of hstogram
+        # making a single widget out of histogram
         histogram_plot = QtWidgets.QWidget()
         histogram_plot.setLayout(plot_layout)
 
@@ -134,8 +134,6 @@ class UiDialog(object):
         self.separator3.setText("Histogram")
         self.layout.addWidget(self.separator3, row, 0, 1, 4)
         ######################################################################
-
-
 
         row += 1
         layout.addWidget(histogram_plot, row, 0, 1, 3)

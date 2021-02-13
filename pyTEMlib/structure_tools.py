@@ -150,7 +150,7 @@ def get_csl_matrix(sigma, rotate_matrix, centering=None):
     n = np.round(sigma / np.linalg.det(o_lattice), 6)
     csl_matrix = o_lattice_to_csl(o_lattice, n)
     return csl_matrix
-    
+
 
 def o_lattice_to_csl(o_lattice, n):
     """
@@ -327,7 +327,8 @@ def find_smallest_real_multiplier(a, max_n=1000):
     """return the smallest positive real f such that matrix `a' multiplied
        by f is an integer matrix
     """
-    # |the smallest non-zero element|
+
+    # the smallest non-zero element|
     m = min(abs(i) for i in a if abs(i) > 1e-9)
     for i in range(1, max_n):
         t = i / float(m)

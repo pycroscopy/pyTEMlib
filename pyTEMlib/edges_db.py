@@ -17,7 +17,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with EELSLab; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
 # USA
 
 
@@ -62,13 +62,13 @@ for row in reader:
         if subshell == "O5":
             twin_subshell = "O4"
             factor = 4/6.
-            
+
     edges_dict[element]['subshells'][subshell] = {}
     edges_dict[element]['subshells'][subshell]['onset_energy'] = float(row[2])
     edges_dict[element]['subshells'][subshell]['filename'] = row[0]
     edges_dict[element]['subshells'][subshell]['relevance'] = row[4]
     edges_dict[element]['subshells'][subshell]['factor'] = 1
-    
+
     if twin_subshell is not None:
         edges_dict[element]['subshells'][twin_subshell] = {}
         edges_dict[element]['subshells'][twin_subshell]['onset_energy'] = float(row[3])

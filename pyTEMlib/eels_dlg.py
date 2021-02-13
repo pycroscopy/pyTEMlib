@@ -200,7 +200,7 @@ class UiDialog(object):
         ######################################################################
 
         self.check10 = QtWidgets.QCheckBox("Conv. LL")
-        self.show_edges =  QtWidgets.QCheckBox("Show Edges")
+        self.show_edges = QtWidgets.QCheckBox("Show Edges")
         self.select10 = QtWidgets.QCheckBox("Fit Comp.")
 
         row += 1
