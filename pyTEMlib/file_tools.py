@@ -47,7 +47,8 @@ get_slope = sidpy.base.num_utils.get_slope
 __version__ = '10.30.2020'
 
 flatten_dict = sidpy.dict_utils.flatten_dict
-nest_dict  = sidpy.dict_utils.nest_dict
+nest_dict = sidpy.dict_utils.nest_dict
+
 
 class FileWidget(object):
     """Widget to select directories or widgets from a list

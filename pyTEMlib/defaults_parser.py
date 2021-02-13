@@ -29,7 +29,7 @@ for line in f:
                 defaults_dict[key] = float(value)
             elif line_list[0] in str_keys:
                 key = line_list[0]
-                
+
                 for i in range(1, len(line_list)):
                     if i > 1:
                         value = value+' '+line_list[i]
@@ -60,7 +60,7 @@ if defaults_dict['GOS_dir'] == 'None':
                 gos_path = os.path.join(config_path, 'GOS')
     else:
         gos_path = os.path.join(config_path, 'GOS')
-    
+
     if os.path.isdir(gos_path) is False and os.path.isfile(Gos_file) is True:
         # messages.alert("Installing the GOS files in: %s" % gos_path)
         tar = tarfile.open(Gos_file)
@@ -68,7 +68,7 @@ if defaults_dict['GOS_dir'] == 'None':
         tar.extractall(gos_path)
     if os.path.isdir(gos_path):
         defaults_dict['GOS_dir'] = gos_path
-        
+
 
 class Defaults:
     pass

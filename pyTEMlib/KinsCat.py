@@ -249,11 +249,11 @@ def zone_mistilt(zone, angles):
     # first we rotate alpha about x axis
     c, s = np.cos(alpha), np.sin(alpha)
     rotx = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-    
+
     # second we rotate beta about y axis
     c, s = np.cos(beta), np.sin(beta)
     roty = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
-    
+
     # third we rotate gamma about z-axis
     c, s = np.cos(gamma), np.sin(gamma)
     rotz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
@@ -708,7 +708,7 @@ def check_sanity(tags):
         tags['mistilt'] = [0., 0., 0.]
         print('tags[\'mistilt\'] = [0., 0., 0.]')
     elif 'convergence_angle_mrad' not in tags:
-        tags['convergence_angle_mrad'] = 0. 
+        tags['convergence_angle_mrad'] = 0.
         print('tags[\'convergence_angle_mrad\'] = 0')
 
     return not stop
@@ -741,12 +741,12 @@ def ring_pattern_calculation(tags, verbose=False):
 
     h = np.linspace(-hkl_max, hkl_max, 2*hkl_max+1)    # all to be evaluated single Miller Index
     hkl = np.array(list(itertools.product(h, h, h)))  # all to be evaluated Miller indices
-    g_hkl = np.dot(hkl, reciprocal_unit_cell)  
+    g_hkl = np.dot(hkl, reciprocal_unit_cell)
 
     # Calculate Structure Factors
 
     structure_factors = []
-    
+
     base = np.dot(tags['base'], tags['unit_cell'])  # transformation from relative to Cartesian coordinates
     for j in range(len(g_hkl)):
         F = 0
@@ -764,7 +764,7 @@ def ring_pattern_calculation(tags, verbose=False):
 
     if verbose:
         print(f' Of the evaluated {hkl.shape[0]} Miller indices {allowed.sum()} are allowed. ')
-    # We select now all the 
+    # We select now all the
     zero = distances == 0.
     allowed = np.logical_and(allowed, np.logical_not(zero))
 
@@ -894,7 +894,7 @@ def kinematic_scattering(tags, verbose=False):
 
     if verbose:
         print('Magnitude of incident wave vector in material {0:.1f} 1/nm and vacuum {1:.1f} 1/nm'.format(K0, 1/wl))
-        print('The convergence angle of {0}mrad = {1:.2f} 1/nm'.format(tags['convergence_angle_mrad'], 
+        print('The convergence angle of {0}mrad = {1:.2f} 1/nm'.format(tags['convergence_angle_mrad'],
                                                                        tags['convergence_angle_nm-1']))
 
     # ############
@@ -923,7 +923,7 @@ def kinematic_scattering(tags, verbose=False):
         print('Center of Ewald sphere ', K0_vector)
 
     # #######################
-    # Find all Miller indices whose reciprocal point lays near the Ewald sphere with radius K0 
+    # Find all Miller indices whose reciprocal point lays near the Ewald sphere with radius K0
     # within a maximum excitation error Sg
     # #######################
 
@@ -991,7 +991,7 @@ def kinematic_scattering(tags, verbose=False):
         F = 0
         for b in range(len(base)):
             f = feq(tags['elements'][b], g_norm[j])  # Atomic form factor for element and momentum change (g vector)
-            F += f * np.exp(-2*np.pi*1j*(g_hkl_non_rot[j]*base[b]).sum())        
+            F += f * np.exp(-2*np.pi*1j*(g_hkl_non_rot[j]*base[b]).sum())
         structure_factors.append(F)
     F = structure_factors = np.array(structure_factors)
 
@@ -1261,7 +1261,7 @@ def plotHOLZ(tags, grey=False):
     holz['color Kikuchi'] = 'green'
     holz['linewidth HOLZ'] = -1  # -1: linewidth according to intensity (structure factor F^2
     holz['linewidth Kikuchi'] = -1  # -1: linewidth according to intensity (structure factor F^2
-    
+
     holz['color Laue Zones'] = ['red',  'blue', 'green']  # , 'green', 'red'] #for OLZ give a sequence
     holz['color zero'] = 'white'   # 'None' #'white'
     holz['color ring zero'] = 'Red'  # 'Red' #'white' #, 'None'
@@ -1433,7 +1433,7 @@ def diffraction_pattern(tags, grey=False):
     # Get information from dictionary
     HOLZ = tags['allowed']['HOLZ']
     ZOLZ = tags['allowed']['ZOLZ']
-    
+
     Laue_Zone = tags['allowed']['Laue_Zone']
 
     if 'label' in tags['allowed']:
@@ -1498,7 +1498,7 @@ def diffraction_pattern(tags, grey=False):
     tags['Kikuchi lines']['Kyp'] = Kyp
     tags['Kikuchi lines']['Kxm'] = Kxm
     tags['Kikuchi lines']['Kym'] = Kym
-    
+
     intensity_Kikuchi = intensity*4./intensity[ZOLZ].max()
     if len(intensity[tags['HOLZ']['HOLZ']]) > 1:
         intensity_HOLZ = intensity*4./intensity[tags['HOLZ']['HOLZ']].max()*.75
@@ -1509,7 +1509,7 @@ def diffraction_pattern(tags, grey=False):
     # #######
     cms = mpl.cm
     # cm = cms.plasma#jet#, cms.gray, cms.autumn]
-    cm = plt.get_cmap(tags['color map']) 
+    cm = plt.get_cmap(tags['color map'])
 
     fig = plt.gcf()
     ax = plt.gca()
@@ -1520,7 +1520,7 @@ def diffraction_pattern(tags, grey=False):
         t = -tags['plot image FOV']/2+tags['plot shift y']
         b = tags['plot image FOV']/2+tags['plot shift y']
         ax.imshow(tags['plot image'], extent=(l, r, t, b))
-        print('image') 
+        print('image')
 
     ix = np.argsort((points**2).sum(axis=1))
     # print(tags['allowed']['hkl'][ix])
@@ -1535,7 +1535,7 @@ def diffraction_pattern(tags, grey=False):
             Lauecolor.append(tags['color Laue Zones'][i])
         else:
             Lauecolor.append(tags['color Laue Zones'][-1])
-    
+
     if tags['plot reflections']:
         if radius < 0.1:
             if tags['color reflections'] == 'intensity':
@@ -1544,7 +1544,7 @@ def diffraction_pattern(tags, grey=False):
                 for i in range(len(Laue_Zone)):
                     color = Lauecolor[int(Laue_Zone[i])]
                     ax.scatter(points[i, 0], points[i, 1], c=color, cmap=cm, s=20)
-                
+
             ax.scatter(0, 0, c=tags['color zero'], s=100)
             radius = 2
         else:
@@ -1557,7 +1557,7 @@ def diffraction_pattern(tags, grey=False):
                 for i in range(len(Laue_Zone)):
                     color = Lauecolor[int(Laue_Zone[i])]
                     circles(p[i, 0], p[i, 1], s=radius, c=color, cmap=cm, alpha=0.9, edgecolor='')          
-    
+
     if not tags['color zero'] == 'None':
         circle = plt.Circle((0, 0), radius, color=tags['color zero'])
         ax.add_artist(circle)
@@ -1570,26 +1570,25 @@ def diffraction_pattern(tags, grey=False):
                 ax.plot((Hxp[i], Hxm[i]), (Hyp[i], Hym[i]), c=color, linewidth=intensity_HOLZ[i])
             if tags['plot HOLZ excess']:
                 ax.plot((Exp[i], Exm[i]), (Eyp[i], Eym[i]), c=color, linewidth=intensity_HOLZ[i])
-            
+
                 if tags['label HOLZ']:  # Add indices
-                    ax.text(Hxp[i], Hyp[i], label[i], fontsize=10) 
-                    ax.text(Exp[i], Eyp[i], label[i], fontsize=10) 
+                    ax.text(Hxp[i], Hyp[i], label[i], fontsize=10)
+                    ax.text(Exp[i], Eyp[i], label[i], fontsize=10)
         else:
             # Plot Kikuchi lines
             if tags['plot Kikuchi']:
-                ax.plot((Kxp[i], Kxm[i]), (Kyp[i], Kym[i]), c=tags['color Kikuchi'], linewidth=intensity_Kikuchi[i]) 
+                ax.plot((Kxp[i], Kxm[i]), (Kyp[i], Kym[i]), c=tags['color Kikuchi'], linewidth=intensity_Kikuchi[i])
                 if tags['label Kikuchi']:  # Add indices
-                    ax.text(Kxp[i], Kyp[i], label[i], fontsize=tags['label size'], color=tags['label color']) 
-                tags['Kikuchi lines']              
+                    ax.text(Kxp[i], Kyp[i], label[i], fontsize=tags['label size'], color=tags['label color'])
+                tags['Kikuchi lines']
 
     if not (tags['color ring zero'] == 'None'):
         ring = plt.Circle((0, 0), radius, color=tags['color ring zero'], fill=False, linewidth=2)
         ax.add_artist(ring)
         print(ring)
+    return tags
 
-    return tags    
-    
-    
+
 def feq(element, q):
     """Atomic form factor parametrized in 1/Angstrom but converted to 1/nm
 

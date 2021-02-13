@@ -16,15 +16,15 @@ from lxml import etree
 
 def exciting_get_spectra(file):
     """get EELS spectra from exciting calculation"""
-    
+
     tags = {'data': {}}
 
     tree = etree.ElementTree(file=file)
     root = tree.getroot()
-    
+
     data = tags['data'] 
 
-    if root.tag in ['loss', 'dielectric']:  
+    if root.tag in ['loss', 'dielectric']:
         print(' reading ', root.tag, ' function from file ', file)
         # print(root[0].tag, root[0].text)
         map_def = root[0]
@@ -34,16 +34,15 @@ def exciting_get_spectra(file):
             data[child_of_root.tag] = child_of_root.attrib
             v[child_of_root.tag] = []
             i += 1
-        
+
         for elem in tree.iter(tag='map'):
             m_dict = elem.attrib
             for key in m_dict:
                 v[key].append(float(m_dict[key]))
-        
+
         for key in data:
             data[key]['data'] = np.array(v[key])
         data['type'] = root.tag+' function'
-    
         return tags
 
 
@@ -94,7 +93,7 @@ def final_state_broadening(x, y, start, instrument):
         out_data[i] = sum(in_data*lor)
         if np.isnan(out_data[i]):
             out_data[i] = 0.0
-        
+
     p[1] = instrument
     in_data = out_data.copy()   
     for i in range(zero-5, len(x)):
