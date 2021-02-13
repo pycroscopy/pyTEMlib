@@ -118,7 +118,9 @@ def plus_minus_gen(start, end):
     for i in range(start, end):
         yield i
         yield -i
-def get_csl_matrix(sigma, rotate_matrix):
+
+
+def get_csl_matrix(sigma, rotate_matrix, centering=None):
     """  Find matrix that determines the coincidence site lattice for cubic structures.
 
     Based on H. Grimmer et al., Acta Cryst. (1974) A30, 197
@@ -128,10 +130,11 @@ def get_csl_matrix(sigma, rotate_matrix):
     ----------
     sigma: float:
         CSL sigma
-    R: numpy array
+    rotate_matrix: numpy array
         rotation matrix
     centering: string
         "f" for f.c.c., "b" for b.c.c. and None for p.c.
+
     Returns
     -------
     matrix: numpy array
@@ -141,10 +144,10 @@ def get_csl_matrix(sigma, rotate_matrix):
     s = STRUCTURE_MATRIX[0]
     for u in UNIMODULAR_MATRIX:
         t = np.eye(3) - np.dot(np.dot(np.dot(u, np.linalg.inv(s)),  np.linalg.inv(rotate_matrix)), s)
-        if abs( np.linalg.det(t)) > 1e-6:
+        if abs(np.linalg.det(t)) > 1e-6:
             break
-    o_lattice = np.round( np.linalg.inv(t), 12)
-    n = np.round(sigma /  np.linalg.det(o_lattice), 6)
+    o_lattice = np.round(np.linalg.inv(t), 12)
+    n = np.round(sigma / np.linalg.det(o_lattice), 6)
     csl_matrix = o_lattice_to_csl(o_lattice, n)
     return csl_matrix
     
@@ -319,6 +322,7 @@ def orthogonalize_csl(csl, axis):
                 raise ValueError("Non-orthogonal basis: %s" % csl)
     return csl.round().astype(int)
 
+
 def find_smallest_real_multiplier(a, max_n=1000):
     """return the smallest positive real f such that matrix `a' multiplied
        by f is an integer matrix
@@ -331,7 +335,7 @@ def find_smallest_real_multiplier(a, max_n=1000):
             return t
     raise ValueError("Sorry, we can't make this matrix integer:\n%s" % a)
 
+
 def scale_to_integers(v):
     """scale to integer"""
     return np.array(v * find_smallest_real_multiplier(v)).round().astype(int)
-

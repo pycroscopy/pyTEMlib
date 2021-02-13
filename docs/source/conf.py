@@ -70,9 +70,9 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-    'sphinx_gallery.gen_gallery',
     'sphinx.ext.napoleon',          # Use either napoleon or numpydoc not both.
 ]
+# 'sphinx_gallery.gen_gallery',
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -433,17 +433,3 @@ intersphinx_mapping = {'python': ('https://docs.python.org/{.major}'.format(sys.
                        }
 
 # -------------------------------------------------
-from sphinx_gallery.sorting import ExampleTitleSortKey, ExplicitOrder  # Can't use until next release of sphinx-gallery
-# Sphinx-gallery configuration
-sphinx_gallery_conf = dict(examples_dirs=['../examples'],
-                           gallery_dirs=['auto_examples'],
-                           within_subsection_order=ExampleTitleSortKey,
-                           reference_url=dict(pyUSID=None,
-                                              matplotlib='https://matplotlib.org',
-                                              numpy='https://docs.scipy.org/doc/numpy',
-                                              scipy='https://docs.scipy.org/doc/scipy/reference',
-                                              h5py='http://docs.h5py.org/en/latest/'),
-                           # directory where function granular galleries are stored
-                           backreferences_dir='_autosummary/backreferences',
-                           # Modules for which function level galleries are created.
-                           doc_module='pyTEMlib')
