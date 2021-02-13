@@ -40,7 +40,6 @@ if "google.colab" in sys.modules:
 if QT_available:
     from .qt_sidpy_tools import *
 
-
 Dimension = sidpy.Dimension
 nest_dict = sidpy.base.dict_utils.nest_dict
 
