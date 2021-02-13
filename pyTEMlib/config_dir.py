@@ -23,7 +23,7 @@ else:
 if os.path.isdir(config_path) is False:
     # messages.information("Creating config directory: %s" % config_path)
     os.mkdir(config_path)
-    
+
 for file in config_files:
     templates_file = os.path.join(data_path, file)
     config_file = os.path.join(config_path, file)

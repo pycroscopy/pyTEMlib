@@ -73,6 +73,7 @@ def get_wavelength(e0):
     eV = const.e * e0
     return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
 
+
 def read_image_info(dataset):
     """Updates dataset.metadata['experiment'] with essential information read from original metadata
 
@@ -87,8 +88,9 @@ def read_image_info(dataset):
     if 'DM' in dataset.original_metadata:
         experiment_dictionary = read_dm3_image_info(dataset.original_metadata)
     if 'experiment' not in dataset.metadata:
-         dataset.metadata['experiment'] = {}
+        dataset.metadata['experiment'] = {}
     dataset.metadata['experiment'].update(experiment_dictionary)
+
 
 def read_dm3_image_info(original_metadata):
     """Read essential parameter from original_metadata originating from a dm3 file"""
@@ -185,14 +187,14 @@ def fourier_transform(dset):
         if len(image_dim) != 2:
             raise ValueError('need at least two SPATIAL dimension for an image stack')
         image_stack = np.squeeze(np.array(dset)[selection])
-        image = np.sum(np.array(image_stack), axis=stack_dim)
+        new_image = np.sum(np.array(image_stack), axis=stack_dim)
     elif dset.data_type == sidpy.DataType.IMAGE:
-        image = np.array(dset)
+        new_image = np.array(dset)
     else:
         return
 
-    image = image - image.min()
-    fft_transform = (np.fft.fftshift(np.fft.fft2(image)))
+    new_image = new_image - new_image.min()
+    fft_transform = (np.fft.fftshift(np.fft.fft2(new_image)))
 
     image_dims = get_image_dims(dset)
 
@@ -206,11 +208,13 @@ def fourier_transform(dset):
     fft_dset.source = dset.title
     fft_dset.modality = 'fft'
 
-    fft_dset.set_dimension(0, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(image.shape[0], d=get_slope(dset.x.values))),
+    fft_dset.set_dimension(0, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[0],
+                                                                             d=get_slope(dset.x.values))),
 
                                               name='u', units=units_x, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
-    fft_dset.set_dimension(1, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(image.shape[1], d=get_slope(dset.y.values))),
+    fft_dset.set_dimension(1, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[1],
+                                                                             d=get_slope(dset.y.values))),
                                               name='v', units=units_y, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
 
@@ -269,7 +273,7 @@ def diffractogram_spots(dset, spot_threshold):
     Parameters
     ----------
     dset: sidpy.Dataset
-        diffratogram
+        diffractogram
     spot_threshold: float
         threshold for blob finder
 
@@ -385,6 +389,8 @@ def complete_registration(main_dataset, storage_channel=None):
     ----------
     main_dataset: sidpy.Dataset
         dataset of data_type 'IMAGE_STACK' to be registered
+    storage_channel: h5py.Group
+        optional - location in hdf5 file to store datasets
 
     Returns
     -------
@@ -665,58 +671,55 @@ class ImageWithLineProfile:
             return
         self.start_x = self.end_x 
         self.start_y = self.end_y
-        
+
         self.line.set_data([self.start_x, event.xdata], [self.start_y, event.ydata])
         self.line.figure.canvas.draw()
-        
+
         self.end_x = event.xdata
         self.end_y = event.ydata
-        
+
         self.update()
         
     def update(self):
-        
         if not self.line_plot:
             self.line_plot = True
             self.figure.clear()
             self.ax = self.figure.subplots(2, 1)
             self.ax[0].imshow(self.data, extent=self.extent)
             self.ax[0].set_title(self.title)
-        
+
             self.line,  = self.ax[0].plot([0], [0], color='orange')  # empty line
             self.line_plot, = self.ax[1].plot([], [], color='orange')
             self.ax[1].set_xlabel('distance [nm]')
-        
+
         x0 = self.start_x
         x1 = self.end_x
         y0 = self.start_y
         y1 = self.end_y
         length_plot = np.sqrt((x1-x0)**2+(y1-y0)**2)
-       
+
         num = length_plot*(self.data.shape[0]/self.extent[1])
         x = np.linspace(x0, x1, num)*(self.data.shape[0]/self.extent[1])
         y = np.linspace(y0, y1, num)*(self.data.shape[0]/self.extent[1])
-        
+
         # Extract the values along the line, using cubic interpolation
         zi2 = ndimage.map_coordinates(self.data.T, np.vstack((x, y)))
-        
+
         x_axis = np.linspace(0, length_plot, len(zi2))
-        
         self.x = x_axis
         self.z = zi2
-        
+
         self.line_plot.set_xdata(x_axis)
         self.line_plot.set_ydata(zi2)
         self.ax[1].set_xlim(0, x_axis.max())
         self.ax[1].set_ylim(zi2.min(), zi2.max())
         self.ax[1].draw()
-        
+
 
 def histogram_plot(image_tags):
     """interactive histogram"""
     nbins = 75
     color_map_list = ['gray', 'viridis', 'jet', 'hot']
-    
     if 'minimum_intensity' not in image_tags: 
         image_tags['minimum_intensity'] = image_tags['plotimage'].min()
     minimum_intensity = image_tags['minimum_intensity']
@@ -737,7 +740,6 @@ def histogram_plot(image_tags):
     width = bin_edges[1]-bin_edges[0]
 
     def onselect(vmin, vmax):
-        
         ax1.clear()
         cmap = plt.cm.get_cmap(image_tags['color_map'])
 
@@ -760,7 +762,7 @@ def histogram_plot(image_tags):
 
         image_tags['minimum_intensity'] = vmin
         image_tags['maximum_intensity'] = vmax
-        
+
     def onclick(event):
         global event2
         event2 = event
@@ -802,11 +804,9 @@ def clean_svd(im, pixel_size=1, source_size=5):
     patch_size = int(source_size/pixel_size)
     if patch_size < 3:
         patch_size = 3
-    print(patch_size)
-    
     patches = image.extract_patches_2d(im, (patch_size, patch_size))
     patches = patches.reshape(patches.shape[0], patches.shape[1]*patches.shape[2])
-    
+
     num_components = 32
     
     u, s, v = randomized_svd(patches, num_components)
@@ -819,11 +819,11 @@ def clean_svd(im, pixel_size=1, source_size=5):
 def rebin(im, binning=2):
     """
     rebin an image by the number of pixels in x and y direction given by binning
-    
+
     Parameter
     ---------
     image: numpy array in 2 dimensions
-    
+
     Returns
     -------
     binned image as numpy array
@@ -879,22 +879,22 @@ def pol2cart(rho, phi):
 
 def xy2polar(points, rounding=1e-3):
     """ Conversion from carthesian to polar coordinates
-    
+
     the angles and distances are sorted by r and then phi
     The indices of this sort is also returned
-    
+
     Parameters
     ----------
     points: numpy array
         number of points in axis 0 first two elements in axis 1 are x and y
     rounding: int
         optional rounding in significant digits
-    
+
     Returns
     -------
     r, phi, sorted_indices
     """
-    
+
     r, phi = cart2pol(points)
     
     phi = phi-phi.min()  # only positive angles
@@ -903,9 +903,9 @@ def xy2polar(points, rounding=1e-3):
     sorted_indices = np.lexsort((phi, r))  # sort first by r and then by phi
     r = r[sorted_indices]
     phi = phi[sorted_indices]
-    
+
     return r, phi, sorted_indices
-            
+
 
 def cartesian2polar(x, y, grid, r, t, order=3):
     """Transform cartesian grid to polar grid
@@ -978,6 +978,7 @@ def calculate_scherzer(wavelength, cs):
 
     # Input and output in nm
     """
+
     scherzer = -1.155*(cs*wavelength)**0.5  # in m
     return scherzer
 
@@ -1010,13 +1011,13 @@ def align_crystal_reflections(spots, crystals):
     angles = []
     exp_r, exp_phi = cart2pol(spots)  # just in polar coordinates
     spots_polar = np.array([exp_r, exp_phi])
-        
+
     for i in range(len(crystals)):
         tags = crystals[i]
         r, phi, indices = xy2polar(tags['allowed']['g'])  # sorted by r and phi , only positive angles
         # we mask the experimental values that are found already
         angle = 0.
-        
+
         angle_i = np.argmin(np.abs(exp_r - r[1]))
         angle = exp_phi[angle_i] - phi[0]
         angles.append(angle)  # Determine rotation angle
@@ -1028,7 +1029,7 @@ def align_crystal_reflections(spots, crystals):
             # print(dif.min())
             if dif.min() < 1.5:
                 ind = np.argmin(dif)
-        
+
     return crystal_reflections_polar, angles
 
 
@@ -1087,7 +1088,7 @@ def decon_lr(o_image, probe,  verbose=False):
     over_d = 2 * ap_angle / wl
 
     dx = o_image.x[1]-o_image.x[0]
-    dk = 1.0 / float( o_image.x[-1])  # last value of x axis is field of view
+    dk = 1.0 / float(o_image.x[-1])  # last value of x axis is field of view
     screen_width = 1 / dx
 
     aperture = np.ones(o_image.shape, dtype=np.complex64)
@@ -1148,8 +1149,7 @@ def decon_lr(o_image, probe,  verbose=False):
         progress.close()
     print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  Iterations')
     est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
-    print(est2.shape)
-    out_dataset =  o_image.like_data(est2)
+    out_dataset = o_image.like_data(est2)
     out_dataset.title = 'Lucy Richardson deconvolution'
     out_dataset.data_type = 'image'
     return out_dataset

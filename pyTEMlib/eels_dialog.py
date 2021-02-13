@@ -68,7 +68,6 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.dataset.plot()
 
-
         if hasattr(self.dataset.view, 'axes'):
             self.axis = self.dataset.view.axes[-1]
         elif hasattr(self.dataset.view, 'axis'):
@@ -175,7 +174,6 @@ class EELSDialog(QtWidgets.QDialog):
             self.edges[str(index)] = {}
 
         start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
-        end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
         end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
 
         self.edges[str(index)] = {'Z': zz, 'symmetry': key, 'element': eels.elements[zz],
@@ -317,16 +315,16 @@ class EELSDialog(QtWidgets.QDialog):
         def onpick(event):
             # on the pick event, find the orig line corresponding to the
             # legend proxy line, and toggle the visibility
-            legline = event.artist
-            origline = lined[legline]
+            leg_line = event.artist
+            orig_line = lined[legline]
             vis = not origline.get_visible()
-            origline.set_visible(vis)
+            orig_line.set_visible(vis)
             # Change the alpha on the line in the legend so we can see what lines
             # have been toggled
             if vis:
-                legline.set_alpha(1.0)
+                leg_line.set_alpha(1.0)
             else:
-                legline.set_alpha(0.2)
+                leg_line.set_alpha(0.2)
             self.figure.canvas.draw()
 
         if len(self.model) > 1:
@@ -336,7 +334,7 @@ class EELSDialog(QtWidgets.QDialog):
             lines = [line1, line2, line3, line4]
             lined = dict()
 
-            legend =  self.axis.legend(loc='upper right', fancybox=True, shadow=True)
+            legend = self.axis.legend(loc='upper right', fancybox=True, shadow=True)
 
             legend.get_frame().set_alpha(0.4)
             for legline, origline in zip(legend.get_lines(), lines):
@@ -351,8 +349,6 @@ class EELSDialog(QtWidgets.QDialog):
         if self.show_regions:
             self.plot_regions()
         self.figure.canvas.draw_idle()
-
-
 
     def plot_regions(self):
         y_min, y_max = self.axis.get_ylim()
@@ -525,6 +521,7 @@ class EELSDialog(QtWidgets.QDialog):
         self.ui.do_all_button.clicked.connect(self.do_all_button_click)
         self.ui.do_fit_button.clicked.connect(self.do_fit_button_click)
 
+
 class CurveVisualizer(object):
     """Plots a sidpy.Dataset with spectral dimension-type
 
@@ -532,7 +529,7 @@ class CurveVisualizer(object):
     def __init__(self, dset, spectrum_number=None, axis=None, leg=None, **kwargs):
         if not isinstance(dset, sidpy.Dataset):
             raise TypeError('dset should be a sidpy.Dataset object')
-        if axis == None:
+        if axis is None:
             self.fig = plt.figure()
             self.axis = self.fig.add_subplot(1, 1, 1)
         else:

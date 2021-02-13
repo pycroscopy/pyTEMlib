@@ -1135,7 +1135,7 @@ class EdgesAtCursor(object):
     def click(self, event):
 
         # print('click', event)
-        if not event.inaxes: 
+        if not event.inaxes:
             return
         x, y = event.xdata, event.ydata
 
