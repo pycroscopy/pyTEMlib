@@ -47,7 +47,7 @@ get_slope = sidpy.base.num_utils.get_slope
 __version__ = '10.30.2020'
 
 flatten_dict = sidpy.dict_utils.flatten_dict
-
+nest_dict  = sidpy.dict_utils.nest_dict
 
 class FileWidget(object):
     """Widget to select directories or widgets from a list
@@ -548,8 +548,8 @@ def log_results(h5_group, dataset=None, attributes=None):
                 log_group[key] = attributes[key]
             else:
                 flat_dict = sidpy.hdf.hdf_utils.flatten_dict(attributes[key])
-                sidpy.hdf.hdf_utils.write_simple_attrs(log_group, flat_dict)
-
+                log_group.create_group(key)
+                sidpy.hdf.hdf_utils.write_simple_attrs(log_group[key], flat_dict)
     return log_group
 
 
