@@ -346,7 +346,7 @@ def save_dataset(dataset, filename=None,  h5_group=None):
             h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
     else:
         raise ValueError('h5_group needs to be string or None')
-    dataset.original_metadata['original_title']= dataset.title
+    dataset.original_metadata['original_title'] = dataset.title
     dataset.title = basename
     h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, h5_group)
     dataset.h5_dataset = h5_dataset
