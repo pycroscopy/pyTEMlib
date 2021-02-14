@@ -1,10 +1,11 @@
 """ default microscope parameters from config file
 
 Read microscope CSV file
-Original by EELSLab Author: Francisco Javier de la Pella
-Made more flexible for load microscopes with csv.DictReader
+
 for pyTEMLib by Gerd
+
 copyright 2012, Gerd Duscher
+updated 2021
 """
 # -*- coding: utf-8 -*-
 
@@ -12,8 +13,6 @@ import csv
 import os.path
 
 from pyTEMlib.config_dir import config_path
-from pyTEMlib.defaults_parser import defaults
-
 microscopes_file = os.path.join(config_path, 'microscopes.csv')
 
 
@@ -29,9 +28,8 @@ class Microscope(object):
 
     def __init__(self):
         self.load_microscopes()
-
-        defaults.microscope = defaults.microscope.replace('.', ' ')
-        self.set_microscope(defaults.microscope)
+        default_tem = self.microscopes[list(self.microscopes.keys())[0]]
+        self.set_microscope(default_tem['Microscope'])
 
     def load_microscopes(self):
         f = open(microscopes_file, 'r')
@@ -55,23 +53,8 @@ class Microscope(object):
         return tem
 
     def set_microscope(self, microscope_name):
-        for key in self.microscopes[microscope_name]:
-            exec('self.%s = self.microscopes[\'%s\'][\'%s\']' % (key, microscope_name, key))
-        self.name = microscope_name
-
-    def __repr__(self):
-        info = '''
-        Microscope parameters
-        ----------------------
-        Microscope: %s
-        Convergence angle: %1.2f mrad
-        Collection angle: %1.2f mrad
-        Beam energy: %1.2E eV
-        pppc: %1.2f
-        Correlation factor: %1.2f
-        ''' % (self.name, self.alpha, self.beta, self.E0,
-               self.pppc, self.correlation_factor)
-        return info
+        if microscope_name in self.microscopes:
+            self.name = microscope_name
 
 
 microscope = Microscope()

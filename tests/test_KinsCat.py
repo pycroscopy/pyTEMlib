@@ -1,10 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 14 15:07:16 2021
+
+@author: Gerd Duscher
+"""
+
 import unittest
 import numpy as np
 
-import pyTEMlib.KinsCat as ks
-
 import sys
 sys.path.append("../pyTEMlib/")
+import pyTEMlib.KinsCat as ks
 
 
 class TestUtilityFunctions(unittest.TestCase):

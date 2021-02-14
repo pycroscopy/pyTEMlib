@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on January 23 2021
@@ -45,7 +44,7 @@ class TestUtilityFunctions(unittest.TestCase):
         with self.assertRaises(TypeError):
             atom_tools.find_atoms(np.array(image))
         with self.assertRaises(TypeError):
-            image.data_type='spectrum'
+            image.data_type = 'spectrum'
             atom_tools.find_atoms(image)
         image.data_type = 'image'
         with self.assertRaises(TypeError):
@@ -79,7 +78,7 @@ class TestUtilityFunctions(unittest.TestCase):
 
         clusters, distances, indices = atom_tools.atoms_clustering(atoms, atoms)
 
-        self.assertTrue(np.isin(clusters, [0,1,2]).all())
+        self.assertTrue(np.isin(clusters, [0, 1, 2]).all())
 
     def test_intensity_area(self):
         image, atoms_placed = make_test_data()
@@ -94,7 +93,8 @@ class TestUtilityFunctions(unittest.TestCase):
 
         diff = atom_tools.gauss_difference(params, area)
 
-        self.assertTrue((np.abs(diff)<.1).all())
+        self.assertTrue((np.abs(diff) < .1).all())
+
 
 if __name__ == '__main__':
     unittest.main()
