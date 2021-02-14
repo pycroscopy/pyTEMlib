@@ -3,7 +3,7 @@
 All atom detection is done here
 Everything is in unit of pixel!!
 
-Autor: Gerd Duscher
+Author: Gerd Duscher
 
 part of pyTEMlib
 
@@ -13,20 +13,20 @@ a pycroscopy package
 import numpy as np
 import sys
 
-from skimage.feature import peak_local_max
+# from skimage.feature import peak_local_max
 from skimage.feature import blob_log
 
 from sklearn.cluster import KMeans
 from scipy.spatial import cKDTree
 import scipy.optimize as optimization
 
-from .probe_tools import *
+import pyTEMlib.probe_tools as probe_tools
 import pyTEMlib.file_tools as ft
 import sidpy
 
 
 def find_atoms(image, atom_size=0.1, threshold=0.):
-    """ Find atoms a simple wrapper for blob_log if skimage.feature
+    """ Find atoms is a simple wrapper for blob_log in skimage.feature
 
     Parameters
     ----------
@@ -63,7 +63,23 @@ def find_atoms(image, atom_size=0.1, threshold=0.):
 
 
 def atoms_clustering(atoms, mid_atoms, number_of_clusters=3, nearest_neighbours=7):
-    """ A wrapper for scipy kmeans clustering of atoms."""
+    """ A wrapper for sklearn.cluster kmeans clustering of atoms.
+
+    Parameters
+    ----------
+    atoms: list or np.array (Nx2)
+        list of all atoms
+    mid_atoms: list or np.array (Nx2)
+        atoms to be evaluated
+    number_of_clusters: int
+        number of clusters to sort (ini=3)
+    nearest_neighbours: int
+        number of nearest neighbours evaluated
+
+    Returns
+    -------
+    clusters, distances, indices: numpy arrays
+    """
 
     # get distances
     nn_tree = cKDTree(np.array(atoms)[:, 0:2])
@@ -95,7 +111,8 @@ def gauss_difference(params, area):
     numpy array: flattened array of difference
 
     """
-    gauss = make_gauss(area.shape[0], area.shape[1], width=params[0], x0=params[1], y0=params[2], intensity=params[3])
+    gauss = probe_tools.make_gauss(area.shape[0], area.shape[1], width=params[0], x0=params[1], y0=params[2],
+                                   intensity=params[3])
     return (area - gauss).flatten()
 
 
@@ -195,7 +212,8 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
         if all(v == 0 for v in pout):
             gauss_intensity.append(0.)
         else:
-            gauss = make_gauss(area.shape[0], area.shape[1], width=pout[0], x0=pout[1], y0=pout[2], intensity=pout[3])
+            gauss = probe_tools.make_gauss(area.shape[0], area.shape[1], width=pout[0], x0=pout[1], y0=pout[2],
+                                           intensity=pout[3])
             gauss_intensity.append((gauss * mask).sum())
         gauss_width.append(pout[0])
         gauss_amplitude.append(pout[3])
@@ -222,7 +240,7 @@ def intensity_area(image, atoms, radius):
 
     pixels = np.linspace(0, 2 * rr, 2 * rr + 1) - rr
     x, y = np.meshgrid(pixels, pixels)
-    mask = (x ** 2 + y ** 2) < rr ** 2
+    mask = np.array((x ** 2 + y ** 2) < rr ** 2)
     intensities = []
     for i in range(len(atoms)):
         x = int(atoms[i][1])

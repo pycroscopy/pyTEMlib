@@ -65,12 +65,27 @@ class TestUtilityFunctions(unittest.TestCase):
                 matches += 1
         self.assertEqual(64, matches)
 
+    def test_atoms_clustering(self):
+        image, atoms = make_test_data()
+
+        clusters, distances, indices = atom_tools.atoms_clustering(atoms, atoms)
+
+        self.assertTrue(np.isin(clusters, [0,1,2]).all())
+
     def test_intensity_area(self):
         image, atoms_placed = make_test_data()
         areas = atom_tools.intensity_area(np.array(image), atoms_placed, radius=3)
 
         self.assertIsNone(np.testing.assert_allclose(areas, 0.636566, atol=1e-1))
 
+    def test_gauss_difference(self):
+        image, atoms_placed = make_test_data()
+        area = np.array(image[2:7, 2:7])
+        params = [2 * 2, 0.0, 0.0, 1]
+
+        diff = atom_tools.gauss_difference(params, area)
+
+        self.assertTrue((np.abs(diff)<.1).all())
 
 if __name__ == '__main__':
     unittest.main()
