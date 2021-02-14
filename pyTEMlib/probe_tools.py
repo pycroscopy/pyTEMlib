@@ -183,7 +183,7 @@ def probe2(ab, size_x, size_y, tags, verbose=False):
         # Add defocus
         chi2 = chi + np.power(theta, 2) / 2 * df
         # Calculate exponent of - i * chi
-        chi_t = np.fft.ifftshift(np.vectorize(complex)(np.cos(chi2), -np.sin(chi2)))
+        chi_t = np.fft.ifftshift(np.vectorize(complex128)(np.cos(chi2), -np.sin(chi2)))
         # Apply aperture function
         chi_t[mask] = 0.
         # inverse fft of aberration function

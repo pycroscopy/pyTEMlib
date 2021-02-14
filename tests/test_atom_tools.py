@@ -44,6 +44,15 @@ class TestUtilityFunctions(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             atom_tools.find_atoms(np.array(image))
+        with self.assertRaises(TypeError):
+            image.data_type='spectrum'
+            atom_tools.find_atoms(image)
+        image.data_type = 'image'
+        image.data_type = 'spectrum'
+        with self.assertRaises(TypeError):
+            atom_tools.find_atoms(image, atoms_size='large')
+        with self.assertRaises(TypeError):
+            atom_tools.find_atoms(image, threshold='large')
 
         found_atoms = atom_tools.find_atoms(image)
 
