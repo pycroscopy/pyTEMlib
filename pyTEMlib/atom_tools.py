@@ -14,79 +14,51 @@ import numpy as np
 import sys
 
 from skimage.feature import peak_local_max
+from skimage.feature import blob_log
+
 from sklearn.cluster import KMeans
 from scipy.spatial import cKDTree
 import scipy.optimize as optimization
 
 from .probe_tools import *
-from .file_tools import *
+import pyTEMlib.file_tools as ft
+import sidpy
 
 
-def find_atoms(image, tags):
-    """ Find atoms - old please do not use """
+def find_atoms(image, atom_size=0.1, threshold=0.):
+    """ Find atoms a simple wrapper for blob_log if skimage.feature
 
-    image = image - image.min()
-    image = image / image.max()
+    Parameters
+    ----------
+    image: sidpy.Dataset
+        the image to find atoms
+    atom_size: float
+        visible size of atom blob diameter in nm gives minimal distance between found blobs
+    threshold: float
+        threshold for blob finder; (usually between 0.001 and 1.0) for threshold <= 0 we use the RMS contrast
 
-    if 'sigma_min' not in tags:
-        tags['sigma_min'] = 0.1
-    if 'resolution' not in tags:
-        tags['resolution'] = 0.1
-
-    if 'ROIsize' not in tags:
-        tags['ROIsize'] = 100.
-
-    res = tags['resolution'] / tags['pixel_size']  # * tags['ROIsize']/100.
-    print('res', res)
-    coordinates = peak_local_max(image, min_distance=int(res / 2), threshold_rel=tags['sigma_min'], exclude_border=True)
-    print('coor', len(coordinates))
-    """
-       peak_local_max(image, min_distance=10, threshold_abs=0, threshold_rel=0.1,
-                   exclude_border=True, indices=True, num_peaks=np.inf,
-                   footprint=None, labels=None):
-
-        Find peaks in an image, and return them as coordinates or a boolean array.
-        Peaks are the local maxima in a region of `2 * min_distance + 1
-
-        (i.e. peaks are separated by at least `min_distance`).
-        NOTE: If peaks are flat (i.e. multiple adjacent pixels have identical
-        intensities), the coordinates of all such pixels are returned.
+    Returns
+    -------
+    atoms: numpy array(Nx3)
+        atoms positions and radius of blob
     """
 
-    # We calculate the radius in pixel of a round area in which atoms are evaluated
-    sc = tags['pixel_size']
-    r = tags['resolution'] / sc * tags['ROIsize'] / 100. / 2.
-    tags['radius'] = r
+    if not isinstance(image, sidpy.Dataset):
+        raise TypeError('We need a sidpy.Dataset')
+    if image.data_type.name != 'IMAGE':
+        raise TypeError('We need sidpy.Dataset of sidpy.Datatype: IMAGE')
+    if not isinstance(atom_size, (float, int)):
+        raise TypeError('atom_size parameter has to be a number')
+    if not isinstance(threshold, float):
+        raise TypeError('threshold parameter has to be a float number')
 
-    #######################################
-    # Now we determine intensity #
-    #######################################
+    scale_x = ft.get_slope(image.dim_0)
+    im = np.array(image-image.min())
+    im = im/im.max()
+    if threshold <= 0.:
+        threshold = np.std(im)
+    atoms = blob_log(im, max_sigma=atom_size/scale_x, threshold=threshold)
 
-    ###############
-    # Make a circular mask for integration of atom intensity
-    ################
-    rr = int(r + 0.5)
-    mask = np.zeros((2 * rr + 1, 2 * rr + 1))
-
-    for i in range(2 * rr + 1):
-        for j in range(2 * rr + 1):
-            if (i - rr) ** 2 + (j - rr) ** 2 < rr ** 2 + 0.1:
-                mask[i, j] = 1
-
-    ###
-    # Determine  pixel position and intensity  of all atoms
-    ###
-    atoms = []
-    for i in range(len(coordinates)):
-        x, y = coordinates[i]
-
-        if rr < x < image.shape[1] - rr and rr < y < image.shape[0] - rr:
-            area = image[x - rr:x + rr + 1, y - rr:y + rr + 1]
-            arr = area * mask
-            atoms.append((x, y, rr, arr.sum(), arr.max()))
-
-    print(' Detected ', len(atoms), ' atoms')
-    atoms.sort()
     return atoms
 
 
@@ -102,6 +74,7 @@ def atoms_clustering(atoms, mid_atoms, number_of_clusters=3, nearest_neighbours=
     k_means = KMeans(n_clusters=number_of_clusters, random_state=0)  # Fixing the RNG in kmeans
     k_means.fit(distances)
     clusters = k_means.predict(distances)
+
     return clusters, distances, indices
 
 
@@ -167,12 +140,12 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     gauss_width = []
     gauss_amplitude = []
     gauss_intensity = []
-    if QT_available:
-        progress = ProgressDialog("Refine Atom Positions")
+    if ft.QT_available:
+        progress = ft.ProgressDialog("Refine Atom Positions")
 
     done = 0
     for i in range(len(atoms)):
-        if QT_available:
+        if ft.QT_available:
             progress.set_value(i)
         else:
             if done < int((i + 1) / len(atoms) * 50):
@@ -211,7 +184,7 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
             if (x - rr) < 0 or y - rr < 0 or x + rr + 1 > image.shape[0] or y + rr + 1 > image.shape[1]:
                 pass
             else:
-                [pout, _] = optimization.leastsq(gauss_difference, guess, args=(area))
+                [pout, _] = optimization.leastsq(gauss_difference, guess, args=area)
 
             if (abs(pout[1]) > max_dist) or (abs(pout[2]) > max_dist):
                 pout = [0, 0, 0, 0]
@@ -226,7 +199,7 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
             gauss_intensity.append((gauss * mask).sum())
         gauss_width.append(pout[0])
         gauss_amplitude.append(pout[3])
-    if QT_available:
+    if ft.QT_available:
         progress.close()
     sym['inside'] = position
     sym['intensity_area'] = intensities
