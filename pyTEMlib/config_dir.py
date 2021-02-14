@@ -9,7 +9,7 @@ config_dir: setup of directory ~/.pyTEMlib for custom sources and database
 import os
 import shutil
 
-config_files = ['TEMlibrc', 'microscopes.csv', 'edges_db.csv', 'edges_db.pkl', 'fparam.txt']
+config_files = ['microscopes.csv', 'edges_db.csv', 'edges_db.pkl', 'fparam.txt']
 data_path = os.sep.join([os.path.dirname(__file__), 'data'])
 
 if os.name == 'posix':
