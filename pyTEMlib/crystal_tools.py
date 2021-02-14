@@ -370,6 +370,10 @@ def structure_by_name(crystal):
     """
 
     # Check whether name is in the crystal_data_base
+
+    if not isinstance(crystal, str):
+        raise TypeError('Parameter crystal is a name and must be a string')
+
     if crystal in cdb:
         tags = cdb[crystal].copy()
     else:

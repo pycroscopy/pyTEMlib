@@ -161,12 +161,16 @@ class TestUtilityFunctions(unittest.TestCase):
             cs.perovskite(1, 1)
 
     def test_structure_by_name(self):
+        with self.assertRaises(TypeError):
+            cs.structure_by_name(1)
+
         actual = cs.structure_by_name('Gerd')
         self.assertEqual(actual, {})
 
         actual = cs.structure_by_name('FCC Fe')
         self.assertIsInstance(actual, dict)
         self.assertAlmostEqual(actual['a'], 0.3571)
+
 
 
 if __name__ == '__main__':
