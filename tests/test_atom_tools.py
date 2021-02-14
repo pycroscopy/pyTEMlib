@@ -48,9 +48,8 @@ class TestUtilityFunctions(unittest.TestCase):
             image.data_type='spectrum'
             atom_tools.find_atoms(image)
         image.data_type = 'image'
-        image.data_type = 'spectrum'
         with self.assertRaises(TypeError):
-            atom_tools.find_atoms(image, atoms_size='large')
+            atom_tools.find_atoms(image, atom_size='large')
         with self.assertRaises(TypeError):
             atom_tools.find_atoms(image, threshold='large')
 
@@ -65,6 +64,7 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_atom_refine(self):
         image, atoms_placed = make_test_data()
         image = np.array(image)
+        atoms_placed[0][0] = -1
         found_atoms_dict = atom_tools.atom_refine(image, atoms_placed, radius=3)
         found_atoms = np.array(found_atoms_dict['atoms'])
         matches = 0
@@ -72,7 +72,7 @@ class TestUtilityFunctions(unittest.TestCase):
             aa = np.round(found_atoms[i, :2]+.5, decimals=0)
             if list(aa) in atoms_placed:
                 matches += 1
-        self.assertEqual(64, matches)
+        self.assertEqual(63, matches)
 
     def test_atoms_clustering(self):
         image, atoms = make_test_data()
