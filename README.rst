@@ -1,17 +1,17 @@
 pyTEMlib
 ========
 
-.. image:: https://travis-ci.com/pycroscopy/pyTEMlib.svg?branch=master
-    :target: https://travis-ci.com/pycroscopy/pyTEMlib
-    :alt: TravisCI
+.. image:: https://github.com/pycroscopy/pyTEMlib/workflows/build/badge.svg?branch=master
+    :target: https://github.com/pycroscopy/pyTEMlib/actions?query=workflow%3Abuild
+    :alt: GitHub Actions
 
 .. image:: https://img.shields.io/pypi/v/pyTEMlib.svg
     :target: https://pypi.org/project/pyTEMlib/
     :alt: PyPI
 
-.. image:: https://coveralls.io/repos/github/pycroscopy/pyTEMlib/badge.svg?branch=master
-    :target: https://coveralls.io/github/pycroscopy/pyTEMlib?branch=master
-    :alt: coverage
+.. image:: https://codecov.io/gh/pycroscopy/pyTEMlib/branch/master/graph/badge.svg?token=
+    :target: https://codecov.io/gh/pycroscopy/pyTEMlib
+    :alt: CodeCov
 
 .. image:: https://img.shields.io/pypi/l/pyTEMlib.svg
     :target: https://pypi.org/project/pyTEMlib/
