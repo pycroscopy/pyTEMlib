@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
+import pyTEMlib.KinsCat as ks
+
 
 def geometric_ray_diagram(focal_length=1., magnification=False):
     """ Sketch of geometric ray diagram od one lens
@@ -179,3 +181,125 @@ def propagate_beam(source_position, numerical_aperture, number_of_rays, lens_pos
         xx[nl + 1] = xx[nl] + (zz[nl + 1] - zz[nl]) * tani[nl]
         plt.plot(zz, xx, color)
         plt.axis([-20, z_max, -20, 20])
+
+
+def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='black'):
+    """
+    Ewald sphere construction to explain Laue Circle and deficient HOLZ lines
+
+    Parameters:
+    exact_bragg: boolean
+        whether to tilt into exact Bragg condition or along zone axis
+    shift: boolean
+        whether to shift exact Bragg condition onto zone axis origin
+    laue_zone: int
+        first or second Laue zone only
+    color: string
+        color of wave vectors and Ewald sphere
+    """
+
+    k_0 = [0, 1 / ks.get_wavelength(600)]
+    d = .5  # lattice parameter in nm
+
+    if laue_zone == 0:
+        s_g = 1 / d + 0.6
+    else:
+        s_g = 1
+
+    g = np.linspace(-5, 6, 12) * 1 / d
+    g_d = np.array([5. / d + laue_zone * 1 / d / 2, laue_zone * 1 / d])
+    g_sg = g_d.copy()
+    g_sg[1] = g_d[1] + s_g  # point on Ewald sphere
+
+    # reciprocal lattice
+    plt.scatter(g[:-1], [0] * 11, color='red')
+    plt.scatter(g - 1 / d / 2, [1 / d] * 12, color='blue')
+
+    shift_x = shift_y = 0.
+    d_theta = d_theta1 = d_theta2 = 0
+
+    if exact_bragg:
+
+        d_theta1 = np.arctan((1 / d * laue_zone + s_g) / g_d[0])
+        d_theta2 = np.arctan((1 / d * laue_zone) / g_d[0])
+        d_theta = -(d_theta1 - d_theta2)
+        s_g = 0
+        s = np.sin(d_theta)
+        c = np.cos(d_theta)
+        k_0 = [-s * k_0[1], c * k_0[1]]
+        if shift:
+            shift_x = -k_0[0]
+            shift_y = np.linalg.norm(k_0) - k_0[1]
+        d_theta = np.degrees(d_theta)
+
+    k_0[0] += shift_x
+    k_0[1] += shift_y
+
+    # Ewald Sphere
+    ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0), clip_on=False, zorder=10, linewidth=1,
+                                  edgecolor=color, fill=False)
+    plt.gca().add_artist(ewald_sphere)
+
+    plt.gca().arrow(g[-1] + 1 / d / 4, 1 / d / 2, 0, 1 / d / 2, head_width=0.3, head_length=0.4, fc='k',
+                    ec='k', length_includes_head=True)
+    plt.gca().arrow(g[-1] + 1 / d / 4, 1 / d / 2, 0, -1 / d / 2, head_width=0.3, head_length=0.4, fc='k',
+                    ec='k', length_includes_head=True)
+    plt.gca().annotate("$|g_{HOLZ}|$", xytext=(g[-1] + 1 / d / 3, 1 / d / 3), xy=(g[-1] + 1 / d / 3, 1 / d / 3))
+
+    # k_0
+    plt.scatter(k_0[0], k_0[1])
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + shift_x, -k_0[1] + shift_y, head_width=0.3, head_length=0.4, fc=color,
+                    ec=color, length_includes_head=True)
+    plt.gca().annotate("K$_0$", xytext=(k_0[0] / 2, k_0[1] / 3), xy=(k_0[0] / 2, k_0[1] / 2))
+
+    # K_d Bragg of HOLZ reflection
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + g_d[0] + shift_x, -k_0[1] + g_d[1] + s_g + shift_y, head_width=0.3,
+                    head_length=0.4, fc=color,
+                    ec=color, length_includes_head=True)
+    plt.gca().annotate("K$_d$", xytext=(k_0[0] + (g_d[0] - k_0[0]) / 2, k_0[1] / 2), xy=(6.5 / d / 2, k_0[1] / 2))
+
+    # s_g excitation Error of HOLZ reflection
+    if s_g > 0:
+        plt.gca().arrow(g_d[0], g_d[1], 0, s_g, head_width=0.3, head_length=0.4, fc='k',
+                        ec='k', length_includes_head=True)
+        plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3), xy=(g_d[0] * 1.01, g_d[1] + s_g / 3))
+
+    # Bragg angle
+    g_sg = g_d
+    g_sg[1] = g_d[1] + s_g
+    plt.plot([0 + shift_x, g_sg[0] + shift_x], [0 + shift_y, g_d[1] + shift_y], color=color, linewidth=1, alpha=0.5,
+             linestyle='--')
+    plt.plot([k_0[0], g_sg[0] / 2 + shift_x], [k_0[1], g_sg[1] / 2 + shift_y], color=color, linewidth=1, alpha=0.5,
+             linestyle='--')
+    # d_theta = np.degrees(np.arctan(k_0[0]/k_0[1]))
+    bragg_angle = patches.Arc((k_0[0], k_0[1]), width=k_0[1], height=k_0[1],
+                              theta1=-90 + d_theta,
+                              theta2=-90 + d_theta + np.degrees(np.arcsin(np.linalg.norm(g_sg / 2) / k_0[1])),
+                              fc=color, ec=color)
+
+    plt.gca().annotate(r"$\theta $", xytext=(k_0[0] / 1.3, k_0[1] / 1.5), xy=(k_0[0] / 2 + g_d[0] / 4, k_0[1] / 2))
+    plt.gca().add_patch(bragg_angle)
+
+    # deviation/tilt angle
+    if np.abs(d_theta) > 0:
+        if shift:
+            deviation_angle = patches.Arc((k_0[0], k_0[1]), width=k_0[1] * 1.5, height=k_0[1] * 1.5,
+                                          theta1=-90 + d_theta,
+                                          theta2=-90,
+                                          fc=color, ec=color, linewidth=3)
+            plt.gca().annotate(r"$d \theta $", xytext=(k_0[0] - 1.3, k_0[1] / 3.7),
+                               xy=(k_0[0] + g_d[0] / 4, k_0[1] / 2))
+            plt.gca().arrow(shift_x, -2, 0, 2, head_width=0.5, head_length=0.6, fc=color,
+                            ec='black', length_includes_head=True, linewidth=3)
+            plt.gca().annotate("deficient line", xytext=(shift_x * 2, -2), xy=(shift_x, 0))
+        else:
+            deviation_angle = patches.Arc((0, 0), width=k_0[1], height=k_0[1],
+                                          theta1=np.degrees(d_theta2),
+                                          theta2=np.degrees(d_theta1),
+                                          fc=color, ec=color, linewidth=3)
+            plt.gca().annotate(r"$d \theta $", xytext=(g_d[0] * .8, 1 / d / 3), xy=(g_d[0], 1 / d))
+
+        plt.gca().add_patch(deviation_angle)
+    plt.gca().set_aspect('equal')
+    plt.xlim(-14, 14)
+    plt.ylim(-4, k_0[1] * 1.1)
