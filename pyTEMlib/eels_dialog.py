@@ -14,6 +14,7 @@ import matplotlib.pylab as plt
 import matplotlib.patches as patches
 
 from pyTEMlib import file_tools as ft
+
 import sidpy
 
 _version = 000
@@ -22,6 +23,8 @@ _version = 000
 class EELSDialog(QtWidgets.QDialog):
     """
     EELS Input Dialog for Chemical Analysis
+
+
     """
 
     def __init__(self, dataset=None):
@@ -72,9 +75,10 @@ class EELSDialog(QtWidgets.QDialog):
             self.axis = self.dataset.view.axes[-1]
         elif hasattr(self.dataset.view, 'axis'):
             self.axis = self.dataset.view.axis
-        self.spectrum_plot = CurveVisualizer(self.dataset, axis=self.axis)
+
         self.figure = self.axis.figure
-        self.cid = self.figure.canvas.mpl_connect('draw_event', self.plot)
+        self.updY = 0
+        self.figure.canvas.mpl_connect('button_press_event', self.plot)
 
         self.plot()
         self.ui.edit4.setFocus()
@@ -86,15 +90,14 @@ class EELSDialog(QtWidgets.QDialog):
             self.dataset.metadata['edges'] = {'0': {}, 'model': {}}
         self.edges = self.dataset.metadata['edges']
 
-        spec_dim = -1
-        for dim, axis in dataset._axes.items():
-            if axis.dimension_type == sidpy.DimensionType.SPECTRAL:
-                spec_dim = dim
-        if spec_dim < 0:
+
+        spec_dim = ft.get_dimensions_by_type('spectral', dataset)[0]
+
+        if len(spec_dim) == 0:
             raise TypeError('We need at least one SPECTRAL dimension')
 
-        self.spec_dim = spec_dim
-        self.energy_scale = dataset._axes[spec_dim].values
+        self.spec_dim = spec_dim[0]
+        self.energy_scale = dataset._axes[self.spec_dim].values
         self.ui.edit2.setText(f"{self.energy_scale[-2]:.3f}")
 
         if 'fit_area' not in self.edges:
@@ -270,7 +273,7 @@ class EELSDialog(QtWidgets.QDialog):
         edge_list.setCurrentIndex(index)
         self.update()
 
-    def plot(self):
+    def plot(self, event=None):
         self.energy_scale = self.dataset._axes[self.spec_dim].values
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
@@ -544,7 +547,10 @@ class CurveVisualizer(object):
         self.plot(**kwargs)
 
     def plot(self, **kwargs):
-        line1, = self.axis.plot(self.energy_scale.values, self.dset, label='spectrum', **kwargs)
+        if self.dset.data_type.name == 'IMAGE_STACK':
+            line1, = self.axis.plot(self.energy_scale.values, self.dset[0, 0], label='spectrum', **kwargs)
+        else:
+            line1, = self.axis.plot(self.energy_scale.values, self.dset, label='spectrum', **kwargs)
         lines = [line1]
         if 'add2plot' in self.dset.metadata:
             data = self.dset.metadata['add2plot']
@@ -589,3 +595,4 @@ class CurveVisualizer(object):
         else:
             legline.set_alpha(0.2)
         self.fig.canvas.draw()
+
