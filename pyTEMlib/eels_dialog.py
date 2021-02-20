@@ -90,7 +90,6 @@ class EELSDialog(QtWidgets.QDialog):
             self.dataset.metadata['edges'] = {'0': {}, 'model': {}}
         self.edges = self.dataset.metadata['edges']
 
-
         spec_dim = ft.get_dimensions_by_type('spectral', dataset)[0]
 
         if len(spec_dim) == 0:
@@ -595,4 +594,3 @@ class CurveVisualizer(object):
         else:
             legline.set_alpha(0.2)
         self.fig.canvas.draw()
-
