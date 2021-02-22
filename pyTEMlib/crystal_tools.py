@@ -19,6 +19,257 @@ Usage:
 """
 
 import numpy as np
+import itertools
+from scipy import spatial
+
+import matplotlib.pylab as plt  # basic plotting
+
+# from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
+from matplotlib.patches import Circle  # , Ellipse, Rectangle
+from matplotlib.collections import PatchCollection
+
+# Crystal Plotting Routines
+
+def ball_and_stick(tags, extend=1, max_bond_length=0.):
+    """Calculates the data to plot a ball and stick model
+
+    Parameters
+    ----------
+    tags: dict
+        dictionary containing the 'unit_cell', 'base' and 'elements' tags.
+
+    extend: 1 or 3 integers
+        The *extend* argument scales the effective cell in which atoms
+        will be included. It must either be a list of three integers or a single
+        integer scaling all 3 directions.  By setting this value to one,
+        all  corner and edge atoms will be included in the returned cell.
+        This will of cause make the returned cell non-repeatable, but this is
+        very useful for visualisation.
+
+    max_bond_length: 1 float
+        The max_bond_length argument defines the distance for which a bond will be shown.
+        If max_bond_length is zero, the tabulated atom radii will be used.
+
+    Returns
+    -------
+    corners,balls, Z, bonds: lists
+        These lists can be used to plot the
+    unit cell:
+        for x, y, z in corners:
+            l=mlab.plot3d( x,y,z, tube_radius=0.002)
+    bonds:
+        for x, y, z in bonds:
+            mlab.plot3d( x,y,z, tube_radius=0.02)
+    and atoms:
+        for i,atom in enumerate(balls):
+            mlab.points3d(atom[0],atom[1],atom[2],
+                          scale_factor=0.1,##ks.vdw_radii[Z[i]]/5,
+                          resolution=20,
+                          color=tuple(ks.jmol_colors [Z[i]]),
+                          scale_mode='none')
+
+    Please note that you'll need the *Z* list for coloring, or for radii that depend on elements
+    """
+
+    # Check in which form extend is given
+    if isinstance(extend, int):
+        extend = [extend]*3
+
+    extend = np.array(extend, dtype=int)
+
+    # Make the x,y, and z multiplicators
+    if len(extend) == 3:
+        x = np.linspace(0, extend[0], extend[0]+1)
+        y = np.linspace(0, extend[1], extend[1]+1)
+        z = np.linspace(0, extend[2], extend[2]+1)
+    else:
+        print('wrong extend parameter')
+        return
+
+    # Check whether this is the right kind of dictionary
+    if 'unit_cell' not in tags:
+        return
+    cell = tags['unit_cell']
+
+    # Corners and Outline of unit cell
+    h = (0, 1)
+    corner_vectors = np.dot(np.array(list(itertools.product(h, h, h))), cell)
+    trace = [[0, 1], [1, 3], [3, 2], [2, 0], [0, 4], [4, 5], [5, 7], [6, 7], [6, 4], [1, 5], [2, 6], [3, 7]]
+    corners = []
+    for s, e in trace:
+        corners.append([*zip(corner_vectors[s], corner_vectors[e])])
+
+    # ball position and elements in supercell
+    super_cell = np.array(list(itertools.product(x, y, z)))  # all evaluated Miller indices
+
+    pos = np.add(super_cell, np.array(tags['base'])[:, np.newaxis])
+
+    atomic_number = []
+    for i in range(len(tags['elements'])):
+        atomic_number.append(electronFF[tags['elements'][i]]['Z'])
+
+    # List of bond lengths taken from electronFF database below
+    bond_lengths = []
+    for atom in tags['elements']:
+        bond_lengths.append(electronFF[atom]['bond_length'][0])
+
+    # extend list of atomic numbers
+    zpp = []
+    for z in atomic_number:
+        zpp.append([z]*pos.shape[1])
+    zpp = np.array(zpp).flatten()
+
+    # reshape supercell atom positions
+    pos = pos.reshape((pos.shape[0]*pos.shape[1], pos.shape[2]))
+
+    # Make a mask that excludes all atoms outside of super cell
+    maskz = pos[:, 2] <= extend[2]
+    masky = pos[:, 1] <= extend[1]
+    maskx = pos[:, 0] <= extend[0]
+    mask = np.logical_and(maskx, np.logical_and(masky, maskz))   # , axis=1)
+
+    # Only use balls and elements inside super cell
+    balls = np.dot(pos[mask], cell)
+    atomic_number = zpp[mask]
+
+    # Get maximum bond length from list of bond -lengths taken from electronFF database
+    if max_bond_length == 0:
+        max_bond_length = np.median(bond_lengths)/5
+    # Check nearest neighbours within max_bond_length
+    tree = spatial.KDTree(balls)
+    nearest_neighbours = np.array(tree.query(balls, k=8, distance_upper_bound=max_bond_length))
+
+    # Calculate bonds
+    bonds = []
+    bond_indices = []
+    for i in range(nearest_neighbours.shape[1]):
+        for j in range(nearest_neighbours.shape[2]):
+            if nearest_neighbours[0, i, j] < max_bond_length:
+                if nearest_neighbours[0, i, j] > 0:
+                    # print(atoms[i],atoms[int(bonds[1,i,j])],bonds[:,i,j])
+                    bonds.append([*zip(balls[i], balls[int(nearest_neighbours[1, i, j])])])
+                    bond_indices.append([i, int(nearest_neighbours[1, i, j])])
+    return corners, balls, atomic_number, bonds
+
+
+def plot_unitcell_mayavi(tags):
+    """Makes a 3D plot of crystal structure
+
+    Parameters
+    ----------
+    tags: dict
+        Dictionary with tags: 'unit_cell, 'elements', 'base'
+
+    Returns
+    -------
+    3D plot
+
+    Dependencies
+    ------------
+    ball_and_stick function of KinsCat
+    mlab of mayavi
+    """
+
+    from mayavi import mlab
+
+    # Make sure "max_bond_length" and "extend" variables are initialized
+    if 'max_bond_length' not in tags:
+        max_bond_length = 0.
+    else:
+        max_bond_length = tags['max_bond_length']
+
+    if 'extend' not in tags:
+        extend = 1
+    else:
+        extend = tags['extend']
+
+    # get balls, sticks and atomic numbers for colors and sizes
+    corners, balls, atomic_number, bonds = ball_and_stick(tags, extend=extend, max_bond_length=max_bond_length)
+
+    print('Now plotting')
+    fig = mlab.figure(1, bgcolor=(0, 0, 0), size=(350, 350))
+
+    mlab.clf()  # clear figure
+
+    # parallel projection
+    mlab.gcf().scene.parallel_projection = True
+    mlab.gcf().scene.camera.parallel_scale = 5
+
+    # plot unit cell
+    for x, y, z in corners:
+        ll = mlab.plot3d(x, y, z, tube_radius=0.002)
+
+    # plot bonds as sticks
+    for x, y, z in bonds:
+        mlab.plot3d(x, y, z, tube_radius=0.02)
+
+    # plot atoms
+    for i, atom in enumerate(balls):
+        mlab.points3d(atom[0], atom[1], atom[2],
+                      scale_factor=0.1,  # ks.vdw_radii[Z[i]]/50,
+                      resolution=20,
+                      color=tuple(jmol_colors[atomic_number[i]]),
+                      scale_mode='none')
+
+    # parallel projection
+    mlab.gcf().scene.parallel_projection = True
+    mlab.gcf().scene.camera.parallel_scale = 5
+    # show plot
+    mlab.show()
+
+
+def plot_unitcell(tags):
+    """
+    Simple plot of unit cell
+    """
+
+    if 'max_bond_length' not in tags:
+        max_bond_length = 0.
+    else:
+        max_bond_length = tags['max_bond_length']
+
+    if 'extend' not in tags:
+        extend = 1
+    else:
+        extend = tags['extend']
+
+    corners, balls, atomic_number, bonds = ball_and_stick(tags, extend=extend, max_bond_length=max_bond_length)
+
+    maximum_position = balls.max()*1.05
+    maximum_x = balls[:, 0].max()
+    maximum_y = balls[:, 1].max()
+    maximum_z = balls[:, 2].max()
+
+    balls = balls - [maximum_x/2, maximum_y/2, maximum_z/2]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    # draw unit_cell
+    for x, y, z in corners:
+        ax.plot3D(x-maximum_x/2, y-maximum_y/2, z-maximum_z/2, color="blue")
+
+    # draw bonds
+    for x, y, z in bonds:
+        ax.plot3D(x-maximum_x/2, y-maximum_y/2, z-maximum_z/2, color="black", linewidth=4)  # , tube_radius=0.02)
+
+    # draw atoms
+    for i, atom in enumerate(balls):
+        ax.scatter(atom[0], atom[1], atom[2],
+                   color=tuple(jmol_colors[atomic_number[i]]),
+                   alpha=1.0, s=50)
+    maximum_position = balls.max()*1.05
+    ax.set_proj_type('ortho')
+
+    ax.set_zlim(-maximum_position/2, maximum_position/2)
+    ax.set_ylim(-maximum_position/2, maximum_position/2)
+    ax.set_xlim(-maximum_position/2, maximum_position/2)
+
+    if 'name' in tags:
+        ax.set_title(tags['name'])
+
+    ax.set_xlabel('x [nm]')
+    ax.set_ylabel('y [nm]')
+    ax.set_zlabel('z [nm]')
 
 
 def cubic(a):
