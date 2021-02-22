@@ -822,7 +822,8 @@ def kinematic_scattering(tags, verbose=False):
             'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max'
             Optional parameters are:
             'mistilt', convergence_angle_mrad', and 'crystal_name'
-            verbose = True will give extended output of the calculation
+        verbose:  boolean
+            True will give extended output of the calculation
 
         Returns
         -------

@@ -415,7 +415,7 @@ def plotRingPattern(tags, grey=False):
     fg.show()
 
 
-def plotDiffPattern(tagsD, grey=False):
+def plot_diffraction_pattern(tagsD, grey=False):
     # Get information from dictionary
     HOLZ = tagsD['HOLZ']
     ZOLZ = tagsD['allowed']['ZOLZ']
@@ -499,13 +499,12 @@ def plotDiffPattern(tagsD, grey=False):
     # fig = plt.figure()
     fig = plt.figure()
 
-    ax = fig.add_subplot(111)
-    # ax.set_facecolor(tagsD['background'])
-    # ax = plt.gca()
+    ax = plt.gca()
+    if 'background' not in tagsD:
+        tagsD['background'] = None
+    if tagsD['background'] is not None:
+        ax.set_facecolor(tagsD['background'])
 
-    if not tagsD['color zero'] == 'None':
-        circle = plt.Circle((0, 0), radius, color=tagsD['color zero'], linewidth=2)
-        ax.add_artist(circle)
 
     if 'plot image' in tagsD:
         l = -tagsD['plot image FOV'] / 2 + tagsD['plot shift x']
@@ -519,7 +518,6 @@ def plotDiffPattern(tagsD, grey=False):
         plt.imshow(tagsD['plot image'], extent=(l, r, t, b))
 
     ix = np.argsort((points ** 2).sum(axis=1))
-    # print(tagsD['allowed']['hkl'][ix])
     p = points[ix]
     inten = intensity[ix]
     reflection = hkl_label[ix]
@@ -540,7 +538,7 @@ def plotDiffPattern(tagsD, grey=False):
                 labelP = 'Laue Zone %1d; HOLZ line: [%1d,%1d,%1d]' % (Laue_Zone[ind], h, k, l)
             else:
                 labelP = 'Kikuchi line: [%1d,%1d,%1d]' % (h, k, l)
-            print(labelP)
+            # print(labelP)
 
         elif isinstance(event.artist, Circle):
             print('Circle')
@@ -564,14 +562,14 @@ def plotDiffPattern(tagsD, grey=False):
                 for i in range(len(points)):
                     ax.scatter(points[i, 0], points[i, 1], c=np.log(intensity[i] + 1), cmap=cm, s=100)
                     plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
-                    print(label[i])
+                    #print(label[i])
 
             else:
                 for i in range(len(Laue_Zone)):
                     color = Lauecolor[int(Laue_Zone[i])]
                     ax.scatter(points[i, 0], points[i, 1], c=color, cmap=cm, s=100)
                     plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
-                    print(label[i])
+                    #print(label[i])
 
             ax.scatter(0, 0, c=tagsD['color zero'], s=100)
             radius = 2
@@ -638,7 +636,10 @@ def plotDiffPattern(tagsD, grey=False):
     if not (tagsD['color ring zero'] == 'None'):
         ring = plt.Circle((0, 0), radius, color=tagsD['color ring zero'], fill=False, linewidth=2)
         ax.add_artist(ring)
-        print(ring)
+        # print(ring)
+    if not tagsD['color zero'] == 'None':
+        circle = plt.Circle((0, 0), radius, color=tagsD['color zero'], linewidth=2)
+        ax.add_artist(circle)
 
     plt.axis('equal')
     if 'plot FOV' in tagsD:
