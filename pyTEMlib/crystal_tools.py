@@ -30,6 +30,7 @@ from matplotlib.collections import PatchCollection
 
 # Crystal Plotting Routines
 
+
 def ball_and_stick(tags, extend=1, max_bond_length=0.):
     """Calculates the data to plot a ball and stick model
 

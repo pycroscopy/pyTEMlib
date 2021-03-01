@@ -505,7 +505,6 @@ def plot_diffraction_pattern(tagsD, grey=False):
     if tagsD['background'] is not None:
         ax.set_facecolor(tagsD['background'])
 
-
     if 'plot image' in tagsD:
         l = -tagsD['plot image FOV'] / 2 + tagsD['plot shift x']
         r = tagsD['plot image FOV'] / 2 + tagsD['plot shift x']
@@ -555,20 +554,25 @@ def plot_diffraction_pattern(tagsD, grey=False):
         else:
             Lauecolor.append(tagsD['color Laue Zones'][-1])
 
+    if 'plot_labels' not in tagsD:
+        tagsD['plot_labels'] = True
     if tagsD['plot reflections']:
         print(radius)
         if radius < 0.1:
             if tagsD['color reflections'] == 'intensity':
                 for i in range(len(points)):
                     ax.scatter(points[i, 0], points[i, 1], c=np.log(intensity[i] + 1), cmap=cm, s=100)
-                    plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
+
+                    if tagsD['plot_labels']:
+                            plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
                     #print(label[i])
 
             else:
                 for i in range(len(Laue_Zone)):
                     color = Lauecolor[int(Laue_Zone[i])]
                     ax.scatter(points[i, 0], points[i, 1], c=color, cmap=cm, s=100)
-                    plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
+                    if tagsD['plot_labels']:
+                        plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
                     #print(label[i])
 
             ax.scatter(0, 0, c=tagsD['color zero'], s=100)

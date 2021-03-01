@@ -12,6 +12,9 @@ import h5py
 import os
 import sys
 
+# For structure files of various flavor for instance POSCAR
+import ase.io
+
 
 # =============================================
 #   Include sidpy and other pyTEMlib Libraries                                      #
@@ -44,7 +47,7 @@ Dimension = sidpy.Dimension
 nest_dict = sidpy.base.dict_utils.nest_dict
 
 get_slope = sidpy.base.num_utils.get_slope
-__version__ = '10.30.2020'
+__version__ = '2021.3.1'
 
 flatten_dict = sidpy.dict_utils.flatten_dict
 nest_dict = sidpy.dict_utils.nest_dict
@@ -97,7 +100,7 @@ class FileWidget(object):
             self.dir_name = '.'
             self.get_directory(self.dir_name)
 
-        self.dir_list == ['.']
+        self.dir_list = ['.']
         self.extensions = extension
         self.file_name = ''
 
@@ -581,7 +584,7 @@ def add_dataset(dataset, h5_group=None):
         h5_group = h5_group['Measurement_000']
 
     if not isinstance(h5_group, h5py.Group):
-        raise TypeError('Need a valid indentifier for a hdf5 group to store data in')
+        raise TypeError('Need a valid identifier for a hdf5 group to store data in')
 
     log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
     h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, log_group)
@@ -597,6 +600,51 @@ def add_dataset(dataset, h5_group=None):
 ###
 # Crystal Structure Read and Write
 ###
+def read_poscar(file_name=None):
+    """
+    Open file dialog to select a POSCAR file from VASP
+    """
+    if file_name is None:
+        file_name = openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
+
+    # use ase package to read file
+    base = os.path.basename(file_name)
+    base_name = os.path.splitext(base)[0]
+    crystal = ase.io.read(file_name, format='vasp', parallel=False)
+
+    # make dictionary and plot structure (not essential for further notebook)
+    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
+            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'name': base_name}
+    return tags
+
+
+def read_cif(file_name=None, verbose=False):  # open file dialog to select cif file
+    if file_name is None:
+        file_name = openfile_dialog('cif (*.cif);;All files (*)')
+    # use ase package to read file
+
+    base = os.path.basename(file_name)
+    base_name = os.path.splitext(base)[0]
+    crystal = ase.io.read(file_name, format='cif', store_tags=True, parallel=False)
+
+    # make dictionary and plot structure (not essential for further notebook)
+    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
+            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'crystal_name': base_name, 'reference': {},
+            'info': {}}
+    if verbose:
+        print('Opened cif file for ', crystal.get_chemical_formula())
+
+    for key in crystal.info:
+        if 'citat' in key or 'pub' in key:
+            tags['reference'][key] = crystal.info[key]
+            if verbose:
+                print(key, crystal.info[key])
+        else:
+            tags['info'][key] = crystal.info[key]
+
+    return tags
+
+
 def h5_add_crystal_structure(h5_file, crystal_tags):
     """Write crystal structure to NSID file"""
 

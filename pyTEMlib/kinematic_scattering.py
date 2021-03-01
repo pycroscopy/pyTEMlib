@@ -47,7 +47,7 @@ import os
 
 _version_ = 0.6
 
-print('Using KinsCat library version ', _version_, ' by G.Duscher')
+print('Using kinematic_scattering library version ', _version_, ' by G.Duscher')
 _spglib_present = True
 try:
     import spglib
@@ -62,24 +62,6 @@ else:
 inputKeys = ['unit_cell', 'elements', 'base', 'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_inputKeys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad', 'mistilt', 'thickness',
                       'dynamic correction', 'dynamic correction K0']
-
-
-def read_poscar(file_name=None):
-    """
-    Open file dialog to select a POSCAR file from VASP
-    """
-    if file_name is None:
-        file_name = ft.openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
-
-    # use ase package to read file
-    base = os.path.basename(file_name)
-    base_name = os.path.splitext(base)[0]
-    crystal = read(file_name, format='vasp', parallel=False)
-
-    # make dictionary and plot structure (not essential for further notebook)
-    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
-            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'name': base_name}
-    return tags
 
 
 def example(verbose=True):
