@@ -8,6 +8,8 @@ pyTEMlib Documentation
 
 **Model Based Analysis of TEM/STEM Data**
 
+Last Update 03/01/2021
+
 Jump to our `GitHub project page <https://github.com/pycroscopy/pyTEMlib>`_
 
 .. toctree::
@@ -19,6 +21,7 @@ Jump to our `GitHub project page <https://github.com/pycroscopy/pyTEMlib>`_
    install
    contact
    credits
+   revisions
 
 Source code API
 ---------------

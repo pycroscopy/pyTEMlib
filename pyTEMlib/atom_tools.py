@@ -182,8 +182,8 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
 
         if (x - rr) < 0 or y - rr < 0 or x + rr + 1 > image.shape[0] or y + rr + 1 > image.shape[1]:
             position.append(-1)
-            intensities.append(0)
-            maximum_area.append(0)
+            intensities.append(-1.)
+            maximum_area.append(-1.)
         else:
             position.append(1)
             intensities.append((area * mask).sum())
@@ -217,6 +217,7 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
             gauss_intensity.append((gauss * mask).sum())
         gauss_width.append(pout[0])
         gauss_amplitude.append(pout[3])
+
     if ft.QT_available:
         progress.close()
     sym['inside'] = position

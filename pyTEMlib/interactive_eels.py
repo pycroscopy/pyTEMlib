@@ -344,7 +344,7 @@ class EnergySelector(QtWidgets.QDialog):
         self.axis.figure.canvas.draw()
 
 
-class Region_selector(object):
+class RegionSelector(object):
     """Selects fitting region and the regions that are excluded for each edge.
 
         Select a region with a spanSelector and then type 'a' for all of the fitting region or a number for the edge
