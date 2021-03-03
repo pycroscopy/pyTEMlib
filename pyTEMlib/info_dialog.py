@@ -76,7 +76,7 @@ class InfoDialog(QtWidgets.QDialog):
                         'exposure_time': 0.0,
                         'convergence_angle': 0.0, 'collection_angle': 0.0,
                         'acceleration_voltage': 100.0, 'binning': 1, 'conversion': 1.0,
-                        'flux': 1.0, 'current': 1.0}
+                        'flux': 1.0, 'current': 1.0, 'SI_bin_x': 1, 'SI_bin_y': 1}
         if 'experiment' not in self.dataset.metadata:
             self.dataset.metadata['experiment'] = minimum_info
         self.experiment = self.dataset.metadata['experiment']
@@ -151,6 +151,8 @@ class InfoDialog(QtWidgets.QDialog):
             if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
                 bin_x = int(self.ui.binXEdit.displayText())
                 bin_y = int(self.ui.binYEdit.displayText())
+                self.experiment['SI_bin_x'] = bin_x
+                self.experiment['SI_bin_y'] = bin_y
                 self.dataset.view.set_bin([bin_x, bin_y])
                 self.ui.binXEdit.setText(str(self.dataset.view.bin_x))
                 self.ui.binYEdit.setText(str(self.dataset.view.bin_y))

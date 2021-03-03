@@ -71,6 +71,14 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.dataset.plot()
 
+        if 'SI_bin_x' not in self.dataset.metadata['experiment']:
+            self.dataset.metadata['experiment']['SI_bin_x'] = 1
+            self.dataset.metadata['experiment']['SI_bin_y'] = 1
+        bin_x = self.dataset.metadata['experiment']['SI_bin_x']
+        bin_y = self.dataset.metadata['experiment']['SI_bin_y']
+
+        self.dataset.view.set_bin([bin_x, bin_y])
+
         if hasattr(self.dataset.view, 'axes'):
             self.axis = self.dataset.view.axes[-1]
         elif hasattr(self.dataset.view, 'axis'):
@@ -464,7 +472,62 @@ class EELSDialog(QtWidgets.QDialog):
         self.plot()
 
     def do_all_button_click(self):
-        pass
+
+        if self.dataset.data_type.name != 'SPECTRAL_IMAGE':
+            self.do_fit_button_click()
+            return
+
+        if 'experiment' in self.dataset.metadata:
+            exp = self.dataset.metadata['experiment']
+            if 'convergence_angle' not in exp:
+                raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
+            alpha = exp['convergence_angle']
+            beta = exp['collection_angle']
+            beam_kv = exp['acceleration_voltage']
+        else:
+            raise ValueError('need a experiment parameter in metadata dictionary')
+
+        self.energy_scale = self.dataset._axes[self.spec_dim].values
+        eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
+        edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta)
+
+        view = self.dataset.view
+        bin_x = view.bin_x
+        bin_y = view.bin_y
+
+        start_x = view.x
+        start_y = view.y
+
+        number_of_edges = 0
+        for key in self.edges:
+            if key.isdigit():
+                number_of_edges += 1
+
+
+        results = np.zeros([int(self.dataset.shape[0]/bin_x), int(self.dataset.shape[1]/bin_y), number_of_edges])
+        total_spec = int(self.dataset.shape[0]/bin_x)*int(self.dataset.shape[1]/bin_y)
+        self.ui.progress.setMaximum(total_spec)
+        self.ui.progress.setValue(0)
+        ind = 0
+        for x in range (int(self.dataset.shape[0]/bin_x)):
+
+            for y in range(int(self.dataset.shape[1]/bin_y)):
+                ind +=1
+                self.ui.progress.setValue(ind)
+                view.x = x*bin_x
+                view.y = y*bin_y
+                spectrum = view.get_spectrum()
+
+                edges = eels.fit_edges2(spectrum, self.energy_scale, edges)
+                for key, edge in edges.items():
+                    if key.isdigit():
+                        # element.append(edge['element'])
+                        results[x,y, int(key)] = edge['areal_density']
+        edges['spectrum_image_quantification'] = results
+        self.ui.progress.setValue(total_spec)
+        view.x = start_x
+        view.y = start_y
+
 
     def do_fit_button_click(self):
         if 'experiment' in self.dataset.metadata:

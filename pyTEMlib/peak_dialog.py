@@ -86,6 +86,15 @@ class PeakFitDialog(QtWidgets.QDialog):
 
         self.update()
         self.dataset.plot()
+
+        if 'SI_bin_x' not in self.dataset.metadata['experiment']:
+            self.dataset.metadata['experiment']['SI_bin_x'] = 1
+            self.dataset.metadata['experiment']['SI_bin_y'] = 1
+        bin_x = self.dataset.metadata['experiment']['SI_bin_x']
+        bin_y = self.dataset.metadata['experiment']['SI_bin_y']
+
+        self.dataset.view.set_bin([bin_x, bin_y])
+
         if hasattr(self.dataset.view, 'axes'):
             self.axis = self.dataset.view.axes[-1]
         elif hasattr(self.dataset.view, 'axis'):
@@ -198,6 +207,9 @@ class PeakFitDialog(QtWidgets.QDialog):
                                             'amplitude': self.p_out[p_index+1],
                                             'width': self.p_out[p_index+2],
                                             'associated_edge': ''}
+
+        self.find_associated_edges()
+        self.find_white_lines()
         self.update()
         self.plot()
 
@@ -205,7 +217,7 @@ class PeakFitDialog(QtWidgets.QDialog):
         iterations = int(self.ui.smooth_list.currentIndex())
 
         # TODO: add sensitivity to dialog and the two functions below
-        if advanced_present:
+        if advanced_present and iterations > 1:
             self.peak_model, self.peak_out_list = advanced_eels_tools.smooth(self.dataset,
                                                                              self.peaks['fit_start'],
                                                                              self.peaks['fit_end'],
@@ -224,7 +236,9 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.model = self.model + self.peak_model
         self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
         self.dataset.metadata['peak_fit']['peak_out_list'] = self.peak_out_list
-
+        self.figure = self.axis.figure
+        self.updY = 0
+        self.figure.canvas.mpl_connect('button_press_event', self.plot)
         self.plot()
 
     def find_associated_edges(self):
@@ -246,9 +260,11 @@ class PeakFitDialog(QtWidgets.QDialog):
                     if onset-5 < peak['position'] < onset+50:
                         if distance > np.abs(peak['position'] - onset):
                             distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
+                            distance_onset = peak['position'] - onset
                             index = ii
-                if index > 0:
+                if index >= 0:
                     peak['associated_edge'] = edges[index][1]  # check if more info is necessary
+                    peak['distance_to_onset'] = distance_onset
 
     def find_white_lines(self):
         white_lines = {}
@@ -256,10 +272,12 @@ class PeakFitDialog(QtWidgets.QDialog):
             if index.isdigit():
                 if 'associated_edge' in peak:
                     if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
-                        area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width'] / np.sqrt(2 * np.log(2)))
-                        if peak['associated_edge'] not in white_lines:
-                            white_lines[peak['associated_edge']] = 0.
-                        white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
+                        if peak['distance_to_onset'] < 10:
+                            area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
+                            if peak['associated_edge'] not in white_lines:
+                                white_lines[peak['associated_edge']] = 0.
+                            if area > 0:
+                                white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
         white_line_ratios = {}
         white_line_sum = {}
         for sym, area in white_lines.items():
@@ -393,7 +411,15 @@ class PeakFitDialog(QtWidgets.QDialog):
                                                           'amplitude': 1000.0, 'width': 1.0,
                                                           'type': 'Gauss', 'asymmetry': 0}
                 self.ui.list3.setCurrentIndex(peak_index)
-        self.update()
+            self.update()
+
+        elif self.sender() == self.ui.listwls or self.sender() == self.ui.listwl:
+            wl_index = self.sender().currentIndex()
+
+            self.ui.listwl.setCurrentIndex(wl_index)
+            self.ui.unitswl.setText(f"{self.peaks['white_line_ratios'][self.ui.wl_list[wl_index]]:.2f}")
+            self.ui.listwls.setCurrentIndex(wl_index)
+            self.ui.unitswls.setText(f"{self.peaks['white_line_sums'][self.ui.wls_list[wl_index]] * 1e6:.4f} ppm")
 
     def set_action(self):
         pass
@@ -407,3 +433,5 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.ui.find_button.clicked.connect(self.find_peaks)
         self.ui.smooth_button.clicked.connect(self.smooth)
         self.ui.fit_button.clicked.connect(self.fit_peaks)
+        self.ui.listwls.activated[str].connect(self.on_list_enter)
+        self.ui.listwl.activated[str].connect(self.on_list_enter)
