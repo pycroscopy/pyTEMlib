@@ -71,14 +71,6 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.dataset.plot()
 
-        if 'SI_bin_x' not in self.dataset.metadata['experiment']:
-            self.dataset.metadata['experiment']['SI_bin_x'] = 1
-            self.dataset.metadata['experiment']['SI_bin_y'] = 1
-        bin_x = self.dataset.metadata['experiment']['SI_bin_x']
-        bin_y = self.dataset.metadata['experiment']['SI_bin_y']
-
-        self.dataset.view.set_bin([bin_x, bin_y])
-
         if hasattr(self.dataset.view, 'axes'):
             self.axis = self.dataset.view.axes[-1]
         elif hasattr(self.dataset.view, 'axis'):
@@ -120,6 +112,14 @@ class EELSDialog(QtWidgets.QDialog):
         else:
             self.ui.edit2.setText(f"{self.edges['fit_area']['fit_end']:.3f}")
 
+        if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
+            if 'SI_bin_x' not in self.dataset.metadata['experiment']:
+                self.dataset.metadata['experiment']['SI_bin_x'] = 1
+                self.dataset.metadata['experiment']['SI_bin_y'] = 1
+
+            bin_x = self.dataset.metadata['experiment']['SI_bin_x']
+            bin_y = self.dataset.metadata['experiment']['SI_bin_y']
+            self.dataset.view.set_bin([bin_x, bin_y])
         self.update()
 
     def update(self):

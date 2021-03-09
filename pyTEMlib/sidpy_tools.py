@@ -47,7 +47,7 @@ class ChooseDataset(object):
         for dset in datasets:
             if self.dataset_type is None or dset.data_type == self.data_type:
                 if 'Log' in dset.title:
-                    position = dset.title.find(('Log_')) + 4
+                    position = dset.title.find('Log_') + 4
                     order.append(int(dset.title[position:position + 3])+1)
                 else:
                     order.append(0)
