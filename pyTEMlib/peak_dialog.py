@@ -86,6 +86,16 @@ class PeakFitDialog(QtWidgets.QDialog):
 
         self.update()
         self.dataset.plot()
+
+        if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
+            if 'SI_bin_x' not in self.dataset.metadata['experiment']:
+                self.dataset.metadata['experiment']['SI_bin_x'] = 1
+                self.dataset.metadata['experiment']['SI_bin_y'] = 1
+            bin_x = self.dataset.metadata['experiment']['SI_bin_x']
+            bin_y = self.dataset.metadata['experiment']['SI_bin_y']
+
+            self.dataset.view.set_bin([bin_x, bin_y])
+
         if hasattr(self.dataset.view, 'axes'):
             self.axis = self.dataset.view.axes[-1]
         elif hasattr(self.dataset.view, 'axis'):
@@ -97,6 +107,8 @@ class PeakFitDialog(QtWidgets.QDialog):
             self.ui.smooth_list.clear()
             self.ui.smooth_list.addItems(self.ui.iteration_list)
             self.ui.smooth_list.setCurrentIndex(0)
+
+        self.figure.canvas.mpl_connect('button_press_event', self.plot)
         self.plot()
 
     def update(self):
@@ -150,6 +162,7 @@ class PeakFitDialog(QtWidgets.QDialog):
             self.axis.plot(self.energy_scale, eels.gauss(self.energy_scale, p))
 
     def fit_peaks(self):
+        """Fit spectrum with peaks given in peaks dictionary"""
         p_in = []
         for key, peak in self.peaks['peaks'].items():
             if key.isdigit():
@@ -198,33 +211,36 @@ class PeakFitDialog(QtWidgets.QDialog):
                                             'amplitude': self.p_out[p_index+1],
                                             'width': self.p_out[p_index+2],
                                             'associated_edge': ''}
+
+        self.find_associated_edges()
+        self.find_white_lines()
         self.update()
         self.plot()
 
     def smooth(self):
+        """Fit lots of Gaussian to spectrum and let the program sort it out
+
+        We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
+
+        """
         iterations = int(self.ui.smooth_list.currentIndex())
 
-        # TODO: add sensitivity to dialog and the two functions below
-        if advanced_present:
-            self.peak_model, self.peak_out_list = advanced_eels_tools.smooth(self.dataset,
-                                                                             self.peaks['fit_start'],
-                                                                             self.peaks['fit_end'],
-                                                                             iterations=iterations)
-        else:
-            self.peak_model, peak_out_list = eels.find_peaks(self.dataset, self.peaks['fit_start'],
-                                                             self.peaks['fit_end'])
-            self.peak_out_list = [peak_out_list]
+        self.peak_model, self.peak_out_list, number_of_peaks = smooth(self.dataset, iterations, advanced_present)
+
         spec_dim = ft.get_dimensions_by_type('SPECTRAL', self.dataset)[0]
         if spec_dim[1][0] > 0:
             self.model = self.dataset.metadata['edges']['model']['spectrum']
         else:
             self.model = np.zeros(len(spec_dim[1]))
 
+        self.ui.find_edit.setText(str(number_of_peaks))
+
         self.dataset.metadata['peak_fit']['edge_model'] = self.model
         self.model = self.model + self.peak_model
         self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
         self.dataset.metadata['peak_fit']['peak_out_list'] = self.peak_out_list
 
+        self.update()
         self.plot()
 
     def find_associated_edges(self):
@@ -243,12 +259,14 @@ class PeakFitDialog(QtWidgets.QDialog):
                 distance = self.energy_scale[-1]
                 index = -1
                 for ii, onset in enumerate(onsets):
-                    if onset-5 < peak['position'] < onset+50:
+                    if onset < peak['position'] < onset+50:
                         if distance > np.abs(peak['position'] - onset):
                             distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
+                            distance_onset = peak['position'] - onset
                             index = ii
-                if index > 0:
+                if index >= 0:
                     peak['associated_edge'] = edges[index][1]  # check if more info is necessary
+                    peak['distance_to_onset'] = distance_onset
 
     def find_white_lines(self):
         white_lines = {}
@@ -256,10 +274,12 @@ class PeakFitDialog(QtWidgets.QDialog):
             if index.isdigit():
                 if 'associated_edge' in peak:
                     if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
-                        area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width'] / np.sqrt(2 * np.log(2)))
-                        if peak['associated_edge'] not in white_lines:
-                            white_lines[peak['associated_edge']] = 0.
-                        white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
+                        if peak['distance_to_onset'] < 10:
+                            area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
+                            if peak['associated_edge'] not in white_lines:
+                                white_lines[peak['associated_edge']] = 0.
+                            if area > 0:
+                                white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
         white_line_ratios = {}
         white_line_sum = {}
         for sym, area in white_lines.items():
@@ -317,15 +337,16 @@ class PeakFitDialog(QtWidgets.QDialog):
     def find_peaks(self):
         number_of_peaks = int(str(self.ui.find_edit.displayText()).strip())
 
-        flat_list = [item for sublist in self.peak_out_list for item in sublist]
-        new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
-        arg_list = np.argsort(np.abs(new_list[:, 1]))
+        # is now sorted in smooth function
+        # flat_list = [item for sublist in self.peak_out_list for item in sublist]
+        # new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
+        # arg_list = np.argsort(np.abs(new_list[:, 1]))
 
         self.ui.peak_list = []
         self.peaks['peaks'] = {}
         for i in range(number_of_peaks):
             self.ui.peak_list.append(f'Peak {i+1}')
-            p = new_list[arg_list[-i-1]]
+            p = self.peak_out_list[i]
             self.peaks['peaks'][str(i)] = {'position': p[0], 'amplitude': p[1], 'width': p[2], 'type': 'Gauss',
                                            'asymmetry': 0}
 
@@ -393,7 +414,15 @@ class PeakFitDialog(QtWidgets.QDialog):
                                                           'amplitude': 1000.0, 'width': 1.0,
                                                           'type': 'Gauss', 'asymmetry': 0}
                 self.ui.list3.setCurrentIndex(peak_index)
-        self.update()
+            self.update()
+
+        elif self.sender() == self.ui.listwls or self.sender() == self.ui.listwl:
+            wl_index = self.sender().currentIndex()
+
+            self.ui.listwl.setCurrentIndex(wl_index)
+            self.ui.unitswl.setText(f"{self.peaks['white_line_ratios'][self.ui.wl_list[wl_index]]:.2f}")
+            self.ui.listwls.setCurrentIndex(wl_index)
+            self.ui.unitswls.setText(f"{self.peaks['white_line_sums'][self.ui.wls_list[wl_index]] * 1e6:.4f} ppm")
 
     def set_action(self):
         pass
@@ -407,3 +436,34 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.ui.find_button.clicked.connect(self.find_peaks)
         self.ui.smooth_button.clicked.connect(self.smooth)
         self.ui.fit_button.clicked.connect(self.fit_peaks)
+        self.ui.listwls.activated[str].connect(self.on_list_enter)
+        self.ui.listwl.activated[str].connect(self.on_list_enter)
+
+def smooth(dataset, iterations, advanced_present):
+    """Gaussian mixture model (non-Bayesian)
+
+    Fit lots of Gaussian to spectrum and let the program sort it out
+    We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
+
+    """
+
+    # TODO: add sensitivity to dialog and the two functions below
+    peaks = dataset.metadata['peak_fit']
+
+    if advanced_present and iterations > 1:
+        peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
+                                                               peaks['fit_end'], iterations=iterations)
+    else:
+        peak_model, peak_out_list = eels.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
+        peak_out_list = [peak_out_list]
+
+    flat_list = [item for sublist in peak_out_list for item in sublist]
+    new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
+    area = np.sqrt(2 * np.pi) * np.abs(new_list[:, 1]) * np.abs(new_list[:, 2] / np.sqrt(2 * np.log(2)))
+    arg_list = np.argsort(area)[::-1]
+    area = area[arg_list]
+    peak_out_list = new_list[arg_list]
+
+    number_of_peaks = np.searchsorted(area * -1, -np.average(area))
+
+    return peak_model, peak_out_list, number_of_peaks

@@ -160,7 +160,7 @@ class EnergySelector(QtWidgets.QDialog):
 
         if hasattr(dset.view, 'axis'):
             self.axis = dset.view.axis
-            self.setWindowTitle('p')
+            # self.setWindowTitle('p')
         elif hasattr(dset.view, 'axes'):
             self.axis = dset.view.axes[1]
         else:
@@ -232,8 +232,8 @@ class EnergySelector(QtWidgets.QDialog):
         self.plot()
 
         self.selector = RangeSelector(self.axis, self.line_select_callback)
-        self.edit1.setText(f'{self.x_min:.4f}')
-        self.edit2.setText(f'{self.x_max:.4f}')
+        self.edit1.setText(f'{self.x_min:.3f}')
+        self.edit2.setText(f'{self.x_max:.3f}')
         self.edit3.setText(f'{self.dispersion:.4f}')
         self.update()
 
@@ -265,7 +265,7 @@ class EnergySelector(QtWidgets.QDialog):
 
             self.update()
             # self.axis.draw()
-            self.setWindowTitle(f'shift, {self.change}, {self.x_min}')
+            # self.setWindowTitle(f'shift, {self.change}, {self.x_min}')
 
         elif sender == self.edit2:
             value = float(str(sender.displayText()).strip())
@@ -279,13 +279,13 @@ class EnergySelector(QtWidgets.QDialog):
             if end_channel - start_channel != 0:
                 self.dispersion = (self.x_max - self.x_min) / (end_channel - start_channel)
             self.offset = self.x_min - start_channel * self.dispersion
-            self.edit2.setText(f"{self.x_max:.2f}")
-            self.edit3.setText(f"{self.dispersion:.2f}")
+            self.edit2.setText(f"{self.x_max:.3f}")
+            self.edit3.setText(f"{self.dispersion:.4f}")
             self.energy_scale = np.arange(len(self.energy_scale)) * self.dispersion + self.offset
 
             self.update()
             # self.axis.draw()
-            self.setWindowTitle(f'range, {self.change}, {self.dispersion}')
+            # self.setWindowTitle(f'range, {self.change}, {self.dispersion}')
 
         elif sender == self.edit3:
             value = float(str(sender.displayText()).strip())
