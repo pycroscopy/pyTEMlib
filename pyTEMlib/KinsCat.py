@@ -39,7 +39,7 @@ import matplotlib as mpl
 from matplotlib.patches import Circle  # , Ellipse, Rectangle
 from matplotlib.collections import PatchCollection
 
-from ase.io import read  # , write
+import ase.io
 import pyTEMlib.file_tools as ft
 from pyTEMlib.crystal_tools import *
 import os
@@ -54,28 +54,16 @@ try:
 except ModuleNotFoundError:
     _spglib_present = False
 
-if _spglib_present:
-    print('Symmetry functions of spglib enabled')
-else:
+if not _spglib_present:
     print('spglib not installed; Symmetry functions of spglib disabled')
+else:
+    print('Symmetry functions of spglib enabled')
 
 
-def read_poscar(file_name=None):
-    """
-    Open file dialog to select a POSCAR file from VASP
-    """
-    if file_name is None:
-        file_name = ft.openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
-
-    # use ase package to read file
-    base = os.path.basename(file_name)
-    base_name = os.path.splitext(base)[0]
-    crystal = read(file_name, format='vasp', parallel=False)
-
-    # make dictionary and plot structure (not essential for further notebook)
-    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
-            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'name': base_name}
-    return tags
+def read_poscar(filename):
+    print('read_poscar and read_cif moved to file_tools, \n'
+          'please use that library in the future!')
+    ft.read_poscar(filename)
 
 
 # Some Structure Determination Routines
