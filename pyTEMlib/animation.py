@@ -3,12 +3,17 @@ part of MSE 672 course at UTK
 
 Author: Gerd Duscher
 revision: 01/11/2021
+03/17/2021 added Aberration Animation
  """
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-import pyTEMlib.KinsCat as ks
+from ipywidgets import widgets
+from IPython.display import display
+
+import pyTEMlib.kinematic_scattering as ks
 
 
 def geometric_ray_diagram(focal_length=1., magnification=False):
@@ -305,14 +310,14 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
     plt.ylim(-4, k_0[1] * 1.1)
 
 
-def deficient_kikuchi_line(s_g=0., color_B='black'):
+def deficient_kikuchi_line(s_g=0., color_b='black'):
     k_len = 1 / ks.get_wavelength(200)
     d = .2  # lattice parameter in nm
 
     g = np.linspace(-2, 2, 5) * 1 / d
     g_d = np.array([1 / d, 0])
 
-    # recirocal lattice
+    # reciprocal lattice
     plt.scatter(g, [0] * 5, color='blue')
 
     alpha = -np.arctan(s_g / g_d[0])
@@ -328,25 +333,25 @@ def deficient_kikuchi_line(s_g=0., color_B='black'):
 
     # Ewald Sphere
     ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0), clip_on=False, zorder=10, linewidth=1,
-                                  edgecolor=color_B, fill=False)
+                                  edgecolor=color_b, fill=False)
     plt.gca().add_artist(ewald_sphere)
 
     # K_0
     plt.plot([k_0[0], k_0[0]], [k_0[1], k_0[1] + 4], color='gray', linestyle='-', alpha=0.3)
 
-    plt.gca().arrow(k_0[0] + k_i[0], k_0[1] + k_i[1], -k_i[0], -k_i[1], head_width=0.3, head_length=0.4, fc=color_B,
-                    ec=color_B, length_includes_head=True)
+    plt.gca().arrow(k_0[0] + k_i[0], k_0[1] + k_i[1], -k_i[0], -k_i[1], head_width=0.3, head_length=0.4, fc=color_b,
+                    ec=color_b, length_includes_head=True)
     plt.plot([k_0[0] + k_i_t[0], k_0[0] - k_i_t[0]], [k_0[1] + k_i_t[1], k_0[1] - k_i_t[1]], color='black',
              linestyle='--', alpha=0.5)
     plt.scatter(k_0[0], k_0[1], color='black')
-    plt.gca().arrow(k_0[0], k_0[1], -k_0[0], -k_0[1], head_width=0.3, head_length=0.4, fc=color_B,
-                    ec=color_B, length_includes_head=True)
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0], -k_0[1], head_width=0.3, head_length=0.4, fc=color_b,
+                    ec=color_b, length_includes_head=True)
     plt.gca().annotate("K$_0$", xytext=(-k_0[0] / 2, 0), xy=(k_0[0] / 2, 0))
 
-    plt.gca().arrow(k_0[0], k_0[1], -k_d[0], -k_d[1], head_width=0.3, head_length=0.4, fc=color_B,
-                    ec=color_B, length_includes_head=True)
+    plt.gca().arrow(k_0[0], k_0[1], -k_d[0], -k_d[1], head_width=0.3, head_length=0.4, fc=color_b,
+                    ec=color_b, length_includes_head=True)
 
-    # K_e exces line
+    # K_e excess line
     plt.gca().arrow(k_0[0], k_0[1], -kk_e[0], -kk_e[1], head_width=0.3, head_length=0.4, fc='red',
                     ec='red', length_includes_head=True)
     plt.gca().annotate("excess", xytext=(k_0[0] - kk_e[0], -1), xy=(-kk_e[0] + k_0[0], 0))
@@ -384,3 +389,243 @@ def deficient_kikuchi_line(s_g=0., color_B='black'):
     plt.xlim(-12, 12)
     plt.ylim(-2, k_0[1] * 1.4)
     plt.gca().set_aspect('equal')
+
+
+class InteractiveAberration(object):
+    """
+    ### Interactive explanation of aberrations
+
+    """
+
+    def __init__(self, horizontal=True):
+
+        box_layout = widgets.Layout(display='flex',
+                                    flex_flow='row',
+                                    align_items='stretch',
+                                    width='100%')
+
+        self.words = ['ideal rays', 'aberrated rays', 'aberrated wavefront', 'aberration function']
+
+        self.buttons = [widgets.ToggleButton(value=False, description=word, disabled=False) for word in self.words]
+        box = widgets.Box(children=self.buttons, layout=box_layout)
+        display(box)
+
+        # Button(description='edge_quantification')
+        for button in self.buttons:
+            button.observe(self.on_button_clicked, 'value')  # on_click(self.on_button_clicked)
+
+        self.figure = plt.figure()
+        self.ax = plt.gca()
+        self.horizontal = horizontal
+        self.ax.set_aspect('equal')
+        self.analysis = []
+        self.update()
+        # self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
+
+    def on_button_clicked(self, b):
+        # print(b['owner'].description)
+        selection = b['owner'].description
+        if selection in self.analysis:
+            self.analysis.remove(selection)
+        else:
+            self.analysis.append(selection)
+        self.update()
+
+    def update(self):
+        ax = self.ax
+        ax.clear()
+        selection = self.analysis
+        ax.plot([0, 15], [0, 0], color='black')
+        ax.plot([9, 9], [-.3, .3], color='black')
+        lens = patches.Ellipse((2, 0),
+                               width=.4,
+                               height=7,
+                               facecolor='gray')
+        ax.add_patch(lens)
+        ax.set_ylim(-6.5, 6.5)
+        ax.set_aspect('equal')
+
+        if self.words[0] in selection:
+            color = 'gray'
+            ax.plot([0, 2], [1, 1], color=color)
+            ax.plot([0, 2], [-1, -1], color=color)
+            ax.plot([2, 9], [1, 0], color=color)
+            ax.plot([2, 9], [-1, 0], color=color)
+
+            gauss = patches.Ellipse((9, 0),
+                                    width=12,
+                                    height=12,
+                                    fill=False)
+            ax.add_patch(gauss)
+
+        if self.words[1] in selection:
+            color = 'blue'
+            ax.plot([0, 2], [2, 2], color=color)
+            ax.plot([0, 2], [-2, -2], color=color)
+            ax.plot([2, 7], [2, 0], color=color)
+            ax.plot([2, 7], [-2, 0], color=color)
+            gauss2 = patches.Ellipse((7, 0),
+                                     width=8,
+                                     height=8,
+                                     fill=False,
+                                     color=color, linestyle='--')
+            plt.gca().add_patch(gauss2)
+
+        if self.words[2] in selection:
+            color = 'red'
+            ax.plot([0, 2], [2, 2], color=color)
+            ax.plot([0, 2], [-2, -2], color=color)
+            ax.plot([2, 7], [2, 0], color=color)
+            ax.plot([2, 7], [-2, 0], color=color)
+            ax.plot([0, 2], [1, 1], color=color)
+            ax.plot([0, 2], [-1, -1], color=color)
+            ax.plot([2, 9], [1, 0], color=color)
+            ax.plot([2, 9], [-1, 0], color=color)
+            gauss3 = patches.Ellipse((9, 0),
+                                     width=12,
+                                     height=9.7,
+                                     fill=False,
+                                     color=color)
+            plt.gca().add_patch(gauss3)
+
+        if self.words[3] in selection:
+            color = 'green'
+            x = np.arange(100) / 100 - 6
+            x2 = np.arange(100) / 100 * 1.5 - 6
+            b = 4.8
+            a = 6
+            y = np.sqrt(a ** 2 - x ** 2)
+            y2 = b / a * np.sqrt(a ** 2 - x2 ** 2)
+
+            x = np.append(x[::-1], x[1:])
+            y = np.append(y[::-1], -y[1:])
+            x2 = np.append(x2[::-1], x2[1:])
+            y2 = np.append(y2[::-1], -y2[1:])
+
+            dif = y2 - y
+
+            x = np.append(x[::-1], x2)
+            y = np.append(y[::-1], y2)
+            aberration = patches.Polygon(np.array([x + 9, y]).T,
+                                         fill=True,
+                                         color=color, alpha=.5)
+
+            aberration2 = patches.Polygon(np.array(
+                [np.append(np.abs(dif), [0, 0]) * 2 + 2.5, np.append(np.linspace(-3.3, 3.3, len(dif)), [3.3, -3.3])]).T,
+                                          fill=True,
+                                          color=color, alpha=.9)
+
+            plt.gca().add_patch(aberration)
+            plt.gca().add_patch(aberration2)
+
+
+class InteractiveRonchigramMagnification(object):
+    """    
+    ### Interactive explanation of magnification 
+
+    """
+
+    def __init__(self, horizontal=True):
+
+        box_layout = widgets.Layout(display='flex',
+                                    flex_flow='row',
+                                    align_items='stretch',
+                                    width='100%')
+
+        self.words = ['ideal rays', 'radial circle rays', 'axial circle rays', 'over-focused rays']
+
+        self.buttons = [widgets.ToggleButton(value=False, description=word, disabled=False) for word in self.words]
+        box = widgets.Box(children=self.buttons, layout=box_layout)
+        display(box)
+
+        # Button(description='edge_quantification')
+        for button in self.buttons:
+            button.observe(self.on_button_clicked, 'value')  # on_click(self.on_button_clicked)
+
+        self.figure = plt.figure()
+        self.ax = plt.gca()
+        self.horizontal = horizontal
+        self.ax.set_aspect('equal')
+        self.analysis = []
+        self.update()
+        # self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
+
+    def on_button_clicked(self, b):
+        # print(b['owner'].description)
+        selection = b['owner'].description
+        if selection in self.analysis:
+            self.analysis.remove(selection)
+        else:
+            self.analysis.append(selection)
+        self.update()
+
+    def update(self):
+        ax = self.ax
+        ax.clear()
+        selection = self.analysis
+        ax.plot([0, 24], [0, 0], color='black')
+        ax.plot([14, 14], [-.3, .3], color='black')
+        ax.text(14, 1, s='f')
+        lens = patches.Ellipse((4, 0),
+                               width=.8,
+                               height=14,
+                               facecolor='gray')
+        ax.add_patch(lens)
+        ax.text(4, 8, s='lens')
+        sample = patches.Rectangle((10, -2),
+                                   width=.2,
+                                   height=4,
+                                   facecolor='gray')
+
+        ax.add_patch(sample)
+        ax.text(9, 3, s='sample')
+        ax.set_ylim(-10, 10)
+        ax.set_aspect('equal')
+
+        if self.words[0] in selection:
+            color = 'gray'
+            ax.plot([0, 4], [1, 1], color=color)
+            ax.plot([0, 4], [-1, -1], color=color)
+            ax.plot([4, 24], [1, -1], color=color)
+            ax.plot([4, 24], [-1, 1], color=color)
+
+            circle1 = patches.Ellipse((24, 0), width=.2, height=2, fill=False, color=color)
+            ax.add_patch(circle1)
+
+        if self.words[1] in selection:
+            color = 'red'
+            ax.plot([0, 4], [3, 3], color=color)
+            ax.plot([0, 4], [-3, -3], color=color)
+            ax.plot([4, 24], [3, -4], color=color)
+            ax.plot([4, 24], [-3, 4], color=color)
+            ax.plot([0, 4], [2.5, 2.5], color=color)
+            ax.plot([0, 4], [-2.50, -2.5], color=color)
+            ax.plot([4, 24], [2.5, -2.8], color=color)
+            ax.plot([4, 24], [-2.5, 2.8], color=color)
+
+            circle2 = patches.Ellipse((24, 0), width=.9, height=8, fill=False, color=color)
+            ax.add_patch(circle2)
+            circle3 = patches.Ellipse((24, 0), width=.6, height=5.6, fill=False, color=color)
+            ax.add_patch(circle3)
+            circle3 = patches.Ellipse((24, 0), width=.7, height=7.3, fill=False, color=color, linewidth=5, alpha=.5)
+            ax.add_patch(circle3)
+
+        if self.words[2] in selection:
+            color = 'orange'
+            ax.plot([0, 4], [4, 4], color=color)
+            ax.plot([0, 4], [-4, -4], color=color)
+            ax.plot([4, 24], [4, -9.25], color=color)
+            ax.plot([4, 24], [-4, 9.25], color=color)
+
+            circle4 = patches.Ellipse((24, 0), width=2, height=18.5, fill=False, color=color)
+            plt.gca().add_patch(circle4)
+
+        if self.words[3] in selection:
+            color = 'green'
+            ax.plot([0, 4], [5, 5], color=color, linestyle='--')
+            ax.plot([0, 4], [-5, -5], color=color, linestyle='--')
+            ax.plot([4, 24], [5, -13], color=color, linestyle='--')
+            ax.plot([4, 24], [-5, 13], color=color, linestyle='--')
+
+            circle6 = patches.Ellipse((24, 0), width=4, height=26, fill=False, color=color, linestyle='--')
+            plt.gca().add_patch(circle6)
