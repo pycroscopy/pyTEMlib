@@ -298,6 +298,7 @@ def vector_norm(g):
 
     depreciated - use np.linalg.norm
     """
+    g = np.array(g)
     return np.sqrt(g[:, 0] ** 2 + g[:, 1] ** 2 + g[:, 2] ** 2)
 
 
@@ -465,7 +466,8 @@ def check_sanity(tags, verbose_level=0):
         if key not in tags:
             print(f'Necessary parameter {key} not defined')
             stop = True
-
+    if 'SpotPattern' not in tags:
+        tags['SpotPattern'] = False
     if tags['SpotPattern']:
         if 'zone_hkl' not in tags:
             print(' No zone_hkl defined')
@@ -480,7 +482,7 @@ def check_sanity(tags, verbose_level=0):
     if stop:
         print('Input is not complete, stopping')
         print('Try \'example()\' for example input')
-        return stop
+        return False
     ############################################
     # Check optional input
     ############################################
@@ -523,13 +525,12 @@ def check_sanity(tags, verbose_level=0):
             tags['dynamic correction K0'] = 0.
             if verbose_level > 0:
                 print('Setting undefined input: tags[\'dynamic correction k0\'] = False')
-    return stop
+    return not stop
 
 
 def scattering_matrix(tags, verbose_level=1):
     """ Scattering matrix"""
-    stop = check_sanity(tags, verbose_level)
-    if stop:
+    if not check_sanity(tags, verbose_level):
         return
     ###
     # Pair distribution Function
@@ -583,8 +584,7 @@ def ring_pattern_calculation(tags, verbose=False):
     
     # Check sanity
     tags['SpotPattern'] = False
-    stop = check_sanity(tags, verbose)
-    if stop:
+    if not check_sanity(tags, verbose):
         return
 
     # wavelength
@@ -707,6 +707,7 @@ def ring_pattern_calculation(tags, verbose=False):
     tags['Ring_Pattern']['allowed']['label'] = hkl_label
 
 
+
 def kinematic_scattering(tags, verbose=False):
     """
         All kinematic scattering calculation
@@ -746,7 +747,7 @@ def kinematic_scattering(tags, verbose=False):
 
     # Check sanity
     tags['SpotPattern'] = True
-    if check_sanity(tags):
+    if not check_sanity(tags):
         print('Input is not complete, stopping')
         print('Try \'example()\' for example input')
         return
@@ -813,7 +814,7 @@ def kinematic_scattering(tags, verbose=False):
 
     # get rotation matrix to rotate zone axis onto z-axis
 
-    rotation_matrix = get_rotation_matrix(tags, verbose)
+    rotation_matrix = get_rotation_matrix(tags)
 
     if verbose:
         print(f"Rotation alpha {np.rad2deg(tags['y-axis rotation alpha']):.1f} degree, "
