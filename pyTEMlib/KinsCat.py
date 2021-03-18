@@ -54,10 +54,10 @@ try:
 except ModuleNotFoundError:
     _spglib_present = False
 
-if _spglib_present:
-    print('Symmetry functions of spglib enabled')
-else:
+if not _spglib_present:
     print('spglib not installed; Symmetry functions of spglib disabled')
+else:
+    print('Symmetry functions of spglib enabled')
 
 
 def read_poscar(filename):
