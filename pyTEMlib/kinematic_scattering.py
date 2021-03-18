@@ -39,7 +39,6 @@ import matplotlib as mpl
 from matplotlib.patches import Circle  # , Ellipse, Rectangle
 from matplotlib.collections import PatchCollection
 
-from ase.io import read  # , write
 import pyTEMlib.file_tools as ft
 from pyTEMlib.crystal_tools import *
 from pyTEMlib.diffraction_plot import *
@@ -62,6 +61,12 @@ else:
 inputKeys = ['unit_cell', 'elements', 'base', 'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_inputKeys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad', 'mistilt', 'thickness',
                       'dynamic correction', 'dynamic correction K0']
+
+
+def read_poscar(filename):
+    print('read_poscar and read_cif moved to file_tools, \n'
+          'please use that library in the future!')
+    ft.read_poscar(filename)
 
 
 def example(verbose=True):
