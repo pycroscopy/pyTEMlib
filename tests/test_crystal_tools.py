@@ -57,6 +57,7 @@ class TestUtilityFunctions(unittest.TestCase):
         desired_base = [(0., 0., 0.), (0.5, 0.5, 0.5)]
         desired_atoms = ['Fe', 'Fe']
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.bcc(1, ['Fe', 'Fe'])
         self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
         self.assertEqual(actual_atoms, desired_atoms)
 
@@ -71,7 +72,9 @@ class TestUtilityFunctions(unittest.TestCase):
         desired_base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.0), (0., 0.5, 0.5)]
         desired_atoms = ['Fe']*4
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.fcc(1, ['Fe', 'Fe'])
         self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.fcc(1, ['Fe', 'Fe', 'Fe', 'Fe'])
         self.assertEqual(actual_atoms, desired_atoms)
 
         with self.assertRaises(TypeError):
@@ -105,6 +108,7 @@ class TestUtilityFunctions(unittest.TestCase):
         desired_atoms = ['Fe'] * 4
 
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.wurzite(1, 2, u, ['Fe', 'Fe'])
         self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
         self.assertEqual(actual_atoms, desired_atoms)
 
@@ -127,6 +131,8 @@ class TestUtilityFunctions(unittest.TestCase):
         with self.assertRaises(TypeError):
             cs.rocksalt('1', 'Fe')
         with self.assertRaises(TypeError):
+            cs.rocksalt('1', ['Fe', 'Fe', 'Fe'])
+        with self.assertRaises(TypeError):
             cs.rocksalt(1, 1)
 
     def test_zincblende(self):
@@ -137,11 +143,15 @@ class TestUtilityFunctions(unittest.TestCase):
         desired_atoms = ['Fe'] * 8
 
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.zincblende(1, ['Fe']*8)
         self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.zincblende(1, ['Fe']*4)
         self.assertEqual(actual_atoms, desired_atoms)
 
         with self.assertRaises(TypeError):
             cs.zincblende('1', 'Fe')
+        with self.assertRaises(TypeError):
+            cs.zincblende(1, ['Fe']*3)
         with self.assertRaises(TypeError):
             cs.zincblende(1, 1)
 
@@ -152,9 +162,12 @@ class TestUtilityFunctions(unittest.TestCase):
         desired_atoms = ['Fe'] * 5
 
         self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.perovskite(1, ['Fe']*3)
         self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
+        actual_cell, actual_base, actual_atoms = cs.perovskite(1, ['Fe']*5)
         self.assertEqual(actual_atoms, desired_atoms)
-
+        actual_cell, actual_base, actual_atoms = cs.perovskite(1, ['Fe'] * 2)
+        self.assertEqual(actual_atoms, desired_atoms)
         with self.assertRaises(TypeError):
             cs.perovskite('1', 'Fe')
         with self.assertRaises(TypeError):
@@ -171,6 +184,21 @@ class TestUtilityFunctions(unittest.TestCase):
         self.assertIsInstance(actual, dict)
         self.assertAlmostEqual(actual['a'], 0.3571)
 
+        actual = cs.structure_by_name('BCC Fe')
+        self.assertIsInstance(actual, dict)
+        self.assertAlmostEqual(actual['a'], 0.2866)
+
+        actual = cs.structure_by_name('diamond')
+        self.assertEqual(actual['symmetry'], 'zinc_blende')
+
+        actual = cs.structure_by_name('GaN Wurzite')
+        self.assertEqual(actual['symmetry'], 'wurzite')
+
+        actual = cs.structure_by_name('MgO')
+        self.assertEqual(actual['symmetry'], 'rocksalt')
+
+        actual = cs.structure_by_name('MoS2')
+        self.assertEqual(actual['symmetry'], 'dichalcogenide')
 
 
 if __name__ == '__main__':

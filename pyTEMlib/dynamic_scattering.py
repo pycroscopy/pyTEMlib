@@ -214,3 +214,82 @@ def multi_slice(wave, number_of_unit_cell_z, number_layers, transmission, propag
             wave = wave * propagator[layer]  # propagation; propagator is defined in reciprocal space
             wave = np.fft.ifft2(wave)  # back to real space
     return wave
+
+
+def make_chi(theta, phi, aberrations):
+    """
+    ###
+    # Aberration function chi
+    ###
+    phi and theta are meshgrids of the angles in polar coordinates.
+    aberrations is a dictionary with the aberrations coefficients
+    Attention: an empty aberrations dictionary will give you a perfect aberration
+    """
+
+    chi = np.zeros(theta.shape)
+    for n in range(6):  ## First Sum up to fifth order
+        term_first_sum = np.power(theta, n + 1) / (n + 1)  # term in first sum
+
+        second_sum = np.zeros(theta.shape)  ## second Sum intialized with zeros
+        for m in range((n + 1) % 2, n + 2, 2):
+            # print(n, m)
+
+            if m > 0:
+                if f'C{n}{m}a' not in aberrations:  # Set non existent aberrations coefficient to zero
+                    aberrations[f'C{n}{m}a'] = 0.
+                if f'C{n}{m}b' not in aberrations:
+                    aberrations[f'C{n}{m}b'] = 0.
+
+                # term in second sum
+                second_sum = second_sum + aberrations[f'C{n}{m}a'] * np.cos(m * phi) + aberrations[
+                    f'C{n}{m}b'] * np.sin(m * phi)
+            else:
+                if f'C{n}{m}' not in aberrations:  # Set non existent aberrations coefficient to zero
+                    aberrations[f'C{n}{m}'] = 0.
+
+                # term in second sum
+                second_sum = second_sum + aberrations[f'C{n}{m}']
+        chi = chi + term_first_sum * second_sum * 2 * np.pi / aberrations['wavelength']
+
+    return chi
+
+
+def objective_lens_function(ab, nx, ny, field_of_view, wavelength, aperture_size=10):
+    """Objective len function to be convoluted with exit wave to derive image function
+
+    Input:
+    ab: dict
+        aberrations in nm should at least contain defocus (C10), and spherical abeeration (C30)
+    nx: int
+        number of pixel in x direction
+    ny: int
+        number of pixel in y direction
+    field_of_view: float
+        field of fiew of potential
+    wavelength: float
+        wavelength in nm
+    aperture_size: float
+        aperture size in 1/nm
+
+    Returns:
+    --------
+    object function: numpy array (nx x ny)
+    extent: list
+    """
+
+    wavelength = ab['wavelength']
+    # Reciprocal plane in 1/nm
+    dk = 1 / field_of_view
+    t_xv, t_yv = np.mgrid[int(-nx / 2):int(nx / 2), int(-ny / 2):int(ny / 2)] * dk
+
+    # define reciprocal plane in angles
+    phi = np.arctan2(t_yv, t_xv)
+    theta = np.arctan2(np.sqrt(t_xv ** 2 + t_yv ** 2), 1 / wavelength)
+
+    mask = theta < aperture_size * wavelength
+
+    # calculate chi
+    chi = make_chi(theta, phi, ab)
+
+    extent = [-nx / 2 * dk, nx / 2 * dk, -nx / 2 * dk, nx / 2 * dk]
+    return np.exp(-1j * chi) * mask, extent
