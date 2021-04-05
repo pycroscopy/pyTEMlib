@@ -913,7 +913,7 @@ class InteractiveSpectrumImage(object):
         if 'Z_contrast_channel' not in self.tags:
             print('add Z contrast channel group to dictionary first!')
             return
-        # get dictionary from current channel in pyUSID file
+
         z_tags = {}   # TODO change to sidpy dataset ft.h5_get_dictionary(z_channel)
         extent = [self.rectangle[0], self.rectangle[0] + self.rectangle[1],
                   self.rectangle[2] + self.rectangle[3], self.rectangle[2]]
@@ -954,7 +954,6 @@ class InteractiveSpectrumImage(object):
 
     def set_survey_image(self, si_channel=None):
 
-        # get dictionary from current channel in pyUSID file
         if si_channel is not None:
             self.tags['survey_channel'] = si_channel
         if 'survey_channel' not in self.tags:
