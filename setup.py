@@ -33,6 +33,7 @@ setuptools.setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering :: Information Analysis'],
     keywords=['imaging', 'spectra', 'transmission', 'electron', 'microscopy',
@@ -44,7 +45,7 @@ setuptools.setup(
     license='MIT',
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
-    install_requires=['scipy', 'numpy', 'pillow', 'simpleITK', 'ase',
+    install_requires=['scipy', 'numpy', 'pillow', 'simpleITK', 'ase', 'tqdm',
                       'scikit-image', 'scikit-learn', 'pyNSID', 'sidpy', 'SciFiReaders'],  # 'PyQt5> 1.0'],#
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],

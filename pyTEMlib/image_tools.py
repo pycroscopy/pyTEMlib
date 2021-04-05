@@ -10,34 +10,34 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pylab as plt
 import matplotlib.widgets as mwidgets
-from matplotlib.widgets import RectangleSelector
+# from matplotlib.widgets import RectangleSelector
 
 import sidpy
-from .file_tools import *
-from .probe_tools import *
-import sys
+import pyTEMlib.file_tools as ft
+# import pyTEMlib.probe_tools
 
-import itertools
+from tqdm.auto import trange, tqdm
+
+
+# import itertools
 from itertools import product
 
 from scipy import fftpack
-from scipy import signal
-from scipy.interpolate import interp1d, interp2d
-from scipy.optimize import leastsq
+# from scipy import signal
+from scipy.interpolate import interp1d  # , interp2d
 import scipy.optimize as optimization
 
 # Multidimensional Image library
 import scipy.ndimage as ndimage
 import scipy.constants as const
 
-import scipy.spatial as sp
-from scipy.spatial import Voronoi, KDTree, cKDTree
+# from scipy.spatial import Voronoi, KDTree, cKDTree
 
 import skimage
 import skimage.registration as registration
 from skimage.feature import register_translation  # blob_dog, blob_doh
 from skimage.feature import peak_local_max
-from skimage.measure import points_in_poly
+# from skimage.measure import points_in_poly
 
 # our blob detectors from the scipy image package
 from skimage.feature import blob_log  # blob_dog, blob_doh
@@ -196,7 +196,7 @@ def fourier_transform(dset):
     new_image = new_image - new_image.min()
     fft_transform = (np.fft.fftshift(np.fft.fft2(new_image)))
 
-    image_dims = get_image_dims(dset)
+    image_dims = ft.get_image_dims(dset)
 
     units_x = '1/' + dset._axes[image_dims[0]].units
     units_y = '1/' + dset._axes[image_dims[1]].units
@@ -209,12 +209,12 @@ def fourier_transform(dset):
     fft_dset.modality = 'fft'
 
     fft_dset.set_dimension(0, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[0],
-                                                                             d=get_slope(dset.x.values))),
+                                                                             d=ft.get_slope(dset.x.values))),
 
                                               name='u', units=units_x, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
     fft_dset.set_dimension(1, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[1],
-                                                                             d=get_slope(dset.y.values))),
+                                                                             d=ft.get_slope(dset.y.values))),
                                               name='v', units=units_y, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
 
@@ -297,7 +297,7 @@ def diffractogram_spots(dset, spot_threshold):
     print(f'Found {spots_random.shape[0]} reflections')
 
     # Needed for conversion from pixel to Reciprocal space
-    rec_scale = np.array([get_slope(dset.u.values), get_slope(dset.v.values)])
+    rec_scale = np.array([ft.get_slope(dset.u.values), ft.get_slope(dset.v.values)])
     spots_random[:, :2] = spots_random[:, :2]*rec_scale+[dset.u.values[0], dset.v.values[0]]
     # sort reflections
     spots_random[:, 2] = np.linalg.norm(spots_random[:, 0:2], axis=1)
@@ -404,16 +404,18 @@ def complete_registration(main_dataset, storage_channel=None):
     if main_dataset.data_type.name != 'IMAGE_STACK':
         raise TypeError('Registration makes only sense for an image stack')
 
+    print('Rigid_Registration')
+
     rigid_registered_dataset = rigid_registration(main_dataset)
     if storage_channel is None:
         storage_channel = main_dataset.h5_dataset.parent.parent
 
-    registration_channel = log_results(storage_channel, rigid_registered_dataset)
+    registration_channel = ft.log_results(storage_channel, rigid_registered_dataset)
 
     print('Non-Rigid_Registration')
 
     non_rigid_registered = demon_registration(rigid_registered_dataset)
-    registration_channel = log_results(storage_channel, non_rigid_registered)
+    registration_channel = ft.log_results(storage_channel, non_rigid_registered)
 
     return non_rigid_registered, rigid_registered_dataset
 
@@ -473,18 +475,7 @@ def demon_registration(dataset, verbose=False):
 
     done = 0
 
-    if QT_available:
-        progress = ProgressDialog("Non-Rigid Registration", nimages)
-    for i in range(nimages):
-        if QT_available:
-            progress.set_value(i)
-        else:
-            if done < int((i + 1) / nimages * 50):
-                done = int((i + 1) / nimages * 50)
-                sys.stdout.write('\r')
-                # progress output :
-                sys.stdout.write("[%-50s] %d%%" % ('*' * done, 2 * done))
-                sys.stdout.flush()
+    for i in trange(nimages):
 
         moving = sITK.GetImageFromArray(dataset[i])
         moving_f = sITK.DiscreteGaussian(moving, 2.0)
@@ -493,9 +484,6 @@ def demon_registration(dataset, verbose=False):
         resampler.SetTransform(out_tx)
         out = resampler.Execute(moving)
         dem_reg[i, :, :] = sITK.GetArrayFromImage(out)
-
-    if QT_available:
-        progress.close()
 
     print(':-)')
     print('You have successfully completed Diffeomorphic Demons Registration')
@@ -548,21 +536,8 @@ def rigid_registration(dataset):
     fft_fixed = np.fft.fft2(fixed)
 
     relative_drift = [[0., 0.]]
-    done = 0
 
-    if QT_available:
-        progress = ProgressDialog("Rigid Registration", nimages)
-    for i in range(nimages):
-        if QT_available:
-            progress.set_value(i)
-        else:
-            if done < int((i + 1) / nimages * 50):
-                done = int((i + 1) / nimages * 50)
-                sys.stdout.write('\r')
-                # progress output :
-                sys.stdout.write("[%-50s] %d%%" % ('*' * done, 2 * done))
-                sys.stdout.flush()
-
+    for i in trange(nimages):
         moving = np.array(dataset[i])
         fft_moving = np.fft.fft2(moving)
         if skimage.__version__[:4] == '0.16':
@@ -571,11 +546,9 @@ def rigid_registration(dataset):
             shift = registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
 
         fft_fixed = fft_moving
-        # print(f'Image number {i:2}  xshift =  {shift[0][0]:6.3f}  y-shift =  {shift[0][1]:6.3f}')
 
         relative_drift.append(shift[0])
-    if QT_available:
-        progress.close()
+
     rig_reg, drift = rig_reg_drift(dataset, relative_drift)
 
     crop_reg, input_crop = crop_image_stack(rig_reg, drift)
@@ -1106,9 +1079,8 @@ def decon_lr(o_image, probe,  verbose=False):
     aperture[tp1.T] = 0.
     # print(app_ratio, screen_width, dk)
 
-    if QT_available:
-        progress = ProgressDialog("Lucy-Richardson", 100)
 
+    progress = tqdm(total=500)
     # de = 100
     dest = 100
     i = 0
@@ -1135,19 +1107,13 @@ def decon_lr(o_image, probe,  verbose=False):
                 ' LR Deconvolution - Iteration: {0:d} Error: {1:.2f} = change: {2:.5f}%, {3:.5f}%'.format(i, error_new,
                                                                                                           de,
                                                                                                           abs(dest)))
-
-        if QT_available:
-            count = (0.1 - abs(dest)) * 1000.
-            if count < 0:
-                count = 0
-            progress.set_value(count)
-
-        if i > 500:
+        if i > 50:
             dest = 0.0
             print('terminate')
-    if QT_available:
-        progress.close()
-    print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  Iterations')
+        progress.update(1)
+    progress.write(f"converged in {i} iterations")
+    #progress.close()
+    print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  iterations')
     est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
     out_dataset = o_image.like_data(est2)
     out_dataset.title = 'Lucy Richardson deconvolution'

@@ -813,14 +813,17 @@ def kinematic_scattering(tags, verbose=False):
     # ############
 
     # get rotation matrix to rotate zone axis onto z-axis
-
     rotation_matrix = get_rotation_matrix(tags)
 
     if verbose:
+
         print(f"Rotation alpha {np.rad2deg(tags['y-axis rotation alpha']):.1f} degree, "
               f" beta {np.rad2deg(tags['x-axis rotation beta']):.1f} degree")
-        print(f"Tilting {1} by {np.rad2deg(tags['mistilt alpha']),:.2f} "  # list(tags['zone_hkl'])
-              f"in alpha and {np.rad2deg(tags['mistilt beta']):.2f} in beta direction results in :")
+        print(f"from zone axis {tags['zone_hkl']}")
+        print(f"Tilting {1} by {np.rad2deg(tags['mistilt alpha']):.2f} " 
+              f" in alpha and {np.rad2deg(tags['mistilt beta']):.2f} in beta direction results in :")
+        # list(tags['zone_hkl'])
+        #
         # print(f"zone axis {list(tags['nearest_zone_axis'])} with a mistilt of "
         #      f"{np.rad2deg(tags['mistilt nearest_zone alpha']):.2f} in alpha "
         #      f"and {np.rad2deg(tags['mistilt nearest_zone beta']):.2f} in beta direction")
@@ -940,7 +943,7 @@ def kinematic_scattering(tags, verbose=False):
         if possible in ls:
             dynamic_allowed[ls.index(possible)] = True
 
-    dynamic_allowed = np.array(dynamic_allowed)
+    dynamic_allowed = np.array(dynamic_allowed, dtype=int)
     tags['dynamical allowed'] = {}
     tags['dynamical allowed']['Sg'] = s_g_forbidden[dynamic_allowed]
     tags['dynamical allowed']['hkl'] = hkl_forbidden[dynamic_allowed]

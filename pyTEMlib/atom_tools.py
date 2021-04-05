@@ -23,6 +23,7 @@ import scipy.optimize as optimization
 import pyTEMlib.probe_tools as probe_tools
 import pyTEMlib.file_tools as ft
 import sidpy
+from tqdm.auto import trange
 
 
 def find_atoms(image, atom_size=0.1, threshold=0.):
@@ -157,21 +158,9 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     gauss_width = []
     gauss_amplitude = []
     gauss_intensity = []
-    if ft.QT_available:
-        progress = ft.ProgressDialog("Refine Atom Positions")
 
     done = 0
-    for i in range(len(atoms)):
-        if ft.QT_available:
-            progress.set_value(i)
-        else:
-            if done < int((i + 1) / len(atoms) * 50):
-                done = int((i + 1) / len(atoms) * 50)
-                sys.stdout.write('\r')
-                # progress output :
-                sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
-                sys.stdout.flush()
-
+    for i in trange(len(atoms)):
         x, y = atoms[i][0:2]
         x = int(x)
         y = int(y)
@@ -218,8 +207,6 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
         gauss_width.append(pout[0])
         gauss_amplitude.append(pout[3])
 
-    if ft.QT_available:
-        progress.close()
     sym['inside'] = position
     sym['intensity_area'] = intensities
     sym['maximum_area'] = maximum_area
