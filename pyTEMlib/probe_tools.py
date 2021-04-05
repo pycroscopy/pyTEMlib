@@ -1,6 +1,6 @@
 """Functions to calculate electron probe"""
 import numpy as np
-import image_tools
+import pyTEMlib.image_tools
 import scipy.ndimage as ndimage
 
 
@@ -72,7 +72,7 @@ def get_chi(ab, size_x, size_y, verbose=False):
     """
     aperture_angle = ab['convergence_angle'] / 1000.0  # in rad
 
-    wavelength = image_tools.get_wavelength(ab['acceleration_voltage'])
+    wavelength = pyTEMlib.image_tools.get_wavelength(ab['acceleration_voltage'])
     if verbose:
         print(f"Acceleration voltage {ab['acceleration_voltage'] / 1000:}kV => wavelength {wavelength * 1000.:.2f}pm")
 
@@ -80,13 +80,13 @@ def get_chi(ab, size_x, size_y, verbose=False):
 
     # Reciprocal plane in 1/nm
     dk = 1 / ab['FOV']
-    kx = np.array(dk * (-size_x / 2. + np.arange(size_x)))
-    ky = np.array(dk * (-size_y / 2. + np.arange(size_y)))
-    Txv, Tyv = np.meshgrid(kx, ky)
+    k_x = np.array(dk * (-size_x / 2. + np.arange(size_x)))
+    k_y = np.array(dk * (-size_y / 2. + np.arange(size_y)))
+    t_x_v, t_y_v = np.meshgrid(k_x, k_y)
 
     # define reciprocal plane in angles
-    phi = np.arctan2(Txv, Tyv)
-    theta = np.arctan2(np.sqrt(Txv ** 2 + Tyv ** 2), 1 / wavelength)
+    phi = np.arctan2(t_x_v, t_y_v)
+    theta = np.arctan2(np.sqrt(t_x_v ** 2 + t_y_v ** 2), 1 / wavelength)
 
     # calculate chi
     chi = make_chi(phi, theta, ab)
@@ -351,7 +351,7 @@ def get_target_aberrations(TEM_name, acceleration_voltage):
 
         ab['origin'] = 'target aberrations'
         ab['TEM_name'] = TEM_name
-        ab['wavelength'] = image_tools.get_wavelength(ab['acceleration_voltage'])
+        ab['wavelength'] = pyTEMlib.image_tools.get_wavelength(ab['acceleration_voltage'])
 
     if TEM_name == 'NionUS100':
         if int(acceleration_voltage) == 100000:
@@ -381,7 +381,7 @@ def get_target_aberrations(TEM_name, acceleration_voltage):
 
         ab['origin'] = 'target aberrations'
         ab['TEM_name'] = TEM_name
-        ab['wavelength'] = image_tools.get_wavelength(ab['acceleration_voltage'])
+        ab['wavelength'] = pyTEMlib.image_tools.get_wavelength(ab['acceleration_voltage'])
 
     if TEM_name == 'ZeissMC200':
         ab = {'C10': 0, 'C12a': 0, 'C12b': 0, 'C21a': 0, 'C21b': 0, 'C23a': 0, 'C23b': 0, 'C30': 0.,
@@ -399,39 +399,39 @@ def get_target_aberrations(TEM_name, acceleration_voltage):
         ab['origin'] = 'target aberrations'
         ab['TEM_name'] = TEM_name
 
-        ab['wavelength'] = image_tools.get_wavelength(ab['acceleration_voltage'])
+        ab['wavelength'] = pyTEMlib.image_tools.get_wavelength(ab['acceleration_voltage'])
     return ab
 
 
 def get_ronchigram_2(size, ab, scale='mrad', threshold=3):
-    ApAngle = ab['convergence_angle'] / 1000.0  # in rad
+    aperture_angle = ab['convergence_angle'] / 1000.0  # in rad
 
-    wavelength = image_tools.get_wavelength(ab['acceleration_voltage'])
+    wavelength = pyTEMlib.image_tools.get_wavelength(ab['acceleration_voltage'])
     # if verbose:
     #    print(f"Acceleration voltage {ab['acceleration_voltage']/1000:}kV => wavelength {wavelength*1000.:.2f}pm")
 
     ab['wavelength'] = wavelength
 
-    sizeX = sizeY = size
+    size_x = size_y = size
 
     # Reciprocal plane in 1/nm
     dk = ab['reciprocal_FOV'] / size
-    kx = np.array(dk * (-sizeX / 2. + np.arange(sizeX)))
-    ky = np.array(dk * (-sizeY / 2. + np.arange(sizeY)))
-    Txv, Tyv = np.meshgrid(kx, ky)
+    k_x = np.array(dk * (-size_x / 2. + np.arange(size_x)))
+    k_y = np.array(dk * (-size_y / 2. + np.arange(size_y)))
+    t_x_v, t_y_v = np.meshgrid(k_x, k_y)
 
-    chi = get_chi_2(ab, Txv, Tyv)  # , verbose= True)
+    chi = get_chi_2(ab, t_x_v, t_y_v)  # , verbose= True)
     # define reciprocal plane in angles
-    phi = np.arctan2(Txv, Tyv)
-    theta = np.arctan2(np.sqrt(Txv ** 2 + Tyv ** 2), 1 / wavelength)
+    phi = np.arctan2(t_x_v, t_y_v)
+    theta = np.arctan2(np.sqrt(t_x_v ** 2 + t_y_v ** 2), 1 / wavelength)
 
     ## Aperture function
-    mask = theta >= ApAngle
+    mask = theta >= aperture_angle
 
-    aperture = np.ones((sizeX, sizeY), dtype=float)
+    aperture = np.ones((size_x, size_y), dtype=float)
     aperture[mask] = 0.
 
-    V_noise = np.random.rand(sizeX, sizeY)
+    V_noise = np.random.rand(size_x, size_y)
     smoothing = 5
     phi_r = ndimage.gaussian_filter(V_noise, sigma=(smoothing, smoothing), order=0)
 
@@ -460,10 +460,10 @@ def get_ronchigram_2(size, ab, scale='mrad', threshold=3):
     ab['ronchi_label'] = ylabel
 
     h = np.zeros([chi.shape[0], chi.shape[1], 2, 2])
-    h[:, :, 0, 0] = get_d2chidu2(ab, Txv, Tyv)
-    h[:, :, 0, 1] = get_d2chidudv(ab, Txv, Tyv)
-    h[:, :, 1, 0] = get_d2chidudv(ab, Txv, Tyv)
-    h[:, :, 1, 1] = get_d2chidv2(ab, Txv, Tyv)
+    h[:, :, 0, 0] = get_d2chidu2(ab, t_x_v, t_y_v)
+    h[:, :, 0, 1] = get_d2chidudv(ab, t_x_v, t_y_v)
+    h[:, :, 1, 0] = get_d2chidudv(ab, t_x_v, t_y_v)
+    h[:, :, 1, 1] = get_d2chidv2(ab, t_x_v, t_y_v)
 
     # get Eigenvalues
     _, s, _ = np.linalg.svd(h)
@@ -545,7 +545,7 @@ def probe2(ab, size_x, size_y, tags, verbose=False):
     *                 ... (need to finish)
     *
     *
-    *    qx = acos(kx/K), qy = acos(ky/K)
+    *    qx = acos(k_x/K), qy = acos(k_y/K)
     *
     * References:
     * [1] J. Zach, M. Haider,
@@ -604,9 +604,9 @@ def probe2(ab, size_x, size_y, tags, verbose=False):
 
     # Reciprocal plane in 1/nm
     dk = 1 / ab['fov']
-    kx = np.array(dk * (-size_x / 2. + np.arange(size_x)))
-    ky = np.array(dk * (-size_y / 2. + np.arange(size_y)))
-    t_xv, t_yv = np.meshgrid(kx, ky)
+    k_x = np.array(dk * (-size_x / 2. + np.arange(size_x)))
+    k_y = np.array(dk * (-size_y / 2. + np.arange(size_y)))
+    t_xv, t_yv = np.meshgrid(k_x, k_y)
 
     # define reciprocal plane in angles
     phi = np.arctan2(t_xv, t_yv)
