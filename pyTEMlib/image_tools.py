@@ -1107,7 +1107,7 @@ def decon_lr(o_image, probe,  verbose=False):
                 ' LR Deconvolution - Iteration: {0:d} Error: {1:.2f} = change: {2:.5f}%, {3:.5f}%'.format(i, error_new,
                                                                                                           de,
                                                                                                           abs(dest)))
-        if i > 50:
+        if i > 500:
             dest = 0.0
             print('terminate')
         progress.update(1)
