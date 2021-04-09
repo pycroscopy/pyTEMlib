@@ -1,6 +1,6 @@
 """ Interactive routines for EELS analysis
 
-this file provides aditional dialogs for EELS quantification
+this file provides additional dialogs for EELS quantification
 
 Author: Gerd Duscher
 """
@@ -823,8 +823,8 @@ class InteractiveSpectrumImage(object):
         if tags['data_type'] == 'spectrum_image':
             tags['image'] = tags['data']
             tags['data'] = tags['cube'][0, 0, :]
-            if 'intentsity_scale_ppm' not in channel:
-                channel['intentsity_scale_ppm'] = 1
+            if 'intensity_scale_ppm' not in channel:
+                channel['intensity_scale_ppm'] = 1
 
             tags['ylabel'] = 'intensity [a.u.]'
             tags['spectra'] = {}
@@ -1138,9 +1138,9 @@ class EdgesAtCursor(object):
             return
         x, y = event.xdata, event.ydata
 
-        indx = np.searchsorted(self.x, [x])[0]
-        x = self.x[indx]
-        y = self.y[indx]
+        index = np.searchsorted(self.x, [x])[0]
+        x = self.x[index]
+        y = self.y[index]
         self.select = x
 
         y_min, y_max = self.ax.get_ylim()
@@ -1163,9 +1163,9 @@ class EdgesAtCursor(object):
             return
 
         x, y = event.xdata, event.ydata
-        indx = np.searchsorted(self.x, [x])[0]
-        x = self.x[indx]
-        y = self.y[indx]
+        index = np.searchsorted(self.x, [x])[0]
+        x = self.x[index]
+        y = self.y[index]
         self.select = x
         self.ly.set_xdata(x)
         self.marker.set_data([x], [y])

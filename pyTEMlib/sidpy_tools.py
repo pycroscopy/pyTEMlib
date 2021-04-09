@@ -30,7 +30,7 @@ class ChooseDataset(object):
         self.get_dataset_list()
         self.select_image = widgets.Dropdown(options=self.dataset_names,
                                              value=self.dataset_names[0],
-                                             description='Select image:',
+                                             description='select dataset:',
                                              disabled=False,
                                              button_style='')
         if show_dialog:
