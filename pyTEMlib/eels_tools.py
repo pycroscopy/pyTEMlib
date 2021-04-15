@@ -1793,11 +1793,13 @@ def read_msa(msa_string):
                     y.extend(data)
     parameters['data'] = np.array(y)
     if 'XPERCHAN' in parameters:
+        parameters['XPERCHAN'] = str(parameters['XPERCHAN']).split(' ')[0]
+        parameters['OFFSET'] = str(parameters['OFFSET']).split(' ')[0]
         parameters['enery_scale'] = np.arange(len(y)) * float(parameters['XPERCHAN']) + float(parameters['OFFSET'])
     return parameters
 
 
-def get_spectrum_eels_db(formula=None, edge=None):
+def get_spectrum_eels_db(formula=None, edge=None, title=None, element=None):
     """
     get spectra from EELS database
     chemical formula and edge is accepted.
@@ -1808,9 +1810,9 @@ def get_spectrum_eels_db(formula=None, edge=None):
         print('edge should be a in ', valid_edges)
 
     spectrum_type = None
-    title = None
+    title = title
     author = None
-    element = None
+    element = element
     min_energy = None
     max_energy = None
     resolution = None
@@ -1840,6 +1842,7 @@ def get_spectrum_eels_db(formula=None, edge=None):
         "resolution_compare": resolution_compare,
         "monochromated": monochromated,
         "formula": formula,
+        'element': element,
         "min_energy_compare": min_energy_compare,
         "max_energy_compare": max_energy_compare,
         "per_page": max_n,
