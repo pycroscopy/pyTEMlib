@@ -133,9 +133,9 @@ def get_ronchigram(size, ab, scale='mrad'):
     size_x = size_y = size
     chi, A_k = get_chi(ab, size_x, size_y)
 
-    V_noise = np.random.rand(size_x, size_y)
+    v_noise = np.random.rand(size_x, size_y)
     smoothing = 5
-    phi_r = ndimage.gaussian_filter(V_noise, sigma=(smoothing, smoothing), order=0)
+    phi_r = ndimage.gaussian_filter(v_noise, sigma=(smoothing, smoothing), order=0)
 
     sigma = 6  # 6 for carbon and thin
 
@@ -149,13 +149,13 @@ def get_ronchigram(size, ab, scale='mrad'):
 
     ronchigram = np.absolute(psi_k * np.conjugate(psi_k))
 
-    FOV_reciprocal = 1 / ab['FOV'] * size_x / 2
+    fov_reciprocal = 1 / ab['FOV'] * size_x / 2
     if scale == '1/nm':
-        extent = [-FOV_reciprocal, FOV_reciprocal, -FOV_reciprocal, FOV_reciprocal]
+        extent = [-fov_reciprocal, fov_reciprocal, -fov_reciprocal, fov_reciprocal]
         ylabel = 'reciprocal distance [1/nm]'
     else:
-        FOV_mrad = FOV_reciprocal * ab['wavelength'] * 1000
-        extent = [-FOV_mrad, FOV_mrad, -FOV_mrad, FOV_mrad]
+        fov_mrad = fov_reciprocal * ab['wavelength'] * 1000
+        extent = [-fov_mrad, fov_mrad, -fov_mrad, fov_mrad]
         ylabel = 'reciprocal distance [mrad]'
 
     ab['ronchi_extent'] = extent
@@ -425,35 +425,35 @@ def get_ronchigram_2(size, ab, scale='mrad', threshold=3):
     phi = np.arctan2(t_x_v, t_y_v)
     theta = np.arctan2(np.sqrt(t_x_v ** 2 + t_y_v ** 2), 1 / wavelength)
 
-    ## Aperture function
+    # Aperture function
     mask = theta >= aperture_angle
 
     aperture = np.ones((size_x, size_y), dtype=float)
     aperture[mask] = 0.
 
-    V_noise = np.random.rand(size_x, size_y)
+    v_noise = np.random.rand(size_x, size_y)
     smoothing = 5
-    phi_r = ndimage.gaussian_filter(V_noise, sigma=(smoothing, smoothing), order=0)
+    phi_r = ndimage.gaussian_filter(v_noise, sigma=(smoothing, smoothing), order=0)
 
-    sigma = 6  ## 6 for carbon and thin
+    sigma = 6  # 6 for carbon and thin
 
     q_r = np.exp(-1j * sigma * phi_r)
     # q_r = 1-phi_r * sigma
 
-    T_k = (aperture) * (np.exp(-1j * chi))
-    t_r = (np.fft.ifft2(np.fft.fftshift(T_k)))
+    T_k = aperture * (np.exp(-1j * chi))
+    t_r = np.fft.ifft2(np.fft.fftshift(T_k))
 
     Psi_k = np.fft.fftshift(np.fft.fft2(q_r * t_r))
 
     ronchigram = I_k = np.absolute(Psi_k * np.conjugate(Psi_k))
 
-    FOV_reciprocal = ab['reciprocal_FOV']
+    fov_reciprocal = ab['reciprocal_FOV']
     if scale == '1/nm':
-        extent = [-FOV_reciprocal, FOV_reciprocal, -FOV_reciprocal, FOV_reciprocal]
+        extent = [-fov_reciprocal, fov_reciprocal, -fov_reciprocal, fov_reciprocal]
         ylabel = 'reciprocal distance [1/nm]'
     else:
-        FOV_mrad = FOV_reciprocal * ab['wavelength'] * 1000
-        extent = [-FOV_mrad, FOV_mrad, -FOV_mrad, FOV_mrad]
+        fov_mrad = fov_reciprocal * ab['wavelength'] * 1000
+        extent = [-fov_mrad, fov_mrad, -fov_mrad, fov_mrad]
         ylabel = 'reciprocal distance [mrad]'
 
     ab['ronchi_extent'] = extent
