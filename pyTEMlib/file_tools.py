@@ -357,7 +357,7 @@ def save_dataset(dataset, filename=None,  h5_group=None):
     return h5_dataset
 
 
-def open_file(filename=None,  h5_group=None):  # save_file=False,
+def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=False,
     """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
 
     If no filename is provided the QT open_file windows opens (if QT_available==True)
@@ -404,6 +404,8 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
             print('no hdf5 dataset found in file')
             return
         else:
+            if not write_hdf_file:
+                datasets[0].h5_dataset.file.close()
             return datasets[0]
 
         """ should go to no dataset found
@@ -428,21 +430,23 @@ def open_file(filename=None,  h5_group=None):  # save_file=False,
             dset.title = basename.strip().replace('-', '_')
         dset.filename = basename.strip().replace('-', '_')
         # dset.original_metadata = flatten_dict(dset.original_metadata)
-        filename = os.path.join(path,  dset.title+extension)
-        h5_filename = get_h5_filename(filename)
-        h5_file = h5py.File(h5_filename, mode='a')
 
-        if 'Measurement_000' in h5_file:
-            print('could not write dataset to file, try saving it with ft.save()')
-        else:
-            if not isinstance(h5_group, h5py.Group):
-                h5_group = h5_file.create_group('Measurement_000/Channel_000')
-            # dset.axes = dset._axes
-            # dset.attrs = {}
-            h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dset, h5_group)
-            # dset.original_metadata = nest_dict(dset.original_metadata)
+        if write_hdf_file:
+            filename = os.path.join(path,  dset.title+extension)
+            h5_filename = get_h5_filename(filename)
+            h5_file = h5py.File(h5_filename, mode='a')
 
-            dset.h5_dataset = h5_dataset
+            if 'Measurement_000' in h5_file:
+                print('could not write dataset to file, try saving it with ft.save()')
+            else:
+                if not isinstance(h5_group, h5py.Group):
+                    h5_group = h5_file.create_group('Measurement_000/Channel_000')
+                # dset.axes = dset._axes
+                # dset.attrs = {}
+                h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dset, h5_group)
+                # dset.original_metadata = nest_dict(dset.original_metadata)
+
+                dset.h5_dataset = h5_dataset
         return dset
     else:
         print('file type not handled yet.')
@@ -647,6 +651,13 @@ def read_cif(file_name=None, verbose=False):  # open file dialog to select cif f
 
 def h5_add_crystal_structure(h5_file, crystal_tags):
     """Write crystal structure to NSID file"""
+    if not isinstance(crystal_tags, dict):
+        try:
+            import ase
+        except ModuleNotFoundError:
+            print('Need a dictionary or an ase.Atoms object with ase installed')
+        if isinstance(crystal_tags, ase.Atoms):
+            return
 
     structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
 

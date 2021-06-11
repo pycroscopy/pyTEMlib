@@ -411,13 +411,13 @@ def ball_and_stick(tags, extend=1, max_bond_length=0.):
     return corners, balls, atomic_number, bonds
 
 
-def plot_unitcell_mayavi(tags):
+def plot_unitcell_mayavi(atoms, max_bond_length = 3.):
     """Makes a 3D plot of crystal structure
 
     Parameters
     ----------
-    tags: dict
-        Dictionary with tags: 'unit_cell, 'elements', 'base'
+    atoms: ase.Atoms object
+        ase object with all information
 
     Returns
     -------
@@ -425,38 +425,22 @@ def plot_unitcell_mayavi(tags):
 
     Dependencies
     ------------
-    ball_and_stick function of KinsCat
     mlab of mayavi
     """
+    try:
+        from mayavi import mlab
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError('We need mayavi installed for a 3d plot')
 
-    from mayavi import mlab
-
-    # Make sure "max_bond_length" and "extend" variables are initialized
-    if 'max_bond_length' not in tags:
-        max_bond_length = 0.
-    else:
-        max_bond_length = tags['max_bond_length']
-
-    if 'extend' not in tags:
-        extend = 1
-    else:
-        extend = tags['extend']
-
-    # get balls, sticks and atomic numbers for colors and sizes
-    corners, balls, atomic_number, bonds = ball_and_stick(tags, extend=extend, max_bond_length=max_bond_length)
-
-    print('Now plotting')
-    fig = mlab.figure(1, bgcolor=(0, 0, 0), size=(350, 350))
-
+    fig = mlab.figure(1, bgcolor=(0, 0, 0), size=(350, 500))
     mlab.clf()  # clear figure
-
     # parallel projection
     mlab.gcf().scene.parallel_projection = True
     mlab.gcf().scene.camera.parallel_scale = 5
 
     # plot unit cell
-    for x, y, z in corners:
-        ll = mlab.plot3d(x, y, z, tube_radius=0.002)
+    #for x, y, z in corners:
+    #    ll = mlab.plot3d(x, y, z, tube_radius=0.002)
 
     # plot bonds as sticks
     for x, y, z in bonds:
@@ -467,7 +451,7 @@ def plot_unitcell_mayavi(tags):
         mlab.points3d(atom[0], atom[1], atom[2],
                       scale_factor=0.1,  # ks.vdw_radii[Z[i]]/50,
                       resolution=20,
-                      color=tuple(jmol_colors[atomic_number[i]]),
+                      color=tuple(jmol_colors[atoms]),
                       scale_mode='none')
 
     # parallel projection
