@@ -24,6 +24,8 @@ from pyTEMlib import eels_dialog
 from pyTEMlib import info_dialog
 from pyTEMlib import peak_dialog
 
+from pyTEMlib import file_tools as ft
+
 major_edges = ['K1', 'L3', 'M5', 'N5']
 all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'O1', 'O2',
              'O3', 'O4', 'O5', 'O6', 'O7', 'P1', 'P2', 'P3']
