@@ -20,7 +20,8 @@ Usage:
 
 import numpy as np
 import itertools
-from scipy import spatial
+import scipy.spatial
+import ase
 
 import matplotlib.pylab as plt  # basic plotting
 
@@ -137,7 +138,7 @@ def ball_and_stick(tags, extend=1, max_bond_length=0.):
     if max_bond_length == 0:
         max_bond_length = np.median(bond_lengths)/5
     # Check nearest neighbours within max_bond_length
-    tree = spatial.KDTree(balls)
+    tree = scipy.spatial.KDTree(balls)
     nearest_neighbours = np.array(tree.query(balls, k=8, distance_upper_bound=max_bond_length))
 
     # Calculate bonds
@@ -153,13 +154,20 @@ def ball_and_stick(tags, extend=1, max_bond_length=0.):
     return corners, balls, atomic_number, bonds
 
 
-def plot_unitcell_mayavi(tags):
-    """Makes a 3D plot of crystal structure
+def plot_unitcell_mayavi(atoms, maximum_bond_length=3.5, scale_factor=0.2, projected=False):
+    """
+    Makes a 3D plot of crystal structure with Mayavi
 
     Parameters
     ----------
-    tags: dict
-        Dictionary with tags: 'unit_cell, 'elements', 'base'
+    atoms: ase.Atoms object
+        ase object with all information
+    maximum_bond_length: float
+        maximal distance between atoms to be still recognized as a bond
+    scale_factor: float
+        scaling factor for atom sizes
+    projected: boolean
+        projected plotting or not (parallel projection)
 
     Returns
     -------
@@ -167,56 +175,40 @@ def plot_unitcell_mayavi(tags):
 
     Dependencies
     ------------
-    ball_and_stick function of KinsCat
     mlab of mayavi
     """
+    try:
+        from mayavi import mlab
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError('We need mayavi installed for a 3d plot')
 
-    from mayavi import mlab
+    assert isinstance(atoms, ase.Atoms)
+    x = atoms.positions[:, 0]
+    y = atoms.positions[:, 1]
+    z = atoms.positions[:, 2]
 
-    # Make sure "max_bond_length" and "extend" variables are initialized
-    if 'max_bond_length' not in tags:
-        max_bond_length = 0.
-    else:
-        max_bond_length = tags['max_bond_length']
-
-    if 'extend' not in tags:
-        extend = 1
-    else:
-        extend = tags['extend']
-
-    # get balls, sticks and atomic numbers for colors and sizes
-    corners, balls, atomic_number, bonds = ball_and_stick(tags, extend=extend, max_bond_length=max_bond_length)
-
-    print('Now plotting')
-    fig = mlab.figure(1, bgcolor=(0, 0, 0), size=(350, 350))
-
+    atom_tree = scipy.spatial.cKDTree(atoms.positions)
+    connections = atom_tree.query_pairs(r=maximum_bond_length)
+    fig = mlab.figure(1, bgcolor=(0, 0, 0), size=(500, 350))
+    
     mlab.clf()  # clear figure
 
-    # parallel projection
-    mlab.gcf().scene.parallel_projection = True
-    mlab.gcf().scene.camera.parallel_scale = 5
+    pts = mlab.points3d(x, y, z, 1.5 * atoms.numbers.max() - atoms.numbers,
+                        scale_factor=scale_factor, resolution=10)
+    pts.mlab_source.dataset.lines = np.array(list(connections))
 
-    # plot unit cell
-    for x, y, z in corners:
-        ll = mlab.plot3d(x, y, z, tube_radius=0.002)
-
-    # plot bonds as sticks
-    for x, y, z in bonds:
-        mlab.plot3d(x, y, z, tube_radius=0.02)
-
-    # plot atoms
-    for i, atom in enumerate(balls):
-        mlab.points3d(atom[0], atom[1], atom[2],
-                      scale_factor=0.1,  # ks.vdw_radii[Z[i]]/50,
-                      resolution=20,
-                      color=tuple(jmol_colors[atomic_number[i]]),
-                      scale_mode='none')
+    # Use a tube fitter to plot tubes on the link, varying the radius with the
+    # scalar value
+    tube = mlab.pipeline.tube(pts, tube_radius=0.15)
+    tube.filter.radius_factor = 1.
+    tube.filter.vary_radius = 'vary_radius_by_scalar'
+    mlab.pipeline.surface(tube, color=(0.8, 0.8, 0))
 
     # parallel projection
-    mlab.gcf().scene.parallel_projection = True
-    mlab.gcf().scene.camera.parallel_scale = 5
+    mlab.gcf().scene.parallel_projection = not projected
     # show plot
     mlab.show()
+    return fig
 
 
 def plot_unitcell(tags):
@@ -600,6 +592,38 @@ def perovskite(lattice_parameter, elements):
 
     return unit_cell, base, atoms
 
+def structure_to_ase(tags):
+    try:
+        import ase
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError('Ase needs to be installed to convert it.')
+    assert (isinstance(tags, dict))
+    for key in ['unit_cell', 'elements', 'base']:
+        if key not in tags:
+            raise TypeError('This dictionary does not contain a structure')
+    atoms = ase.Atoms()
+    atoms.cell = tags['unit_cell']
+    atoms.set_scaled_positions(tags['base'])
+    atoms.set_chemical_symbols(tags['elements'])
+    return atoms
+
+
+def structure_from_ase(atoms):
+    """
+    structure dictionary from ase.Atoms object
+
+    """
+    try:
+        import ase
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError('Ase needs to be installed to convert it.')
+    assert (isinstance(atoms, ase.Atoms))
+
+    tags = {'unit_cell': atoms.cell,
+            'elements': atoms.get_chemical_symbols(),
+            'base': atoms.get_scaled_positions()}
+
+    return tags
 
 def structure_by_name(crystal):
     """Provides unit cell as a structure matrix, the list of elements and the atom base

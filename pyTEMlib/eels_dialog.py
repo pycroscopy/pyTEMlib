@@ -87,7 +87,7 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.dataset = dataset
         if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
-            self.dataset.metadata['edges'] = {'0': {}, 'model': {}}
+            self.dataset.metadata['edges'] = {'0': {}, 'model': {}, 'use_low_loss': False}
         self.edges = self.dataset.metadata['edges']
 
         spec_dim = ft.get_dimensions_by_type('spectral', dataset)[0]
@@ -147,9 +147,10 @@ class EELSDialog(QtWidgets.QDialog):
         # We check whether this element is already in the
         zz = eels.get_z(z)
         for key, edge in self.edges.items():
-            if 'Z' in edge:
-                if zz == edge['Z']:
-                    return False
+            if key.isdigit():
+                if 'Z' in edge:
+                    if zz == edge['Z']:
+                        return False
 
         major_edge = ''
         minor_edge = ''
@@ -469,7 +470,25 @@ class EELSDialog(QtWidgets.QDialog):
 
         if sender.objectName() == 'edge_check':
             self.show_regions = sender.isChecked()
+        if sender.objectName() == 'conv_ll':
+            self.edges['use_low_loss'] = self.ui.check10.isChecked()
+            if self.ui.check10.isChecked():
+                self.low_loss()
         self.plot()
+
+    def low_loss(self):
+        self.edges['use_low_loss'] = self.ui.check10.isChecked()
+
+        if 'low_loss' not in self.edges:
+            self.edges['low_loss'] = {}
+        if 'spectrum' not in self.edges['low_loss']:
+            spectrum_ll = ft.open_file(write_hdf_file=False)
+            try:
+                spectrum_ll.metadata = eels.read_dm3_eels_info(spectrum_ll.original_metadata)
+            except:
+                pass
+            self.edges['low_loss']['spectrum'] = np.array(spectrum_ll)
+        self.spectrum_ll = self.edges['low_loss']['spectrum']
 
     def do_all_button_click(self):
 
@@ -489,7 +508,11 @@ class EELSDialog(QtWidgets.QDialog):
 
         self.energy_scale = self.dataset._axes[self.spec_dim].values
         eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
-        edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta)
+        if self.edges['use_low_loss']:
+            low_loss = self.spectrum_ll/self.spectrum_ll.sum()
+        else:
+            low_loss = None
+        edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, low_loss=low_loss)
 
         view = self.dataset.view
         bin_x = view.bin_x
@@ -543,7 +566,12 @@ class EELSDialog(QtWidgets.QDialog):
         self.energy_scale = self.dataset._axes[self.spec_dim].values
         eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
 
-        edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta)
+
+        if self.edges['use_low_loss']:
+            low_loss = self.spectrum_ll / self.spectrum_ll.sum()
+        else:
+            low_loss = None
+        edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, low_loss)
 
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()

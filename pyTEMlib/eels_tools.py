@@ -472,7 +472,7 @@ def find_edges(dataset, sensitivity=2.5):
     return selected_edges
 
 
-def make_edges(edges_present, energy_scale, e_0, coll_angle):
+def make_edges(edges_present, energy_scale, e_0, coll_angle, low_loss=None):
     """Makes the edges dictionary for quantification
 
     Parameters
@@ -485,6 +485,8 @@ def make_edges(edges_present, energy_scale, e_0, coll_angle):
         acceleration voltage (in V)
     coll_angle: float
         collection angle in mrad
+    low_loss: numpy array with same length as energy_scale
+        low_less spectrum with which to convolve the cross section (default=None)
 
     Returns
     -------
@@ -524,12 +526,12 @@ def make_edges(edges_present, energy_scale, e_0, coll_angle):
         edges[key]['start_exclude'] = edges[key]['onset'] - xsec[edges[key]['symmetry']]['excl before']
         edges[key]['end_exclude'] = edges[key]['onset'] + xsec[edges[key]['symmetry']]['excl after']
 
-    edges = make_cross_sections(edges, energy_scale, e_0, coll_angle)
+    edges = make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss)
 
     return edges
 
 
-def make_cross_sections(edges, energy_scale, e_0, coll_angle):
+def make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss=None):
     """Updates the edges dictionary with collection angle-integrated X-ray photo-absorption cross-sections
 
     """
@@ -537,6 +539,11 @@ def make_cross_sections(edges, energy_scale, e_0, coll_angle):
         if key.isdigit():
             edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['Z'], coll_angle,
                                            edges[key]['chemical_shift']) / 1e10  # from barnes to 1/nm^2
+            if low_loss is not None:
+                low_loss = np.roll(np.array(low_loss), 1024 - np.argmax(np.array(low_loss)))
+                edges[key]['data'] = scipy.signal.convolve(edges[key]['data'], low_loss/low_loss.sum(), mode='same')
+
+
             edges[key]['onset'] = edges[key]['original_onset'] + edges[key]['chemical_shift']
             edges[key]['X_section_type'] = 'XRPA'
             edges[key]['X_section_source'] = 'pyTEMlib'

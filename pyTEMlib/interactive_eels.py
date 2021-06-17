@@ -24,6 +24,8 @@ from pyTEMlib import eels_dialog
 from pyTEMlib import info_dialog
 from pyTEMlib import peak_dialog
 
+from pyTEMlib import file_tools as ft
+
 major_edges = ['K1', 'L3', 'M5', 'N5']
 all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'O1', 'O2',
              'O3', 'O4', 'O5', 'O6', 'O7', 'P1', 'P2', 'P3']
@@ -1188,3 +1190,133 @@ class EdgesAtCursor(object):
 
         self.ax.figure.canvas.mpl_disconnect(self.cid)
         self.ax.figure.canvas.mpl_disconnect(self.mouse_cid)
+
+
+
+def make_box_layout():
+     return widgets.Layout(
+        border='solid 1px black',
+        margin='0px 10px 10px 0px',
+        padding='5px 5px 5px 5px'
+     )
+    
+
+class plot_EELS(widgets.HBox):
+    def __init__(self, dataset):
+        super().__init__()
+        output = widgets.Output()
+        self.dataset = dataset
+        initial_color = '#FF00DD'
+ 
+        with output:
+            self.fig, self.axis = plt.subplots(constrained_layout=True, figsize=(5, 3.5))
+        
+        self.axis.set_title(dataset.title.split('/')[-1])
+        self.line, = self.axis.plot(dataset.dim_0.values, dataset, lw=2, label='spectrum')
+        legend = self.axis.legend(fancybox=True, shadow=True)
+
+        lines = [self.line]
+        self.line_dictionary = {}  # Will map legend lines to original lines.
+        for legend_line, original_line in zip(legend.get_lines(), lines):
+            legend_line.set_picker(True)  # Enable picking on the legend line.
+            self.line_dictionary[legend_line] = original_line
+        self.ax = self.axis
+        self.fig.canvas.toolbar_position = 'bottom'
+        self.fig.canvas.mpl_connect('pick_event', self.on_legend_pick)
+        
+        # define widgets
+        int_slider = widgets.IntSlider(
+            value=1, 
+            min=0, 
+            max=10, 
+            step=1, 
+            description='freq'
+        )
+        self.offset = widgets.Text(
+            value='0', 
+            width=5,
+            description='offset', 
+            continuous_update=False
+        )
+        self.dispersion = widgets.Text(
+            value='0', 
+            width=5,
+            description='dispersion', 
+            continuous_update=False
+        )
+
+        self.exposure = widgets.Text(
+            value='0', 
+            width=5,
+            description='exposure', 
+            continuous_update=False
+        )
+        
+        button_energy_scale = widgets.Button(description='Cursor')
+        button_elements_at_cursor = widgets.Button(description='Elements Cursor')
+        button_main_elements = widgets.Button(description='Main Elements')
+        
+        controls = widgets.VBox([
+            widgets.HBox([self.offset,widgets.Label('eV')]),
+            widgets.HBox([self.dispersion,widgets.Label('eV/channel')]),
+            widgets.HBox([self.exposure,widgets.Label('s')]),
+            button_energy_scale,
+            widgets.HBox([ button_elements_at_cursor, button_main_elements])
+        ])
+            
+        controls.layout = make_box_layout()
+         
+        out_box = widgets.Box([output])
+        output.layout = make_box_layout()
+ 
+        # observe stuff
+        int_slider.observe(self.update, 'value')
+        
+        self.offset.value = f'{self.dataset.dim_0.values[0]}'
+        self.offset.observe(self.set_dimension, 'value')
+        self.offset.value = f'{self.dataset.dim_0.values[0]}'
+        
+        self.dispersion.observe(self.set_dimension, 'value')
+        self.dispersion.value = f'{self.dataset.dim_0.values[1] - self.dataset.dim_0.values[0]}'
+        self.dispersion.value = '0'
+        self.exposure.observe(self.update_exposure, 'value')
+        self.exposure.value = '0'
+ 
+        # add to children
+        self.children = [controls, output]
+        
+    def update(self):
+        """Draw line in plot"""
+        self.line.set_ydata(self.dataset)
+        self.line.set_xdata(self.dataset.dim_0.values)
+        #self.axis.plot(self.dataset.energy_loss, self.dataset)
+        self.fig.canvas.draw()
+        
+    def line_color(self, change):
+        self.line.set_color(change.new)
+        
+    def update_exposure(self):
+        pass
+  
+    def update_ylabel(self, change):
+        self.ax.set_ylabel(change.new)
+    
+    def set_dimension(self, change):
+        self.spec_dim = ft.get_dimensions_by_type('SPECTRAL', self.dataset)
+        self.spec_dim = self.spec_dim[0]
+        old_energy_scale = self.spec_dim[1]
+        energy_scale = np.arange(len(self.dataset.dim_0.values))*float(self.dispersion.value)+float(self.offset.value)
+        self.dataset.set_dimension(self.spec_dim[0], sidpy.Dimension(energy_scale,
+                                                                     name=old_energy_scale.name,
+                                                                     dimension_type='SPECTRAL',
+                                                                     units='eV',
+                                                                     quantity='energy loss'))
+        self.update()
+
+    def on_legend_pick(self, event):
+        legend_line = event.artist
+        original_line = self.line_dictionary[legend_line]
+        visible = not original_line.get_visible()
+        original_line.set_visible(visible)
+        legend_line.set_alpha(1.0 if visible else 0.2)
+        self.fig.canvas.draw()
