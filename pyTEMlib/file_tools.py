@@ -392,7 +392,7 @@ class open_file_dialog(ipyfilechooser.FileChooser):
 
             # Ensure only allowed extensions are used
             if self._filter_pattern:
-                check4 = not match_item(filename, self._filter_pattern)
+                check4 = not ipyfilechooser.utils.match_item(filename, self._filter_pattern)
 
             if (check1 and check2) or check3 or check4:
                 self._select.disabled = True
@@ -486,7 +486,7 @@ def save_dataset(dataset, filename=None,  h5_group=None):
         not used yet
 
     """
-    filename = openfile_dialog()
+    filename = open_file_dialog()
     h5_filename = get_h5_filename(filename)
     h5_file = h5py.File(h5_filename, mode='a')
     path, file_name = os.path.split(filename)
@@ -776,7 +776,7 @@ def read_poscar(file_name=None):
     Open file dialog to select a POSCAR file from VASP
     """
     if file_name is None:
-        file_name = openfile_dialog('POSCAR (POSCAR*.txt);;All files (*)')
+        file_name = open_file_dialog('POSCAR (POSCAR*.txt);;All files (*)')
 
     # use ase package to read file
     base = os.path.basename(file_name)
@@ -791,7 +791,7 @@ def read_poscar(file_name=None):
 
 def read_cif(file_name=None, verbose=False):  # open file dialog to select cif file
     if file_name is None:
-        file_name = openfile_dialog('cif (*.cif);;All files (*)')
+        file_name = open_file_dialog('cif (*.cif);;All files (*)')
     # use ase package to read file
 
     base = os.path.basename(file_name)

@@ -512,6 +512,7 @@ class EELSDialog(QtWidgets.QDialog):
             low_loss = self.spectrum_ll/self.spectrum_ll.sum()
         else:
             low_loss = None
+
         edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, low_loss=low_loss)
 
         view = self.dataset.view

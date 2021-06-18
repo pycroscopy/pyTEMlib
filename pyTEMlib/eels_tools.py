@@ -94,6 +94,7 @@ def read_dm3_eels_info(original_metadata):
                         experiment['exposure_time'] = item
                 if 'frames' in key:
                     experiment['number_of_frames'] = item
+
         if 'Experimental Conditions' in exp_dictionary['EELS']:
             for key, item in exp_dictionary['EELS']['Experimental Conditions'].items():
                 if 'Convergence' in key:
@@ -107,6 +108,14 @@ def read_dm3_eels_info(original_metadata):
             experiment['acceleration_voltage'] = exp_dictionary['Microscope Info']['Voltage']
         if 'Name' in exp_dictionary['Microscope Info']:
             experiment['microscope'] = exp_dictionary['Microscope Info']['Name']
+
+
+    if 'number_of_frames' not in experiment:
+        experiment['number_of_frames'] = 1
+    if 'exposure_time' not in experiment:
+        if 'single_exposure_time' in experiment:
+            experiment['exposure_time'] = experiment['number_of_frames'] * experiment['single_exposure_time']
+
     return experiment
 
 
@@ -1238,7 +1247,11 @@ def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
     xsec = np.zeros(len(energy_scale))
     # shift = 0# int(ek -onsetXRPS)#/dispersion
     lin = interp1d(enexs, datxs, kind='linear')  # Linear instead of spline interpolation to avoid oscillations.
-    xsec = lin(energy_scale - shift)
+    if energy_scale[0] < enexs[0]:
+        start = np.searchsorted(energy_scale, enexs[0])+1
+    else:
+        start = 0
+    xsec[start:] = lin(energy_scale[start:] - shift)
 
     return xsec
 
