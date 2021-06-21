@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.get\_theta\_m\_n\_list
+======================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: get_theta_m_n_list

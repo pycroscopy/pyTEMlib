@@ -1,0 +1,6 @@
+pyTEMlib.animation.add\_lens
+============================
+
+.. currentmodule:: pyTEMlib.animation
+
+.. autofunction:: add_lens

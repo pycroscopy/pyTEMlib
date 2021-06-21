@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.create\_minimal\_cell\_method\_1
+================================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: create_minimal_cell_method_1

@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.wurzite
+===============================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: wurzite

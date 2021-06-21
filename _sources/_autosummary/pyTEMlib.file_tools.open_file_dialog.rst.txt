@@ -1,0 +1,94 @@
+pyTEMlib.file\_tools.open\_file\_dialog
+=======================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autoclass:: open_file_dialog
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~open_file_dialog.add_class
+      ~open_file_dialog.add_traits
+      ~open_file_dialog.class_own_trait_events
+      ~open_file_dialog.class_own_traits
+      ~open_file_dialog.class_trait_names
+      ~open_file_dialog.class_traits
+      ~open_file_dialog.close
+      ~open_file_dialog.close_all
+      ~open_file_dialog.get_interact_value
+      ~open_file_dialog.get_manager_state
+      ~open_file_dialog.get_state
+      ~open_file_dialog.get_view_spec
+      ~open_file_dialog.handle_comm_opened
+      ~open_file_dialog.has_trait
+      ~open_file_dialog.hold_sync
+      ~open_file_dialog.hold_trait_notifications
+      ~open_file_dialog.notify_change
+      ~open_file_dialog.observe
+      ~open_file_dialog.on_displayed
+      ~open_file_dialog.on_msg
+      ~open_file_dialog.on_trait_change
+      ~open_file_dialog.on_widget_constructed
+      ~open_file_dialog.open
+      ~open_file_dialog.refresh
+      ~open_file_dialog.register_callback
+      ~open_file_dialog.remove_class
+      ~open_file_dialog.reset
+      ~open_file_dialog.send
+      ~open_file_dialog.send_state
+      ~open_file_dialog.set_display_names
+      ~open_file_dialog.set_state
+      ~open_file_dialog.set_trait
+      ~open_file_dialog.setup_instance
+      ~open_file_dialog.trait_defaults
+      ~open_file_dialog.trait_events
+      ~open_file_dialog.trait_has_value
+      ~open_file_dialog.trait_metadata
+      ~open_file_dialog.trait_names
+      ~open_file_dialog.trait_values
+      ~open_file_dialog.traits
+      ~open_file_dialog.unobserve
+      ~open_file_dialog.unobserve_all
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~open_file_dialog.box_style
+      ~open_file_dialog.children
+      ~open_file_dialog.comm
+      ~open_file_dialog.cross_validation_lock
+      ~open_file_dialog.default
+      ~open_file_dialog.default_filename
+      ~open_file_dialog.default_path
+      ~open_file_dialog.filter_pattern
+      ~open_file_dialog.keys
+      ~open_file_dialog.layout
+      ~open_file_dialog.log
+      ~open_file_dialog.model_id
+      ~open_file_dialog.rows
+      ~open_file_dialog.selected
+      ~open_file_dialog.selected_filename
+      ~open_file_dialog.selected_path
+      ~open_file_dialog.show_hidden
+      ~open_file_dialog.show_only_dirs
+      ~open_file_dialog.title
+      ~open_file_dialog.use_dir_icons
+      ~open_file_dialog.value
+      ~open_file_dialog.widget_types
+      ~open_file_dialog.widgets
+   
+   

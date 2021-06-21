@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.from\_parameters
+========================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: from_parameters

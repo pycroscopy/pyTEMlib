@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.plot\_unitcell\_mayavi
+==============================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: plot_unitcell_mayavi

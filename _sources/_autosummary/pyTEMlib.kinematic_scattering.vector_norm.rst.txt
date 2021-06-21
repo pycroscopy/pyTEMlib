@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.vector\_norm
+===========================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: vector_norm

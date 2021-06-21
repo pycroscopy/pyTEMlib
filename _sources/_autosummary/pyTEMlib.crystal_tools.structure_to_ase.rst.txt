@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.structure\_to\_ase
+==========================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: structure_to_ase

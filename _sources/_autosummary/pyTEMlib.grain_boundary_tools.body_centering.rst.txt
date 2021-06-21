@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.body\_centering
+===============================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: body_centering

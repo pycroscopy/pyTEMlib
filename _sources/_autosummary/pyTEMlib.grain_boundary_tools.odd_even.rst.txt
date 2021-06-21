@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.odd\_even
+=========================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: odd_even

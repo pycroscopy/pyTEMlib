@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.self\_test\_b
+=============================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: self_test_b

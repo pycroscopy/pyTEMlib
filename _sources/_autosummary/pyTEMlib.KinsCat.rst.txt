@@ -1,0 +1,54 @@
+pyTEMlib.KinsCat
+================
+
+.. automodule:: pyTEMlib.KinsCat
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      Zuo_fig_3_18
+      ball_and_stick
+      check_sanity
+      circles
+      diffraction_pattern
+      example
+      feq
+      get_rotation_matrix
+      get_symmetry
+      get_wavelength
+      kinematic_scattering
+      make_pretty_labels
+      metric_tensor
+      plotCBED
+      plotHOLZ
+      plotKikuchi
+      plotSAED
+      plot_diffraction_pattern
+      plot_unitcell
+      plot_unitcell_mayavi
+      read_poscar
+      ring_pattern_calculation
+      vector_norm
+      zone_mistilt
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.integer\_matrix
+===============================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: integer_matrix

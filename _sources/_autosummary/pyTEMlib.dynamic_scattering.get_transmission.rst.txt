@@ -1,0 +1,6 @@
+pyTEMlib.dynamic\_scattering.get\_transmission
+==============================================
+
+.. currentmodule:: pyTEMlib.dynamic_scattering
+
+.. autofunction:: get_transmission

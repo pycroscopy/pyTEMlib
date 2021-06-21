@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.dsc\_on\_plane
+==============================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: dsc_on_plane

@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.fcc\_grain\_boundary
+====================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: fcc_grain_boundary

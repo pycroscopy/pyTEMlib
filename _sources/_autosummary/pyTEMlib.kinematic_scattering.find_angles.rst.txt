@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.find\_angles
+===========================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: find_angles

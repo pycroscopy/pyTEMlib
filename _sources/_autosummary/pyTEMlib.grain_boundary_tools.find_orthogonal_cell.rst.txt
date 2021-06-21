@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.find\_orthogonal\_cell
+======================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: find_orthogonal_cell

@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.structure\_by\_name
+===========================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: structure_by_name

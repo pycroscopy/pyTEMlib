@@ -1,0 +1,63 @@
+pyTEMlib.grain\_boundary\_tools
+===============================
+
+.. automodule:: pyTEMlib.grain_boundary_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      ang
+      angv
+      binary_test_b
+      body_centering
+      common_divisor
+      create_minimal_cell_method_1
+      csl_density
+      csl_vec
+      dsc_on_plane
+      dsc_vec
+      face_centering
+      fcc_grain_boundary
+      find_orthogonal_cell
+      get_basis
+      get_cubic_sigma
+      get_cubic_theta
+      get_fcc_grain_boundary
+      get_rotation_matrix
+      get_theta_m_n_list
+      integer_array
+      integer_matrix
+      minimal_cell_search
+      odd_even
+      ortho_fcc_bcc
+      possible_grain_boundary_plane_list
+      print_list
+      print_list_grain_boundary_planes
+      self_test_b
+      smallest_integer
+      symmetry_equivalent
+      tertiary_test_b
+      tilt_twist_components
+      write_to_io
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,6 @@
+pyTEMlib.dynamic\_scattering.interaction\_parameter
+===================================================
+
+.. currentmodule:: pyTEMlib.dynamic_scattering
+
+.. autofunction:: interaction_parameter

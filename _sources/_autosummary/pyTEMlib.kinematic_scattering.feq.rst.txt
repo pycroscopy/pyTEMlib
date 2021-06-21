@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.feq
+==================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: feq

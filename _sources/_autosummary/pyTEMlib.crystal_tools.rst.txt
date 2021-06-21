@@ -1,0 +1,47 @@
+pyTEMlib.crystal\_tools
+=======================
+
+.. automodule:: pyTEMlib.crystal_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      ball_and_stick
+      bcc
+      cubic
+      dichalcogenide
+      fcc
+      from_parameters
+      perovskite
+      plot_unitcell
+      plot_unitcell_mayavi
+      rocksalt
+      structure_by_name
+      structure_from_ase
+      structure_to_ase
+      tetragonal
+      wurzite
+      zinc_blende
+      zincblende
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,6 @@
+pyTEMlib.diffraction\_plot.plotSAED\_parameter
+==============================================
+
+.. currentmodule:: pyTEMlib.diffraction_plot
+
+.. autofunction:: plotSAED_parameter

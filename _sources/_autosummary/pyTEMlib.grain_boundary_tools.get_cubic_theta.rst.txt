@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.get\_cubic\_theta
+=================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: get_cubic_theta

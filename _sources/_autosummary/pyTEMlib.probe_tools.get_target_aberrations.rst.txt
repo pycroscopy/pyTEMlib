@@ -1,0 +1,6 @@
+pyTEMlib.probe\_tools.get\_target\_aberrations
+==============================================
+
+.. currentmodule:: pyTEMlib.probe_tools
+
+.. autofunction:: get_target_aberrations

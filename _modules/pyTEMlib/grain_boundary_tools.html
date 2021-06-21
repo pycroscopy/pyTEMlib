@@ -1,0 +1,1104 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>pyTEMlib.grain_boundary_tools &mdash; pyTEMlib 0.2021.06.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2021.06.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../_autosummary/pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>pyTEMlib.grain_boundary_tools</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyTEMlib.grain_boundary_tools</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">From gb_code at https://github.com/oekosheri/GB_code</span>
+<span class="sd">This module is a collection of functions that produce CSL properties.</span>
+<span class="sd">When run from the terminal, the code runs in two modes.</span>
+
+<span class="sd"> First mode:</span>
+<span class="sd">  &#39;csl_generator.py u v w [limit]&#39; -----&gt;  Where the u v w are the</span>
+<span class="sd">  indices of the rotation axis such as 1 0 0, 1 1 1, 1 1 0 and so on. The limit</span>
+<span class="sd">  is the maximum sigma of interest.</span>
+<span class="sd">  (the limit by default: 100)</span>
+
+<span class="sd"> Second mode:</span>
+<span class="sd"> &#39;csl_generator.py u v w basis sigma [limit]&#39; -----&gt; Where basis is</span>
+<span class="sd">  either fcc, bcc, diamond or sc. You read the sigma of interest from the first</span>
+<span class="sd">  mode run. The limit here refers to CSL GB inclinations. The bigger the limit,</span>
+<span class="sd">  the higher the indices of CSL planes.</span>
+<span class="sd">  (the limit by default: 2)</span>
+
+<span class="sd">  your chosen axis, basis and sigma will be written to an io_file which will</span>
+<span class="sd">  later be read by gb_generator.py.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">ase</span>
+<span class="kn">import</span> <span class="nn">ase.lattice</span>
+
+
+<div class="viewcode-block" id="get_cubic_sigma"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.get_cubic_sigma.html#pyTEMlib.grain_boundary_tools.get_cubic_sigma">[docs]</a><span class="k">def</span> <span class="nf">get_cubic_sigma</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Grimmer Acta Cryst 1984 A40 p108-112</span>
+<span class="sd">    https://doi-org.utk.idm.oclc.org/10.1107/S0108767384000246</span>
+<span class="sd">    formula 2.</span>
+<span class="sd">    originally by Ranganathan Acta Cryst. (1966). 21, 197-199</span>
+<span class="sd">    https://doi.org/10.1107/S0365110X66002615</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rotation_axis: list or numpy array of shape 3</span>
+<span class="sd">        the rotation axis</span>
+<span class="sd">    m, n: integer</span>
+<span class="sd">        two integers that define grain boundary (n by default 1)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">square_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inner</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">rotation_axis</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">m</span><span class="o">*</span><span class="n">m</span> <span class="o">+</span> <span class="n">n</span><span class="o">*</span><span class="n">n</span> <span class="o">*</span> <span class="n">square_sum</span>
+    <span class="k">while</span> <span class="n">sigma</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">sigma</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">sigma</span> <span class="o">/=</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">sigma</span> <span class="k">if</span> <span class="n">sigma</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="get_cubic_theta"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.get_cubic_theta.html#pyTEMlib.grain_boundary_tools.get_cubic_theta">[docs]</a><span class="k">def</span> <span class="nf">get_cubic_theta</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Grimmer Acta Cryst 1984 A40 p108-112</span>
+<span class="sd">    https://doi-org.utk.idm.oclc.org/10.1107/S0108767384000246</span>
+<span class="sd">    formula 1.</span>
+<span class="sd">    originally by Ranganathan Acta Cryst. (1966). 21, 197-199</span>
+<span class="sd">    https://doi.org/10.1107/S0365110X66002615</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rotation_axis: list or numpy array of shape 3</span>
+<span class="sd">        the rotation axis</span>
+<span class="sd">    m,n:  integers</span>
+<span class="sd">        two integers (n by default 1)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">)</span> <span class="o">*</span> <span class="n">n</span> <span class="o">/</span> <span class="n">m</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span></div>
+
+
+<div class="viewcode-block" id="get_theta_m_n_list"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.get_theta_m_n_list.html#pyTEMlib.grain_boundary_tools.get_theta_m_n_list">[docs]</a><span class="k">def</span> <span class="nf">get_theta_m_n_list</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Finds integers m and n lists that match the input sigma.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sigma</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)]</span>
+    <span class="n">thetas</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">max_m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">sigma</span><span class="p">)))</span>
+
+    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_m</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_m</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">gcd</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">get_cubic_sigma</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="n">sigma</span><span class="p">:</span>
+                    <span class="n">theta</span> <span class="o">=</span> <span class="p">(</span><span class="n">get_cubic_theta</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+                    <span class="n">thetas</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">theta</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+                    <span class="n">thetas</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">thetas</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="print_list"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.print_list.html#pyTEMlib.grain_boundary_tools.print_list">[docs]</a><span class="k">def</span> <span class="nf">print_list</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">limit</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    prints a list of smallest sigmas/angles for a given axis(rotation_matrix).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">limit</span><span class="p">):</span>
+        <span class="n">tt</span> <span class="o">=</span> <span class="n">get_theta_m_n_list</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tt</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">theta</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">tt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sigma:   </span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">3d</span><span class="si">}</span><span class="s2">  theta:  </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span><span class="si">:</span><span class="s2">5.2f</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">)</span></div>
+                  
+
+<div class="viewcode-block" id="get_rotation_matrix"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.get_rotation_matrix.html#pyTEMlib.grain_boundary_tools.get_rotation_matrix">[docs]</a><span class="k">def</span> <span class="nf">get_rotation_matrix</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    produces a rotation matrix </span>
+<span class="sd">    </span>
+<span class="sd">    according to </span>
+<span class="sd">    Grimmer Acta Cryst 1984 A40 p108-112</span>
+<span class="sd">    https://doi-org.utk.idm.oclc.org/10.1107/S0108767384000246</span>
+<span class="sd">    formula 10.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rotation_axis: list or numpy array of shape 3</span>
+<span class="sd">        the rotation axis</span>
+<span class="sd">    theta: float</span>
+<span class="sd">        rotation angle in radians</span>
+
+<span class="sd">    Returns </span>
+<span class="sd">    -------</span>
+<span class="sd">    rotation_matrix: np.array of shape 3x3 </span>
+<span class="sd">        rotation matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+    <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">,</span> <span class="n">p3</span> <span class="o">=</span> <span class="n">rotation_axis</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">)</span>
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">p1</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">+</span><span class="n">c</span><span class="p">,</span> <span class="n">p1</span><span class="o">*</span><span class="n">p2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">-</span><span class="n">p3</span><span class="o">*</span><span class="n">s</span><span class="p">,</span> <span class="n">p1</span><span class="o">*</span><span class="n">p3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">+</span><span class="n">p2</span><span class="o">*</span><span class="n">s</span><span class="p">],</span>
+                                <span class="p">[</span><span class="n">p1</span><span class="o">*</span><span class="n">p2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">+</span><span class="n">p3</span><span class="o">*</span><span class="n">s</span><span class="p">,</span> <span class="n">p2</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">+</span><span class="n">c</span><span class="p">,</span> <span class="n">p2</span><span class="o">*</span><span class="n">p3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">-</span><span class="n">p1</span><span class="o">*</span><span class="n">s</span><span class="p">],</span>
+                                <span class="p">[</span><span class="n">p1</span><span class="o">*</span><span class="n">p3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">-</span><span class="n">p2</span><span class="o">*</span><span class="n">s</span><span class="p">,</span> <span class="n">p2</span><span class="o">*</span><span class="n">p3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">+</span><span class="n">p1</span><span class="o">*</span><span class="n">s</span><span class="p">,</span> <span class="n">p3</span><span class="o">**</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">c</span><span class="p">)</span><span class="o">+</span><span class="n">c</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">rotation_matrix</span></div>
+
+
+<span class="c1"># Helpful Functions:</span>
+<span class="c1"># -------------------#</span>
+<div class="viewcode-block" id="integer_array"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.integer_array.html#pyTEMlib.grain_boundary_tools.integer_array">[docs]</a><span class="k">def</span> <span class="nf">integer_array</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-7</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns True if an array is integer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="angv"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.angv.html#pyTEMlib.grain_boundary_tools.angv">[docs]</a><span class="k">def</span> <span class="nf">angv</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns the angle between two vectors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">acos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">angle</span><span class="p">),</span> <span class="mi">7</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ang"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.ang.html#pyTEMlib.grain_boundary_tools.ang">[docs]</a><span class="k">def</span> <span class="nf">ang</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns the cos(angle) between two vectors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="common_divisor"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.common_divisor.html#pyTEMlib.grain_boundary_tools.common_divisor">[docs]</a><span class="k">def</span> <span class="nf">common_divisor</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns the common factor of vector a and the reduced vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">common_factor</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">):</span>
+        <span class="k">while</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">%</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">a</span> <span class="o">/</span> <span class="n">i</span>
+            <span class="n">common_factor</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">common_factor</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="smallest_integer"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.smallest_integer.html#pyTEMlib.grain_boundary_tools.smallest_integer">[docs]</a><span class="k">def</span> <span class="nf">smallest_integer</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns the smallest multiple integer to make an integer array.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">200</span><span class="p">):</span>
+        <span class="n">test_v</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="n">a</span>
+        <span class="k">if</span> <span class="n">integer_array</span><span class="p">(</span><span class="n">test_v</span><span class="p">):</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">test_v</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">integer_array</span><span class="p">(</span><span class="n">test_v</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="integer_matrix"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.integer_matrix.html#pyTEMlib.grain_boundary_tools.integer_matrix">[docs]</a><span class="k">def</span> <span class="nf">integer_matrix</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns an integer matrix from row vectors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2000</span><span class="p">):</span>
+            <span class="n">test_v</span> <span class="o">=</span> <span class="n">j</span> <span class="o">*</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">integer_array</span><span class="p">(</span><span class="n">test_v</span><span class="p">):</span>
+                <span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">test_v</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Can not make integer matrix!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">b</span> <span class="k">if</span> <span class="n">found</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="symmetry_equivalent"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.symmetry_equivalent.html#pyTEMlib.grain_boundary_tools.symmetry_equivalent">[docs]</a><span class="k">def</span> <span class="nf">symmetry_equivalent</span><span class="p">(</span><span class="n">arr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns cubic symmetric equivalents of the given 2 dimensional vector.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sym</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">24</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">11</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">13</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">14</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">15</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">17</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">18</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">19</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">21</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">22</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+    <span class="n">sym</span><span class="p">[</span><span class="mi">23</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+
+    <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sym</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">sym</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="n">arr</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="tilt_twist_components"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.tilt_twist_components.html#pyTEMlib.grain_boundary_tools.tilt_twist_components">[docs]</a><span class="k">def</span> <span class="nf">tilt_twist_components</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns the tilt and twist components of a given GB plane.</span>
+<span class="sd">    arguments:</span>
+<span class="sd">    v1 -- given gb plane</span>
+<span class="sd">    rotation_matrix -- axis of rotation</span>
+<span class="sd">    m,n -- the two necessary integers</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">get_cubic_theta</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">get_rotation_matrix</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="n">v2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">v1</span><span class="p">),</span> <span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">tilt</span> <span class="o">=</span> <span class="n">angv</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">tilt</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mf">10e-5</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Pure tilt boundary with a tilt component: </span><span class="si">{0:6.2f}</span><span class="s2">&quot;</span>
+              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tilt</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">twist</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">tilt</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Tilt component: </span><span class="si">{0:&lt;6.2f}</span><span class="s2"> Twist component: </span><span class="si">{1:6.2f}</span><span class="s2">&quot;</span>
+              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tilt</span><span class="p">,</span> <span class="n">twist</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="possible_grain_boundary_plane_list"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.possible_grain_boundary_plane_list.html#pyTEMlib.grain_boundary_tools.possible_grain_boundary_plane_list">[docs]</a><span class="k">def</span> <span class="nf">possible_grain_boundary_plane_list</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lim</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    generates GB planes and specifies the character.</span>
+
+<span class="sd">    arguments:</span>
+<span class="sd">    rotation_matrix -- axis of rotation.</span>
+<span class="sd">    m,n -- the two necessary integers</span>
+<span class="sd">    lim -- upper limit for the plane indices</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">get_cubic_theta</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">get_cubic_sigma</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">rotation_matrix_2</span> <span class="o">=</span> <span class="n">get_rotation_matrix</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+
+    <span class="c1"># List and character of possible GB planes:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span><span class="p">,</span> <span class="n">lim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">indices_0</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)]</span>
+    <span class="n">indices_0</span> <span class="o">=</span> <span class="n">indices_0</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">indices_0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))]</span>
+
+    <span class="c1"># extract the minimal cell:</span>
+    <span class="n">min_1</span><span class="p">,</span> <span class="n">min_2</span> <span class="o">=</span> <span class="n">create_minimal_cell_method_1</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">rotation_matrix_2</span><span class="p">)</span>
+    <span class="n">v_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">indices_0</span><span class="p">),</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">v_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">indices_0</span><span class="p">),</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">grain_boundary_type</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tol</span> <span class="o">=</span> <span class="mf">0.001</span>
+    <span class="c1"># Mirror planes cubic symmetry</span>
+    <span class="n">mp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                   <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                   <span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+    <span class="c1"># Find GB plane coordinates:</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices_0</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">common_divisor</span><span class="p">(</span><span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">v_1</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span>
+                         <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                         <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span>
+            <span class="n">v_2</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span>
+                         <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                         <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_2</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span>
+
+    <span class="n">v_1</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_1</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">v_1</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">v_2</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_2</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">v_2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">mean_planes</span> <span class="o">=</span> <span class="p">(</span><span class="n">v_1</span> <span class="o">+</span> <span class="n">v_2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+    <span class="c1"># Check the type of GB plane: Symmetric tilt, tilt, twist</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v_1</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">ang</span><span class="p">(</span><span class="n">v_1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
+
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">symmetry_equivalent</span><span class="p">(</span><span class="n">mp</span><span class="p">))):</span>
+                <span class="k">if</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">ang</span><span class="p">(</span><span class="n">mean_planes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">symmetry_equivalent</span><span class="p">(</span><span class="n">mp</span><span class="p">)[</span><span class="n">j</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
+                    <span class="n">grain_boundary_type</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;Symmetric Tilt&#39;</span><span class="p">)</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">grain_boundary_type</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;Tilt&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">ang</span><span class="p">(</span><span class="n">v_1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
+            <span class="n">grain_boundary_type</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;Twist&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">grain_boundary_type</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;Mixed&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">v_1</span><span class="p">,</span> <span class="n">v_2</span><span class="p">,</span> <span class="n">mean_planes</span><span class="p">,</span> <span class="n">grain_boundary_type</span></div>
+
+
+<div class="viewcode-block" id="create_minimal_cell_method_1"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.create_minimal_cell_method_1.html#pyTEMlib.grain_boundary_tools.create_minimal_cell_method_1">[docs]</a><span class="k">def</span> <span class="nf">create_minimal_cell_method_1</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">rotation_axis</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    finds Minimal cell by means of a numerical search.</span>
+<span class="sd">    (An alternative analytical method can be used too).</span>
+<span class="sd">    arguments:</span>
+<span class="sd">    sigma -- gb sigma</span>
+<span class="sd">    rotation_matrix -- rotation axis</span>
+<span class="sd">    rotation_matrix -- rotation matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rotation_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">)</span>
+    <span class="n">minimal_cell_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_axis</span>
+
+    <span class="n">lim</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span><span class="p">,</span> <span class="n">lim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+    <span class="c1"># remove 0 vectors and rotation_axis from the list</span>
+    <span class="n">indices_0</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)]</span>
+    <span class="n">condition1</span> <span class="o">=</span> <span class="p">((</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">indices_0</span><span class="p">,</span> <span class="n">rotation_axis</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">indices_0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span>
+                       <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rotation_axis</span><span class="p">)))</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">7</span><span class="p">))</span>
+    <span class="n">indices_0</span> <span class="o">=</span> <span class="n">indices_0</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">condition1</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="n">minimal_cell_search</span><span class="p">(</span><span class="n">indices_0</span><span class="p">,</span> <span class="n">minimal_cell_1</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+
+        <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span> <span class="o">=</span> <span class="n">minimal_cell_search</span><span class="p">(</span><span class="n">indices_0</span><span class="p">,</span> <span class="n">minimal_cell_1</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m2</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="minimal_cell_search"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.minimal_cell_search.html#pyTEMlib.grain_boundary_tools.minimal_cell_search">[docs]</a><span class="k">def</span> <span class="nf">minimal_cell_search</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">minimal_cell_1</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+
+    <span class="n">tol</span> <span class="o">=</span> <span class="mf">0.001</span>
+    <span class="c1"># norm1 = norm(indices, axis=1)</span>
+    <span class="n">new_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">indices</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">nn</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">new_indices</span><span class="p">)</span> <span class="o">-</span> <span class="n">new_indices</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)]</span>
+    <span class="n">test_vecs</span> <span class="o">=</span> <span class="n">nn</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))]</span>
+    <span class="c1"># print(len(indices), len(test_vecs),test_vecs[:20])</span>
+
+    <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="p">(</span><span class="ow">not</span> <span class="n">found</span><span class="p">)</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_vecs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">ang</span><span class="p">(</span><span class="n">test_vecs</span><span class="p">[</span><span class="n">count</span><span class="p">],</span> <span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">tol</span><span class="p">:</span>
+            <span class="c1"># and  (ang(test_vecs[i],rotation_matrix) &gt; tol):</span>
+            <span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">test_vecs</span><span class="p">[</span><span class="n">count</span><span class="p">])</span>
+            <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">test_vecs</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">ang</span><span class="p">(</span><span class="n">test_vecs</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">tol</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+                        <span class="mi">1</span> <span class="o">-</span> <span class="n">ang</span><span class="p">(</span><span class="n">test_vecs</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">tol</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">ang</span><span class="p">(</span><span class="n">test_vecs</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="n">tol</span><span class="p">):</span>
+                        <span class="c1">#  The condition that the third vector can not be</span>
+                        <span class="c1">#  normal to any other two.</span>
+                        <span class="c1">#  and (ang(test_vecs[i],rotation_matrix)&gt; tol) and</span>
+                        <span class="c1"># (ang(test_vecs[i],MiniCell[:,1])&gt; tol)):</span>
+                        <span class="n">minimal_cell_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">test_vecs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                        <span class="n">det1</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">minimal_cell_1</span><span class="p">),</span> <span class="mi">5</span><span class="p">))</span>
+                        <span class="n">minimal_cell_1</span> <span class="o">=</span> <span class="n">minimal_cell_1</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                        <span class="n">minimal_cell_2</span> <span class="o">=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">minimal_cell_1</span><span class="p">),</span> <span class="mi">7</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span>
+                        <span class="n">det2</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">minimal_cell_2</span><span class="p">),</span> <span class="mi">5</span><span class="p">))</span>
+
+                        <span class="k">if</span> <span class="p">((</span><span class="nb">abs</span><span class="p">(</span><span class="n">det1</span> <span class="o">-</span> <span class="n">sigma</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">tol</span> <span class="ow">and</span>
+                                <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">det2</span> <span class="o">-</span> <span class="n">sigma</span><span class="p">))</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">):</span>
+                            <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">minimal_cell_1</span><span class="p">,</span> <span class="n">minimal_cell_2</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">found</span></div>
+
+
+<div class="viewcode-block" id="get_basis"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.get_basis.html#pyTEMlib.grain_boundary_tools.get_basis">[docs]</a><span class="k">def</span> <span class="nf">get_basis</span><span class="p">(</span><span class="n">basis</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    defines the basis.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Cubic basis</span>
+    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">basis</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;fcc&#39;</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">basis</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;bcc&#39;</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">basis</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;sc&#39;</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">str</span><span class="p">(</span><span class="n">basis</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;diamond&#39;</span><span class="p">:</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">],</span>
+                          <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Sorry! For now only works for cubic lattices ...&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">basis</span></div>
+
+
+<div class="viewcode-block" id="find_orthogonal_cell"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.find_orthogonal_cell.html#pyTEMlib.grain_boundary_tools.find_orthogonal_cell">[docs]</a><span class="k">def</span> <span class="nf">find_orthogonal_cell</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">gb1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    finds Orthogonal cells from the CSL minimal cells.</span>
+<span class="sd">    arguments:</span>
+<span class="sd">    basis -- lattice basis</span>
+<span class="sd">    rotation_matrix -- rotation axis</span>
+<span class="sd">    m,n -- two necessary integers</span>
+<span class="sd">    gb1 -- input plane orientation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Changeable limit</span>
+    <span class="n">lim</span> <span class="o">=</span> <span class="mi">15</span>
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">get_cubic_theta</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">get_cubic_sigma</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">get_rotation_matrix</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="n">gb_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">gb1</span><span class="p">)),</span> <span class="mi">6</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="n">lim</span><span class="p">,</span> <span class="n">lim</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">indices_0</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)]</span>
+    <span class="n">indices_0</span> <span class="o">=</span> <span class="n">indices_0</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">indices_0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))]</span>
+    <span class="n">ortho_cell_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gb1</span><span class="p">)</span>
+    <span class="n">ortho_cell_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gb_2</span><span class="p">)</span>
+    <span class="c1"># extract the minimal cells:</span>
+    <span class="n">min_1</span><span class="p">,</span> <span class="n">min_2</span> <span class="o">=</span> <span class="n">create_minimal_cell_method_1</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">)</span>
+    <span class="c1"># Find Ortho vectors:</span>
+    <span class="n">tol</span> <span class="o">=</span> <span class="mf">0.001</span>
+    <span class="k">if</span> <span class="n">ang</span><span class="p">(</span><span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">rotation_matrix</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
+        <span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_matrix</span>
+        <span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_matrix</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices_0</span><span class="p">)):</span>
+
+            <span class="n">v1</span> <span class="o">=</span> <span class="p">(</span><span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span>
+                  <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                  <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span>
+            <span class="n">v2</span> <span class="o">=</span> <span class="p">(</span><span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span>
+                  <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                  <span class="n">indices_0</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">min_2</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">ang</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
+                <span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">v1</span>
+                <span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">v2</span>
+                <span class="k">break</span>
+    <span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">common_divisor</span><span class="p">(</span><span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span>
+            <span class="n">common_divisor</span><span class="p">(</span><span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">common_divisor</span><span class="p">(</span><span class="n">ortho_cell_1</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">common_divisor</span><span class="p">(</span><span class="n">ortho_cell_2</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># ortho_cell_1 = ortho_cell_1</span>
+    <span class="c1"># ortho_cell_2 = ortho_cell_2</span>
+    <span class="c1"># Test</span>
+    <span class="c1"># OrthoCell_3 = (dot(rotation_matrix, ortho_cell_1))</span>
+    <span class="n">volume_1</span> <span class="o">=</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">ortho_cell_1</span><span class="p">),</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="n">volume_2</span> <span class="o">=</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">ortho_cell_2</span><span class="p">),</span> <span class="mi">5</span><span class="p">))</span>
+    <span class="n">num</span> <span class="o">=</span> <span class="n">volume_1</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">get_basis</span><span class="p">(</span><span class="n">basis</span><span class="p">))</span> <span class="o">*</span> <span class="mi">2</span>
+
+    <span class="k">if</span> <span class="n">volume_1</span> <span class="o">==</span> <span class="n">volume_2</span><span class="p">:</span>
+        <span class="n">ortho_cell_1</span> <span class="o">=</span> <span class="n">ortho_cell_1</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">ortho_cell_2</span> <span class="o">=</span> <span class="n">ortho_cell_2</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;sc&#39;</span> <span class="ow">or</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;diamond&#39;</span><span class="p">:</span>
+
+            <span class="k">return</span> <span class="p">((</span><span class="n">ortho_cell_1</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+                     <span class="n">ortho_cell_2</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">num</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)))</span>
+
+        <span class="k">elif</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;fcc&#39;</span> <span class="ow">or</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;bcc&#39;</span><span class="p">:</span>
+            <span class="n">ortho1</span><span class="p">,</span> <span class="n">ortho2</span> <span class="o">=</span> <span class="n">ortho_fcc_bcc</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">ortho_cell_1</span><span class="p">,</span> <span class="n">ortho_cell_2</span><span class="p">)</span>
+            <span class="n">volume_1</span> <span class="o">=</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">ortho1</span><span class="p">),</span> <span class="mi">5</span><span class="p">))</span>
+            <span class="n">num</span> <span class="o">=</span> <span class="n">volume_1</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">get_basis</span><span class="p">(</span><span class="n">basis</span><span class="p">))</span> <span class="o">*</span> <span class="mi">2</span>
+            <span class="k">return</span> <span class="n">ortho1</span><span class="p">,</span> <span class="n">ortho2</span><span class="p">,</span> <span class="n">num</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="print_list_grain_boundary_planes"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.print_list_grain_boundary_planes.html#pyTEMlib.grain_boundary_tools.print_list_grain_boundary_planes">[docs]</a><span class="k">def</span> <span class="nf">print_list_grain_boundary_planes</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">basis</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">lim</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    prints lists of GB planes given an axis, basis, m and n.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">)</span>
+    <span class="n">v_1</span><span class="p">,</span> <span class="n">v_2</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">type1</span> <span class="o">=</span> <span class="n">possible_grain_boundary_plane_list</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">lim</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v_1</span><span class="p">)):</span>
+        <span class="n">ortho</span> <span class="o">=</span> <span class="n">find_orthogonal_cell</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">v_1</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">ortho</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0:&lt;20s}</span><span class="s2">   </span><span class="si">{1:&lt;20s}</span><span class="s2">   </span><span class="si">{2:&lt;20s}</span><span class="s2">   </span><span class="si">{3:&lt;10s}</span><span class="s2">&quot;</span>
+                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v_1</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="nb">str</span><span class="p">(</span><span class="n">v_2</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">type1</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">str</span><span class="p">(</span><span class="n">ortho</span><span class="p">[</span><span class="mi">2</span><span class="p">])))</span></div>
+
+
+<span class="c1"># ___CSL/DSC vector construction___#</span>
+
+<span class="c1"># According to Grimmer et al. (Acta Cryst. (1974). A30, 197-207) ,</span>
+<span class="c1">#  DSC and CSL lattices for bcc and fcc were made from the Sc lattice</span>
+<span class="c1"># via body_centering and face_centering:</span>
+<div class="viewcode-block" id="odd_even"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.odd_even.html#pyTEMlib.grain_boundary_tools.odd_even">[docs]</a><span class="k">def</span> <span class="nf">odd_even</span><span class="p">(</span><span class="n">m1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    finds odd and even elements of a matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">],</span>
+                    <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">m1</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">])</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">d_e</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;e&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">d_e</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span>
+    <span class="k">return</span> <span class="n">d_e</span></div>
+
+
+<div class="viewcode-block" id="self_test_b"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.self_test_b.html#pyTEMlib.grain_boundary_tools.self_test_b">[docs]</a><span class="k">def</span> <span class="nf">self_test_b</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="n">z_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]):</span>
+            <span class="n">z_b</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">z_b</span></div>
+
+
+<div class="viewcode-block" id="binary_test_b"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.binary_test_b.html#pyTEMlib.grain_boundary_tools.binary_test_b">[docs]</a><span class="k">def</span> <span class="nf">binary_test_b</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">z_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">m</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]):</span>
+                    <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">z_b</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+                    <span class="n">z_b</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="k">return</span> <span class="n">z_b</span></div>
+
+
+<div class="viewcode-block" id="tertiary_test_b"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.tertiary_test_b.html#pyTEMlib.grain_boundary_tools.tertiary_test_b">[docs]</a><span class="k">def</span> <span class="nf">tertiary_test_b</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="n">z_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">m</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">k</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">]):</span>
+            <span class="n">z_b</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+            <span class="n">z_b</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+            <span class="n">z_b</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">z_b</span></div>
+
+
+<div class="viewcode-block" id="body_centering"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.body_centering.html#pyTEMlib.grain_boundary_tools.body_centering">[docs]</a><span class="k">def</span> <span class="nf">body_centering</span><span class="p">(</span><span class="n">b</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    converting a single crystal minimal cell to a bcc one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">z_b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">z_b</span><span class="p">)</span> <span class="o">!=</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">self_test_b</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="o">==</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">z_b</span> <span class="o">=</span> <span class="n">self_test_b</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">binary_test_b</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="o">==</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">z_b</span> <span class="o">=</span> <span class="n">binary_test_b</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">tertiary_test_b</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="o">==</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">z_b</span> <span class="o">=</span> <span class="n">tertiary_test_b</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">z_b</span></div>
+
+
+<div class="viewcode-block" id="face_centering"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.face_centering.html#pyTEMlib.grain_boundary_tools.face_centering">[docs]</a><span class="k">def</span> <span class="nf">face_centering</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    converting a single crystal minimal cell to an fcc one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">z_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">])</span> <span class="ow">or</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">])</span> <span class="ow">or</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">])):</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">z_f</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">z_f</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.25</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">z_f</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">j</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">m</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                    <span class="n">m</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">])</span> <span class="ow">or</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">])</span> <span class="ow">or</span>
+                            <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">odd_even</span><span class="p">(</span><span class="n">m</span><span class="p">)[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="p">[</span><span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">])):</span>
+                        <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span>
+                        <span class="n">z_f</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+                        <span class="n">z_f</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+
+    <span class="k">return</span> <span class="n">z_f</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">z_f</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.25</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="dsc_vec"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.dsc_vec.html#pyTEMlib.grain_boundary_tools.dsc_vec">[docs]</a><span class="k">def</span> <span class="nf">dsc_vec</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">mini_cell</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    a discrete shift complete (DSC)</span>
+<span class="sd">    network for the given sigma and minimal cell.</span>
+<span class="sd">    arguments:</span>
+<span class="sd">    basis -- a lattice basis(fcc or bcc)</span>
+<span class="sd">    sigma -- gb sigma</span>
+<span class="sd">    mini_cell -- gb minimal cell</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d_sc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">sigma</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">mini_cell</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;sc&#39;</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">d_sc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;bcc&#39;</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">d_sc</span><span class="p">,</span> <span class="n">body_centering</span><span class="p">(</span><span class="n">d_sc</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;fcc&#39;</span> <span class="ow">or</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;diamond&#39;</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">d_sc</span><span class="p">,</span> <span class="n">face_centering</span><span class="p">(</span><span class="n">d_sc</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">d</span></div>
+
+
+<div class="viewcode-block" id="csl_vec"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.csl_vec.html#pyTEMlib.grain_boundary_tools.csl_vec">[docs]</a><span class="k">def</span> <span class="nf">csl_vec</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">mini_cell</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    CSL minimal cell for sc, fcc and bcc.</span>
+<span class="sd">    arguments:</span>
+<span class="sd">    basis -- a lattice basis(fcc or bcc)</span>
+<span class="sd">    mini_cell -- gb minimal cell</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">c_sc</span> <span class="o">=</span> <span class="n">mini_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;sc&#39;</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">c_sc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;bcc&#39;</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">c_sc</span><span class="p">,</span> <span class="n">body_centering</span><span class="p">(</span><span class="n">c_sc</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;fcc&#39;</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">c_sc</span><span class="p">,</span> <span class="n">face_centering</span><span class="p">(</span><span class="n">c_sc</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">c</span></div>
+
+
+<div class="viewcode-block" id="dsc_on_plane"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.dsc_on_plane.html#pyTEMlib.grain_boundary_tools.dsc_on_plane">[docs]</a><span class="k">def</span> <span class="nf">dsc_on_plane</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">p_normal</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    projects the given DSC network on a given plane.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d_proj</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">p_normal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p_normal</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">d_proj</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">d</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">p_normal</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p_normal</span><span class="p">))</span> <span class="o">*</span>
+                        <span class="n">p_normal</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">p_normal</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">d_proj</span></div>
+
+
+<div class="viewcode-block" id="csl_density"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.csl_density.html#pyTEMlib.grain_boundary_tools.csl_density">[docs]</a><span class="k">def</span> <span class="nf">csl_density</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">mini_cell</span><span class="p">,</span> <span class="n">plane</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    returns the CSL density of a given plane and its d_spacing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plane</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">plane</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">csl_vec</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">mini_cell</span><span class="p">)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">plane</span><span class="p">)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">smallest_integer</span><span class="p">(</span><span class="n">h</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">common_divisor</span><span class="p">(</span><span class="n">h</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span>
+    <span class="n">h_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">h</span><span class="p">)))</span>
+    <span class="n">density</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="n">h_norm</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">density</span><span class="p">),</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">h_norm</span></div>
+
+<span class="c1"># An auxiliary function to help reduce the size of the small orthogonal cell</span>
+<span class="c1"># that is decided otherwise based on Sc for fcc and bcc</span>
+
+
+<div class="viewcode-block" id="ortho_fcc_bcc"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.ortho_fcc_bcc.html#pyTEMlib.grain_boundary_tools.ortho_fcc_bcc">[docs]</a><span class="k">def</span> <span class="nf">ortho_fcc_bcc</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">o1</span><span class="p">,</span> <span class="n">o2</span><span class="p">):</span>
+    <span class="n">ortho1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">ortho2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;fcc&#39;</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">get_basis</span><span class="p">(</span><span class="s1">&#39;fcc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">basis</span> <span class="o">==</span> <span class="s1">&#39;bcc&#39;</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">],</span>
+                           <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]]))</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">min_d</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">common_divisor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">o1</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">base</span><span class="p">)))[</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">common_divisor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">o2</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">base</span><span class="p">)))[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">ortho1</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">o1</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">min_d</span>
+        <span class="n">ortho2</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">o2</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">min_d</span>
+    <span class="k">return</span> <span class="n">ortho1</span><span class="p">,</span> <span class="n">ortho2</span></div>
+<span class="c1"># Writing to a yaml file that will be read by gb_generator</span>
+
+
+<div class="viewcode-block" id="write_to_io"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.write_to_io.html#pyTEMlib.grain_boundary_tools.write_to_io">[docs]</a><span class="k">def</span> <span class="nf">write_to_io</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">basis</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    an input file for gb_generator.py that can be customized.</span>
+<span class="sd">    It also contains the </span>
+<span class="sd">    output from the usage of csl_generator.py.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">my_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;GB_plane&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">([</span><span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="p">[</span><span class="mi">2</span><span class="p">]]),</span>
+               <span class="s1">&#39;lattice_parameter&#39;</span><span class="p">:</span> <span class="s1">&#39;4&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;overlap_distance&#39;</span><span class="p">:</span> <span class="s1">&#39;0.0&#39;</span><span class="p">,</span> <span class="s1">&#39;which_g&#39;</span><span class="p">:</span> <span class="s1">&#39;g1&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;rigid_trans&#39;</span><span class="p">:</span> <span class="s1">&#39;no&#39;</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="s1">&#39;10&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="s1">&#39;5&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;dimensions&#39;</span><span class="p">:</span> <span class="s1">&#39;[1,1,1]&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;File_type&#39;</span><span class="p">:</span> <span class="s1">&#39;LAMMPS&#39;</span><span class="p">}</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;io_file&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;### input parameters for gb_generator.py ### </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# CSL plane of interest that you read from the output of &#39;</span>
+                <span class="s1">&#39;csl_generator as gb1 </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# lattice parameter in Angstrom </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# atoms that are closer than this fraction of the lattice &#39;</span>
+                <span class="s1">&#39;parameter will be removed </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# either from grain1 (g1) or from grain2 (g2). If you choose &#39;</span>
+                <span class="s1">&#39;0 no atoms will be removed </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# decide which grain the atoms should be removed from </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">3</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">3</span><span class="p">])</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# decide whether you want rigid body translations to be done &#39;</span>
+                <span class="s1">&#39;on the GB_plane or not (yes or no)</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# When yes, for any GB aside from twist GBs, the two inplane </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="s1">&#39;# CSL vectors will be divided by integers a and b to produce a*b initial </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="s1">&#39;# configurations. The default values produce 50 initial structures </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="s1">&#39;# if you choose no for rigid_trans, you do not need to care about a and b. </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="s1">&#39;# twist boundaries are handled internally </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span>
+                <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">4</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span>
+                <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">5</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">6</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span>
+                <span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">6</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# dimensions of the supercell in: [l1,l2,l3],  where l1 is&#39;</span>
+                <span class="s1">&#39;the direction along the GB_plane normal</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;#  and l2 and l3 are inplane dimensions </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">7</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">7</span><span class="p">]</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# File type, either VASP or LAMMPS input </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">8</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">my_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">8</span><span class="p">]</span> <span class="o">+</span>
+                <span class="s1">&#39;</span><span class="se">\n\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;# The following is your csl_generator output.&#39;</span>
+                <span class="s1">&#39; YOU DO NOT NEED TO CHANGE THEM! </span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;axis&#39;</span><span class="o">+</span><span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">([</span><span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;m&#39;</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;n&#39;</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;basis&#39;</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">basis</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="fcc_grain_boundary"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.fcc_grain_boundary.html#pyTEMlib.grain_boundary_tools.fcc_grain_boundary">[docs]</a><span class="k">def</span> <span class="nf">fcc_grain_boundary</span><span class="p">(</span><span class="n">gb_plane</span><span class="p">,</span> <span class="n">tilt_axis</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="s1">&#39;Al&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+                       <span class="n">minimal_distance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lattice_constant</span><span class="o">=</span><span class="mf">4.0384</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Super cell of a symmetric tilt grain boundary in an fcc structure.</span>
+
+<span class="sd">    Returns the orthogonal supercell with periodic boundary condition containing</span>
+<span class="sd">    two symmetric tilt grain boundaries.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gb_plane: numpy array or list of shape 3</span>
+<span class="sd">        Miller indices of grain boundary plane</span>
+<span class="sd">    tilt_axis: numpy array or list of shape 3</span>
+<span class="sd">        Miller indices of tilt axis</span>
+<span class="sd">    element: string</span>
+<span class="sd">        Chemical symbol of element (default is &#39;Al&#39;)</span>
+<span class="sd">    size: list, tuple or numpy array of shape 3 and of type int</span>
+<span class="sd">        multiplicity of supercell in x , y and z direction</span>
+<span class="sd">        (default is [1, 1, 1])</span>
+<span class="sd">    minimal_distance: float</span>
+<span class="sd">        Minimal distance required to be considered separate atoms.</span>
+<span class="sd">        Atoms which are too close will be replaced with one in the middle</span>
+<span class="sd">        (default =None: results in quarter of lattice parameter)</span>
+<span class="sd">    lattice_constant: float</span>
+<span class="sd">        lattice constant of fcc material (default ois lattice parameter of aluminum)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    grain_boundary: ase.Atoms object</span>
+<span class="sd">        Structure of grain boundary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x_direction</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">gb_plane</span><span class="p">,</span> <span class="n">tilt_axis</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">minimal_distance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">minimal_distance</span> <span class="o">=</span> <span class="n">lattice_constant</span> <span class="o">/</span> <span class="mi">4</span>
+
+    <span class="n">to_delete</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">grain_1</span> <span class="o">=</span> <span class="n">ase</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">cubic</span><span class="o">.</span><span class="n">FaceCenteredCubic</span><span class="p">(</span><span class="n">directions</span><span class="o">=</span><span class="p">[</span><span class="n">x_direction</span><span class="p">,</span> <span class="n">gb_plane</span><span class="p">,</span> <span class="n">tilt_axis</span><span class="p">],</span>
+                                                  <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span>
+                                                  <span class="n">symbol</span><span class="o">=</span><span class="n">element</span><span class="p">,</span>
+                                                  <span class="n">pbc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                  <span class="n">latticeconstant</span><span class="o">=</span><span class="n">lattice_constant</span><span class="p">)</span>
+
+    <span class="c1"># move and delete atoms which are too close at grain boundary</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">grain_1</span><span class="o">.</span><span class="n">positions</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">grain_1</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">minimal_distance</span><span class="p">:</span>
+            <span class="n">grain_1</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>  <span class="c1"># grain_1.cell[0,0]</span>
+        <span class="k">if</span> <span class="n">grain_1</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">grain_1</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">minimal_distance</span><span class="p">:</span>
+            <span class="n">to_delete</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="k">del</span> <span class="n">grain_1</span><span class="p">[</span><span class="n">to_delete</span><span class="p">]</span>
+
+    <span class="n">grain_2</span> <span class="o">=</span> <span class="n">grain_1</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">grain_2</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">grain_1</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">grain_1</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">grain_2</span><span class="o">.</span><span class="n">wrap</span><span class="p">()</span>
+
+    <span class="c1"># mirror atoms at zero x positions</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">grain_2</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">grain_2</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.01</span><span class="p">:</span>
+            <span class="n">grain_2</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">grain_1</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">grain_2</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">grain_boundary</span> <span class="o">=</span> <span class="n">ase</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">grain_1</span><span class="p">,</span> <span class="n">grain_2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">grain_boundary</span><span class="o">.</span><span class="n">wrap</span><span class="p">()</span>
+    <span class="n">grain_boundary</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">grain_boundary</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="n">grain_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">grain_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">grain_boundary</span></div>
+
+
+<div class="viewcode-block" id="get_fcc_grain_boundary"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.grain_boundary_tools.get_fcc_grain_boundary.html#pyTEMlib.grain_boundary_tools.get_fcc_grain_boundary">[docs]</a><span class="k">def</span> <span class="nf">get_fcc_grain_boundary</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">tilt_axis</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="s1">&#39;Al&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">minimal_distance</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span>
+                           <span class="n">lattice_constant</span><span class="o">=</span><span class="mf">4.0384</span><span class="p">):</span>
+    <span class="n">gb_parameters</span> <span class="o">=</span> <span class="n">get_theta_m_n_list</span><span class="p">(</span><span class="n">tilt_axis</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">gb_parameters</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">gb_parameters</span> <span class="o">=</span> <span class="n">gb_parameters</span><span class="p">[</span><span class="n">ind</span><span class="p">,</span> <span class="p">:]</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Possible symmetric Σ</span><span class="si">{</span><span class="n">sigma</span><span class="si">}</span><span class="s2"> grain boundaries&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; tilt&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; angle </span><span class="se">\t</span><span class="s2">  m   </span><span class="se">\t</span><span class="s2"> n&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">para</span> <span class="ow">in</span> <span class="n">gb_parameters</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">para</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">:</span><span class="s2">3.12f</span><span class="si">}</span><span class="s2"> </span><span class="se">\t</span><span class="s2">  </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">para</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s2"> </span><span class="se">\t</span><span class="s2"> </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">para</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">theta</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="o">=</span> <span class="n">gb_parameters</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">missing_l</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="n">tilt_axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="n">tilt_axis</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">tilt_axis</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">boundary_plane</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">missing_l</span><span class="p">]</span>
+    <span class="n">grain_boundary</span> <span class="o">=</span> <span class="n">fcc_grain_boundary</span><span class="p">(</span><span class="n">boundary_plane</span><span class="p">,</span> <span class="n">tilt_axis</span><span class="p">,</span> <span class="n">element</span><span class="o">=</span><span class="n">element</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span>
+                                        <span class="n">minimal_distance</span><span class="o">=</span><span class="n">minimal_distance</span><span class="p">,</span> <span class="n">lattice_constant</span><span class="o">=</span><span class="n">lattice_constant</span><span class="p">)</span>
+    <span class="n">tilt_h</span><span class="p">,</span> <span class="n">tilt_k</span><span class="p">,</span> <span class="n">tilt_l</span> <span class="o">=</span> <span class="n">tilt_axis</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;choosing possibility </span><span class="si">{</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s1"> Σ</span><span class="si">{</span><span class="n">sigma</span><span class="si">}</span><span class="s1">(</span><span class="si">{</span><span class="n">m</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}{</span><span class="n">n</span><span class="si">:</span><span class="s1">.0f</span><span class="si">}{</span><span class="n">missing_l</span><span class="si">}</span><span class="s1">)/[</span><span class="si">{</span><span class="n">tilt_h</span><span class="si">}{</span><span class="n">tilt_k</span><span class="si">}{</span><span class="n">tilt_l</span><span class="si">}</span><span class="s1">]&#39;</span><span class="p">,</span>
+          <span class="sa">f</span><span class="s1">&#39;with </span><span class="si">{</span><span class="n">grain_boundary</span><span class="o">.</span><span class="n">positions</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1"> atoms in supercell&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">grain_boundary</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Gerd Duscher, and contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

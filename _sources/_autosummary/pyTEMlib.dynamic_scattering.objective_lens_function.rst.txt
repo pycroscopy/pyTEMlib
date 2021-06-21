@@ -1,0 +1,6 @@
+pyTEMlib.dynamic\_scattering.objective\_lens\_function
+======================================================
+
+.. currentmodule:: pyTEMlib.dynamic_scattering
+
+.. autofunction:: objective_lens_function

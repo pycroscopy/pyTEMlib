@@ -1,0 +1,6 @@
+pyTEMlib.dynamic\_scattering.make\_chi
+======================================
+
+.. currentmodule:: pyTEMlib.dynamic_scattering
+
+.. autofunction:: make_chi

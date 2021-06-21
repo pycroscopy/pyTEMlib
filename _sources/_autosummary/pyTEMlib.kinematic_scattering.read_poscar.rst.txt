@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.read\_poscar
+===========================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: read_poscar

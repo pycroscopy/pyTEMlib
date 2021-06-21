@@ -1,0 +1,977 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>pyTEMlib.file_tools.open_file_dialog &mdash; pyTEMlib 0.2021.06.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> pyTEMlib
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.2021.06.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/EELS/index.html">EELS_tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notebooks/Imaging/index.html">Image_tools</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>pyTEMlib.file_tools.open_file_dialog</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/_autosummary/pyTEMlib.file_tools.open_file_dialog.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pytemlib-file-tools-open-file-dialog">
+<h1>pyTEMlib.file_tools.open_file_dialog<a class="headerlink" href="#pytemlib-file-tools-open-file-dialog" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">pyTEMlib.file_tools.</span></span><span class="sig-name descname"><span class="pre">open_file_dialog</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyTEMlib/file_tools.html#open_file_dialog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ipyfilechooser.filechooser.FileChooser</span></code></p>
+<p>Initialize FileChooser object.</p>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.add_class" title="pyTEMlib.file_tools.open_file_dialog.add_class"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_class</span></code></a></p></td>
+<td><p>Adds a class to the top level element of the widget.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.add_traits" title="pyTEMlib.file_tools.open_file_dialog.add_traits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_traits</span></code></a></p></td>
+<td><p>Dynamically add trait attributes to the Widget.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.class_own_trait_events" title="pyTEMlib.file_tools.open_file_dialog.class_own_trait_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">class_own_trait_events</span></code></a></p></td>
+<td><p>Get a dict of all event handlers defined on this class, not a parent.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.class_own_traits" title="pyTEMlib.file_tools.open_file_dialog.class_own_traits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">class_own_traits</span></code></a></p></td>
+<td><p>Get a dict of all the traitlets defined on this class, not a parent.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.class_trait_names" title="pyTEMlib.file_tools.open_file_dialog.class_trait_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">class_trait_names</span></code></a></p></td>
+<td><p>Get a list of all the names of this class’ traits.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.class_traits" title="pyTEMlib.file_tools.open_file_dialog.class_traits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">class_traits</span></code></a></p></td>
+<td><p>Get a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of all the traits of this class.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.close" title="pyTEMlib.file_tools.open_file_dialog.close"><code class="xref py py-obj docutils literal notranslate"><span class="pre">close</span></code></a></p></td>
+<td><p>Close method.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">close_all</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.get_interact_value" title="pyTEMlib.file_tools.open_file_dialog.get_interact_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_interact_value</span></code></a></p></td>
+<td><p>Return the value which should be passed to interactive functions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.get_manager_state" title="pyTEMlib.file_tools.open_file_dialog.get_manager_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_manager_state</span></code></a></p></td>
+<td><p>Returns the full state for a widget manager for embedding</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.get_state" title="pyTEMlib.file_tools.open_file_dialog.get_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_state</span></code></a></p></td>
+<td><p>Gets the widget state, or a piece of it.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_view_spec</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.handle_comm_opened" title="pyTEMlib.file_tools.open_file_dialog.handle_comm_opened"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_comm_opened</span></code></a></p></td>
+<td><p>Static method, called when a widget is constructed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.has_trait" title="pyTEMlib.file_tools.open_file_dialog.has_trait"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_trait</span></code></a></p></td>
+<td><p>Returns True if the object has a trait with the specified name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.hold_sync" title="pyTEMlib.file_tools.open_file_dialog.hold_sync"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hold_sync</span></code></a></p></td>
+<td><p>Hold syncing any state until the outermost context manager exits</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.hold_trait_notifications" title="pyTEMlib.file_tools.open_file_dialog.hold_trait_notifications"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hold_trait_notifications</span></code></a></p></td>
+<td><p>Context manager for bundling trait change notifications and cross validation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.notify_change" title="pyTEMlib.file_tools.open_file_dialog.notify_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">notify_change</span></code></a></p></td>
+<td><p>Called when a property has changed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.observe" title="pyTEMlib.file_tools.open_file_dialog.observe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">observe</span></code></a></p></td>
+<td><p>Setup a handler to be called when a trait changes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.on_displayed" title="pyTEMlib.file_tools.open_file_dialog.on_displayed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_displayed</span></code></a></p></td>
+<td><p>(Un)Register a widget displayed callback.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.on_msg" title="pyTEMlib.file_tools.open_file_dialog.on_msg"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_msg</span></code></a></p></td>
+<td><p>(Un)Register a custom msg receive callback.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.on_trait_change" title="pyTEMlib.file_tools.open_file_dialog.on_trait_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_trait_change</span></code></a></p></td>
+<td><p>DEPRECATED: Setup a handler to be called when a trait changes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.on_widget_constructed" title="pyTEMlib.file_tools.open_file_dialog.on_widget_constructed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_widget_constructed</span></code></a></p></td>
+<td><p>Registers a callback to be called when a widget is constructed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.open" title="pyTEMlib.file_tools.open_file_dialog.open"><code class="xref py py-obj docutils literal notranslate"><span class="pre">open</span></code></a></p></td>
+<td><p>Open a comm to the frontend if one isn’t already open.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.refresh" title="pyTEMlib.file_tools.open_file_dialog.refresh"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refresh</span></code></a></p></td>
+<td><p>Re-render the form.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.register_callback" title="pyTEMlib.file_tools.open_file_dialog.register_callback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_callback</span></code></a></p></td>
+<td><p>Register a callback function.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.remove_class" title="pyTEMlib.file_tools.open_file_dialog.remove_class"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_class</span></code></a></p></td>
+<td><p>Removes a class from the top level element of the widget.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.reset" title="pyTEMlib.file_tools.open_file_dialog.reset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset</span></code></a></p></td>
+<td><p>Reset the form to the default path and filename.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.send" title="pyTEMlib.file_tools.open_file_dialog.send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send</span></code></a></p></td>
+<td><p>Sends a custom msg to the widget model in the front-end.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.send_state" title="pyTEMlib.file_tools.open_file_dialog.send_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send_state</span></code></a></p></td>
+<td><p>Sends the widget state, or a piece of it, to the front-end, if it exists.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_display_names</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.set_state" title="pyTEMlib.file_tools.open_file_dialog.set_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_state</span></code></a></p></td>
+<td><p>Called when a state is received from the front-end.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.set_trait" title="pyTEMlib.file_tools.open_file_dialog.set_trait"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_trait</span></code></a></p></td>
+<td><p>Forcibly sets trait attribute, including read-only attributes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.setup_instance" title="pyTEMlib.file_tools.open_file_dialog.setup_instance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_instance</span></code></a></p></td>
+<td><p>This is called <strong>before</strong> self.__init__ is called.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.trait_defaults" title="pyTEMlib.file_tools.open_file_dialog.trait_defaults"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trait_defaults</span></code></a></p></td>
+<td><p>Return a trait’s default value or a dictionary of them</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.trait_events" title="pyTEMlib.file_tools.open_file_dialog.trait_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trait_events</span></code></a></p></td>
+<td><p>Get a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of all the event handlers of this class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.trait_has_value" title="pyTEMlib.file_tools.open_file_dialog.trait_has_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trait_has_value</span></code></a></p></td>
+<td><p>Returns True if the specified trait has a value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.trait_metadata" title="pyTEMlib.file_tools.open_file_dialog.trait_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trait_metadata</span></code></a></p></td>
+<td><p>Get metadata values for trait by key.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.trait_names" title="pyTEMlib.file_tools.open_file_dialog.trait_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trait_names</span></code></a></p></td>
+<td><p>Get a list of all the names of this class’ traits.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.trait_values" title="pyTEMlib.file_tools.open_file_dialog.trait_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trait_values</span></code></a></p></td>
+<td><p>A <code class="docutils literal notranslate"><span class="pre">dict</span></code> of trait names and their values.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.traits" title="pyTEMlib.file_tools.open_file_dialog.traits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">traits</span></code></a></p></td>
+<td><p>Get a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of all the traits of this class.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.unobserve" title="pyTEMlib.file_tools.open_file_dialog.unobserve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unobserve</span></code></a></p></td>
+<td><p>Remove a trait change handler.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.unobserve_all" title="pyTEMlib.file_tools.open_file_dialog.unobserve_all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unobserve_all</span></code></a></p></td>
+<td><p>Remove trait change handlers of any type for the specified name.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">box_style</span></code></p></td>
+<td><p>An enum of strings where the case should be ignored.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">children</span></code></p></td>
+<td><p>A trait for a tuple of any length with type-checked elements.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">comm</span></code></p></td>
+<td><p>A trait whose value must be an instance of a specified class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.cross_validation_lock" title="pyTEMlib.file_tools.open_file_dialog.cross_validation_lock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cross_validation_lock</span></code></a></p></td>
+<td><p>A contextmanager for running a block with our cross validation lock set to True.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.default" title="pyTEMlib.file_tools.open_file_dialog.default"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default</span></code></a></p></td>
+<td><p>Get the default value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.default_filename" title="pyTEMlib.file_tools.open_file_dialog.default_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_filename</span></code></a></p></td>
+<td><p>Get the default_filename value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.default_path" title="pyTEMlib.file_tools.open_file_dialog.default_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_path</span></code></a></p></td>
+<td><p>Get the default_path value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.filter_pattern" title="pyTEMlib.file_tools.open_file_dialog.filter_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_pattern</span></code></a></p></td>
+<td><p>Get file name filter pattern.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">keys</span></code></p></td>
+<td><p>An instance of a Python list.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">layout</span></code></p></td>
+<td><p>An instance trait which coerces a dict to an instance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log</span></code></p></td>
+<td><p>A trait whose value must be an instance of a specified class.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.model_id" title="pyTEMlib.file_tools.open_file_dialog.model_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_id</span></code></a></p></td>
+<td><p>Gets the model id of this widget.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.rows" title="pyTEMlib.file_tools.open_file_dialog.rows"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rows</span></code></a></p></td>
+<td><p>Get current number of rows.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.selected" title="pyTEMlib.file_tools.open_file_dialog.selected"><code class="xref py py-obj docutils literal notranslate"><span class="pre">selected</span></code></a></p></td>
+<td><p>Get selected value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.selected_filename" title="pyTEMlib.file_tools.open_file_dialog.selected_filename"><code class="xref py py-obj docutils literal notranslate"><span class="pre">selected_filename</span></code></a></p></td>
+<td><p>Get the selected_filename.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.selected_path" title="pyTEMlib.file_tools.open_file_dialog.selected_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">selected_path</span></code></a></p></td>
+<td><p>Get selected_path value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.show_hidden" title="pyTEMlib.file_tools.open_file_dialog.show_hidden"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_hidden</span></code></a></p></td>
+<td><p>Get _show_hidden value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.show_only_dirs" title="pyTEMlib.file_tools.open_file_dialog.show_only_dirs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_only_dirs</span></code></a></p></td>
+<td><p>Get show_only_dirs property value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.title" title="pyTEMlib.file_tools.open_file_dialog.title"><code class="xref py py-obj docutils literal notranslate"><span class="pre">title</span></code></a></p></td>
+<td><p>Get the title.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.use_dir_icons" title="pyTEMlib.file_tools.open_file_dialog.use_dir_icons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">use_dir_icons</span></code></a></p></td>
+<td><p>Get _use_dir_icons value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">value</span></code></p></td>
+<td><p>A trait which allows any value.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">widget_types</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">widgets</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.__del__">
+<span class="sig-name descname"><span class="pre">__del__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.__del__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Object disposal</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.__repr__">
+<span class="sig-name descname"><span class="pre">__repr__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build string representation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.add_class">
+<span class="sig-name descname"><span class="pre">add_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">className</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.add_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a class to the top level element of the widget.</p>
+<p>Doesn’t add the class if it already exists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.add_traits">
+<span class="sig-name descname"><span class="pre">add_traits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">traits</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.add_traits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dynamically add trait attributes to the Widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.class_own_trait_events">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">class_own_trait_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.class_own_trait_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a dict of all event handlers defined on this class, not a parent.</p>
+<p>Works like <code class="docutils literal notranslate"><span class="pre">event_handlers</span></code>, except for excluding traits from parents.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.class_own_traits">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">class_own_traits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.class_own_traits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a dict of all the traitlets defined on this class, not a parent.</p>
+<p>Works like <cite>class_traits</cite>, except for excluding traits from parents.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.class_trait_names">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">class_trait_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.class_trait_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a list of all the names of this class’ traits.</p>
+<p>This method is just like the <a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.trait_names" title="pyTEMlib.file_tools.open_file_dialog.trait_names"><code class="xref py py-meth docutils literal notranslate"><span class="pre">trait_names()</span></code></a> method,
+but is unbound.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.class_traits">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">class_traits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.class_traits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of all the traits of this class.  The dictionary
+is keyed on the name and the values are the TraitType objects.</p>
+<p>This method is just like the <a class="reference internal" href="#pyTEMlib.file_tools.open_file_dialog.traits" title="pyTEMlib.file_tools.open_file_dialog.traits"><code class="xref py py-meth docutils literal notranslate"><span class="pre">traits()</span></code></a> method, but is unbound.</p>
+<p>The TraitTypes returned don’t know anything about the values
+that the various HasTrait’s instances are holding.</p>
+<p>The metadata kwargs allow functions to be passed in which
+filter traits based on metadata values.  The functions should
+take a single value as an argument and return a boolean.  If
+any function returns False, then the trait is not included in
+the output.  If a metadata key doesn’t exist, None will be passed
+to the function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close method.</p>
+<p>Closes the underlying comm.
+When the comm is closed, all of the widget views are automatically
+removed from the front-end.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.cross_validation_lock">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">cross_validation_lock</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.cross_validation_lock" title="Permalink to this definition">¶</a></dt>
+<dd><p>A contextmanager for running a block with our cross validation lock set
+to True.</p>
+<p>At the end of the block, the lock’s value is restored to its value
+prior to entering the block.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.default">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">default</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the default value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.default_filename">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">default_filename</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.default_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the default_filename value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.default_path">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">default_path</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.default_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the default_path value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.filter_pattern">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">filter_pattern</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.filter_pattern" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get file name filter pattern.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.get_interact_value">
+<span class="sig-name descname"><span class="pre">get_interact_value</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.get_interact_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value which should be passed to interactive functions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.get_manager_state">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">get_manager_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drop_defaults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">widgets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.get_manager_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the full state for a widget manager for embedding</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>drop_defaults</strong> – when True, it will not include default value</p></li>
+<li><p><strong>widgets</strong> – list with widgets to include in the state (or all widgets when None)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.get_state">
+<span class="sig-name descname"><span class="pre">get_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_defaults</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.get_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the widget state, or a piece of it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>unicode</em><em> or </em><em>iterable</em><em> (</em><em>optional</em><em>)</em>) – A single property’s name or iterable of property names to get.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>state</strong> (<em>dict of states</em>)</p></li>
+<li><p><strong>metadata</strong> (<em>dict</em>) – metadata for each field: {key: metadata}</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.handle_comm_opened">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">handle_comm_opened</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.handle_comm_opened" title="Permalink to this definition">¶</a></dt>
+<dd><p>Static method, called when a widget is constructed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.has_trait">
+<span class="sig-name descname"><span class="pre">has_trait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.has_trait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the object has a trait with the specified name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.hold_sync">
+<span class="sig-name descname"><span class="pre">hold_sync</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.hold_sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hold syncing any state until the outermost context manager exits</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.hold_trait_notifications">
+<span class="sig-name descname"><span class="pre">hold_trait_notifications</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.hold_trait_notifications" title="Permalink to this definition">¶</a></dt>
+<dd><p>Context manager for bundling trait change notifications and cross
+validation.</p>
+<p>Use this when doing multiple trait assignments (init, config), to avoid
+race conditions in trait notifiers requesting other trait values.
+All trait notifications will fire after all values have been assigned.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.model_id">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">model_id</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.model_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the model id of this widget.</p>
+<p>If a Comm doesn’t exist yet, a Comm will be created automagically.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.notify_change">
+<span class="sig-name descname"><span class="pre">notify_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">change</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.notify_change" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when a property has changed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.observe">
+<span class="sig-name descname"><span class="pre">observe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">traitlets.All</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'change'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.observe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Setup a handler to be called when a trait changes.</p>
+<p>This is used to setup dynamic notifications of trait changes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>handler</strong> (<em>callable</em>) – A callable that is called when a trait changes. Its
+signature should be <code class="docutils literal notranslate"><span class="pre">handler(change)</span></code>, where <code class="docutils literal notranslate"><span class="pre">change</span></code> is a
+dictionary. The change dictionary at least holds a ‘type’ key.
+* <code class="docutils literal notranslate"><span class="pre">type</span></code>: the type of notification.
+Other keys may be passed depending on the value of ‘type’. In the
+case where type is ‘change’, we also have the following keys:
+* <code class="docutils literal notranslate"><span class="pre">owner</span></code> : the HasTraits instance
+* <code class="docutils literal notranslate"><span class="pre">old</span></code> : the old value of the modified trait attribute
+* <code class="docutils literal notranslate"><span class="pre">new</span></code> : the new value of the modified trait attribute
+* <code class="docutils literal notranslate"><span class="pre">name</span></code> : the name of the modified trait attribute.</p></li>
+<li><p><strong>names</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.9)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em>, </em><em>All</em>) – If names is All, the handler will apply to all traits.  If a list
+of str, handler will apply to all names in the list.  If a
+str, the handler will apply just to that name.</p></li>
+<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em>, </em><em>All</em><em> (</em><em>default: 'change'</em><em>)</em>) – The type of notification to filter by. If equal to All, then all
+notifications are passed to the observe handler.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.on_displayed">
+<span class="sig-name descname"><span class="pre">on_displayed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.on_displayed" title="Permalink to this definition">¶</a></dt>
+<dd><p>(Un)Register a widget displayed callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>callback</strong> (<em>method handler</em>) – <p>Must have a signature of:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>kwargs from display are passed through without modification.</p>
+</p></li>
+<li><p><strong>remove</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – True if the callback should be unregistered.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.on_msg">
+<span class="sig-name descname"><span class="pre">on_msg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.on_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>(Un)Register a custom msg receive callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>callback</strong> (<em>callable</em>) – <p>callback will be passed three arguments when a message arrives:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">callback</span><span class="p">(</span><span class="n">widget</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">buffers</span><span class="p">)</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><strong>remove</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – True if the callback should be unregistered.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.on_trait_change">
+<span class="sig-name descname"><span class="pre">on_trait_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.on_trait_change" title="Permalink to this definition">¶</a></dt>
+<dd><p>DEPRECATED: Setup a handler to be called when a trait changes.</p>
+<p>This is used to setup dynamic notifications of trait changes.</p>
+<p>Static handlers can be created by creating methods on a HasTraits
+subclass with the naming convention ‘_[traitname]_changed’.  Thus,
+to create static handler for the trait ‘a’, create the method
+_a_changed(self, name, old, new) (fewer arguments can be used, see
+below).</p>
+<p>If <cite>remove</cite> is True and <cite>handler</cite> is not specified, all change
+handlers for the specified name are uninstalled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>handler</strong> (<em>callable</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)"><em>None</em></a>) – A callable that is called when a trait changes.  Its
+signature can be handler(), handler(name), handler(name, new),
+handler(name, old, new), or handler(name, old, new, self).</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.9)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)"><em>None</em></a>) – If None, the handler will apply to all traits.  If a list
+of str, handler will apply to all names in the list.  If a
+str, the handler will apply just to that name.</p></li>
+<li><p><strong>remove</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a>) – If False (the default), then install the handler.  If True
+then unintall it.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.on_widget_constructed">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">on_widget_constructed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.on_widget_constructed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a callback to be called when a widget is constructed.</p>
+<p>The callback must have the following signature:
+callback(widget)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.open">
+<span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open a comm to the frontend if one isn’t already open.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.refresh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Re-render the form.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.register_callback">
+<span class="sig-name descname"><span class="pre">register_callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.register_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a callback function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.remove_class">
+<span class="sig-name descname"><span class="pre">remove_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">className</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.remove_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a class from the top level element of the widget.</p>
+<p>Doesn’t remove the class if it doesn’t exist.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reset the form to the default path and filename.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.rows">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">rows</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.rows" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current number of rows.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.selected">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">selected</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.selected" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get selected value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.selected_filename">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">selected_filename</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.selected_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the selected_filename.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.selected_path">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">selected_path</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.selected_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get selected_path value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">content</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.send" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends a custom msg to the widget model in the front-end.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>content</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)"><em>dict</em></a>) – Content of the message to send.</p></li>
+<li><p><strong>buffers</strong> (<em>list of binary buffers</em>) – Binary buffers to send with message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.send_state">
+<span class="sig-name descname"><span class="pre">send_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.send_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sends the widget state, or a piece of it, to the front-end, if it exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>unicode</em><em>, or </em><em>iterable</em><em> (</em><em>optional</em><em>)</em>) – A single property’s name or iterable of property names to sync with the front-end.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.set_state">
+<span class="sig-name descname"><span class="pre">set_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sync_data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.set_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when a state is received from the front-end.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.set_trait">
+<span class="sig-name descname"><span class="pre">set_trait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.set_trait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forcibly sets trait attribute, including read-only attributes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.setup_instance">
+<span class="sig-name descname"><span class="pre">setup_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.setup_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is called <strong>before</strong> self.__init__ is called.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.show_hidden">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">show_hidden</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.show_hidden" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get _show_hidden value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.show_only_dirs">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">show_only_dirs</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.show_only_dirs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get show_only_dirs property value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.title">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">title</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the title.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.trait_defaults">
+<span class="sig-name descname"><span class="pre">trait_defaults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">names</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.trait_defaults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a trait’s default value or a dictionary of them</p>
+<p class="rubric">Notes</p>
+<p>Dynamically generated default values may
+depend on the current state of the object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.trait_events">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">trait_events</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.trait_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of all the event handlers of this class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em> (</em><em>default: None</em><em>)</em>) – The name of a trait of this class. If name is <code class="docutils literal notranslate"><span class="pre">None</span></code> then all
+the event handlers of this class will be returned instead.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>The event handlers associated with a trait name, or all event handlers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.trait_has_value">
+<span class="sig-name descname"><span class="pre">trait_has_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.trait_has_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the specified trait has a value.</p>
+<p>This will return false even if <code class="docutils literal notranslate"><span class="pre">getattr</span></code> would return a
+dynamically generated default value. These default values
+will be recognized as existing only after they have been
+generated.</p>
+<p>Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyClass</span><span class="p">(</span><span class="n">HasTraits</span><span class="p">):</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="n">Int</span><span class="p">()</span>
+
+<span class="n">mc</span> <span class="o">=</span> <span class="n">MyClass</span><span class="p">()</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">mc</span><span class="o">.</span><span class="n">trait_has_value</span><span class="p">(</span><span class="s2">&quot;i&quot;</span><span class="p">)</span>
+<span class="n">mc</span><span class="o">.</span><span class="n">i</span> <span class="c1"># generates a default value</span>
+<span class="k">assert</span> <span class="n">mc</span><span class="o">.</span><span class="n">trait_has_value</span><span class="p">(</span><span class="s2">&quot;i&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.trait_metadata">
+<span class="sig-name descname"><span class="pre">trait_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">traitname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.trait_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get metadata values for trait by key.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.trait_names">
+<span class="sig-name descname"><span class="pre">trait_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.trait_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a list of all the names of this class’ traits.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.trait_values">
+<span class="sig-name descname"><span class="pre">trait_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.trait_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">dict</span></code> of trait names and their values.</p>
+<p>The metadata kwargs allow functions to be passed in which
+filter traits based on metadata values.  The functions should
+take a single value as an argument and return a boolean.  If
+any function returns False, then the trait is not included in
+the output.  If a metadata key doesn’t exist, None will be passed
+to the function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">dict</span></code> of trait names and their values.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Trait values are retrieved via <code class="docutils literal notranslate"><span class="pre">getattr</span></code>, any exceptions raised
+by traits or the operations they may trigger will result in the
+absence of a trait value in the result <code class="docutils literal notranslate"><span class="pre">dict</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.traits">
+<span class="sig-name descname"><span class="pre">traits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.traits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a <code class="docutils literal notranslate"><span class="pre">dict</span></code> of all the traits of this class.  The dictionary
+is keyed on the name and the values are the TraitType objects.</p>
+<p>The TraitTypes returned don’t know anything about the values
+that the various HasTrait’s instances are holding.</p>
+<p>The metadata kwargs allow functions to be passed in which
+filter traits based on metadata values.  The functions should
+take a single value as an argument and return a boolean.  If
+any function returns False, then the trait is not included in
+the output.  If a metadata key doesn’t exist, None will be passed
+to the function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.unobserve">
+<span class="sig-name descname"><span class="pre">unobserve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">handler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">traitlets.All</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'change'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.unobserve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a trait change handler.</p>
+<p>This is used to unregister handlers to trait change notifications.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>handler</strong> (<em>callable</em>) – The callable called when a trait attribute changes.</p></li>
+<li><p><strong>names</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.9)"><em>list</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em>, </em><em>All</em><em> (</em><em>default: All</em><em>)</em>) – The names of the traits for which the specified handler should be
+uninstalled. If names is All, the specified handler is uninstalled
+from the list of notifiers corresponding to all changes.</p></li>
+<li><p><strong>type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a><em> or </em><em>All</em><em> (</em><em>default: 'change'</em><em>)</em>) – The type of notification to filter by. If All, the specified handler
+is uninstalled from the list of notifiers corresponding to all types.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.unobserve_all">
+<span class="sig-name descname"><span class="pre">unobserve_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">traitlets.All</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.unobserve_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove trait change handlers of any type for the specified name.
+If name is not specified, removes all trait notifiers.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.file_tools.open_file_dialog.use_dir_icons">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">use_dir_icons</span></span><a class="headerlink" href="#pyTEMlib.file_tools.open_file_dialog.use_dir_icons" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get _use_dir_icons value.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2020, Gerd Duscher, and contributors.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

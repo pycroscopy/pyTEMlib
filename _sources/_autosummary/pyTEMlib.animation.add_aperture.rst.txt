@@ -1,0 +1,6 @@
+pyTEMlib.animation.add\_aperture
+================================
+
+.. currentmodule:: pyTEMlib.animation
+
+.. autofunction:: add_aperture

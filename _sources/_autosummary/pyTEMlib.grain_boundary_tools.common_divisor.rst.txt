@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.common\_divisor
+===============================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: common_divisor

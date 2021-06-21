@@ -1,0 +1,6 @@
+pyTEMlib.animation.propagate\_beam
+==================================
+
+.. currentmodule:: pyTEMlib.animation
+
+.. autofunction:: propagate_beam

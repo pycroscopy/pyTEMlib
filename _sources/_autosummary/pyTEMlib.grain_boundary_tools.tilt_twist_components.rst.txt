@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.tilt\_twist\_components
+=======================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: tilt_twist_components

@@ -1,0 +1,6 @@
+pyTEMlib.image\_tools.read\_nion\_image\_info
+=============================================
+
+.. currentmodule:: pyTEMlib.image_tools
+
+.. autofunction:: read_nion_image_info

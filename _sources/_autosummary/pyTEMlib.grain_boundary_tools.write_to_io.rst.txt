@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.write\_to\_io
+=============================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: write_to_io

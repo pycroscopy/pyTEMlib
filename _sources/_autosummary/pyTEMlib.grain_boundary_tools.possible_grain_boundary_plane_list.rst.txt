@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.possible\_grain\_boundary\_plane\_list
+======================================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: possible_grain_boundary_plane_list

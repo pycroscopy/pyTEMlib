@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.symmetry\_equivalent
+====================================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: symmetry_equivalent

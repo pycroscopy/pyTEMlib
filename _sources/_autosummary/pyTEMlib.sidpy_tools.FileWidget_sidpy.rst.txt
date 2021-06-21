@@ -1,0 +1,27 @@
+pyTEMlib.sidpy\_tools.FileWidget\_sidpy
+=======================================
+
+.. currentmodule:: pyTEMlib.sidpy_tools
+
+.. autoclass:: FileWidget_sidpy
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~FileWidget_sidpy.get_directory
+      ~FileWidget_sidpy.get_file_name
+      ~FileWidget_sidpy.set_options
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+pyTEMlib.grain\_boundary\_tools.csl\_density
+============================================
+
+.. currentmodule:: pyTEMlib.grain_boundary_tools
+
+.. autofunction:: csl_density

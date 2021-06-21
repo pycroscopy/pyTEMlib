@@ -1,0 +1,6 @@
+pyTEMlib.probe\_tools.get\_chi\_2
+=================================
+
+.. currentmodule:: pyTEMlib.probe_tools
+
+.. autofunction:: get_chi_2
