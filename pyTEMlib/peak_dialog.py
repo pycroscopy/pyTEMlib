@@ -1,6 +1,7 @@
 """
     EELS Input Dialog for ELNES Analysis
 """
+from os import error
 from PyQt5 import QtCore,  QtWidgets
 
 import numpy as np
@@ -84,6 +85,12 @@ class PeakFitDialog(QtWidgets.QDialog):
             self.peak_out_list = self.peaks['peak_out_list']
         self.set_peak_list()
 
+        # check whether a core loss analysis has been done previously
+        if not hasattr(self, 'core_loss') and  'edges' in self.dataset.metadata:
+            self.core_loss = True
+        else:
+            self.core_loss = False
+
         self.update()
         self.dataset.plot()
 
@@ -163,43 +170,47 @@ class PeakFitDialog(QtWidgets.QDialog):
 
     def fit_peaks(self):
         """Fit spectrum with peaks given in peaks dictionary"""
+        print('Fitting peaks...')
         p_in = []
         for key, peak in self.peaks['peaks'].items():
             if key.isdigit():
                 p_in.append(peak['position'])
                 p_in.append(peak['amplitude'])
                 p_in.append(peak['width'])
+
+        # check whether we have a spectral image or just a single spectrum
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
         else:
             spectrum = np.array(self.dataset)
+
+        # set the energy scale and fit start and end points
         energy_scale = np.array(self.energy_scale)
         start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
         end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
 
         energy_scale = self.energy_scale[start_channel:end_channel]
-        if self.energy_scale[0] > 0:
-            if 'edges' not in self.dataset.metadata:
-                return
-            if 'model' not in self.dataset.metadata['edges']:
-                return
+        # select the core loss model if it exists. Otherwise we will fit to the full spectrum.
+        if self.core_loss:
+            print('Core loss model found. Fitting on top of the model.')
             model = self.dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
-
         else:
+            print('No core loss model found. Fitting to the full spectrum.')
             model = np.zeros(end_channel - start_channel)
 
+        # if we have a core loss model we will only fit the difference between the model and the data.
         difference = np.array(spectrum[start_channel:end_channel] - model)
 
+        # find the optimum fitting parameters
         [self.p_out, _] = scipy.optimize.leastsq(eels.residuals_smooth, np.array(p_in), ftol=1e-3,
                                                  args=(energy_scale, difference, False))
+
+        # construct the fit data from the optimized parameters
         self.peak_model = np.zeros(len(self.energy_scale))
+        self.model = np.zeros(len(self.energy_scale))
+        self.model[start_channel:end_channel] = model
         fit = eels.model_smooth(energy_scale, self.p_out, False)
         self.peak_model[start_channel:end_channel] = fit
-        if self.energy_scale[0] > 0:
-            self.model = self.dataset.metadata['edges']['model']['spectrum']
-        else:
-            self.model = np.zeros(len(self.energy_scale))
-
         self.dataset.metadata['peak_fit']['edge_model'] = self.model
         self.model = self.model + self.peak_model
         self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
