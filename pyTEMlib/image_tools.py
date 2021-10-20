@@ -239,7 +239,7 @@ def power_spectrum(dset, smoothing=3):
 
     """
 
-    fft_transform = fourier_transform(dset)
+    fft_transform = dset.fft()
     fft_mag = np.abs(fft_transform)
     fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
 
@@ -338,14 +338,14 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
 
     # mask reflections
     for spot in spots:
-        mask_spot = (x - spot[0]) ** 2 + (y - spot[1]) ** 2 < reflection_radius ** 2  # make a spot
+        mask_spot = (x - spot[1]) ** 2 + (y - spot[0]) ** 2 < reflection_radius ** 2  # make a spot
         mask = mask + mask_spot  # add spot to mask
 
     # mask zero region larger (low-pass filter = intensity variations)
     mask_spot = x ** 2 + y ** 2 < low_pass ** 2
     mask = mask + mask_spot
     mask[np.where(mask > 1)] = 1
-    fft_filtered = fft_transform * mask
+    fft_filtered = np.array(fft_transform * mask)
 
     filtered_image = dset.like_data(np.fft.ifft2(np.fft.fftshift(fft_filtered)).real)
     filtered_image.title = 'Fourier filtered ' + dset.title

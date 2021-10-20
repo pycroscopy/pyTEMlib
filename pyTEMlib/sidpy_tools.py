@@ -7,6 +7,7 @@ import os
 import ipywidgets as widgets
 from IPython.display import display
 
+import sidpy
 
 class ChooseDataset(object):
     """Widget to select dataset object """
@@ -59,6 +60,9 @@ class ChooseDataset(object):
     def set_dataset(self, b):
         index = self.select_image.index
         self.dataset = self.dataset_list[index]
+        ## Find
+        self.dataset.title = self.dataset.title.split('/')[-1]
+
 
 
 def get_dimensions_by_order(dims_in, dataset):

@@ -19,9 +19,7 @@ import ipyfilechooser
 # =============================================
 #   Include  pycroscopy libraries                                      #
 # =============================================
-
-from SciFiReaders import DM3Reader
-from SciFiReaders import NionReader
+import SciFiReaders
 import pyNSID
 import sidpy
 
@@ -40,7 +38,6 @@ nest_dict = sidpy.base.dict_utils.nest_dict
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '2021.3.1'
 
-flatten_dict = sidpy.dict_utils.flatten_dict
 nest_dict = sidpy.dict_utils.nest_dict
 
 
@@ -135,7 +132,7 @@ class FileWidget(object):
                 else:
                     file_list.append(dir_list[i])
                     if extension in ['.h5', '.ndata']:
-                        reader = NionReader(full_name)
+                        reader = SciFiReaders.NionReader(full_name)
                         dataset_nion = reader.read()
                         display_file_list.append(f" {dataset_nion.title}{extension}  - {size:.1f} MB")
                     elif extension in ['.hf5']:
@@ -263,6 +260,7 @@ class open_file_dialog(ipyfilechooser.FileChooser):
             directory = get_last_path()
         super().__init__(directory) 
         self._use_dir_icons = True
+        
         
     def _apply_selection(self):
         super()._apply_selection()
@@ -412,14 +410,19 @@ class open_file_dialog(ipyfilechooser.FileChooser):
                     dircontent_display_names[i] = f" {dircontent_display_names[i]:50}  -- {size:.1f} MB"
                 
                 elif extension in ['.h5', '.ndata']:
-                    reader = NionReader(full_name)
-                    dataset_nion = reader.read()
-                    dircontent_display_names[i] = f"   {dataset_nion.title+extension:50}  - {size:.1f} MB"
+                    try:
+                        reader = SciFiReaders.NionReader(full_name)
+                        dataset_nion = reader.read()
+                        dircontent_display_names[i] = f"   {dataset_nion.title+extension:50}  - {size:.1f} MB"
+                    except IOError:
+                        dircontent_display_names[i] = dircontent_display_names[i]
                 else:
                     dircontent_display_names[i] = dircontent_display_names[i]
             
         return dircontent_display_names
-def openfile_dialog_QT(file_types=None):  # , multiple_files=False):
+
+    
+def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
     """Opens a File dialog which is used in open_file() function
 
     This function uses pyQt5.
@@ -468,7 +471,7 @@ def openfile_dialog_QT(file_types=None):  # , multiple_files=False):
     path = get_last_path()
     _ = get_qt_app()
 
-    filename = sidpy.io.interface_utils.openfile_dialog(file_types=file_types, file_path=path)
+    filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
 
     save_path(filename)
     return filename
@@ -564,8 +567,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
     basename, extension = os.path.splitext(file_name)
 
     if extension == '.hf5':
-
-        reader = pyNSID.NSIDReader(filename)
+        reader = SciFiReaders.NSIDReader(filename)
         datasets = reader.read()
         if len(datasets) < 1:
             print('no hdf5 dataset found in file')
@@ -585,16 +587,23 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
 
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
-            reader = DM3Reader(filename)
+            reader = SciFiReaders.DM3Reader(filename)
         else:   # extension in ['.ndata', '.h5']:
-            reader = NionReader(filename)
+            reader = SciFiReaders.NionReader(filename)
 
         path, file_name = os.path.split(filename)
         basename, _ = os.path.splitext(file_name)
         dset = reader.read()
 
         if extension in ['.dm3', '.dm4']:
-            dset.title = basename.strip().replace('-', '_')
+            dset.title = (basename.strip().replace('-', '_')).split('/')[-1]
+            if 'PageSetup' in dset.original_metadata:
+                del dset.original_metadata['PageSetup']
+            if 'ImageList' in dset.original_metadata:
+                if '0' in dset.original_metadata['ImageList']:
+                    if 'ImageData' in dset.original_metadata['ImageList']['0']:
+                        if 'Data' in dset.original_metadata['ImageList']['0']['ImageData']:
+                            del dset.original_metadata['ImageList']['0']['ImageData']['Data']
         dset.filename = basename.strip().replace('-', '_')
         # dset.original_metadata = flatten_dict(dset.original_metadata)
 
@@ -602,6 +611,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
             filename = os.path.join(path,  dset.title+extension)
             h5_filename = get_h5_filename(filename)
             h5_file = h5py.File(h5_filename, mode='a')
+
 
             if 'Measurement_000' in h5_file:
                 print('could not write dataset to file, try saving it with ft.save()')
@@ -611,9 +621,11 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
                 # dset.axes = dset._axes
                 # dset.attrs = {}
                 h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dset, h5_group)
+
                 # dset.original_metadata = nest_dict(dset.original_metadata)
 
                 dset.h5_dataset = h5_dataset
+                pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
         return dset
     else:
         print('file type not handled yet.')
@@ -722,9 +734,8 @@ def log_results(h5_group, dataset=None, attributes=None):
             if not isinstance(item, dict):
                 log_group[key] = attributes[key]
             else:
-                flat_dict = sidpy.hdf.hdf_utils.flatten_dict(attributes[key])
                 log_group.create_group(key)
-                sidpy.hdf.hdf_utils.write_simple_attrs(log_group[key], flat_dict)
+                sidpy.hdf.hdf_utils.write_simple_attrs(log_group[key], attributes[key])
     return log_group
 
 
@@ -827,12 +838,15 @@ def h5_add_crystal_structure(h5_file, crystal_tags):
             return
 
     structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
+    for key, item in crystal_tags.items():
+        structure_group[key] = item
+    if 'base' in crystal_tags:
+        structure_group['relative_positions'] = crystal_tags['base']
+    if 'crystal_name' in crystal_tags:
+        structure_group['title'] = str(crystal_tags['crystal_name'])
+        structure_group['_' + crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
 
-    structure_group['unit_cell'] = crystal_tags['unit_cell']
-    structure_group['relative_positions'] = crystal_tags['base']
-    structure_group['title'] = str(crystal_tags['crystal_name'])
-    structure_group['_' + crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
-    structure_group['elements'] = np.array(crystal_tags['elements'], dtype='S')
+    # structure_group['elements'] = np.array(crystal_tags['elements'], dtype='S')
     if 'zone_axis' in crystal_tags:
         structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
     else:
