@@ -1017,7 +1017,8 @@ def kinematic_scattering(tags, verbose=False):
 
         zone_tags = tags['nearest_zone_axes'][str(i)]
 
-        print('Calculating Kikuchi lines for zone: ', zone_tags['hkl'])
+        if verbose:
+            print('Calculating Kikuchi lines for zone: ', zone_tags['hkl'])
 
         laue_circle = np.dot(zone_tags['hkl'], tags['reciprocal_unit_cell'])
         laue_circle = np.dot(laue_circle, rotation_matrix)

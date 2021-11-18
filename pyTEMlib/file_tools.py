@@ -11,6 +11,7 @@ import numpy as np
 import h5py
 import os
 import sys
+import pickle
 
 # For structure files of various flavor for instance POSCAR
 import ase.io
@@ -113,50 +114,23 @@ class FileWidget(object):
     def set_options(self):
         self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
         dir_list = os.listdir(self.dir_name)
-
-        file_list = []
-        display_file_list = []
-        directory_list = []
-
-        for i in range(len(dir_list)):
-            name = dir_list[i]
-            full_name = os.path.join(self.dir_name, name)
-
-            if os.path.isfile(full_name):
-                size = os.path.getsize(full_name) * 2 ** -20
-                basename, extension = os.path.splitext(name)
-                if self.extensions[0] == 'hf5':
-                    if extension in ['.hf5']:
-                        file_list.append(dir_list[i])
-                        display_file_list.append(f" {name}  - {size:.1f} MB")
-                else:
-                    file_list.append(dir_list[i])
-                    if extension in ['.h5', '.ndata']:
-                        reader = SciFiReaders.NionReader(full_name)
-                        dataset_nion = reader.read()
-                        display_file_list.append(f" {dataset_nion.title}{extension}  - {size:.1f} MB")
-                    elif extension in ['.hf5']:
-                        display_file_list.append(f" {name}  -- {size:.1f} MB")
-                    else:
-                        display_file_list.append(f' {name}  - {size:.1f} MB')
-            else:
-                directory_list.append(name)
-
-        sort = np.argsort(directory_list)
+        file_dict = update_directory_list(self.dir_name)
+       
+        sort = np.argsort(file_dict['directory_list'])
         self.dir_list = ['.', '..']
         self.display_list = ['.', '..']
         for j in sort:
-            self.display_list.append(f' * {directory_list[j]}')
-            self.dir_list.append(directory_list[j])
+            self.display_list.append(f" * {file_dict['directory_list'][j]}")
+            self.dir_list.append(file_dict['directory_list'][j])
 
-        sort = np.argsort(display_file_list)
+        sort = np.argsort(file_dict['display_file_list'])
 
         for i, j in enumerate(sort):
             if '--' in dir_list[j]:
-                self.display_list.append(f' {i:3} {display_file_list[j]}')
+                self.display_list.append(f" {i:3} {file_dict['display_file_list'][j]}")
             else:
-                self.display_list.append(f' {i:3}   {display_file_list[j]}')
-            self.dir_list.append(file_list[j])
+                self.display_list.append(f" {i:3}   {file_dict['display_file_list'][j]}")
+            self.dir_list.append(file_dict['file_list'][j])
 
         self.dir_label = os.path.split(self.dir_name)[-1] + ':'
         self.select_files.options = self.display_list
@@ -170,6 +144,84 @@ class FileWidget(object):
             self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])
 
 
+    def get_file_name(self, b):
+
+        if os.path.isdir(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
+            self.set_options()
+
+        elif os.path.isfile(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
+            self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])
+
+
+def add_to_dict(file_dict, name):
+    full_name = os.path.join(file_dict['directory'], name)
+    basename, extension = os.path.splitext(name)
+    size = os.path.getsize(full_name) * 2 ** -20
+    display_name = name
+    if len(extension) == 0:
+        display_file_list = f' {name}  - {size:.1f} MB' 
+    elif extension[0] == 'hf5':
+        if extension in ['.hf5']:
+            file_list.append(dir_list[i])
+            display_file_list = f" {name}  - {size:.1f} MB"
+    elif extension in ['.h5', '.ndata']:
+        try:
+            reader = SciFiReaders.NionReader(full_name)
+            dataset_nion = reader.read()
+            display_name = dataset_nion.title
+            display_file_list = f" {display_name}{extension}  - {size:.1f} MB"
+        except:
+            display_file_list = f" {name}  - {size:.1f} MB"
+    else:
+            display_file_list = f' {name}  - {size:.1f} MB'    
+    file_dict[name] = {'display_string': display_file_list, 'basename': basename, 'extension': extension, 
+                       'size': size, 'display_name': display_name}
+
+    
+def update_directory_list(directory_name):
+    dir_list = os.listdir(directory_name)
+
+    if '.pyTEMlib.files.pkl' in dir_list:
+        with open(os.path.join(directory_name, '.pyTEMlib.files.pkl'), 'rb') as f:
+            file_dict = pickle.load(f)
+        if directory_name != file_dict['directory']:
+            print('directory moved since last time read')
+            file_dict['directory'] = directory_name
+        dir_list.remove('.pyTEMlib.files.pkl')
+    else:
+        file_dict = {'directory': directory_name}
+
+    # add new files
+    file_dict['file_list'] = []
+    file_dict['display_file_list'] = []
+    file_dict['directory_list'] = []
+    
+    for name in dir_list:
+        if os.path.isfile(os.path.join(file_dict['directory'], name)):
+            if name not in file_dict:
+                add_to_dict(file_dict, name)
+            file_dict['file_list'].append(name)
+            file_dict['display_file_list'].append(file_dict[name]['display_string'])
+        else:
+            file_dict['directory_list'].append(name)
+    remove_item = [] 
+    
+    # delete items of deleted files
+    save_pickle = False
+    
+    for name in file_dict.keys():
+        if name not in dir_list and name not in ['directory', 'file_list', 'directory_list', 'display_file_list']:
+            remove_item.append(name)
+        else:
+            if 'extension' in file_dict[name]:
+                save_pickle = True
+    for item in remove_item:
+        file_dict.pop(item)
+
+    if save_pickle:
+        with open(os.path.join(file_dict['directory'], '.pyTEMlib.files.pkl'), 'wb') as f:
+            pickle.dump(file_dict, f)
+    return file_dict
 ####
 #  General Open and Save Methods
 ####
@@ -279,7 +331,6 @@ class open_file_dialog(ipyfilechooser.FileChooser):
                 self._selected_filename,
                 'green'
             )
-        
         save_path(selected)
         
     def _set_form_values(self, path: str, filename: str) -> None:
@@ -607,8 +658,10 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         dset.filename = basename.strip().replace('-', '_')
         # dset.original_metadata = flatten_dict(dset.original_metadata)
 
+
         if write_hdf_file:
             filename = os.path.join(path,  dset.title+extension)
+            
             h5_filename = get_h5_filename(filename)
             h5_file = h5py.File(h5_filename, mode='a')
 
@@ -626,6 +679,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
 
                 dset.h5_dataset = h5_dataset
                 pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
+                
+        save_path(path)
         return dset
     else:
         print('file type not handled yet.')

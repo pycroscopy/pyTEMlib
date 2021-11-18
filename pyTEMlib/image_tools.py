@@ -238,12 +238,11 @@ def power_spectrum(dset, smoothing=3):
         power spectrum with correct dimensions
 
     """
+    fft_mag =  dset.fft().abs()
+    fft_mag2 = ndimage.gaussian_filter(dset.fft().abs(), sigma=(smoothing, smoothing), order=0)
 
-    fft_transform = dset.fft()
-    fft_mag = np.abs(fft_transform)
-    fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
-
-    power_spec = fft_transform.like_data(np.log(1.+fft_mag2))
+    power_spec = fft_mag.like_data(np.log(1.+fft_mag2))
+    power_spec.source = dset.title
 
     # prepare mask
     x, y = np.meshgrid(power_spec.v.values, power_spec.u.values)
@@ -372,6 +371,13 @@ def rotational_symmetry_diffractogram(spots):
         if dif[int(spots.shape[0] * .7)] < 0.2:
             rotation_symmetry.append(n)
     return rotation_symmetry
+
+
+def get_selection(dataset, extents):
+    if (np.array(extents) <2).all():
+        return dataset
+    xmin, xmax, ymin, ymax = extents/(dataset.x[1]-dataset.x[0])
+    return dataset.like_data(dataset[int(xmin):int(xmax), int(ymin):int(ymax)])
 
 #####################################################
 # Registration Functions
