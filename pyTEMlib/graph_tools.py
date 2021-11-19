@@ -309,22 +309,6 @@ def sort_polyhedra_by_vertices(polyhedra, visible=range(4, 100), z_lim=[0, 100],
                     print(key, polyhedron['length'], center)
     return indices
 
-
-def sort_polyhedra_by_vertices(polyhedra, visible=range(4, 100), z_lim=[0, 100], verbose=False):
-    indices = []
-
-    for key, polyhedron in polyhedra.items():
-        if 'length' not in polyhedron:
-            polyhedron['length'] = len(polyhedron['vertices'])
-
-        if polyhedron['length'] in visible:
-            center = polyhedron['vertices'].mean(axis=0)
-            if z_lim[0] < center[2] < z_lim[1]:
-                indices.append(key)
-                if verbose:
-                    print(key, polyhedron['length'], center)
-    return indices
-
 # color_scheme = ['lightyellow', 'silver', 'rosybrown', 'lightsteelblue', 'orange', 'cyan', 'blue', 'magenta',
 #                'firebrick', 'forestgreen']
 
@@ -409,19 +393,12 @@ def plot_polyhedron(polyhedra, indices, center=False):
 
 def plot_bonds(polyhedra,  center=False):
     indices = range(len(polyhedra))
-    center_point = np.mean(polyhedra[indices[0]]['vertices'], axis=0)
-
-    if center:
-        print(center_point)
-        center = center_point
-    else:
-        center = [0, 0, 0]
 
     data = []
     for index in indices:
         polyhedron = polyhedra[index]
 
-        vertices = polyhedron['vertices'] - center
+        vertices = polyhedron['vertices']
         faces = np.array(polyhedron['triangles'])
         x, y, z = vertices.T
         i_i, j_j, k_k = faces.T
