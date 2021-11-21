@@ -202,6 +202,52 @@ def find_intertitial_clusters(overlapping_pairs):
             clusters.append(visited)
     return clusters, visited_all
 
+def make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all):
+    polyhedra={}
+    for index, cluster in tqdm(enumerate(clusters)):
+        cc = []
+        for c in cluster:
+            cc = cc + list(voronoi_tetrahedrons[c])
+
+        hull = scipy.spatial.ConvexHull(atoms.positions[list(set(cc)),:2])
+        faces = []
+        triangles = []
+        for s in hull.simplices:
+            faces.append(atoms.positions[list(set(cc))][s])
+            triangles.append(list(s))
+        polyhedra[index] = {'vertices': atoms.positions[list(set(cc))], 'indices': list(set(cc)),
+                            'faces': faces, 'triangles': triangles,
+                            'length': len(list(set(cc))),
+                            'combined_vertices': cluster,
+                            'interstitial_index': index,
+                            'interstitial_site': np.array(voronoi_tetrahedrons)[cluster].mean(axis=0),
+                            'atomic_numbers': atoms.get_atomic_numbers()[list(set(cc))]}  #, 'volume': hull.volume}
+        # 'coplanar': hull.coplanar}
+
+    print('Define conventional interstitial polyhedra')
+    running_number = index + 0
+    for index in trange(len(voronoi_vertices)):
+        if index not in visited_all:
+            vertices = voronoi_tetrahedrons[index]
+            hull = scipy.spatial.ConvexHull(atoms.positions[vertices,:2])
+            faces = []
+            triangles = []
+            for s in hull.simplices:
+                faces.append(atoms.positions[vertices][s])
+                triangles.append(list(s))
+
+            polyhedra[running_number] = {'vertices': atoms.positions[vertices], 'indices': vertices,
+                                         'faces': faces, 'triangles': triangles,
+                                         'length': len(vertices),
+                                         'combined_vertices': index,
+                                         'interstitial_index': running_number,
+                                         'interstitial_site': np.array(voronoi_tetrahedrons)[index],
+                                         'atomic_numbers': atoms.get_atomic_numbers()[vertices]}  # 'volume': hull.volume}
+
+            running_number += 1
+
+    return polyhedra
+
 
 def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all):
     """collect output data  and make dictionary"""
@@ -212,6 +258,7 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
         cc = []
         for c in cluster:
             cc = cc + list(voronoi_tetrahedrons[c])
+
         hull = scipy.spatial.ConvexHull(atoms.positions[list(set(cc))])
         faces = []
         triangles = []
@@ -227,6 +274,30 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
                             'atomic_numbers': atoms.get_atomic_numbers()[list(set(cc))],
                             'volume': hull.volume}
         # 'coplanar': hull.coplanar}
+    print('Define conventional interstitial polyhedra')
+    running_number = index + 0
+    for index in trange(len(voronoi_vertices)):
+        if index not in visited_all:
+            vertices = voronoi_tetrahedrons[index]
+            hull = scipy.spatial.ConvexHull(atoms.positions[vertices])
+            faces = []
+            triangles = []
+            for s in hull.simplices:
+                faces.append(atoms.positions[vertices][s])
+                triangles.append(list(s))
+
+            polyhedra[running_number] = {'vertices': atoms.positions[vertices], 'indices': vertices,
+                                         'faces': faces, 'triangles': triangles,
+                                         'length': len(vertices),
+                                         'combined_vertices': index,
+                                         'interstitial_index': running_number,
+                                         'interstitial_site': np.array(voronoi_tetrahedrons)[index],
+                                         'atomic_numbers': atoms.get_atomic_numbers()[vertices],
+                                         'volume': hull.volume}
+
+            running_number += 1
+
+    return polyhedra
 
     print('Define conventional interstitial polyhedra')
     running_number = index + 0
@@ -281,15 +352,20 @@ def find_polyhedra(atoms, cheat=1.0):
     if not isinstance(atoms, ase.Atoms):
         raise TypeError('This function needs an ase.Atoms object')
 
-    tetrahedra = scipy.spatial.Delaunay(atoms.positions)
+    if np.abs(atoms.positions[:,2]).sum() <= 0.01:
+        tetrahedra = scipy.spatial.Delaunay(atoms.positions[:,:2])
+    else:
+        tetrahedra = scipy.spatial.Delaunay(atoms.positions)
 
     voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms)
 
     overlapping_pairs = find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=cheat)
 
     clusters, visited_all = find_intertitial_clusters(overlapping_pairs)
-
-    polyhedra = make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
+    if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
+        polyhedra = make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
+    else:
+        polyhedra = make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
 
     return polyhedra
 

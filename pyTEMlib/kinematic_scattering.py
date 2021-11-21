@@ -51,7 +51,7 @@ if _spglib_present:
 else:
     print('spglib not installed; Symmetry functions of spglib disabled')
 
-inputKeys = ['unit_cell', 'elements', 'base', 'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
+inputKeys = [ 'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_inputKeys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad', 'mistilt', 'thickness',
                       'dynamic correction', 'dynamic correction K0']
 
@@ -81,7 +81,15 @@ def Zuo_fig_3_18(verbose=True):
 
     This input acts as an example as well as a reference
 
+    Parameters:
+    -----------
+    verbose: boolean:
+        optional to see output
     Returns:
+    -------
+        atoms: ase.Atoms
+            Silicon crystal structure
+        e
         dictionary: tags is the dictionary of all input and output parameter needed to reproduce that figure.
     """
 
@@ -89,125 +97,63 @@ def Zuo_fig_3_18(verbose=True):
     # Create Silicon structure (Could be produced with Silicon routine)
     if verbose:
         print('Sample Input for Figure 3.18 in Zuo and Spence \"Advanced TEM\", 2017')
-    tags = {'crystal_name': 'Silicon'}
-    if verbose:
-        print('tags[\'crystal\'] = ', tags['crystal_name'])
-    a = 0.514  # nm
+    import ase
+    import ase.build
+    a = 5.14  # A
+    atoms = ase.build.bulk('Si', 'diamond', a=a, cubic=True)
 
-    tags['lattice_parameter'] = a
-    if verbose:
-        print('tags[\'lattice_parameter\'] =', tags['lattice_parameter'])
-    tags['unit_cell'] = [[a, 0, 0], [0, a, 0], [0, 0, a]]
-    if verbose:
-        print('tags[\'unit_cell\'] =', tags['unit_cell'])
-    tags['elements'] = list(itertools.repeat('Si', 8))
-    if verbose:
-        print('tags[\'atoms\'] =', tags['elements'])
-    base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)]
-    tags['base'] = np.array(base + (np.array(base) + (.25, .25, .25)).tolist())
-    if verbose:
-        print('tags[\'base\'] =', tags['base'])
-
+    experiment = {'acceleration_voltage_V': 99.2 * 1000.0, # V
+                  'convergence_angle_mrad': 7.15,  # mrad;
+                  'zone_hkl': np.array([-2, 2, 1]),
+                  'mistilt': np.array([0, 0, 0]),  # mistilt in degrees
+                  'Sg_max': .03 , # 1/A  maximum allowed excitation error
+                  'hkl_max': 9  # Highest evaluated Miller indices
+                 }
     # Define Experimental Conditions
-    tags['acceleration_voltage_V'] = 99.2 * 1000.0  # V
     if verbose:
-        print('tags[\'acceleration_voltage_V\'] =', tags['acceleration_voltage_V'])
+        print('###########################')
+        print('# Experimental Conditions #')
+        print('###########################')
 
-    tags['convergence_angle_mrad'] = 7.15  # mrad;  0 is parallel illumination
-    if verbose:
-        print('tags[\'convergence_angle_mrad\'] =', tags['convergence_angle_mrad'])
-
-    tags['zone_hkl'] = np.array([-2, 2, 1])  # incident neares zone axis: defines Laue Zones!!!!
-    if verbose:
-        print('tags[\'zone_hkl\'] =', tags['zone_hkl'])
-
-    tags['mistilt'] = np.array([0, 0, 0])  # mistilt in degrees
-    if verbose:
-        print('tags[\'mistilt\'] =', tags['mistilt'])
-
-    # Define Simulation Parameters
-    tags['Sg_max'] = .3  # 1/nm  maximum allowed excitation error
-    if verbose:
-        print('tags[\'Sg_max\'] =', tags['Sg_max'])
-
-    tags['hkl_max'] = 9  # Highest evaluated Miller indices
-    if verbose:
-        print('tags[\'hkl_max\'] =', tags['hkl_max'])
+        for key, value in experiment.items():
+            print(f'tags[\'{key}\'] =', value)
 
         print('##################')
         print('# Output Options #')
         print('##################')
 
     # Output options
-    tags['background'] = 'black'  # 'white'  'grey'
-    if verbose:
-        print('tags[\'background\'] =', tags['background'], '# \'white\',  \'grey\' ')
-    tags['color map'] = 'plasma'
-    if verbose:
-        print('tags[\'color map\'] =', tags['color map'], '#,\'cubehelix\',\'Greys\',\'jet\' ')
+    output = {'background': 'black',  # 'white'  'grey'
+              'color_map': 'plasma',
+              'plot_HOLZ': True,
+              'plot_HOLZ_excess': True,
+              'plot_Kikuchi': True,
+              'plot_reflections': True,
+              'label_HOLZ': False,
+              'label_Kikuchi': False,
+              'label_reflections': False,
+              'label_color': 'black',
+              'label_size': 10,
+              'color_Laue_Zones': ['red', 'blue', 'green', 'blue', 'green'],  # for OLZ give a sequence
+              'color_Kikuchi': 'green',
+              'linewidth_HOLZ': -1,  # -1: linewidth according to intensity (structure factor F^2)
+              'linewidth_Kikuchi': -1,  # -1: linewidth according to intensity (structure factor F^2)
+              'color_reflections': 'intensity',  # 'Laue Zone'
+              'color_zero': 'white',  # 'None', 'white', 'blue'
+              'color_ring_zero': 'None'  # 'Red' #'white' #, 'None'
+              }
 
-    tags['plot HOLZ'] = 1
     if verbose:
-        print('tags[\'plot HOLZ\'] =', tags['plot HOLZ'])
-    tags['plot HOLZ excess'] = 1
-    if verbose:
-        print('tags[\'plot HOLZ excess\'] =', tags['plot HOLZ excess'])
-    tags['plot Kikuchi'] = 1
-    if verbose:
-        print('tags[\'plot Kikuchi\'] =', tags['plot Kikuchi'])
-    tags['plot reflections'] = 1
-    if verbose:
-        print('tags[\'plot reflections\'] =', tags['plot reflections'])
-
-    tags['label HOLZ'] = 0
-    if verbose:
-        print('tags[\'label HOLZ\'] =', tags['label HOLZ'])
-    tags['label Kikuchi'] = 0
-    if verbose:
-        print('tags[\'label Kikuchi\'] =', tags['label Kikuchi'])
-    tags['label reflections'] = 0
-    if verbose:
-        print('tags[\'label reflections\'] =', tags['label reflections'])
-
-    tags['label color'] = 'black'
-    if verbose:
-        print('tags[\'label color\'] =', tags['label color'])
-    tags['label size'] = 10
-    if verbose:
-        print('tags[\'label size\'] =', tags['label size'])
-
-    tags['color Laue Zones'] = ['red', 'blue', 'green', 'blue', 'green']  # for OLZ give a sequence
-    if verbose:
-        print('tags[\'color Laue Zones\'] =', tags['color Laue Zones'], ' #[\'red\', \'blue\', \'lightblue\']')
-
-    tags['color Kikuchi'] = 'green'
-    if verbose:
-        print('tags[\'color Kikuchi\'] =', tags['color Kikuchi'])
-    tags['linewidth HOLZ'] = -1  # -1: linewidth according to intensity (structure factor F^2
-    if verbose:
-        print('tags[\'linewidth HOLZ\'] =', tags['linewidth HOLZ'], '# -1: linewidth according to intensity '
-                                                                    '(structure factor F^2)')
-    tags['linewidth Kikuchi'] = -1  # -1: linewidth according to intensity (structure factor F^2
-    if verbose:
-        print('tags[\'linewidth Kikuchi\'] =', tags['linewidth Kikuchi'], '# -1: linewidth according to intensity '
-                                                                          '(structure factor F^2)')
-
-    tags['color reflections'] = 'intensity'  # 'Laue Zone'
-    if verbose:
-        print('tags[\'color reflections\'] =', tags['color reflections'], '#\'Laue Zone\' ')
-    tags['color zero'] = 'white'  # 'None', 'white', 'blue'
-    if verbose:
-        print('tags[\'color zero\'] =', tags['color zero'], '#\'None\', \'white\', \'blue\' ')
-    tags['color ring zero'] = 'None'  # 'Red' #'white' #, 'None'
-    if verbose:
-        print('tags[\'color ring zero\'] =', tags['color ring zero'], '#\'None\', \'white\', \'Red\' ')
+        for key, value in output.items():
+            print(f'tags[\'{key}\'] =', value)
         print('########################')
         print('# End of Example Input #')
         print('########################\n\n')
-    return tags
+
+    return atoms, experiment, output
 
 
-def zone_mistilt(zone, angles):
+def zone_mistilt(zone: '[hkl]', angles: 'degree') -> 'zone axis':
     """ Rotation of zone axis by mistilt
 
     Parameters
@@ -304,7 +250,7 @@ def vector_norm(g):
 
 def get_wavelength(e0):
     """
-    Calculates the relativistic corrected de Broglie wavelength of an electron in nm
+    Calculates the relativistic corrected de Broglie wavelength of an electron in Angstrom
 
     Input:
     ------
@@ -316,7 +262,7 @@ def get_wavelength(e0):
     if not isinstance(e0, (int, float)):
         raise TypeError('Acceleration voltage has to be a real number')
     eV = const.e * e0
-    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
+    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**10
 
 
 def find_nearest_zone_axis(tags):
@@ -457,18 +403,18 @@ def get_rotation_matrix(tags):
     return rotation_matrix
 
 
-def check_sanity(tags, verbose_level=0):
+def check_sanity(tags, output, verbose_level=0):
     """
     Check sanity of input parameters
     """
     stop = False
-    for key in ['unit_cell', 'base', 'elements', 'acceleration_voltage_V']:
+    for key in ['acceleration_voltage_V']:
         if key not in tags:
             print(f'Necessary parameter {key} not defined')
             stop = True
-    if 'SpotPattern' not in tags:
-        tags['SpotPattern'] = False
-    if tags['SpotPattern']:
+    if 'SpotPattern' not in output:
+        output['SpotPattern'] = False
+    if output['SpotPattern']:
         if 'zone_hkl' not in tags:
             print(' No zone_hkl defined')
             stop = True
@@ -487,11 +433,7 @@ def check_sanity(tags, verbose_level=0):
     # Check optional input
     ############################################
 
-    if 'crystal' not in tags:
-        tags['crystal'] = 'undefined'
-        if verbose_level > 0:
-            print('Setting undefined input: tags[\'crystal\'] = \'undefined\'')
-    if tags['SpotPattern']:
+    if output['SpotPattern']:
         if 'mistilt alpha degree' not in tags:
             # mistilt is in microcope coordinates
             tags['mistilt alpha'] = tags['mistilt alpha degree'] = 0.0
@@ -566,14 +508,16 @@ def scattering_matrix(tags, verbose_level=1):
         plt.show()
 
 
-def ring_pattern_calculation(tags, verbose=False):
+def ring_pattern_calculation(atoms, tags, verbose=False):
     """
     Calculate the ring diffraction pattern of a crystal structure
 
     Parameters
     ----------
+    atoms: ase.Atoms
+        crystal structure
     tags: dict
-        dictionary of crystal structure
+        dictionary of experimental conditions
     verbose: verbose print outs
         set to False
     Returns
@@ -583,15 +527,14 @@ def ring_pattern_calculation(tags, verbose=False):
     """
     
     # Check sanity
-    tags['SpotPattern'] = False
-    if not check_sanity(tags, verbose):
+    if not check_sanity(tags, {}, verbose):
         return
 
     # wavelength
-    tags['wave_length_nm'] = get_wavelength(tags['acceleration_voltage_V'])
+    tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
 
     #  volume of unit_cell
-    unit_cell = np.array(tags['unit_cell'])
+    unit_cell = atoms.cell.array
     metric_tensor = get_metric_tensor(unit_cell)  # converts hkl to g vectors and back
     tags['metric_tensor'] = metric_tensor
     # volume_unit_cell = np.sqrt(np.linalg.det(metric_tensor))
@@ -599,7 +542,7 @@ def ring_pattern_calculation(tags, verbose=False):
     # reciprocal_unit_cell
     
     # We use the linear algebra package of numpy to invert the unit_cell "matrix"
-    reciprocal_unit_cell = np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
+    reciprocal_unit_cell = atoms.cell.reciprocal()  # np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
     tags['reciprocal_unit_cell'] = reciprocal_unit_cell
     # inverse_metric_tensor = get_metric_tensor(reciprocal_unit_cell)
 
@@ -621,9 +564,9 @@ def ring_pattern_calculation(tags, verbose=False):
     structure_factors = []
     for j in range(len(g_hkl)):
         F = 0
-        for b in range(len(tags['base'])):
-            f = feq(tags['elements'][b], np.linalg.norm(g_hkl[j]))
-            F += f * np.exp(-2 * np.pi * 1j * (hkl[j] * tags['base'][b]).sum())
+        for b in range(len(atoms)):
+            f = feq(atoms[b].symbol, np.linalg.norm(g_hkl[j]))
+            F += f * np.exp(-2 * np.pi * 1j * (hkl[j] * atoms.get_scaled_positions()[b]).sum())
 
         structure_factors.append(F)
 
@@ -670,7 +613,7 @@ def ring_pattern_calculation(tags, verbose=False):
         print('\n\n [hkl]  \t 1/d [1/nm] \t d [nm] \t F^2 ')
         for i in range(len(unique)):
             print(' {0} \t {1:.2f} \t         {2:.4f} \t {3:.2f} '
-                  .format(reflections_m[i], unique[i], 1 / unique[i], np.real(reflections_F[i]) ** 2))
+                  .format(reflections_m[i], unique[i]*10., 1 / unique[i]/10., np.real(reflections_F[i]) ** 2))
 
     tags['Ring_Pattern'] = {}
     tags['Ring_Pattern']['allowed'] = {}
@@ -708,7 +651,7 @@ def ring_pattern_calculation(tags, verbose=False):
 
 
 
-def kinematic_scattering(tags, verbose=False):
+def kinematic_scattering(atoms, tags, output, verbose=False):
     """
         All kinematic scattering calculation
 
@@ -746,25 +689,25 @@ def kinematic_scattering(tags, verbose=False):
     """
 
     # Check sanity
-    tags['SpotPattern'] = True
-    if not check_sanity(tags):
+    output['SpotPattern'] = True
+    if not check_sanity(tags, output):
         print('Input is not complete, stopping')
         print('Try \'example()\' for example input')
         return
 
     # wavelength
-    tags['wave_length_nm'] = get_wavelength(tags['acceleration_voltage_V'])
+    tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
 
     #  volume of unit_cell
-    unit_cell = np.array(tags['unit_cell'])
+    unit_cell = atoms.cell.array
     metric_tensor = get_metric_tensor(unit_cell)  # converts hkl to g vectors and back
     tags['metric_tensor'] = metric_tensor
-    volume_unit_cell = np.sqrt(np.linalg.det(metric_tensor))
+    volume_unit_cell = atoms.cell.volume
 
     # reciprocal_unit_cell
 
     # We use the linear algebra package of numpy to invert the unit_cell "matrix"
-    reciprocal_unit_cell = np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
+    reciprocal_unit_cell = atoms.cell.reciprocal() # np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
     tags['reciprocal_unit_cell'] = reciprocal_unit_cell
     inverse_metric_tensor = get_metric_tensor(reciprocal_unit_cell)
 
@@ -776,15 +719,15 @@ def kinematic_scattering(tags, verbose=False):
     # Incident wave vector k0 in vacuum and material
     ############################################
 
-    ratio = (1 + 1.9569341 * tags['acceleration_voltage_V']) / (np.pi * volume_unit_cell * 1000.)
+    ratio = (1 + 1.9569341 * tags['acceleration_voltage_V']) / (np.pi * volume_unit_cell)
 
     u0 = 0  # in (Ang)
     # atom form factor of zero reflection angle is the inner potential in 1/A
-    for i in range(len(tags['elements'])):
-        u0 += feq(tags['elements'][i], 0)
+    for i in range(len(atoms)):
+        u0 += feq(atoms[i].symbol, 0)
 
     # Conversion of inner potential to Volts
-    u0 = u0 * ratio / 100.0  # inner potential in 1/nm^2
+    u0 = u0 * ratio   # inner potential in 1/Ang^2
 
     scattering_factor_to_volts = (const.h ** 2) * (1e10 ** 2) / (2 * np.pi * const.m_e * const.e) * volume_unit_cell
 
@@ -793,20 +736,20 @@ def kinematic_scattering(tags, verbose=False):
         print('The inner potential is {0:.1f}V'.format(u0))
 
     # Calculating incident wave vector magnitude 'k0' in material
-    wl = tags['wave_length_nm']
+    wl = tags['wave_length']
     tags['incident_wave_vector_vacuum'] = 1 / wl
 
-    k0 = tags['incident_wave_vector'] = np.sqrt(1 / wl ** 2 + u0)  # 1/nm
+    k0 = tags['incident_wave_vector'] = np.sqrt(1 / wl ** 2 + u0)  # 1/Ang
 
-    tags['convergence_angle_nm-1'] = k0 * np.sin(tags['convergence_angle_mrad'] / 1000.)
+    tags['convergence_angle_A-1'] = k0 * np.sin(tags['convergence_angle_mrad'] / 1000.)
     if verbose:
         print(f"Using an acceleration voltage of {tags['acceleration_voltage_V']/1000:.1f}kV")
-        print(f'Magnitude of incident wave vector in material: {k0:.1f} 1/nm and in vacuum: {1/wl:.1f} 1/nm')
-        print(f"Which is an wave length of {1 / k0 * 1000.:.3f} pm in the material and {wl * 1000.:.3f} pm "
+        print(f'Magnitude of incident wave vector in material: {k0:.1f} 1/Ang and in vacuum: {1/wl:.1f} 1/Ang')
+        print(f"Which is an wave length of {1 / k0 * 100.:.3f} pm in the material and {wl * 100.:.3f} pm "
               f"in the vacuum")
         print(f"The convergence angle of {tags['convergence_angle_mrad']:.1f}mrad "
-              f"= {tags['convergence_angle_nm-1']:.2f} 1/nm")
-        print(f"Magnitude of incident wave vector in material: {k0:.1f} 1/nm which is a wavelength {1000./k0:.3f} pm")
+              f"= {tags['convergence_angle_A-1']:.2f} 1/A")
+        print(f"Magnitude of incident wave vector in material: {k0:.1f} 1/A which is a wavelength {100/k0:.3f} pm")
 
     # ############
     # Rotate
@@ -843,7 +786,7 @@ def kinematic_scattering(tags, verbose=False):
     # Find all Miller indices whose reciprocal point lays near the Ewald sphere with radius k0
     # within a maximum excitation error Sg
     hkl_max = tags['hkl_max']
-    Sg_max = tags['Sg_max']  # 1/nm  maximum allowed excitation error
+    Sg_max = tags['Sg_max']  # 1/A  maximum allowed excitation error
 
     h = np.linspace(-hkl_max, hkl_max, 2 * hkl_max + 1)  # all evaluated single Miller Indices
     hkl = np.array(list(itertools.product(h, h, h)))  # all evaluated Miller indices
@@ -877,9 +820,9 @@ def kinematic_scattering(tags, verbose=False):
     structure_factors = []
     for j in range(len(g_hkl)):
         F = 0
-        for b in range(len(tags['base'])):
-            f = feq(tags['elements'][b], np.linalg.norm(g_hkl[j]))
-            F += f * np.exp(-2 * np.pi * 1j * (hkl[j] * tags['base'][b]).sum())
+        for b in range(len(atoms)):
+            f = feq(atoms[b].symbol, np.linalg.norm(g_hkl[j]))
+            F += f * np.exp(-2 * np.pi * 1j * (hkl[j] * atoms.get_scaled_positions()[b]).sum())
 
         structure_factors.append(F)
 
@@ -1057,9 +1000,9 @@ def kinematic_scattering(tags, verbose=False):
         structure_factors = []
         for j in range(len(g_hkl_kikuchi2)):
             F = 0
-            for b in range(len(tags['base'])):
-                f = feq(tags['elements'][b], np.linalg.norm(g_hkl_kikuchi2[j]))
-                F += f * np.exp(-2 * np.pi * 1j * (hkl_kikuchi2[j] * tags['base'][b]).sum())
+            for b in range(len(atoms)):
+                f = feq(atoms[b].symbol, np.linalg.norm(g_hkl_kikuchi2[j]))
+                F += f * np.exp(-2 * np.pi * 1j * (hkl_kikuchi2[j] * atoms.get_scaled_positions()[b]).sum())
 
             structure_factors.append(F)
 
@@ -1214,7 +1157,7 @@ def feq(element, q):
     if not isinstance(q, (float, int)):
         raise TypeError('Magnitude of scattering vector has to be a number of type float')
 
-    q = q/10
+    q = q
     # q is now magnitude of scattering vector in 1/A -- (=> exp(-i*g.r), physics negative convention)
     param = electronFF[element]
     f_lorentzian = 0
