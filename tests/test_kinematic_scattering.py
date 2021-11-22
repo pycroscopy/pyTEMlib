@@ -11,22 +11,23 @@ import numpy as np
 import sys
 sys.path.append("../pyTEMlib/")
 import pyTEMlib.kinematic_scattering as ks
+import pyTEMlib.crystal_tools as cs
 
 
 class TestUtilityFunctions(unittest.TestCase):
 
     def test_Zuo_fig_3_18(self):
-        atoms, tags, output = ks.Zuo_fig_3_18(verbose=True)
-        self.assertIsInstance(tags, dict)
+        atoms = ks.Zuo_fig_3_18(verbose=True)
+        self.assertIsInstance(atoms.metadata, dict)
         self.assertEqual(atoms.symbols[0], 'Si')
         self.assertEqual(atoms.cell[0, 0], 5.14)
-        self.assertEqual(tags['acceleration_voltage_V'], 99.2*1000.0)
-        self.assertEqual(tags['convergence_angle_mrad'], 7.15)
-        np.testing.assert_allclose(tags['zone_hkl'], np.array([-2, 2, 1]))
+        self.assertEqual(atoms.metadata['experimental']['acceleration_voltage_V'], 99.2*1000.0)
+        self.assertEqual(atoms.metadata['experimental']['convergence_angle_mrad'], 7.15)
+        np.testing.assert_allclose(atoms.metadata['experimental']['zone_hkl'], np.array([-2, 2, 1]))
 
     def test_example(self):
-        atoms, tags, output = ks.example(verbose=False)
-        self.assertEqual(output['plot_HOLZ'], 1)
+        atoms = ks.example(verbose=False)
+        self.assertEqual(atoms.metadata['output']['plot_HOLZ'], 1)
 
     def test_zone_mistilt(self):
         rotated_zone_axis = ks.zone_mistilt([1, 0, 0], [45, 0, 0])
@@ -73,25 +74,26 @@ class TestUtilityFunctions(unittest.TestCase):
         np.testing.assert_allclose(matrix, matrix_desired, 1e-5)
 
     def test_check_sanity(self):
-        self.assertFalse(ks.check_sanity({}, {}))
+        atoms = cs.Crystal()
+        self.assertFalse(atoms)
 
-        atoms, tags, output = ks.example(verbose=False)
-        self.assertTrue(ks.check_sanity(tags, output))
+        atoms = ks.example(verbose=False)
+        self.assertTrue(ks.check_sanity(atoms))
 
     def test_ring_pattern_calculation(self):
-        atoms, tags, output = ks.example(verbose=False)
-        ks.ring_pattern_calculation(atoms, tags, verbose=True)
+        atoms = ks.example(verbose=False)
+        ks.ring_pattern_calculation(atoms, verbose=True)
 
-        self.assertAlmostEqual(tags['Ring_Pattern']['allowed']['hkl'][7][2], 4.)
-        self.assertAlmostEqual(tags['Ring_Pattern']['allowed']['g norm'][0], 0.33697)
-        self.assertAlmostEqual(tags['Ring_Pattern']['allowed']['structure factor'][0].real, 12.396310472193898)
-        self.assertEqual(tags['Ring_Pattern']['allowed']['multiplicity'][0], 8)
+        self.assertAlmostEqual(atoms.metadata['Ring_Pattern']['allowed']['hkl'][7][2], 4.)
+        self.assertAlmostEqual(atoms.metadata['Ring_Pattern']['allowed']['g norm'][0], 0.33697)
+        self.assertAlmostEqual(atoms.metadata['Ring_Pattern']['allowed']['structure factor'][0].real, 12.396310472193898)
+        self.assertEqual(atoms.metadata['Ring_Pattern']['allowed']['multiplicity'][0], 8)
 
     def test_kinematic_scattering(self):
-        atoms, tags, output = ks.example(verbose=False)
-        ks.kinematic_scattering(atoms, tags, output, verbose=True)
-        self.assertIsInstance(tags['HOLZ'], dict)
-        self.assertAlmostEqual(tags['wave_length'], 0.03717657397994318, delta=1e-6)
+        atoms = ks.example(verbose=False)
+        ks.kinematic_scattering(atoms, verbose=True)
+        self.assertIsInstance(atoms.metadata['diffraction']['HOLZ'], dict)
+        self.assertAlmostEqual(atoms.metadata['experimental']['wave_length'], 0.03717657397994318, delta=1e-6)
 
     def test_feq(self):
         self.assertAlmostEqual(ks.feq('Au', 0.36), 7.43164303450277)

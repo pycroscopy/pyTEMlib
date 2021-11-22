@@ -100,7 +100,7 @@ def Zuo_fig_3_18(verbose=True):
     import ase
     import ase.build
     a = 5.14  # A
-    atoms = ase.build.bulk('Si', 'diamond', a=a, cubic=True)
+    atoms = bulk('Si', 'diamond', a=a, cubic=True)
 
     experiment = {'acceleration_voltage_V': 99.2 * 1000.0, # V
                   'convergence_angle_mrad': 7.15,  # mrad;
@@ -150,7 +150,10 @@ def Zuo_fig_3_18(verbose=True):
         print('# End of Example Input #')
         print('########################\n\n')
 
-    return atoms, experiment, output
+    atoms.metadata['experimental'] = experiment
+    atoms.metadata['output'] = output
+
+    return atoms
 
 
 def zone_mistilt(zone: '[hkl]', angles: 'degree') -> 'zone axis':
@@ -403,11 +406,13 @@ def get_rotation_matrix(tags):
     return rotation_matrix
 
 
-def check_sanity(tags, output, verbose_level=0):
+def check_sanity(atoms: Crystal, verbose_level=0):
     """
     Check sanity of input parameters
     """
     stop = False
+    output = atoms.metadata['output']
+    tags = atoms.metadata['experimental']
     for key in ['acceleration_voltage_V']:
         if key not in tags:
             print(f'Necessary parameter {key} not defined')
@@ -508,7 +513,7 @@ def scattering_matrix(tags, verbose_level=1):
         plt.show()
 
 
-def ring_pattern_calculation(atoms, tags, verbose=False):
+def ring_pattern_calculation(atoms, verbose=False):
     """
     Calculate the ring diffraction pattern of a crystal structure
 
@@ -527,9 +532,10 @@ def ring_pattern_calculation(atoms, tags, verbose=False):
     """
     
     # Check sanity
-    if not check_sanity(tags, {}, verbose):
+    if not check_sanity(atoms, verbose):
         return
 
+    tags = atoms.metadata['experimental']
     # wavelength
     tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
 
@@ -615,19 +621,19 @@ def ring_pattern_calculation(atoms, tags, verbose=False):
             print(' {0} \t {1:.2f} \t         {2:.4f} \t {3:.2f} '
                   .format(reflections_m[i], unique[i]*10., 1 / unique[i]/10., np.real(reflections_F[i]) ** 2))
 
-    tags['Ring_Pattern'] = {}
-    tags['Ring_Pattern']['allowed'] = {}
-    tags['Ring_Pattern']['allowed']['hkl'] = reflections_m
-    tags['Ring_Pattern']['allowed']['g norm'] = unique
-    tags['Ring_Pattern']['allowed']['structure factor'] = reflections_F
-    tags['Ring_Pattern']['allowed']['multiplicity'] = counts
+    atoms.metadata['Ring_Pattern'] = {}
+    atoms.metadata['Ring_Pattern']['allowed'] = {}
+    atoms.metadata['Ring_Pattern']['allowed']['hkl'] = reflections_m
+    atoms.metadata['Ring_Pattern']['allowed']['g norm'] = unique
+    atoms.metadata['Ring_Pattern']['allowed']['structure factor'] = reflections_F
+    atoms.metadata['Ring_Pattern']['allowed']['multiplicity'] = counts
 
-    tags['Ring_Pattern']['profile_x'] = np.linspace(0, unique.max(), 2048)
-    step_size = tags['Ring_Pattern']['profile_x'][1]
+    atoms.metadata['Ring_Pattern']['profile_x'] = np.linspace(0, unique.max(), 2048)
+    step_size = atoms.metadata['Ring_Pattern']['profile_x'][1]
     intensity = np.zeros(2048)
     x_index = [(unique / step_size + 0.5).astype(np.int)]
     intensity[x_index] = np.array(np.real(reflections_F)) * np.array(np.real(reflections_F))
-    tags['Ring_Pattern']['profile_y delta'] = intensity
+    atoms.metadata['Ring_Pattern']['profile_y delta'] = intensity
 
     def gaussian(xx, pp):
         s1 = pp[2] / 2.3548
@@ -642,16 +648,15 @@ def ring_pattern_calculation(atoms, tags, verbose=False):
 
             gauss = gaussian(x, p)
             intensity = np.convolve(np.array(intensity), np.array(gauss), mode='same')
-    tags['Ring_Pattern']['profile_y'] = intensity
+    atoms.metadata['Ring_Pattern']['profile_y'] = intensity
 
     # Make pretty labels
     hkl_allowed = reflections_m
     hkl_label = make_pretty_labels(hkl_allowed)
-    tags['Ring_Pattern']['allowed']['label'] = hkl_label
+    atoms.metadata['Ring_Pattern']['allowed']['label'] = hkl_label
 
 
-
-def kinematic_scattering(atoms, tags, output, verbose=False):
+def kinematic_scattering(atoms, verbose=False):
     """
         All kinematic scattering calculation
 
@@ -689,11 +694,14 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
     """
 
     # Check sanity
+    output = atoms.metadata['output']
     output['SpotPattern'] = True
-    if not check_sanity(tags, output):
+    if not check_sanity(atoms):
         print('Input is not complete, stopping')
         print('Try \'example()\' for example input')
         return
+
+    tags = atoms.metadata['experimental']
 
     # wavelength
     tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
@@ -841,11 +849,13 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
     F_allowed = F[allowed]
     g_norm_allowed = g_norm[allowed]
 
-    tags['allowed'] = {}
-    tags['allowed']['Sg'] = s_g_allowed
-    tags['allowed']['hkl'] = hkl_allowed
-    tags['allowed']['g'] = g_allowed
-    tags['allowed']['structure factor'] = F_allowed
+    atoms.metadata['diffraction'] = {}
+    dif = atoms.metadata['diffraction']
+    dif['allowed'] = {}
+    dif['allowed']['Sg'] = s_g_allowed
+    dif['allowed']['hkl'] = hkl_allowed
+    dif['allowed']['g'] = g_allowed
+    dif['allowed']['structure factor'] = F_allowed
 
     # Calculate Extinction Distance  Reimer 7.23
     # - makes only sense for non zero F
@@ -858,9 +868,9 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
     thickness = tags['thickness']
     if thickness > 0.1:
         I_g = np.real(np.pi ** 2 / xi_g ** 2 * np.sin(np.pi * thickness * s_g_allowed) ** 2 / (np.pi * s_g_allowed)**2)
-        tags['allowed']['Ig'] = I_g
+        dif['allowed']['Ig'] = I_g
 
-    tags['allowed']['intensities'] = intensities = np.real(F_allowed) ** 2
+    dif['allowed']['intensities'] = intensities = np.real(F_allowed) ** 2
 
     # information of forbidden reflections
     forbidden = np.logical_not(allowed)
@@ -869,10 +879,10 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
     g_forbidden = g_hkl[forbidden]
     F_forbidden = F[forbidden]
 
-    tags['forbidden'] = {}
-    tags['forbidden']['Sg'] = s_g_forbidden
-    tags['forbidden']['hkl'] = hkl_forbidden
-    tags['forbidden']['g'] = g_forbidden
+    dif['forbidden'] = {}
+    dif['forbidden']['Sg'] = s_g_forbidden
+    dif['forbidden']['hkl'] = hkl_forbidden
+    dif['forbidden']['g'] = g_forbidden
 
     # Dynamically Allowed Reflection
     indices = range(len(hkl_allowed))
@@ -887,19 +897,19 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
             dynamic_allowed[ls.index(possible)] = True
 
     dynamic_allowed = np.array(dynamic_allowed, dtype=int)
-    tags['dynamical allowed'] = {}
-    tags['dynamical allowed']['Sg'] = s_g_forbidden[dynamic_allowed]
-    tags['dynamical allowed']['hkl'] = hkl_forbidden[dynamic_allowed]
-    tags['dynamical allowed']['g'] = g_forbidden[dynamic_allowed]
+    dif['dynamical allowed'] = {}
+    dif['dynamical allowed']['Sg'] = s_g_forbidden[dynamic_allowed]
+    dif['dynamical allowed']['hkl'] = hkl_forbidden[dynamic_allowed]
+    dif['dynamical allowed']['g'] = g_forbidden[dynamic_allowed]
 
     if verbose:
-        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {tags['dynamical allowed']['g'].shape[0]} "
+        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamical allowed']['g'].shape[0]} "
               f"can be dynamically activated.")
-        print(tags['dynamical allowed']['hkl'])
+        print(dif['dynamical allowed']['hkl'])
 
     # Make pretty labels
     hkl_label = make_pretty_labels(hkl_allowed)
-    tags['allowed']['label'] = hkl_label
+    dif['allowed']['label'] = hkl_label
 
     # Center of Laue Circle
     laue_circle = np.dot(tags['nearest_zone_axis'], tags['reciprocal_unit_cell'])
@@ -907,7 +917,7 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
     laue_circle = laue_circle / np.linalg.norm(laue_circle) * k0
     laue_circle[2] = 0
 
-    tags['laue_circle'] = laue_circle
+    dif['laue_circle'] = laue_circle
     if verbose:
         print('laue_circle', laue_circle)
 
@@ -922,17 +932,17 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
     # Remember we have already tilted, and so the dot product is trivial and gives only the z-component.
 
     Laue_Zone = abs(np.dot(hkl_allowed, tags['nearest_zone_axis']))
-    tags['allowed']['Laue_Zone'] = Laue_Zone
+    dif['allowed']['Laue_Zone'] = Laue_Zone
 
     ZOLZ = Laue_Zone == 0
     FOLZ = Laue_Zone == 1
     SOLZ = Laue_Zone == 2
     HOLZ = Laue_Zone > 2
 
-    tags['allowed']['ZOLZ'] = ZOLZ
-    tags['allowed']['FOLZ'] = FOLZ
-    tags['allowed']['SOLZ'] = SOLZ
-    tags['allowed']['HOLZ'] = HOLZ
+    dif['allowed']['ZOLZ'] = ZOLZ
+    dif['allowed']['FOLZ'] = FOLZ
+    dif['allowed']['SOLZ'] = SOLZ
+    dif['allowed']['HOLZ'] = HOLZ
 
     if verbose:
         print(' There are {0} allowed reflections in the zero order Laue Zone'.format(ZOLZ.sum()))
@@ -1021,14 +1031,14 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
         distance2 = np.sqrt(gd2[:, 0] * gd2[:, 0] + gd2[:, 1] * gd2[:, 1])
         theta2 = np.arctan(slope2)
 
-        tags['Kikuchi'] = {}
-        tags['Kikuchi']['slope'] = slope2
-        tags['Kikuchi']['distance'] = distance2
-        tags['Kikuchi']['theta'] = theta2
-        tags['Kikuchi']['hkl'] = hkl_kikuchi
-        tags['Kikuchi']['g_hkl'] = g_hkl_kikuchi
-        tags['Kikuchi']['g deficient'] = gd2
-        tags['Kikuchi']['min dist'] = gd2 + laue_circle
+        dif['Kikuchi'] = {}
+        dif['Kikuchi']['slope'] = slope2
+        dif['Kikuchi']['distance'] = distance2
+        dif['Kikuchi']['theta'] = theta2
+        dif['Kikuchi']['hkl'] = hkl_kikuchi
+        dif['Kikuchi']['g_hkl'] = g_hkl_kikuchi
+        dif['Kikuchi']['g deficient'] = gd2
+        dif['Kikuchi']['min dist'] = gd2 + laue_circle
 
     k_g = k0
 
@@ -1063,23 +1073,23 @@ def kinematic_scattering(atoms, tags, output, verbose=False):
     distance = gd_length
     theta = np.arctan(slope)
 
-    tags['HOLZ'] = {}
-    tags['HOLZ']['slope'] = slope
+    dif['HOLZ'] = {}
+    dif['HOLZ']['slope'] = slope
     # a line is now given by
-    tags['HOLZ']['distance'] = distance
-    tags['HOLZ']['theta'] = theta
-    tags['HOLZ']['g deficient'] = gd
-    tags['HOLZ']['g excess'] = gd + g_allowed
-    tags['HOLZ']['g_allowed'] = g_allowed.copy()
+    dif['HOLZ']['distance'] = distance
+    dif['HOLZ']['theta'] = theta
+    dif['HOLZ']['g deficient'] = gd
+    dif['HOLZ']['g excess'] = gd + g_allowed
+    dif['HOLZ']['g_allowed'] = g_allowed.copy()
 
-    tags['HOLZ']['ZOLZ'] = ZOLZ
-    tags['HOLZ']['HOLZ'] = np.logical_not(ZOLZ)
-    tags['HOLZ']['FOLZ'] = FOLZ
-    tags['HOLZ']['SOLZ'] = SOLZ
-    tags['HOLZ']['HHOLZ'] = HOLZ  # even higher HOLZ
+    dif['HOLZ']['ZOLZ'] = ZOLZ
+    dif['HOLZ']['HOLZ'] = np.logical_not(ZOLZ)
+    dif['HOLZ']['FOLZ'] = FOLZ
+    dif['HOLZ']['SOLZ'] = SOLZ
+    dif['HOLZ']['HHOLZ'] = HOLZ  # even higher HOLZ
 
-    tags['HOLZ']['hkl'] = tags['allowed']['hkl']
-    tags['HOLZ']['intensities'] = intensities
+    dif['HOLZ']['hkl'] = dif['allowed']['hkl']
+    dif['HOLZ']['intensities'] = intensities
 
     print('done')
 

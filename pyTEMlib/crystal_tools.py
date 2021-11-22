@@ -58,13 +58,6 @@ class Crystal(ase.Atoms):
                  info=None,
                  velocities=None):
 
-        if cell is not None:
-            cell = ase.cell.Cell.new(cell)
-            cell.array /= 10  # conversion to Angstrom
-
-        if positions is not None:
-            positions = np.array(positions) / 10  # conversion to Angstrom
-
         super().__init__(symbols=symbols,
                          positions=positions, numbers=numbers,
                          tags=tags, momenta=momenta, masses=masses,
@@ -75,60 +68,8 @@ class Crystal(ase.Atoms):
                          calculator=calculator,
                          info=info,
                          velocities=velocities)
-
-    def set_cell(self, cell, scale_atoms=False, apply_constraint=True):
-        cell = ase.cell.Cell.new(cell)
-        cell.array *= 10
-        super().set_cell(cell, scale_atoms=scale_atoms, apply_constraint=apply_constraint)
-
-    def get_cell(self, complete=False):
-        cell = super().get_cell(complete=complete)
-        cell.array /= 10
-        return cell
-
-    def get_volume(self):
-        return self.cell.volume / 10 ** 3
-
-    def get_cell_lengths_and_angles(self):
-        cellpar = self.cell.cellpar()
-        cellpar[:3] = cellpar[:3] / 10
-        return cellpar
-
-    def get_reciprocal_cell(self):
-        """Get the three reciprocal lattice vectors as a 3x3 ndarray.
-        Note that the commonly used factor of 2 pi for Fourier
-        transforms is not included here."""
-        reciprocal_cell = self.cell.reciprocal()
-        reciprocal_cell.array *= 10
-
-        return reciprocal_cell
-
-    def set_positions(self, newpositions, apply_constraint=True):
-        """Set positions, honoring any constraints. To ignore constraints,
-        use *apply_constraint=False*."""
-
-        if self.constraints and apply_constraint:
-            newpositions = np.array(newpositions, float)
-            for constraint in self.constraints:
-                constraint.adjust_positions(self, newpositions)
-
-        self.set_array('positions', newpositions, shape=(3,))
-
-    def get_positions(self, wrap=False, **wrap_kw):
-        """Get array of positions.
-        Parameters:
-        wrap: bool
-            wrap atoms back to the cell before returning positions
-        wrap_kw: (keyword=value) pairs
-            optional keywords `pbc`, `center`, `pretty_translation`, `eps`,
-            see :func:`ase.geometry.wrap_positions`
-        """
-        if wrap:
-            if 'pbc' not in wrap_kw:
-                wrap_kw['pbc'] = self.pbc
-            return ase.geometry.wrap_positions(self.positions, self.cell, **wrap_kw)
-        else:
-            return self.arrays['positions'].copy() / 10.
+        self.metadata = {'experimental':{}, 'output': {}}
+        self.bond_radii = np.ones((len(self)))
 
     def get_ase_atoms(self):
         return super()
@@ -136,14 +77,17 @@ class Crystal(ase.Atoms):
     def get_dictionary(self):
         """
         structure dictionary from ase.Atoms object
-
         """
-
         tags = {'unit_cell': self.get_cell(),
                 'elements': self.get_chemical_symbols(),
-                'base': self.get_scaled_positions()}
-
+                'base': self.get_scaled_positions(),
+                'bond_radii': self.bond_radii,
+                'metadata': self.metadata}
         return tags
+
+    def set_bond_radii(self):
+        for i, atom in enumerate(self):
+            self.bond_radii[i] = electronFF[self.symbols[i]]['bond_length'][1]
 
 
 def bulk(name, crystalstructure=None, a=None, b=None, c=None, *, alpha=None,
@@ -210,8 +154,11 @@ def dictionary_to_crystal(tags):
     atoms.set_cell(tags['unit_cell'])
     atoms.set_scaled_positions(tags['base'])
     atoms.set_chemical_symbols(tags['elements'])
+    if 'bond_radii' in tags:
+        atoms.bond_radii=tags['bond_radii']
+    if 'metadata' in tags:
+        atoms.metadata=tags['metadata']
     return atoms
-
 
 
 def spacegroup(symbols=None, basis=None, occupancies=None, spacegroup=1, setting=1,
@@ -289,20 +236,20 @@ def spacegroup(symbols=None, basis=None, occupancies=None, spacegroup=1, setting
 
     Two diamond unit cells (space group number 227)
 
-    >>> diamond = crystal('C', [(0,0,0)], spacegroup=227,
+    >>> diamond = Crystal('C', [(0,0,0)], spacegroup=227,
     ...     cellpar=[3.57, 3.57, 3.57, 90, 90, 90], size=(2,1,1))
     >>> ase.view(diamond)  # doctest: +SKIP
 
     A CoSb3 skutterudite unit cell containing 32 atoms
 
-    >>> skutterudite = crystal(('Co', 'Sb'),
+    >>> skutterudite = Crystal(('Co', 'Sb'),
     ...     basis=[(0.25,0.25,0.25), (0.0, 0.335, 0.158)],
     ...     spacegroup=204, cellpar=[9.04, 9.04, 9.04, 90, 90, 90])
     >>> len(skutterudite)
     32
     """
 
-    bulk = ase.spacegroup.crystal(symbols=symbols, basis=basis, occupancies=occupancies, spacegroup=spacegroup,
+    bulk = ase.spacegroup.Crystal(symbols=symbols, basis=basis, occupancies=occupancies, spacegroup=spacegroup,
                                   setting=setting, cell=cell, cellpar=cellpar, ab_normal=ab_normal,
                                   a_direction=a_direction, size=size, onduplicates=onduplicates, symprec=symprec,
                                   pbc=pbc, primitive_cell=primitive_cell, **kwargs)
