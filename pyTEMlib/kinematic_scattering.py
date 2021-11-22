@@ -156,7 +156,7 @@ def Zuo_fig_3_18(verbose=True):
     return atoms
 
 
-def zone_mistilt(zone: '[hkl]', angles: 'degree') -> 'zone axis':
+def zone_mistilt(zone, angles):
     """ Rotation of zone axis by mistilt
 
     Parameters
@@ -519,7 +519,7 @@ def ring_pattern_calculation(atoms, verbose=False):
 
     Parameters
     ----------
-    atoms: ase.Atoms
+    atoms: Crystal
         crystal structure
     tags: dict
         dictionary of experimental conditions
