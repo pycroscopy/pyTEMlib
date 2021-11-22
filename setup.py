@@ -45,7 +45,7 @@ setuptools.setup(
     license='MIT',
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
-    install_requires=['scipy', 'numpy', 'pillow', 'simpleITK', 'ase', 'tqdm', 'ipyfilechooser',
+    install_requires=['scipy', 'numpy', 'pillow', 'simpleITK', 'ase', 'tqdm', 'ipyfilechooser', 'plotly',
                       'scikit-image', 'scikit-learn', 'pyNSID', 'sidpy', 'SciFiReaders'],  # 'PyQt5> 1.0'],#
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
