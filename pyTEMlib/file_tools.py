@@ -15,6 +15,7 @@ import pickle
 
 # For structure files of various flavor for instance POSCAR
 import ase.io
+import ase
 import ipyfilechooser
 
 # =============================================
@@ -27,19 +28,19 @@ import sidpy
 # =============================================
 #   Include  pyTEMlib libraries                                      #
 # =============================================
-
+import pyTEMlib.crystal_tools
 from .config_dir import config_path
 from .sidpy_tools import *
 
 QT_available = False
 
 Dimension = sidpy.Dimension
-nest_dict = sidpy.base.dict_utils.nest_dict
+# nest_dict = sidpy.base.dict_utils.nest_dict
 
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '2021.3.1'
 
-nest_dict = sidpy.dict_utils.nest_dict
+# nest_dict = sidpy.dict_utils.nest_dict
 
 
 class FileWidget(object):
@@ -144,15 +145,6 @@ class FileWidget(object):
             self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])
 
 
-    def get_file_name(self, b):
-
-        if os.path.isdir(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
-            self.set_options()
-
-        elif os.path.isfile(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
-            self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])
-
-
 def add_to_dict(file_dict, name):
     full_name = os.path.join(file_dict['directory'], name)
     basename, extension = os.path.splitext(name)
@@ -162,7 +154,6 @@ def add_to_dict(file_dict, name):
         display_file_list = f' {name}  - {size:.1f} MB' 
     elif extension[0] == 'hf5':
         if extension in ['.hf5']:
-            file_list.append(dir_list[i])
             display_file_list = f" {name}  - {size:.1f} MB"
     elif extension in ['.h5', '.ndata']:
         try:
@@ -173,7 +164,7 @@ def add_to_dict(file_dict, name):
         except:
             display_file_list = f" {name}  - {size:.1f} MB"
     else:
-            display_file_list = f' {name}  - {size:.1f} MB'    
+        display_file_list = f' {name}  - {size:.1f} MB'
     file_dict[name] = {'display_string': display_file_list, 'basename': basename, 'extension': extension, 
                        'size': size, 'display_name': display_name}
 
@@ -234,8 +225,7 @@ def get_qt_app():
         QT_available = True
     except ImportError:
         QT_available = False
-        
-    
+
     # start qt event loop
     _instance = QtWidgets.QApplication.instance()
     if not _instance:
@@ -306,14 +296,14 @@ def savefile_dialog_Qt(initial_file='*.hf5', file_types=None):
     else:
         return ''
 
+
 class open_file_dialog(ipyfilechooser.FileChooser):
     def __init__(self, directory=None):
-        if directory == None:
+        if directory is None:
             directory = get_last_path()
         super().__init__(directory) 
         self._use_dir_icons = True
-        
-        
+
     def _apply_selection(self):
         super()._apply_selection()
         selected = os.path.join(
@@ -447,7 +437,6 @@ class open_file_dialog(ipyfilechooser.FileChooser):
                 self._select.disabled = True
             else:
                 self._select.disabled = False
-        
     
     def set_display_names(self, dircontent_real_names, dircontent_display_names):
         
@@ -540,7 +529,8 @@ def save_dataset(dataset, filename=None,  h5_group=None):
         not used yet
 
     """
-    filename = open_file_dialog()
+    if filename is None:
+        filename = open_file_dialog()
     h5_filename = get_h5_filename(filename)
     h5_file = h5py.File(h5_filename, mode='a')
     path, file_name = os.path.split(filename)
@@ -604,7 +594,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
     if filename is None:
         selected_file = open_file_dialog()
         display(selected_file)
-        while selected_file.selected == None:
+        while selected_file.selected is None:
             pass
         file_name = selected_file.selected
         
@@ -628,7 +618,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
                 datasets[0].h5_dataset.file.close()
             return datasets[0]
 
-        """ should go to no dataset found
+        """ 
+        should go to no dataset found
         if 'Raw_Data' in h5_group:
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
@@ -658,13 +649,11 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         dset.filename = basename.strip().replace('-', '_')
         # dset.original_metadata = flatten_dict(dset.original_metadata)
 
-
         if write_hdf_file:
             filename = os.path.join(path,  dset.title+extension)
             
             h5_filename = get_h5_filename(filename)
             h5_file = h5py.File(h5_filename, mode='a')
-
 
             if 'Measurement_000' in h5_file:
                 print('could not write dataset to file, try saving it with ft.save()')
@@ -801,13 +790,13 @@ def add_dataset(dataset, h5_group=None):
     ----------
     dataset: sidpy.Dataset
         data to write to file
-    h5_group: None, sidpy.Dataset, h5py.Group, h5py.Datset, h5py.File
+    h5_group: None, sidpy.Dataset, h5py.Group, h5py.Dataset, h5py.File
         identifier to which group the data are added (if None the dataset must have a valid h5_dataset)
 
     Returns
     -------
     log_group: h5py.Dataset
-        reference the dataset has been written to. (is also stored in h5_dataset attribute of sipy.Dataset)
+        reference the dataset has been written to. (is also stored in h5_dataset attribute of sidpy.Dataset)
     """
 
     if h5_group is None:
@@ -850,9 +839,8 @@ def read_poscar(file_name=None):
     crystal = ase.io.read(file_name, format='vasp', parallel=False)
 
     # make dictionary and plot structure (not essential for further notebook)
-    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
-            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'name': base_name}
-    return tags
+    crystal.info = {'title':  base_name}
+    return crystal
 
 
 def read_cif(file_name=None, verbose=False):  # open file dialog to select cif file
@@ -865,45 +853,42 @@ def read_cif(file_name=None, verbose=False):  # open file dialog to select cif f
     crystal = ase.io.read(file_name, format='cif', store_tags=True, parallel=False)
 
     # make dictionary and plot structure (not essential for further notebook)
-    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
-            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'crystal_name': base_name, 'reference': {},
-            'info': {}}
+    if crystal.info is None:
+        crystal.info = {'title': base_name}
+    crystal.info.update({'title': base_name})
     if verbose:
         print('Opened cif file for ', crystal.get_chemical_formula())
 
-    for key in crystal.info:
-        if 'citat' in key or 'pub' in key:
-            tags['reference'][key] = crystal.info[key]
-            if verbose:
-                print(key, crystal.info[key])
-        else:
-            tags['info'][key] = crystal.info[key]
-
-    return tags
+    return crystal
 
 
-def h5_add_crystal_structure(h5_file, crystal_tags):
+def h5_add_crystal_structure(h5_file, input_structure):
     """Write crystal structure to NSID file"""
-    if not isinstance(crystal_tags, dict):
-        try:
-            import ase
-        except ModuleNotFoundError:
-            print('Need a dictionary or an ase.Atoms object with ase installed')
-        if isinstance(crystal_tags, ase.Atoms):
-            return
+
+    if isinstance(input_structure, ase.Atoms):
+        crystal_tags = pyTEMlib.crystal_tools.get_dictionary(input_structure)
+    elif isinstance(input_structure, dict):
+        crystal_tags = input_structure
+    else:
+        raise TypeError('Need a dictionary or an ase.Atoms object with ase installed')
 
     structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
     for key, item in crystal_tags.items():
         structure_group[key] = item
     if 'base' in crystal_tags:
         structure_group['relative_positions'] = crystal_tags['base']
-    if 'crystal_name' in crystal_tags:
-        structure_group['title'] = str(crystal_tags['crystal_name'])
-        structure_group['_' + crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
+    if 'title' in crystal_tags:
+        structure_group['title'] = str(crystal_tags['title'])
+        structure_group['_' + crystal_tags['title']] = str(crystal_tags['title'])
 
-    # structure_group['elements'] = np.array(crystal_tags['elements'], dtype='S')
+    # ToDo: Save all of info dictionary
+    if input_structure.info is not None:
+        structure_group.create_group('metadata')
+        sidpy.hdf.hdf_utils.write_simple_attrs(structure_group['metadata'], input_structure.info)
     if 'zone_axis' in crystal_tags:
         structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
+    elif 'zone_axis' in input_structure.info:
+        structure_group['zone_axis'] = np.array(input_structure.info['zone_axis'], dtype=float)
     else:
         structure_group['zone_axis'] = np.array([1., 0., 0.], dtype=float)
     h5_file.flush()
@@ -921,11 +906,24 @@ def h5_add_to_structure(structure_group, crystal_tags):
 
 
 def h5_get_crystal_structure(structure_group):
-    """Read crystal structure  from NSID file"""
+    """Read crystal structure  from NSID file
+    Any additional information will be read as dictionary into the info attribute of the ase.Atoms object
+
+    Parameters
+    ----------
+    structure_group: h5py.Group
+        location in hdf5 file to where the structure information is stored
+
+    Returns
+    -------
+    atoms: ase.Atoms object
+        crystal structure in ase format
+
+    """
 
     crystal_tags = {'unit_cell': structure_group['unit_cell'][()],
                     'base': structure_group['relative_positions'][()],
-                    'crystal_name': structure_group['title'][()]}
+                    'title': structure_group['title'][()]}
     if '2D' in structure_group:
         crystal_tags['2D'] = structure_group['2D'][()]
     elements = structure_group['elements'][()]
@@ -933,9 +931,14 @@ def h5_get_crystal_structure(structure_group):
     for e in elements:
         crystal_tags['elements'].append(e.astype(str, copy=False))
 
+    atoms = pyTEMlib.crystal_tools.atoms_from_dictionary(crystal_tags)
+    if 'metadata' in structure_group:
+        atoms.info = sidpy.hdf.hdf_utils.h5_group_to_dict(structure_group)
+
     if 'zone_axis' in structure_group:
-        crystal_tags['zone_axis'] = structure_group['zone_axis'][()]
-    return crystal_tags
+        atoms.info = {'experiment': {'zone_axis': structure_group['zone_axis'][()]}}
+    # ToDo: Read all of info dictionary
+    return atoms
 
 
 ###############################################

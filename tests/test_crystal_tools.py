@@ -6,6 +6,9 @@ Created on January 23 2021
 """
 import unittest
 import numpy as np
+import ase
+import ase.build
+
 
 import pyTEMlib.crystal_tools as cs
 
@@ -19,32 +22,46 @@ if sys.version_info.major == 3:
 class TestUtilityFunctions(unittest.TestCase):
 
     def test_ball_and_stick(self):
-        in_tags = {'unit_cell': np.identity(3), 'base': [[0, 0, 0], [0.5, 0.5, 0.5]], 'elements': ['Fe', 'Fe']}
-        corners, balls, atomic_number, bonds = cs.ball_and_stick(in_tags, extend=1, max_bond_length=1.)
+        atoms = ase.build.bulk('Fe', 'bcc', cubic=True)
+        cell_2_plot = cs.ball_and_stick(atoms, extend=1, max_bond_length=1.)
 
-        corners_desired = [[(0.0, 0.0), (0.0, 0.0), (0.0, 1.0)], [(0.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
-                           [(0.0, 0.0), (1.0, 1.0), (1.0, 0.0)], [(0.0, 0.0), (1.0, 0.0), (0.0, 0.0)],
-                           [(0.0, 1.0), (0.0, 0.0), (0.0, 0.0)], [(1.0, 1.0), (0.0, 0.0), (0.0, 1.0)],
-                           [(1.0, 1.0), (0.0, 1.0), (1.0, 1.0)], [(1.0, 1.0), (1.0, 1.0), (0.0, 1.0)],
-                           [(1.0, 1.0), (1.0, 0.0), (0.0, 0.0)], [(0.0, 1.0), (0.0, 0.0), (1.0, 1.0)],
-                           [(0.0, 1.0), (1.0, 1.0), (0.0, 0.0)], [(0.0, 1.0), (1.0, 1.0), (1.0, 1.0)]]
-        np.testing.assert_allclose(corners, corners_desired)
+        self.assertTrue(len(cell_2_plot.info['plot_cell']['corner_matrix']) == 12)
 
-        balls_desired = [[0., 0., 0.], [0., 0., 1.], [0., 1., 0.], [0., 1., 1.], [1., 0., 0.], [1., 0., 1.],
-                         [1., 1., 0.], [1., 1., 1.], [0.5, 0.5, 0.5]]
-        np.testing.assert_allclose(balls, balls_desired)
+        balls_desired = [[0., 0., 0.], [0.5, 0.5, 0.5], [0., 0., 1.], [0., 1., 0.], [0., 1., 1.], [1., 0., 0.],
+                         [1., 0., 1.], [1., 1., 0.], [1., 1., 1.]]
+        np.testing.assert_allclose(cell_2_plot.get_scaled_positions(wrap=False), balls_desired)
 
-        self.assertTrue(len(atomic_number) == 9)
+        self.assertTrue(len(cell_2_plot) == 9)
 
-        bonds_desired = [[(0.0, 0.5), (0.0, 0.5), (0.0, 0.5)], [(0.0, 0.5), (0.0, 0.5), (1.0, 0.5)],
-                         [(0.0, 0.5), (1.0, 0.5), (0.0, 0.5)], [(0.0, 0.5), (1.0, 0.5), (1.0, 0.5)],
-                         [(1.0, 0.5), (0.0, 0.5), (0.0, 0.5)], [(1.0, 0.5), (0.0, 0.5), (1.0, 0.5)],
-                         [(1.0, 0.5), (1.0, 0.5), (0.0, 0.5)], [(1.0, 0.5), (1.0, 0.5), (1.0, 0.5)],
-                         [(0.5, 0.0), (0.5, 1.0), (0.5, 0.0)], [(0.5, 0.0), (0.5, 1.0), (0.5, 1.0)],
-                         [(0.5, 1.0), (0.5, 0.0), (0.5, 0.0)], [(0.5, 1.0), (0.5, 0.0), (0.5, 1.0)],
-                         [(0.5, 1.0), (0.5, 1.0), (0.5, 0.0)], [(0.5, 0.0), (0.5, 0.0), (0.5, 1.0)],
-                         [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]]
-        # np.testing.assert_allclose(bonds, bonds_desired)  # does not work in python 3.6, why?
+        bonds_desired = [[0, 1, 1, 1, 0, 1, 0, 0, 0],
+                         [0, 0, 1, 1, 1, 1, 1, 1, 1],
+                         [0, 0, 0, 0, 1, 0, 1, 0, 0],
+                         [0, 0, 0, 0, 1, 0, 0, 1, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                         [0, 0, 0, 0, 0, 0, 1, 1, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+        np.testing.assert_allclose(cell_2_plot.info['plot_cell']['bond_matrix'].toarray(), bonds_desired)
+
+
+    def test_from_dictionary(self):
+        tags = {'unit_cell': np.array([[4.05, 0, 0], [0, 4.05, 0], [0, 0, 4.05]]),
+                'elements': ['Al']*4,
+                'base': np.array([[0., 0., 0.], [0., .5, .5], [.5, 0, .5], [.5, .5, 0.]])
+                }
+        crystal = cs.atoms_from_dictionary(tags)
+        self.assertIsInstance(crystal, ase.Atoms)
+
+    def test_get_dict(self):
+        atoms = ase.build.bulk('Al', 'fcc', cubic=True)
+        tags = cs.get_dictionary(atoms)
+        self.assertListEqual(atoms.get_chemical_symbols(), tags['elements'])
+        self.assertTrue(np.allclose(atoms.get_scaled_positions(), tags['base']))
+
+        crystal2 = cs.atoms_from_dictionary(tags)
+        self.assertListEqual(crystal2.get_chemical_symbols(), tags['elements'])
+
 
 if __name__ == '__main__':
     unittest.main()

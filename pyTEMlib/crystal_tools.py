@@ -20,254 +20,73 @@ Usage:
 
 import numpy as np
 import itertools
-import scipy.spatial
 import ase
 import ase.spacegroup
 import ase.build
+import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
 
 # from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
-from matplotlib.patches import Circle  # , Ellipse, Rectangle
-from matplotlib.collections import PatchCollection
-
-# Crystal Plotting Routines
+# from matplotlib.patches import Circle  # , Ellipse, Rectangle
+# from matplotlib.collections import PatchCollection
 
 
-class Crystal(ase.Atoms):
+def get_dictionary(atoms):
     """
-    This is an ase (https://wiki.fysik.dtu.dk/ase/) Atoms object but in nm instead of Angstrom as a fundamental length
-
-    The underlaying obect is an ase Atoms object, which is in Angstroms.
-    All input and output is however done in nm, because nm is a natural unit for microscopy and diffraction.
-
-    Use function get_ase_atoms to retrieve an ase.Atoms object.
-
-    For documentation refer to the ase module (https://wiki.fysik.dtu.dk/ase/) and the notebooks in the lecture notes.
-
+    structure dictionary from ase.Atoms object
     """
+    tags = {'unit_cell': atoms.cell.array,
+            'elements': atoms.get_chemical_symbols(),
+            'base': atoms.get_scaled_positions(),
+            'metadata': atoms.info}
 
-    def __init__(self, symbols=None,
-                 positions=None, numbers=None,
-                 tags=None, momenta=None, masses=None,
-                 magmoms=None, charges=None,
-                 scaled_positions=None,
-                 cell=None, pbc=None, celldisp=None,
-                 constraint=None,
-                 calculator=None,
-                 info=None,
-                 velocities=None):
-
-        super().__init__(symbols=symbols,
-                         positions=positions, numbers=numbers,
-                         tags=tags, momenta=momenta, masses=masses,
-                         magmoms=magmoms, charges=charges,
-                         scaled_positions=scaled_positions,
-                         cell=cell, pbc=pbc, celldisp=celldisp,
-                         constraint=constraint,
-                         calculator=calculator,
-                         info=info,
-                         velocities=velocities)
-        self.metadata = {'experimental':{}, 'output': {}}
-        self.bond_radii = np.ones((len(self)))
-
-    def get_ase_atoms(self):
-        return super()
-
-    def get_dictionary(self):
-        """
-        structure dictionary from ase.Atoms object
-        """
-        tags = {'unit_cell': self.get_cell(),
-                'elements': self.get_chemical_symbols(),
-                'base': self.get_scaled_positions(),
-                'bond_radii': self.bond_radii,
-                'metadata': self.metadata}
-        return tags
-
-    def set_bond_radii(self):
-        for i, atom in enumerate(self):
-            self.bond_radii[i] = electronFF[self.symbols[i]]['bond_length'][1]
+    return tags
 
 
-def bulk(name, crystalstructure=None, a=None, b=None, c=None, *, alpha=None,
-         c_over_a=None, u=None, orthorhombic=False, cubic=False,
-         basis=None):
-    """Creating bulk systems with ase.build
-
-    Crystal structure and lattice constant(s) will be guessed if not
-    provided.
-
-    name: str
-        Chemical symbol or symbols as in 'MgO' or 'NaCl'.
-    crystalstructure: str
-        Must be one of sc, fcc, bcc, tetragonal, bct, hcp, rhombohedral,
-        orthorhombic, mcl, diamond, zincblende, rocksalt, cesiumchloride,
-        fluorite or wurtzite.
-    a: float
-        Lattice constant.
-    b: float
-        Lattice constant.  If only a and b is given, b will be interpreted
-        as c instead.
-    c: float
-        Lattice constant.
-    alpha: float
-        Angle in degrees for rhombohedral lattice.
-    c_over_a: float
-        c/a ratio used for hcp.  Default is ideal ratio: sqrt(8/3).
-    u: float
-        Internal coordinate for Wurtzite structure.
-    orthorhombic: bool
-        Construct orthorhombic unit cell instead of primitive cell
-        which is the default.
-    cubic: bool
-        Construct cubic unit cell if possible.
-    """
-
-    bulk = ase.build.bulk(name, crystalstructure=crystalstructure, a=a, b=b, c=c, alpha=alpha,
-                          covera=c_over_a, u=u, orthorhombic=orthorhombic, cubic=cubic, basis=basis)
-    if a is None:
-        bulk.set_cell(bulk.cell.array / 10, scale_atoms=True)
-    return Crystal(bulk)
-
-
-def dictionary_to_crystal(tags):
-    """
-    Translates a dictionary to a crystal object (with underlying ase object).
-    This is needed to store the structure in a file like in pyNSID format.
-
-    Parameter:
-    ----------
-    tags: dictionary
-        dictionary with tags uni_cell, elements, and base
-    Returns:
-    --------
-    atoms: Crystal object
-        Crystal object with underlying ase object but in nm.
-    """
-
-    assert (isinstance(tags, dict))
-    for key in ['unit_cell', 'elements', 'base']:
-        if key not in tags:
-            raise TypeError('This dictionary does not contain a structure')
-    atoms = Crystal()
-    atoms.set_cell(tags['unit_cell'])
-    atoms.set_scaled_positions(tags['base'])
-    atoms.set_chemical_symbols(tags['elements'])
-    if 'bond_radii' in tags:
-        atoms.bond_radii=tags['bond_radii']
+def atoms_from_dictionary(tags):
+    atoms = ase.Atoms(cell=tags['unit_cell'],
+                      symbols=tags['elements'],
+                      scaled_positions=tags['base'])
     if 'metadata' in tags:
-        atoms.metadata=tags['metadata']
+        atoms.info = tags['metadata']
     return atoms
 
 
-def spacegroup(symbols=None, basis=None, occupancies=None, spacegroup=1, setting=1,
-               cell=None, cellpar=None,
-               ab_normal=(0, 0, 1), a_direction=None, size=(1, 1, 1),
-               onduplicates='warn', symprec=0.001,
-               pbc=True, primitive_cell=False, **kwargs):  # -> pyTEMlib.crystal_tools.Crystal:
-    """Create a Crystal instance for a conventional unit cell of a
-    space group.
-
-    Parameters:
-    -----------
-
-    symbols : str | sequence of str | sequence of Atom | Atoms
-        Element symbols of the unique sites.  Can either be a string
-        formula or a sequence of element symbols. E.g. ('Na', 'Cl')
-        and 'NaCl' are equivalent.  Can also be given as a sequence of
-        Atom objects or an Atoms object.
-    basis : list of scaled coordinates
-        Positions of the unique sites corresponding to symbols given
-        either as scaled positions or through an atoms instance.  Not
-        needed if *symbols* is a sequence of Atom objects or an Atoms
-        object.
-    occupancies : list of site occupancies
-        Occupancies of the unique sites. Defaults to 1.0 and thus no mixed
-        occupancies are considered if not explicitly asked for. If occupancies
-        are given, the most dominant species will yield the atomic number.
-        The occupancies in the atoms.info['occupancy'] dictionary will have
-        integers keys converted to strings. The conversion is done in order
-        to avoid unexpected conversions when using the JSON serializer.
-    spacegroup : int | string | Spacegroup instance
-        Space group given either as its number in International Tables
-        or as its Hermann-Mauguin symbol.
-    setting : 1 | 2
-        Space group setting.
-    cell : 3x3 matrix
-        Unit cell vectors.
-    cellpar : [a, b, c, alpha, beta, gamma]
-        Cell parameters with angles in degree. Is not used when `cell`
-        is given.
-    ab_normal : vector
-        Is used to define the orientation of the unit cell relative
-        to the Cartesian system when `cell` is not given. It is the
-        normal vector of the plane spanned by a and b.
-    a_direction : vector
-        Defines the orientation of the unit cell a vector. a will be
-        parallel to the projection of `a_direction` onto the a-b plane.
-    size : 3 positive integers
-        How many times the conventional unit cell should be repeated
-        in each direction.
-    onduplicates : 'keep' | 'replace' | 'warn' | 'error'
-        Action if `basis` contain symmetry-equivalent positions:
-            'keep'    - ignore additional symmetry-equivalent positions
-            'replace' - replace
-            'warn'    - like 'keep', but issue an UserWarning
-            'error'   - raises a SpacegroupValueError
-    symprec : float
-        Minimum "distance" betweed two sites in scaled coordinates
-        before they are counted as the same site.
-    pbc : one or three bools
-        Periodic boundary conditions flags.  Examples: True,
-        False, 0, 1, (1, 1, 0), (True, False, False).  Default
-        is True.
-    primitive_cell : bool
-        Whether to return the primitive instead of the conventional
-        unit cell.
-
-    Keyword arguments:
-
-    All additional keyword arguments are passed on to the Atoms
-    constructor.  Currently, probably the most useful additional
-    keyword arguments are `info`, `constraint` and `calculator`.
-
-    Examples:
-
-    Two diamond unit cells (space group number 227)
-
-    >>> diamond = Crystal('C', [(0,0,0)], spacegroup=227,
-    ...     cellpar=[3.57, 3.57, 3.57, 90, 90, 90], size=(2,1,1))
-    >>> ase.view(diamond)  # doctest: +SKIP
-
-    A CoSb3 skutterudite unit cell containing 32 atoms
-
-    >>> skutterudite = Crystal(('Co', 'Sb'),
-    ...     basis=[(0.25,0.25,0.25), (0.0, 0.335, 0.158)],
-    ...     spacegroup=204, cellpar=[9.04, 9.04, 9.04, 90, 90, 90])
-    >>> len(skutterudite)
-    32
-    """
-
-    bulk = ase.spacegroup.Crystal(symbols=symbols, basis=basis, occupancies=occupancies, spacegroup=spacegroup,
-                                  setting=setting, cell=cell, cellpar=cellpar, ab_normal=ab_normal,
-                                  a_direction=a_direction, size=size, onduplicates=onduplicates, symprec=symprec,
-                                  pbc=pbc, primitive_cell=primitive_cell, **kwargs)
-
-    return Crystal(bulk)
+def set_bond_radii(atoms):
+    bond_radii = np.ones(len(atoms))
+    for i in range(len(atoms)):
+        bond_radii[i] = electronFF[atoms.symbols[i]]['bond_length'][1]
+    atoms.info['bond_radii'] = bond_radii
 
 
+def plot_super_cell(super_cell, shift_x=0.):
+    """ make a super_cell to plot with extra atoms at periodic boundaries"""
+
+    if not isinstance(super_cell, ase.Atoms):
+        raise TypeError('Need an ase Atoms object')
+
+    plot_super_cell = super_cell * (2, 2, 2)
+    plot_super_cell.positions[:, 0] = plot_super_cell.positions[:, 0] - super_cell.cell[0, 0] * shift_x
+
+    del plot_super_cell[plot_super_cell.positions[:, 2] > super_cell.cell[2, 2] + 0.1]
+    del plot_super_cell[plot_super_cell.positions[:, 1] > super_cell.cell[1, 1] + 0.1]
+    del plot_super_cell[plot_super_cell.positions[:, 0] > super_cell.cell[0, 0] + 0.1]
+    del plot_super_cell[plot_super_cell.positions[:, 0] < -0.1]
+    plot_super_cell.cell = super_cell.cell * (1, 1, 1)
+
+    return plot_super_cell
 
 
-def ball_and_stick(tags, extend=1, max_bond_length=0.):
+def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     """Calculates the data to plot a ball and stick model
 
     Parameters
     ----------
-    tags: dict
-        dictionary containing the 'unit_cell', 'base' and 'elements' tags.
+    atoms: ase.Atoms object
+        object containing the structural information like 'cell', 'positions', and 'symbols' .
 
-    extend: 1 or 3 integers
+    extend: integer or list f 3 integers
         The *extend* argument scales the effective cell in which atoms
         will be included. It must either be a list of three integers or a single
         integer scaling all 3 directions.  By setting this value to one,
@@ -281,196 +100,94 @@ def ball_and_stick(tags, extend=1, max_bond_length=0.):
 
     Returns
     -------
-    corners,balls, Z, bonds: lists
-        These lists can be used to plot the
-    unit cell:
-        for x, y, z in corners:
-            l=mlab.plot3d( x,y,z, tube_radius=0.002)
-    bonds:
-        for x, y, z in bonds:
-            mlab.plot3d( x,y,z, tube_radius=0.02)
-    and atoms:
-        for i,atom in enumerate(balls):
-            mlab.points3d(atom[0],atom[1],atom[2],
-                          scale_factor=0.1,##ks.vdw_radii[Z[i]]/5,
-                          resolution=20,
-                          color=tuple(ks.jmol_colors [Z[i]]),
-                          scale_mode='none')
-
-    Please note that you'll need the *Z* list for coloring, or for radii that depend on elements
+    super_cell: ase.Atoms object
+        structure with additional information in info dictionary
     """
 
-    # Check in which form extend is given
-    if isinstance(extend, int):
-        extend = [extend]*3
+    if not isinstance(atoms, ase.Atoms):
+        raise TypeError('Need an ase Atoms object')
 
-    extend = np.array(extend, dtype=int)
+    from ase import neighborlist
+    from scipy import sparse
+    from scipy.sparse import dok_matrix
 
-    # Make the x,y, and z multiplicators
-    if len(extend) == 3:
-        x = np.linspace(0, extend[0], extend[0]+1)
-        y = np.linspace(0, extend[1], extend[1]+1)
-        z = np.linspace(0, extend[2], extend[2]+1)
-    else:
-        print('wrong extend parameter')
-        return
 
-    # Check whether this is the right kind of dictionary
-    if 'unit_cell' not in tags:
-        return
-    cell = tags['unit_cell']
-
+    super_cell = plot_super_cell(atoms*extend)
+    cell = super_cell.cell.array
     # Corners and Outline of unit cell
     h = (0, 1)
     corner_vectors = np.dot(np.array(list(itertools.product(h, h, h))), cell)
-    trace = [[0, 1], [1, 3], [3, 2], [2, 0], [0, 4], [4, 5], [5, 7], [6, 7], [6, 4], [1, 5], [2, 6], [3, 7]]
-    corners = []
+    corner_matrix = dok_matrix((len(super_cell), len(super_cell)), dtype=np.bool)
+    trace = [[0, 1], [1, 3], [2, 3], [0, 2], [0, 4], [4, 5], [5, 7], [6, 7], [4, 6], [1, 5], [2, 6], [3, 7]]
     for s, e in trace:
-        corners.append([*zip(corner_vectors[s], corner_vectors[e])])
-
-    # ball position and elements in supercell
-    super_cell = np.array(list(itertools.product(x, y, z)))  # all evaluated Miller indices
-
-    pos = np.add(super_cell, np.array(tags['base'])[:, np.newaxis])
-
-    atomic_number = []
-    for i in range(len(tags['elements'])):
-        atomic_number.append(electronFF[tags['elements'][i]]['Z'])
+        corner_matrix[s, e] = True
 
     # List of bond lengths taken from electronFF database below
     bond_lengths = []
-    for atom in tags['elements']:
-        bond_lengths.append(electronFF[atom]['bond_length'][0])
+    for atom in super_cell:
+        bond_lengths.append(electronFF[atom.symbol]['bond_length'][1])
 
-    # extend list of atomic numbers
-    zpp = []
-    for z in atomic_number:
-        zpp.append([z]*pos.shape[1])
-    zpp = np.array(zpp).flatten()
+    super_cell.set_cell(cell*2, scale_atoms=False)   # otherwise corner atoms have distance 0
+    neighborList = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
+    neighborList.update(super_cell)
+    bond_matrix = neighborList.get_connectivity_matrix()
 
-    # reshape supercell atom positions
-    pos = pos.reshape((pos.shape[0]*pos.shape[1], pos.shape[2]))
+    del_double = []
+    for (k, s) in bond_matrix.keys():
+        if k>s:
+            del_double.append((k,s))
+    for key in del_double:
+        bond_matrix.pop(key)
 
-    # Make a mask that excludes all atoms outside of super cell
-    maskz = pos[:, 2] <= extend[2]
-    masky = pos[:, 1] <= extend[1]
-    maskx = pos[:, 0] <= extend[0]
-    mask = np.logical_and(maskx, np.logical_and(masky, maskz))   # , axis=1)
-
-    # Only use balls and elements inside super cell
-    balls = np.dot(pos[mask], cell)
-    atomic_number = zpp[mask]
-
-    # Get maximum bond length from list of bond -lengths taken from electronFF database
-    if max_bond_length == 0:
-        max_bond_length = np.median(bond_lengths)/5
-    # Check nearest neighbours within max_bond_length
-    tree = scipy.spatial.KDTree(balls)
-    nearest_neighbours = np.array(tree.query(balls, k=8, distance_upper_bound=max_bond_length))
-
-    # Calculate bonds
-    bonds = []
-    bond_indices = []
-    for i in range(nearest_neighbours.shape[1]):
-        for j in range(nearest_neighbours.shape[2]):
-            if nearest_neighbours[0, i, j] < max_bond_length:
-                if nearest_neighbours[0, i, j] > 0:
-                    # print(atoms[i],atoms[int(bonds[1,i,j])],bonds[:,i,j])
-                    bonds.append([*zip(balls[i], balls[int(nearest_neighbours[1, i, j])])])
-                    bond_indices.append([i, int(nearest_neighbours[1, i, j])])
-    return corners, balls, atomic_number, bonds
+    if super_cell.info is None:
+        super_cell.info = {}
+    super_cell.info['plot_cell'] = {'bond_matrix': bond_matrix, 'corner_vectors': corner_vectors,
+                                    'bond_length': bond_lengths, 'corner_matrix': corner_matrix}
+    super_cell.set_cell(cell/2, scale_atoms=False)
+    return super_cell
 
 
-def plot_unitcell(tags):
+def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     """
     Simple plot of unit cell
     """
 
-    if 'max_bond_length' not in tags:
-        max_bond_length = 0.
-    else:
-        max_bond_length = tags['max_bond_length']
+    super_cell = ball_and_stick(atoms, extend=extend, max_bond_length=max_bond_length)
 
-    if 'extend' not in tags:
-        extend = 1
-    else:
-        extend = tags['extend']
-
-    corners, balls, atomic_number, bonds = ball_and_stick(tags, extend=extend, max_bond_length=max_bond_length)
-
-    maximum_position = balls.max()*1.05
-    maximum_x = balls[:, 0].max()
-    maximum_y = balls[:, 1].max()
-    maximum_z = balls[:, 2].max()
-
-    balls = balls - [maximum_x/2, maximum_y/2, maximum_z/2]
+    corners = super_cell.info['plot_cell']['corner_vectors']
+    positions = super_cell.positions - super_cell.cell.lengths()/2
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
-    for x, y, z in corners:
-        ax.plot3D(x-maximum_x/2, y-maximum_y/2, z-maximum_z/2, color="blue")
+    for line in super_cell.info['plot_cell']['corner_matrix']:
+        ax.plot3D(corners[line,0], corners[line,1], corners[line,2], color="blue")
 
     # draw bonds
-    for x, y, z in bonds:
-        ax.plot3D(x-maximum_x/2, y-maximum_y/2, z-maximum_z/2, color="black", linewidth=4)  # , tube_radius=0.02)
+    bond_matrix = super_cell.info['plot_cell']['bond_matrix']
+    for  bond in super_cell.info['plot_cell']['bond_matrix']:
+        ax.plot3D(positions[bond,0], positions[bond,0], positions[bond,0], color="black", linewidth=4)  # , tube_radius=0.02)
 
     # draw atoms
-    for i, atom in enumerate(balls):
+    for atom in enumerate(super_cell.positions):
         ax.scatter(atom[0], atom[1], atom[2],
-                   color=tuple(jmol_colors[atomic_number[i]]),
-                   alpha=1.0, s=50)
-    maximum_position = balls.max()*1.05
+                   color=tuple(jmol_colors[super_cell.get_atomic_number()]), alpha=1.0, s=50)
+    maximum_position = super_cell.positions.max()*1.05
     ax.set_proj_type('ortho')
 
     ax.set_zlim(-maximum_position/2, maximum_position/2)
     ax.set_ylim(-maximum_position/2, maximum_position/2)
     ax.set_xlim(-maximum_position/2, maximum_position/2)
 
-    if 'name' in tags:
-        ax.set_title(tags['name'])
+    if 'name' in super_cell.info:
+        ax.set_title(super_cell.info['name'])
 
-    ax.set_xlabel('x [nm]')
-    ax.set_ylabel('y [nm]')
-    ax.set_zlabel('z [nm]')
-
-
-def structure_to_ase(tags):
-    try:
-        import ase
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError('Ase needs to be installed to convert it.')
-    assert (isinstance(tags, dict))
-    for key in ['unit_cell', 'elements', 'base']:
-        if key not in tags:
-            raise TypeError('This dictionary does not contain a structure')
-    atoms = ase.Atoms()
-    atoms.cell = tags['unit_cell']
-    atoms.set_scaled_positions(tags['base'])
-    atoms.set_chemical_symbols(tags['elements'])
-    return atoms
-
-
-def structure_from_ase(atoms):
-    """
-    structure dictionary from ase.Atoms object
-
-    """
-    try:
-        import ase
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError('Ase needs to be installed to convert it.')
-    assert (isinstance(atoms, ase.Atoms))
-
-    tags = {'unit_cell': atoms.cell,
-            'elements': atoms.get_chemical_symbols(),
-            'base': atoms.get_scaled_positions()}
-
-    return tags
+    ax.set_xlabel('x [Å]')
+    ax.set_ylabel('y [Å]')
+    ax.set_zlabel('z [Å]')
 
 
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
-import ase.data.colors
 jmol_colors = ase.data.colors.jmol_colors
 
 

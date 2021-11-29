@@ -12,7 +12,7 @@ import sys
 sys.path.insert(0, "../pyTEMlib/")
 
 import pyTEMlib.graph_tools as graph
-
+from pyTEMlib import crystal_tools
 
 class TestUtilityFunctions(unittest.TestCase):
 
@@ -68,15 +68,14 @@ class TestPolyhedraFunctions(unittest.TestCase):
 
     def test_find_polyhedra(self):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True) * (2, 2, 2)
-        pol = graph.find_polyhedra(atoms)
-        self.assertTrue(len(pol)>=50)
+        polyhedra = graph.find_polyhedra(atoms)
+        self.assertTrue(len(polyhedra)>=50)
 
     def test_sort_polyhedra(self):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True) * (2, 2, 2)
         atoms[7].symbol = 'Cs'
         polyhedra = graph.find_polyhedra(atoms)
         indices = graph.sort_polyhedra_by_vertices(polyhedra, visible=[6], verbose=True)
-
         self.assertEqual(len(indices), 3)
 
     def test_plot_super_cell(self):
@@ -94,8 +93,9 @@ class TestPolyhedraFunctions(unittest.TestCase):
     def test_plot_bonds(self):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True) * (2, 2, 2)
         polyhedra = graph.find_polyhedra(atoms)
-        data = graph.plot_bonds(polyhedra)
-        self.assertTrue(len(data) >= 50)
+
+        data = graph.plot_bonds(atoms)
+        self.assertTrue(len(atoms.info['graph']['connectivity_matrix']) == 99)
         self.assertIsInstance(data[0], dict)
 
     def test_get_grain_boundary_polyhedra(self):

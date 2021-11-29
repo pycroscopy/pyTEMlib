@@ -20,7 +20,7 @@ from tqdm.auto import tqdm, trange
 # utility functions
 ###########################################################################
 
-def intersitital_sphere_center(vertex_pos, atom_radii):
+def intersitital_sphere_center(vertex_pos, atom_radii, optimize=True ):
     """
         Function finds center and radius of the largest interstitial sphere of a simplex.
         Which is the center of the cirumsphere if all atoms have the same radius,
@@ -45,7 +45,7 @@ def intersitital_sphere_center(vertex_pos, atom_radii):
     def distance_deviation(sphere_center):
         return np.std(np.linalg.norm(vertex_pos - sphere_center, axis=1) - atom_radii)
 
-    if np.std(atom_radii) == 0:
+    if np.std(atom_radii) == 0 or not optimize:
         return center, radius-atom_radii[0]
     else:
         center_new = scipy.optimize.minimize(distance_deviation, center)
@@ -115,7 +115,7 @@ def voronoi_volumes(points):
     return vol
 
 
-def get_voronoi(tetrahedra, atoms):
+def get_voronoi(tetrahedra, atoms, optimize=True):
     """
     Find Voronoi vertices and keep track of associated tetrahedrons and interstitial radii
 
@@ -144,12 +144,12 @@ def get_voronoi(tetrahedra, atoms):
     voronoi_tetrahedrons = []
     r_vv = []
     r_aa = []
-    for vertices in tetrahedra.vertices:
-
+    print('Find interstitials (finding centers for different elements takes a bit)')
+    for vertices in tqdm(tetrahedra.vertices):
         r_a = []
         for vert in vertices:
             r_a.append(pyTEMlib.crystal_tools.electronFF[atoms.symbols[vert]]['bond_length'][1])
-        voronoi, radius = intersitital_sphere_center(atoms.positions[vertices], r_a)
+        voronoi, radius = intersitital_sphere_center(atoms.positions[vertices], r_a, optimize=optimize)
 
         r_a = np.average(r_a)  # np.min(r_a)
         r_aa.append(r_a)
@@ -202,14 +202,15 @@ def find_intertitial_clusters(overlapping_pairs):
             clusters.append(visited)
     return clusters, visited_all
 
+
 def make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all):
-    polyhedra={}
+    polyhedra = {}
     for index, cluster in tqdm(enumerate(clusters)):
         cc = []
         for c in cluster:
             cc = cc + list(voronoi_tetrahedrons[c])
 
-        hull = scipy.spatial.ConvexHull(atoms.positions[list(set(cc)),:2])
+        hull = scipy.spatial.ConvexHull(atoms.positions[list(set(cc)), :2])
         faces = []
         triangles = []
         for s in hull.simplices:
@@ -221,7 +222,7 @@ def make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visit
                             'combined_vertices': cluster,
                             'interstitial_index': index,
                             'interstitial_site': np.array(voronoi_tetrahedrons)[cluster].mean(axis=0),
-                            'atomic_numbers': atoms.get_atomic_numbers()[list(set(cc))]}  #, 'volume': hull.volume}
+                            'atomic_numbers': atoms.get_atomic_numbers()[list(set(cc))]}   # , 'volume': hull.volume}
         # 'coplanar': hull.coplanar}
 
     print('Define conventional interstitial polyhedra')
@@ -229,7 +230,7 @@ def make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visit
     for index in trange(len(voronoi_vertices)):
         if index not in visited_all:
             vertices = voronoi_tetrahedrons[index]
-            hull = scipy.spatial.ConvexHull(atoms.positions[vertices,:2])
+            hull = scipy.spatial.ConvexHull(atoms.positions[vertices, :2])
             faces = []
             triangles = []
             for s in hull.simplices:
@@ -242,7 +243,8 @@ def make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visit
                                          'combined_vertices': index,
                                          'interstitial_index': running_number,
                                          'interstitial_site': np.array(voronoi_tetrahedrons)[index],
-                                         'atomic_numbers': atoms.get_atomic_numbers()[vertices]}  # 'volume': hull.volume}
+                                         'atomic_numbers': atoms.get_atomic_numbers()[vertices]}
+            # 'volume': hull.volume}
 
             running_number += 1
 
@@ -253,18 +255,29 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
     """collect output data  and make dictionary"""
 
     polyhedra = {}
+    import scipy.sparse
+    connectivity_matrix = scipy.sparse.dok_matrix((len(atoms), len(atoms)), dtype=np.bool)
+
     print('Define clustered interstitial polyhedra')
     for index, cluster in tqdm(enumerate(clusters)):
         cc = []
         for c in cluster:
             cc = cc + list(voronoi_tetrahedrons[c])
+        cc = list(set(cc))
 
-        hull = scipy.spatial.ConvexHull(atoms.positions[list(set(cc))])
+        hull = scipy.spatial.ConvexHull(atoms.positions[cc])
         faces = []
         triangles = []
         for s in hull.simplices:
-            faces.append(atoms.positions[list(set(cc))][s])
+            faces.append(atoms.positions[cc][s])
             triangles.append(list(s))
+            for k in range(len(s)):
+                l = (k + 1) % len(s)
+                if cc[s[k]] > cc[s[l]]:
+                    connectivity_matrix[cc[s[l]], cc[s[k]]] = True
+                else:
+                    connectivity_matrix[cc[s[k]], cc[s[l]]] = True
+
         polyhedra[index] = {'vertices': atoms.positions[list(set(cc))], 'indices': list(set(cc)),
                             'faces': faces, 'triangles': triangles,
                             'length': len(list(set(cc))),
@@ -274,30 +287,6 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
                             'atomic_numbers': atoms.get_atomic_numbers()[list(set(cc))],
                             'volume': hull.volume}
         # 'coplanar': hull.coplanar}
-    print('Define conventional interstitial polyhedra')
-    running_number = index + 0
-    for index in trange(len(voronoi_vertices)):
-        if index not in visited_all:
-            vertices = voronoi_tetrahedrons[index]
-            hull = scipy.spatial.ConvexHull(atoms.positions[vertices])
-            faces = []
-            triangles = []
-            for s in hull.simplices:
-                faces.append(atoms.positions[vertices][s])
-                triangles.append(list(s))
-
-            polyhedra[running_number] = {'vertices': atoms.positions[vertices], 'indices': vertices,
-                                         'faces': faces, 'triangles': triangles,
-                                         'length': len(vertices),
-                                         'combined_vertices': index,
-                                         'interstitial_index': running_number,
-                                         'interstitial_site': np.array(voronoi_tetrahedrons)[index],
-                                         'atomic_numbers': atoms.get_atomic_numbers()[vertices],
-                                         'volume': hull.volume}
-
-            running_number += 1
-
-    return polyhedra
 
     print('Define conventional interstitial polyhedra')
     running_number = index + 0
@@ -310,6 +299,12 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
             for s in hull.simplices:
                 faces.append(atoms.positions[vertices][s])
                 triangles.append(list(s))
+                for k in range(len(s)):
+                    l = (k + 1) % len(s)
+                    if cc[s[k]] > cc[s[l]]:
+                        connectivity_matrix[cc[s[l]], cc[s[k]]] = True
+                    else:
+                        connectivity_matrix[cc[s[k]], cc[s[l]]] = True
 
             polyhedra[running_number] = {'vertices': atoms.positions[vertices], 'indices': vertices,
                                          'faces': faces, 'triangles': triangles,
@@ -321,7 +316,9 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
                                          'volume': hull.volume}
 
             running_number += 1
-
+    if atoms.info is None:
+        atoms.info = {}
+    atoms.info.update({'graph': {'connectivity_matrix': connectivity_matrix}})
     return polyhedra
 
 
@@ -330,7 +327,7 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
 ##################################################################
 
 
-def find_polyhedra(atoms, cheat=1.0):
+def find_polyhedra(atoms, optimize=True, cheat=1.0):
     """ get polyhedra information from an ase.Atoms object
 
     This is following the method of Banadaki and Patala
@@ -343,6 +340,8 @@ def find_polyhedra(atoms, cheat=1.0):
     ---------
     atoms: ase.Atoms object
         the structural information
+    cheat: float
+        does not exist
 
     Returns
     -------
@@ -352,21 +351,21 @@ def find_polyhedra(atoms, cheat=1.0):
     if not isinstance(atoms, ase.Atoms):
         raise TypeError('This function needs an ase.Atoms object')
 
-    if np.abs(atoms.positions[:,2]).sum() <= 0.01:
-        tetrahedra = scipy.spatial.Delaunay(atoms.positions[:,:2])
+    if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
+        tetrahedra = scipy.spatial.Delaunay(atoms.positions[:, :2])
     else:
         tetrahedra = scipy.spatial.Delaunay(atoms.positions)
 
-    voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms)
+    voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms, optimize=optimize)
 
     overlapping_pairs = find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=cheat)
 
     clusters, visited_all = find_intertitial_clusters(overlapping_pairs)
+
     if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
         polyhedra = make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
     else:
         polyhedra = make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
-
     return polyhedra
 
 
@@ -467,32 +466,23 @@ def plot_polyhedron(polyhedra, indices, center=False):
         data.append(lines)
     return data
 
-def plot_bonds(polyhedra,  center=False):
-    indices = range(len(polyhedra))
+
+def plot_bonds(atoms,  center=False):
+    if atoms.info is None:
+        return TypeError("Need connectivity_matrix in ase.Atoms.info['graph'] dictionary")
+    if 'graph' not in atoms.info:
+        return TypeError("Need connectivity_matrix in ase.Atoms.info['graph'] dictionary")
+    if 'connectivity_matrix' not in atoms.info['graph']:
+        return TypeError("Need connectivity_matrix in ase.Atoms.info['graph'] dictionary")
+    connectivity_matrix = atoms.info['graph']['connectivity_matrix']
 
     data = []
-    for index in indices:
-        polyhedron = polyhedra[index]
-
-        vertices = polyhedron['vertices']
-        faces = np.array(polyhedron['triangles'])
-        x, y, z = vertices.T
-        i_i, j_j, k_k = faces.T
-
-        tri_vertices = vertices[faces]
-        x_e = []
-        y_e = []
-        z_e = []
-        for t_v in tri_vertices:
-            x_e += [t_v[k % 3][0] for k in range(4)] + [None]
-            y_e += [t_v[k % 3][1] for k in range(4)] + [None]
-            z_e += [t_v[k % 3][2] for k in range(4)] + [None]
-
+    for (i,j) in connectivity_matrix.keys():
         # define the lines to be plotted
         lines = dict(type='scatter3d',
-                     x=x_e,
-                     y=y_e,
-                     z=z_e,
+                     x=[atoms.positions[i, 0], atoms.positions[j, 0]],
+                     y=[atoms.positions[i, 1], atoms.positions[j, 1]],
+                     z=[atoms.positions[i, 2], atoms.positions[j, 2]],
                      mode='lines',
                      name='',
                      line=dict(color='rgb(70,70,70)', width=1.5))
@@ -564,10 +554,10 @@ def plot_supercell(grain_boundary, size=(1, 1, 1), shift_x=0.25, title=''):
     return fig
 
 
-def plot_supercell_bonds(polyhedra, atoms, volumes=None, atom_size=15, title=''):
-    data = plot_bonds(polyhedra)
+def plot_supercell_bonds(atoms, volumes=None, atom_size=15, title=''):
+    data = plot_bonds(atoms)
     if volumes is None:
-        volumes = [10] * len(atoms.get_atomic_numbers())
+        volumes = [atom_size] * len(atoms.get_atomic_numbers())
 
     fig = go.Figure(data=data)
     fig.add_trace(go.Scatter3d(

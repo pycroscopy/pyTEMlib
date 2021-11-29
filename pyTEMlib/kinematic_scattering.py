@@ -100,7 +100,7 @@ def Zuo_fig_3_18(verbose=True):
     import ase
     import ase.build
     a = 5.14  # A
-    atoms = bulk('Si', 'diamond', a=a, cubic=True)
+    atoms = ase.build.bulk('Si', 'diamond', a=a, cubic=True)
 
     experiment = {'acceleration_voltage_V': 99.2 * 1000.0, # V
                   'convergence_angle_mrad': 7.15,  # mrad;
@@ -150,8 +150,10 @@ def Zuo_fig_3_18(verbose=True):
         print('# End of Example Input #')
         print('########################\n\n')
 
-    atoms.metadata['experimental'] = experiment
-    atoms.metadata['output'] = output
+    if atoms.info is None:
+        atoms.info = {}
+    atoms.info['experimental'] = experiment
+    atoms.info['output'] = output
 
     return atoms
 
@@ -406,13 +408,13 @@ def get_rotation_matrix(tags):
     return rotation_matrix
 
 
-def check_sanity(atoms: Crystal, verbose_level=0):
+def check_sanity(atoms, verbose_level=0):
     """
     Check sanity of input parameters
     """
     stop = False
-    output = atoms.metadata['output']
-    tags = atoms.metadata['experimental']
+    output = atoms.info['output']
+    tags = atoms.info['experimental']
     for key in ['acceleration_voltage_V']:
         if key not in tags:
             print(f'Necessary parameter {key} not defined')
@@ -535,7 +537,7 @@ def ring_pattern_calculation(atoms, verbose=False):
     if not check_sanity(atoms, verbose):
         return
 
-    tags = atoms.metadata['experimental']
+    tags = atoms.info['experimental']
     # wavelength
     tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
 
@@ -621,19 +623,19 @@ def ring_pattern_calculation(atoms, verbose=False):
             print(' {0} \t {1:.2f} \t         {2:.4f} \t {3:.2f} '
                   .format(reflections_m[i], unique[i]*10., 1 / unique[i]/10., np.real(reflections_F[i]) ** 2))
 
-    atoms.metadata['Ring_Pattern'] = {}
-    atoms.metadata['Ring_Pattern']['allowed'] = {}
-    atoms.metadata['Ring_Pattern']['allowed']['hkl'] = reflections_m
-    atoms.metadata['Ring_Pattern']['allowed']['g norm'] = unique
-    atoms.metadata['Ring_Pattern']['allowed']['structure factor'] = reflections_F
-    atoms.metadata['Ring_Pattern']['allowed']['multiplicity'] = counts
+    atoms.info['Ring_Pattern'] = {}
+    atoms.info['Ring_Pattern']['allowed'] = {}
+    atoms.info['Ring_Pattern']['allowed']['hkl'] = reflections_m
+    atoms.info['Ring_Pattern']['allowed']['g norm'] = unique
+    atoms.info['Ring_Pattern']['allowed']['structure factor'] = reflections_F
+    atoms.info['Ring_Pattern']['allowed']['multiplicity'] = counts
 
-    atoms.metadata['Ring_Pattern']['profile_x'] = np.linspace(0, unique.max(), 2048)
-    step_size = atoms.metadata['Ring_Pattern']['profile_x'][1]
+    atoms.info['Ring_Pattern']['profile_x'] = np.linspace(0, unique.max(), 2048)
+    step_size = atoms.info['Ring_Pattern']['profile_x'][1]
     intensity = np.zeros(2048)
     x_index = [(unique / step_size + 0.5).astype(np.int)]
     intensity[x_index] = np.array(np.real(reflections_F)) * np.array(np.real(reflections_F))
-    atoms.metadata['Ring_Pattern']['profile_y delta'] = intensity
+    atoms.info['Ring_Pattern']['profile_y delta'] = intensity
 
     def gaussian(xx, pp):
         s1 = pp[2] / 2.3548
@@ -648,12 +650,12 @@ def ring_pattern_calculation(atoms, verbose=False):
 
             gauss = gaussian(x, p)
             intensity = np.convolve(np.array(intensity), np.array(gauss), mode='same')
-    atoms.metadata['Ring_Pattern']['profile_y'] = intensity
+    atoms.info['Ring_Pattern']['profile_y'] = intensity
 
     # Make pretty labels
     hkl_allowed = reflections_m
     hkl_label = make_pretty_labels(hkl_allowed)
-    atoms.metadata['Ring_Pattern']['allowed']['label'] = hkl_label
+    atoms.info['Ring_Pattern']['allowed']['label'] = hkl_label
 
 
 def kinematic_scattering(atoms, verbose=False):
@@ -694,14 +696,24 @@ def kinematic_scattering(atoms, verbose=False):
     """
 
     # Check sanity
-    output = atoms.metadata['output']
+    if atoms.info is None:
+        atoms.info={'output': {}, 'experimental': {}}
+    elif 'output' in atoms.info:
+        output = atoms.info['output']
+    else:
+        output = atoms.info['output'] = {}
+
     output['SpotPattern'] = True
+
+    if 'experimental' not in atoms.info:
+        tags = atoms.info['experimental'] = {}
+
     if not check_sanity(atoms):
         print('Input is not complete, stopping')
         print('Try \'example()\' for example input')
         return
 
-    tags = atoms.metadata['experimental']
+    tags = atoms.info['experimental']
 
     # wavelength
     tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
@@ -849,8 +861,8 @@ def kinematic_scattering(atoms, verbose=False):
     F_allowed = F[allowed]
     g_norm_allowed = g_norm[allowed]
 
-    atoms.metadata['diffraction'] = {}
-    dif = atoms.metadata['diffraction']
+    atoms.info['diffraction'] = {}
+    dif = atoms.info['diffraction']
     dif['allowed'] = {}
     dif['allowed']['Sg'] = s_g_allowed
     dif['allowed']['hkl'] = hkl_allowed
