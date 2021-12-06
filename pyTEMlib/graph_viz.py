@@ -2,18 +2,12 @@
 
 """
 import numpy as np
-import ase
-
-# from scipy.spatial import cKDTree, Voronoi, ConvexHull
-import scipy.spatial
-import scipy.optimize
-
-# from skimage.measure import grid_points_in_poly, points_in_poly
 
 import plotly.graph_objects as go
 import plotly.express as px
+
 import pyTEMlib.crystal_tools
-from tqdm.auto import tqdm, trange
+import pyTEMlib.graph_tools
 
 
 def plot_polyhedron(polyhedra, indices, center=False):
@@ -72,7 +66,8 @@ def plot_polyhedron(polyhedra, indices, center=False):
         data.append(lines)
     return data
 
-def plot_bonds(polyhedra,  center=False):
+
+def plot_bonds(polyhedra):
     indices = range(len(polyhedra))
 
     data = []
@@ -134,9 +129,10 @@ def plot_with_polyhedra(polyhedra, indices, atoms=None, title=''):
 
 
 def plot_supercell(grain_boundary, size=(1, 1, 1), shift_x=0.25, title=''):
-    plot_boundary = plot_super_cell(grain_boundary * size, shift_x=shift_x)
 
-    grain_boundary.cell.volume
+    plot_boundary = pyTEMlib.graph_tools.plot_super_cell(grain_boundary * size, shift_x=shift_x)
+
+    # grain_boundary.cell.volume
     grain_boundary_area = grain_boundary.cell.lengths()[1] / grain_boundary.cell.lengths()[2]
     print(grain_boundary.symbols)
     volume__bulk_atom = 16.465237835776012
@@ -172,7 +168,7 @@ def plot_supercell(grain_boundary, size=(1, 1, 1), shift_x=0.25, title=''):
 def plot_supercell_bonds(polyhedra, atoms, volumes=None, atom_size=15, title=''):
     data = plot_bonds(polyhedra)
     if volumes is None:
-        volumes = [10] * len(atoms.get_atomic_numbers())
+        volumes = [atom_size] * len(atoms.get_atomic_numbers())
 
     fig = go.Figure(data=data)
     fig.add_trace(go.Scatter3d(
