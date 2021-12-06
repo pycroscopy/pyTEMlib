@@ -20,7 +20,7 @@ from tqdm.auto import tqdm, trange
 # utility functions
 ###########################################################################
 
-def intersitital_sphere_center(vertex_pos, atom_radii, optimize=True ):
+def intersitital_sphere_center(vertex_pos, atom_radii, optimize=True):
     """
         Function finds center and radius of the largest interstitial sphere of a simplex.
         Which is the center of the cirumsphere if all atoms have the same radius,
@@ -95,24 +95,84 @@ def circum_center(vertex_pos, tol=1e-4):
     return np.array(center), circum_radius
 
 
-def voronoi_volumes(points):
+def voronoi_volumes(atoms):
     """
     Volumes of voronoi  cells from
     https://stackoverflow.com/questions/19634993/volume-of-voronoi-cell-python
     """
+    points = atoms.positions
     v = scipy.spatial.Voronoi(points)
     vol = np.zeros(v.npoints)
     for i, reg_num in enumerate(v.point_region):
         indices = v.regions[reg_num]
         if -1 in indices:  # some regions can be opened
-            vol[i] = np.inf
+            vol[i] = 0
         else:
             try:
                 hull = scipy.spatial.ConvexHull(v.vertices[indices])
                 vol[i] = hull.volume
             except:
                 vol[i] = 0.
+
+    if atoms.info is None:
+        atoms.info = {}
+    # atoms.info.update({'volumes': vol})
     return vol
+
+
+def get_bond_radii(atoms, bond_type='bond'):
+    """ get all bond radii from Kirkland 
+    Parameter:
+    ----------
+    atoms ase.Atoms object
+        structur informtion in ase format
+    type: str
+        type of bond 'covalent' or 'metallic'
+    """
+    
+    r_a = []
+    for atom in atoms:
+        if bond_type == 'covalent':
+            r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][0])
+        else:
+            r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][1])
+    if atoms.info is None:
+        atoms.info ={}
+    atoms.info['bond_radii'] = r_a
+    return r_a
+
+
+def set_bond_radii(atoms, bond_type='bond'):
+    """ set certain or all bond-radii taken from Kirkland 
+    
+    Bond_radii are also stored in atoms.info
+    
+    Parameter:
+    ----------
+    atoms ase.Atoms object
+        structur informtion in ase format
+    type: str
+        type of bond 'covalent' or 'metallic'
+    Return:
+    -------
+    r_a: list
+        list of atomic bond-radii 
+        
+    """
+    if atoms.info is None:
+        atoms.info ={}
+    if 'bond_radii' in atoms.info:
+        r_a = atoms.info['bond_radii']
+    else:
+        r_a = np.ones(len(atoms))
+        
+    for atom in atoms:
+        if bond_type == 'covalent':
+            r_a[atom.index] = (pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][0])
+        else:
+            r_a[atom.index] = (pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][1])
+    atoms.info['bond_radii'] = r_a
+    return r_a
 
 
 def get_voronoi(tetrahedra, atoms, optimize=True):
@@ -139,6 +199,13 @@ def get_voronoi(tetrahedra, atoms, optimize=True):
     """
 
     extent = atoms.cell.lengths()
+    if atoms.info is None:
+        atoms.info ={}
+    if 'bond_radii' in atoms.info:
+        bond_radii = atoms.info['bond_radii']
+    else:
+        bond_radii = get_bond_radii(atoms)
+        
 
     voronoi_vertices = []
     voronoi_tetrahedrons = []
@@ -148,7 +215,7 @@ def get_voronoi(tetrahedra, atoms, optimize=True):
     for vertices in tqdm(tetrahedra.vertices):
         r_a = []
         for vert in vertices:
-            r_a.append(pyTEMlib.crystal_tools.electronFF[atoms.symbols[vert]]['bond_length'][1])
+            r_a.append(bond_radii[vert])
         voronoi, radius = intersitital_sphere_center(atoms.positions[vertices], r_a, optimize=optimize)
 
         r_a = np.average(r_a)  # np.min(r_a)
@@ -477,7 +544,7 @@ def plot_bonds(atoms,  center=False):
     connectivity_matrix = atoms.info['graph']['connectivity_matrix']
 
     data = []
-    for (i,j) in connectivity_matrix.keys():
+    for (i, j) in connectivity_matrix.keys():
         # define the lines to be plotted
         lines = dict(type='scatter3d',
                      x=[atoms.positions[i, 0], atoms.positions[j, 0]],
