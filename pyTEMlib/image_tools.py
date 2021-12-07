@@ -34,8 +34,8 @@ import scipy.constants as const
 # from scipy.spatial import Voronoi, KDTree, cKDTree
 
 import skimage
+
 import skimage.registration as registration
-from skimage.feature import register_translation  # blob_dog, blob_doh
 from skimage.feature import peak_local_max
 # from skimage.measure import points_in_poly
 
@@ -547,7 +547,7 @@ def rigid_registration(dataset):
         moving = np.array(dataset[i])
         fft_moving = np.fft.fft2(moving)
         if skimage.__version__[:4] == '0.16':
-            shift = register_translation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
+            print('This is old scipy image version, which is no longer supported')
         else:
             shift = registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
 
