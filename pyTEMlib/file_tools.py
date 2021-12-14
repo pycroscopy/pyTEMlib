@@ -667,7 +667,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
                 # dset.original_metadata = nest_dict(dset.original_metadata)
 
                 dset.h5_dataset = h5_dataset
-                pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
+                # pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
                 
         save_path(path)
         return dset

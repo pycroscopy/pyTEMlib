@@ -36,6 +36,7 @@ import scipy.constants as const
 import skimage
 
 import skimage.registration as registration
+# from skimage.feature import register_translation  # blob_dog, blob_doh
 from skimage.feature import peak_local_max
 # from skimage.measure import points_in_poly
 
@@ -238,11 +239,12 @@ def power_spectrum(dset, smoothing=3):
         power spectrum with correct dimensions
 
     """
-    fft_mag =  dset.fft().abs()
-    fft_mag2 = ndimage.gaussian_filter(dset.fft().abs(), sigma=(smoothing, smoothing), order=0)
 
-    power_spec = fft_mag.like_data(np.log(1.+fft_mag2))
-    power_spec.source = dset.title
+    fft_transform = dset.fft()
+    fft_mag = np.abs(fft_transform)
+    fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
+
+    power_spec = fft_transform.like_data(np.log(1.+fft_mag2))
 
     # prepare mask
     x, y = np.meshgrid(power_spec.v.values, power_spec.u.values)
@@ -371,13 +373,6 @@ def rotational_symmetry_diffractogram(spots):
         if dif[int(spots.shape[0] * .7)] < 0.2:
             rotation_symmetry.append(n)
     return rotation_symmetry
-
-
-def get_selection(dataset, extents):
-    if (np.array(extents) <2).all():
-        return dataset
-    xmin, xmax, ymin, ymax = extents/(dataset.x[1]-dataset.x[0])
-    return dataset.like_data(dataset[int(xmin):int(xmax), int(ymin):int(ymax)])
 
 #####################################################
 # Registration Functions
@@ -547,7 +542,7 @@ def rigid_registration(dataset):
         moving = np.array(dataset[i])
         fft_moving = np.fft.fft2(moving)
         if skimage.__version__[:4] == '0.16':
-            print('This is old scipy image version, which is no longer supported')
+            shift = register_translation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
         else:
             shift = registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
 
