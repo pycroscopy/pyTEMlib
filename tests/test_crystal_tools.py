@@ -63,6 +63,7 @@ class TestUtilityFunctions(unittest.TestCase):
         self.assertIsInstance(crystal, ase.Atoms)
 
     def test_get_dict(self):
+
         atoms = ase.build.bulk('Al', 'fcc', cubic=True)
         tags = cs.get_dictionary(atoms)
         self.assertListEqual(atoms.get_chemical_symbols(), tags['elements'])
