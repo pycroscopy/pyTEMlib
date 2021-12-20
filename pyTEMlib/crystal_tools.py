@@ -66,16 +66,16 @@ def plot_super_cell(super_cell, shift_x=0.):
     if not isinstance(super_cell, ase.Atoms):
         raise TypeError('Need an ase Atoms object')
 
-    plot_super_cell = super_cell * (2, 2, 2)
-    plot_super_cell.positions[:, 0] = plot_super_cell.positions[:, 0] - super_cell.cell[0, 0] * shift_x
+    super_cell2plot = super_cell * (2, 2, 2)
+    super_cell2plot.positions[:, 0] = super_cell2plot.positions[:, 0] - super_cell2plot.cell[0, 0] * shift_x
 
-    del plot_super_cell[plot_super_cell.positions[:, 2] > super_cell.cell[2, 2] + 0.1]
-    del plot_super_cell[plot_super_cell.positions[:, 1] > super_cell.cell[1, 1] + 0.1]
-    del plot_super_cell[plot_super_cell.positions[:, 0] > super_cell.cell[0, 0] + 0.1]
-    del plot_super_cell[plot_super_cell.positions[:, 0] < -0.1]
-    plot_super_cell.cell = super_cell.cell * (1, 1, 1)
+    del super_cell2plot[super_cell2plot.positions[:, 2] > super_cell.cell[2, 2] + 0.1]
+    del super_cell2plot[super_cell2plot.positions[:, 1] > super_cell.cell[1, 1] + 0.1]
+    del super_cell2plot[super_cell2plot.positions[:, 0] > super_cell.cell[0, 0] + 0.1]
+    del super_cell2plot[super_cell2plot.positions[:, 0] < -0.1]
+    super_cell2plot.cell = super_cell.cell * (1, 1, 1)
 
-    return plot_super_cell
+    return super_cell2plot
 
 
 def ball_and_stick(atoms, extend=1, max_bond_length=0.):
@@ -111,13 +111,12 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     from scipy import sparse
     from scipy.sparse import dok_matrix
 
-
     super_cell = plot_super_cell(atoms*extend)
     cell = super_cell.cell.array
     # Corners and Outline of unit cell
     h = (0, 1)
     corner_vectors = np.dot(np.array(list(itertools.product(h, h, h))), cell)
-    corner_matrix = dok_matrix((len(super_cell), len(super_cell)), dtype=np.bool)
+    corner_matrix = dok_matrix((8, 8), dtype=bool)
     trace = [[0, 1], [1, 3], [2, 3], [0, 2], [0, 4], [4, 5], [5, 7], [6, 7], [4, 6], [1, 5], [2, 6], [3, 7]]
     for s, e in trace:
         corner_matrix[s, e] = True
@@ -127,15 +126,15 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     for atom in super_cell:
         bond_lengths.append(electronFF[atom.symbol]['bond_length'][1])
 
-    super_cell.set_cell(cell*2, scale_atoms=False)   # otherwise corner atoms have distance 0
+    super_cell.set_cell(cell*2, scale_atoms=False)   # otherwise, corner atoms have distance 0
     neighborList = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
     neighborList.update(super_cell)
     bond_matrix = neighborList.get_connectivity_matrix()
 
     del_double = []
     for (k, s) in bond_matrix.keys():
-        if k>s:
-            del_double.append((k,s))
+        if k > s:
+            del_double.append((k, s))
     for key in del_double:
         bond_matrix.pop(key)
 
@@ -160,18 +159,18 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
-    for line in super_cell.info['plot_cell']['corner_matrix']:
-        ax.plot3D(corners[line,0], corners[line,1], corners[line,2], color="blue")
+    for line in super_cell.info['plot_cell']['corner_matrix'].keys():
+        ax.plot3D(corners[line, 0], corners[line, 1], corners[line, 2], color="blue")
 
     # draw bonds
     bond_matrix = super_cell.info['plot_cell']['bond_matrix']
-    for  bond in super_cell.info['plot_cell']['bond_matrix']:
-        ax.plot3D(positions[bond,0], positions[bond,0], positions[bond,0], color="black", linewidth=4)  # , tube_radius=0.02)
+    for bond in super_cell.info['plot_cell']['bond_matrix'].keys():
+        ax.plot3D(positions[bond, 0], positions[bond, 0], positions[bond, 0], color="black", linewidth=4)
+        # , tube_radius=0.02)
 
     # draw atoms
-    for atom in enumerate(super_cell.positions):
-        ax.scatter(atom[0], atom[1], atom[2],
-                   color=tuple(jmol_colors[super_cell.get_atomic_number()]), alpha=1.0, s=50)
+    ax.scatter(super_cell.positions[:, 0], super_cell.positions[:, 1], super_cell.positions[:, 2],
+                   color=tuple(jmol_colors[super_cell.get_atomic_numbers()]), alpha=1.0, s=50)
     maximum_position = super_cell.positions.max()*1.05
     ax.set_proj_type('ortho')
 
@@ -185,6 +184,7 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     ax.set_xlabel('x [Å]')
     ax.set_ylabel('y [Å]')
     ax.set_zlabel('z [Å]')
+    return fig
 
 
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U

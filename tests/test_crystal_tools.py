@@ -6,6 +6,15 @@ Created on January 23 2021
 """
 import unittest
 import numpy as np
+
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY', '') == '':
+    print('no display found. Using non-interactive Agg backend')
+mpl.use('Agg')
+import numpy as np
+import matplotlib.pyplot as plt
+
 import ase
 import ase.build
 
@@ -62,6 +71,11 @@ class TestUtilityFunctions(unittest.TestCase):
         crystal2 = cs.atoms_from_dictionary(tags)
         self.assertListEqual(crystal2.get_chemical_symbols(), tags['elements'])
 
+    def test_plot_unit_cell(self):
+        atoms = ase.build.bulk('Al', 'fcc', cubic=True)
+        fig = cs.plot_unit_cell(atoms)
+        x_y_z = fig.axes[0].lines[0].get_xydata()
+        print(x_y_z)
 
 if __name__ == '__main__':
     unittest.main()
