@@ -159,13 +159,15 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
+
+
     for line in super_cell.info['plot_cell']['corner_matrix'].keys():
         ax.plot3D(corners[line, 0], corners[line, 1], corners[line, 2], color="blue")
 
     # draw bonds
     bond_matrix = super_cell.info['plot_cell']['bond_matrix']
     for bond in super_cell.info['plot_cell']['bond_matrix'].keys():
-        ax.plot3D(positions[bond, 0], positions[bond, 0], positions[bond, 0], color="black", linewidth=4)
+        ax.plot3D(positions[bond, 0], positions[bond, 1], positions[bond, 2], color="black", linewidth=4)
         # , tube_radius=0.02)
 
     # draw atoms
