@@ -39,62 +39,68 @@ Dimension = sidpy.Dimension
 
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '2021.12.1'
-
-from PyQt5 import QtCore,  QtWidgets, QtGui     
 from PIL import Image, ImageQt
 
+try:
+    from PyQt5 import QtGui, QtWidgets, QtCore
+    QT_available = True
+except ImportError:
+    QT_available = False
 
 class FileIconDialog(QtWidgets.QDialog):
     def __init__(self, dir_name=None, extension=None):
-        super().__init__(None, QtCore.Qt.WindowStaysOnTopHint)
-        self.setModal(True)
+        if QT_available:
+            super().__init__(None, QtCore.Qt.WindowStaysOnTopHint)
+            self.setModal(True)
 
-        self.save_path = False
-        self.dir_dictionary = {}
-        self.dir_list = ['.', '..']
-        self.display_list = ['.', '..']
-        self.icon_size = 100
-        self.file_name = None
+            self.save_path = False
+            self.dir_dictionary = {}
+            self.dir_list = ['.', '..']
+            self.display_list = ['.', '..']
+            self.icon_size = 100
+            self.file_name = None
 
-        self.dir_name = '.'
-        if dir_name is None:
-            self.dir_name = get_last_path()
-            self.save_path = True
-        elif os.path.isdir(dir_name):
-            self.dir_name = dir_name
+            self.dir_name = '.'
+            if dir_name is None:
+                self.dir_name = get_last_path()
+                self.save_path = True
+            elif os.path.isdir(dir_name):
+                self.dir_name = dir_name
 
-        self.get_directory(self.dir_name)
-        
-        # setting geometry
-        self.setGeometry(100, 100, 500, 400)
-        
-        # creating a QListWidget
-        self.list_widget = QtWidgets.QListWidget(self)
-        self.list_widget.setIconSize(QtCore.QSize(self.icon_size, self.icon_size))
-        self.layout = QtWidgets.QVBoxLayout()        
-        self.layout.addWidget(self.list_widget)
-        
-        self.update()
-        
-        button_layout = QtWidgets.QHBoxLayout()
+            self.get_directory(self.dir_name)
 
-        button_select = QtWidgets.QPushButton('Select')
-        button_layout.addWidget(button_select) 
-        button_get_icon = QtWidgets.QPushButton('Get Icon')
-        button_layout.addWidget(button_get_icon) 
-        button_get_all_icons = QtWidgets.QPushButton('Get All Icons')
-        button_layout.addWidget(button_get_all_icons) 
-        
-        self.layout.addLayout(button_layout)
-        self.setLayout(self.layout)
-        
-        self.list_widget.itemDoubleClicked.connect(self.select)
-        button_select.clicked.connect(self.select)
-        button_get_icon.clicked.connect(self.set_icon)
-        button_get_all_icons.clicked.connect(self.set_all_icons)
-        
-        # showing all the widgets
-        self.exec_()
+            # setting geometry
+            self.setGeometry(100, 100, 500, 400)
+
+            # creating a QListWidget
+            self.list_widget = QtWidgets.QListWidget(self)
+            self.list_widget.setIconSize(QtCore.QSize(self.icon_size, self.icon_size))
+            self.layout = QtWidgets.QVBoxLayout()
+            self.layout.addWidget(self.list_widget)
+
+            self.update()
+
+            button_layout = QtWidgets.QHBoxLayout()
+
+            button_select = QtWidgets.QPushButton('Select')
+            button_layout.addWidget(button_select)
+            button_get_icon = QtWidgets.QPushButton('Get Icon')
+            button_layout.addWidget(button_get_icon)
+            button_get_all_icons = QtWidgets.QPushButton('Get All Icons')
+            button_layout.addWidget(button_get_all_icons)
+
+            self.layout.addLayout(button_layout)
+            self.setLayout(self.layout)
+
+            self.list_widget.itemDoubleClicked.connect(self.select)
+            button_select.clicked.connect(self.select)
+            button_get_icon.clicked.connect(self.set_icon)
+            button_get_all_icons.clicked.connect(self.set_all_icons)
+
+            # showing all the widgets
+            self.exec_()
+        else:
+            pass
     
     def set_icon(self):
         item = self.list_widget.currentItem().text()
@@ -413,11 +419,6 @@ def update_directory_list(directory_name):
 
 def get_qt_app():
     """will start QT Application if not running yet and returns QApplication """
-    try:
-        from PyQt5 import QtGui, QtWidgets, QtCore
-        QT_available = True
-    except ImportError:
-        QT_available = False
 
     # start qt event loop
     _instance = QtWidgets.QApplication.instance()
