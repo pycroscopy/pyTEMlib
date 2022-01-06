@@ -10,23 +10,26 @@ from matplotlib.lines import Line2D
 from scipy.ndimage.interpolation import geometric_transform
 
 import numpy as np
+import sidpy
 
-###################################
+# ##################################
 # Plot Reciprocal Unit Cell in 2D #
-###################################
+# ##################################
 
 
-def plot_reciprocal_unit_cell_2D(tags):
-    # Plot # unit cell in reciprocal space in 2D
-    reciprocal_unit_cell = tags['reciprocal_unit_cell']
+def plot_reciprocal_unit_cell_2D(atoms):
+    """Plot # unit cell in reciprocal space in 2D"""
+    
+    
+    reciprocal_unit_cell = atoms.get_reciprocal_cell()
 
     # ignore y direction
 
     x = [reciprocal_unit_cell[0, 0], reciprocal_unit_cell[0, 0], reciprocal_unit_cell[1, 0], reciprocal_unit_cell[1, 0]]
     z = [reciprocal_unit_cell[0, 2], reciprocal_unit_cell[2, 2], reciprocal_unit_cell[2, 2], reciprocal_unit_cell[0, 2]]
 
-    print(x, z)
-    print(reciprocal_unit_cell)
+    #print(x, z)
+    #print(reciprocal_unit_cell)
 
     # Plot 2D
     fig = plt.figure()
@@ -66,11 +69,12 @@ def plot_reciprocal_unit_cell_2D(tags):
     # texfig.savefig("recip_unit_cell")
     # fig.savefig('recip_unit_cell.jpg', dpi=90, bbox_inches='tight')
     plt.show()
+    return fig
 
 
-#####################
+# ####################
 # Plot SAED Pattern #
-#####################
+# ####################
 def plotSAED_parameter(tags, gray=False):
     tags['convergence_angle_nm-1'] = 0
 
@@ -323,7 +327,34 @@ def topolar(img, order=1):
     return polar, (rads, angs)
 
 
-def plotRingPattern(tags, grey=False):
+def plot_ring_pattern(info, grey=False):
+    """
+    Plot of ring diffraction pattern with matplotlib
+    
+    Parameters
+    ----------
+    info: dictionary or sidpy.Dataset
+        information stored as dictionary either directly or in metadata attribute of sidpy.Dataset
+    grey: bool
+        ploting in greyscale if True
+        
+    Returns
+    -------
+    fig: matplotlib figure
+        refereence to matplolib figure
+    """
+    
+    if isinstance(info, dict):
+        tags = info
+    elif  isinstance(info, sidpy.Dataset):
+        if 'diffraction' in info.metadata:
+            tags = info.metadata['diffraction']
+            plot_diffraction_pattern = True
+        else:
+            raise TypeError('Diffraction information must be in metadata')
+    else:
+        raise TypeError('Diffraction info must be in sidly Dataset or dictionary form')
+        
     d = tags['Ring_Pattern']['allowed']['g norm']
     label = tags['Ring_Pattern']['allowed']['label']
     if 'label color' not in tags:
@@ -338,11 +369,12 @@ def plotRingPattern(tags, grey=False):
         tags['profile height'] = 5
     if 'plot scalebar' not in tags:
         tags['plot scalebar'] = False
+        
     fg, ax = plt.subplots(1, 1)
 
-    ####
+    # ###
     # plot arcs of the rings
-    ####
+    # ###
     for i in range(len(d)):
         pac = patches.Arc((0, 0), d[i] * 2, d[i] * 2, angle=0, theta1=45, theta2=360, color=tags['ring color'])
         ax.add_patch(pac)
@@ -350,16 +382,8 @@ def plotRingPattern(tags, grey=False):
     ####
     # show image in background
     ####
-    if 'plot image' in tags:
-        l = -tags['plot image FOV'] / 2 + tags['plot shift x']
-        r = tags['plot image FOV'] / 2 + tags['plot shift x']
-        t = -tags['plot image FOV'] / 2 + tags['plot shift y']
-        b = tags['plot image FOV'] / 2 + tags['plot shift y']
-        if 'plot image FOV Y' in tags:
-            t = -tags['plot image FOV Y'] / 2 + tags['plot shift y']
-            b = tags['plot image FOV Y'] / 2 + tags['plot shift y']
-
-        plt.imshow(tags['plot image'], extent=(l, r, t, b), cmap='gray')
+    if plot_diffraction_pattern:
+        plt.imshow(info, extent=info.get_extent(), cmap='gray')
 
     ax.set_aspect("equal")
 
@@ -379,9 +403,9 @@ def plotRingPattern(tags, grey=False):
         ax.add_artist(scalebar)
         ax.axis('off')
 
-    #####
+    # ####
     # plot profile
-    #####
+    # ####
 
     y = tags['Ring_Pattern']['profile_y']
     y = y / y.max() * tags['profile height']
@@ -412,10 +436,39 @@ def plotRingPattern(tags, grey=False):
         plt.xlim(l, r)
         plt.ylim(t, b)
 
+
     fg.show()
+    return fg
 
 
-def plot_diffraction_pattern(tagsD, grey=False):
+def plot_diffraction_pattern(info, grey=False):
+    """
+    Plot of spot diffraction pattern with matplotlib
+    
+    Parameters
+    ----------
+    info: dictionary or sidpy.Dataset
+        information stored as dictionary either directly or in metadata attribute of sidpy.Dataset
+    grey: bool
+        ploting in greyscale if True
+        
+    Returns
+    -------
+    fig: matplotlib figure
+        refereence to matplolib figure
+    """
+    
+    if isinstance(info, dict):
+        tagsD = info
+    elif  isinstance(info, sidpy.Dataset):
+        if 'diffraction' in info.metadata:
+            tagsD = info.metadata['diffraction']
+            plot_diffraction_pattern = True
+        else:
+            raise TypeError('Diffraction information must be in metadata')
+    else:
+        raise TypeError('Diffraction info must be in sidly Dataset or dictionary form')
+        
     # Get information from dictionary
     HOLZ = tagsD['HOLZ']
     ZOLZ = tagsD['allowed']['ZOLZ']
@@ -489,10 +542,10 @@ def plot_diffraction_pattern(tagsD, grey=False):
     else:
         intensity_HOLZ = np.ones(len(intensity)) * tagsD['linewidth HOLZ']
 
-    ########
+    # #######
     # Plot #
-    ########
-    cms = mpl.cm
+    # #######
+    # cms = mpl.cm
     # cm = cms.plasma#jet#, cms.gray, cms.autumn]
     cm = plt.get_cmap(tagsD['color map'])
 
@@ -505,16 +558,8 @@ def plot_diffraction_pattern(tagsD, grey=False):
     if tagsD['background'] is not None:
         ax.set_facecolor(tagsD['background'])
 
-    if 'plot image' in tagsD:
-        l = -tagsD['plot image FOV'] / 2 + tagsD['plot shift x']
-        r = tagsD['plot image FOV'] / 2 + tagsD['plot shift x']
-        t = -tagsD['plot image FOV'] / 2 + tagsD['plot shift y']
-        b = tagsD['plot image FOV'] / 2 + tagsD['plot shift y']
-        if 'plot image FOV Y' in tagsD:
-            t = -tagsD['plot image FOV Y'] / 2 + tagsD['plot shift y']
-            b = tagsD['plot image FOV Y'] / 2 + tagsD['plot shift y']
-
-        plt.imshow(tagsD['plot image'], extent=(l, r, t, b))
+    if plot_diffraction_pattern:
+        plt.imshow(info, extent=info.get_extent(), cmap='gray')
 
     ix = np.argsort((points ** 2).sum(axis=1))
     p = points[ix]

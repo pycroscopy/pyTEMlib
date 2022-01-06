@@ -37,7 +37,7 @@ def get_dictionary(atoms):
     structure dictionary from ase.Atoms object
     """
     tags = {'unit_cell': atoms.cell.array,
-            'elements': atoms.get_chemical_symbols(),
+            'elements': atoms.get_chemical_formula(),
             'base': atoms.get_scaled_positions(),
             'metadata': atoms.info}
 

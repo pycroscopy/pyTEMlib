@@ -345,10 +345,10 @@ def stage_rotation_matrix(alpha, beta):
     return np.dot(rot_x, rot_y)
 
 
-###################
+# ##################
 # Determine rotation matrix to tilt zone axis onto z-axis
 # We determine spherical coordinates to do that
-###################
+# ##################
 
 def get_rotation_matrix(tags):
     """zone axis in global coordinate system"""
@@ -481,9 +481,9 @@ def scattering_matrix(tags, verbose_level=1):
     """ Scattering matrix"""
     if not check_sanity(tags, verbose_level):
         return
-    ###
+    # ##
     # Pair distribution Function
-    ###
+    # ##
     unit_cell = np.array(tags['unit_cell'])
     base = tags['base']
 
