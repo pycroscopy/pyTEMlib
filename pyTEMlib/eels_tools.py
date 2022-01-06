@@ -109,7 +109,6 @@ def read_dm3_eels_info(original_metadata):
         if 'Name' in exp_dictionary['Microscope Info']:
             experiment['microscope'] = exp_dictionary['Microscope Info']['Name']
 
-
     if 'number_of_frames' not in experiment:
         experiment['number_of_frames'] = 1
     if 'exposure_time' not in experiment:
@@ -551,7 +550,6 @@ def make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss=None):
             if low_loss is not None:
                 low_loss = np.roll(np.array(low_loss), 1024 - np.argmax(np.array(low_loss)))
                 edges[key]['data'] = scipy.signal.convolve(edges[key]['data'], low_loss/low_loss.sum(), mode='same')
-
 
             edges[key]['onset'] = edges[key]['original_onset'] + edges[key]['chemical_shift']
             edges[key]['X_section_type'] = 'XRPA'

@@ -7,6 +7,18 @@ Created on January 23 2021
 import unittest
 import numpy as np
 
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY', '') == '':
+    print('no display found. Using non-interactive Agg backend')
+mpl.use('Agg')
+import numpy as np
+import matplotlib.pyplot as plt
+
+import ase
+import ase.build
+
+
 import pyTEMlib.crystal_tools as cs
 
 import sys
@@ -17,189 +29,54 @@ if sys.version_info.major == 3:
 
 
 class TestUtilityFunctions(unittest.TestCase):
-    def test_cubic(self):
-        a = 0.5
-        desired = np.identity(3) * a
-        actual = cs.cubic(a)
-        self.assertIsNone(np.testing.assert_allclose(actual, desired))
 
-        with self.assertRaises(TypeError):
-            cs.cubic()
-        with self.assertRaises(TypeError):
-            cs.cubic('lattice_parameter')
+    def test_ball_and_stick(self):
+        atoms = ase.build.bulk('Fe', 'bcc', cubic=True)
+        cell_2_plot = cs.ball_and_stick(atoms, extend=1, max_bond_length=1.)
 
-    def test_from_parameters(self):
-        a = b = 1
-        c = 2
-        alpha = beta = 90
-        gamma = 120
-        desired = [[1.0,  0.0,  0.0], [-0.5, 0.866, 0.0], [0.0,  0.0,  2.0]]
-        actual = cs.from_parameters(a, b, c, alpha, beta, gamma)
+        self.assertTrue(len(cell_2_plot.info['plot_cell']['corner_matrix']) == 12)
 
-        self.assertIsNone(np.testing.assert_allclose(actual, desired, atol=1e-4))
-        with self.assertRaises(TypeError):
-            cs.from_parameters(a, b, c, 'alpha', beta, gamma)
-        with self.assertRaises(TypeError):
-            cs.from_parameters(a, 'a', c, alpha, beta, gamma)
+        balls_desired = [[0., 0., 0.], [0.5, 0.5, 0.5], [0., 0., 1.], [0., 1., 0.], [0., 1., 1.], [1., 0., 0.],
+                         [1., 0., 1.], [1., 1., 0.], [1., 1., 1.]]
+        np.testing.assert_allclose(cell_2_plot.get_scaled_positions(wrap=False), balls_desired)
 
-    def test_tetragonal(self):
-        a = 1
-        c = 2
-        desired = [[1.0,  0.0,  0.0], [0.0,  1.0,  0.0], [0.0,  0.0,  2.0]]
-        actual = cs.tetragonal(a, c)
-        self.assertIsNone(np.testing.assert_allclose(actual, desired, atol=1e-4))
-        with self.assertRaises(TypeError):
-            cs.tetragonal(a, 'b')
+        self.assertTrue(len(cell_2_plot) == 9)
 
-    def test_bcc(self):
-        actual_cell, actual_base, actual_atoms = cs.bcc(1, 'Fe')
-        desired_cell = np.identity(3)
-        desired_base = [(0., 0., 0.), (0.5, 0.5, 0.5)]
-        desired_atoms = ['Fe', 'Fe']
-        self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.bcc(1, ['Fe', 'Fe'])
-        self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
-        self.assertEqual(actual_atoms, desired_atoms)
+        bonds_desired = [[0, 1, 1, 1, 0, 1, 0, 0, 0],
+                         [0, 0, 1, 1, 1, 1, 1, 1, 1],
+                         [0, 0, 0, 0, 1, 0, 1, 0, 0],
+                         [0, 0, 0, 0, 1, 0, 0, 1, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                         [0, 0, 0, 0, 0, 0, 1, 1, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+        np.testing.assert_allclose(cell_2_plot.info['plot_cell']['bond_matrix'].toarray(), bonds_desired)
 
-        with self.assertRaises(TypeError):
-            cs.bcc('a', 'b')
-        with self.assertRaises(TypeError):
-            cs.bcc(1, 3)
 
-    def test_fcc(self):
-        actual_cell, actual_base, actual_atoms = cs.fcc(1, 'Fe')
-        desired_cell = np.identity(3)
-        desired_base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.0), (0., 0.5, 0.5)]
-        desired_atoms = ['Fe']*4
-        self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.fcc(1, ['Fe', 'Fe'])
-        self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.fcc(1, ['Fe', 'Fe', 'Fe', 'Fe'])
-        self.assertEqual(actual_atoms, desired_atoms)
+    def test_from_dictionary(self):
+        tags = {'unit_cell': np.array([[4.05, 0, 0], [0, 4.05, 0], [0, 0, 4.05]]),
+                'elements': ['Al']*4,
+                'base': np.array([[0., 0., 0.], [0., .5, .5], [.5, 0, .5], [.5, .5, 0.]])
+                }
+        crystal = cs.atoms_from_dictionary(tags)
+        self.assertIsInstance(crystal, ase.Atoms)
 
-        with self.assertRaises(TypeError):
-            cs.fcc('a', 'b')
-        with self.assertRaises(TypeError):
-            cs.fcc(1, 3)
+    def test_get_dict(self):
 
-    def test_dichalcogenide(self):
-        u = 0.1
-        actual_cell, actual_base, actual_atoms = cs.dichalcogenide(1, 2, u, 'Fe')
-        desired_cell = [[1.0,  0.0,  0.0], [-0.5, 0.866, 0.0], [0.0,  0.0,  2.0]]
-        desired_base = [(1 / 3., 2 / 3., 1 / 4.), (2 / 3., 1 / 3., 3 / 4.),
-                        (2 / 3., 1 / 3., 1 / 4. + u), (2 / 3., 1 / 3., 1 / 4. - u),
-                        (1 / 3., 2 / 3., 3 / 4. + u), (1 / 3., 2 / 3., 3 / 4. - u)]
-        desired_atoms = ['Fe'] * 6
+        atoms = ase.build.bulk('Al', 'fcc', cubic=True)
+        tags = cs.get_dictionary(atoms)
+        self.assertTrue(atoms.get_chemical_formula() == tags['elements'])
+        self.assertTrue(np.allclose(atoms.get_scaled_positions(), tags['base']))
 
-        self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
-        self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
-        self.assertEqual(actual_atoms, desired_atoms)
+        crystal2 = cs.atoms_from_dictionary(tags)
+        self.assertTrue(crystal2.get_chemical_formula() == tags['elements'])
 
-        with self.assertRaises(TypeError):
-            cs.dichalcogenide(1, 2, 'u', 'Fe')
-        with self.assertRaises(TypeError):
-            cs.dichalcogenide(1, 2, 0., 1)
-
-    def test_wurzite(self):
-        u = 0.1
-        actual_cell, actual_base, actual_atoms = cs.wurzite(1, 2, u, 'Fe')
-        desired_cell = [[1.0,  0.0,  0.0], [-0.5, 0.866, 0.0], [0.0,  0.0,  2.0]]
-        desired_base = [(2./3., 1./3., .500), (1./3., 2./3., 0.000), (2./3., 1./3., 0.5+u), (1./3., 2./3., u)]
-        desired_atoms = ['Fe'] * 4
-
-        self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.wurzite(1, 2, u, ['Fe', 'Fe'])
-        self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
-        self.assertEqual(actual_atoms, desired_atoms)
-
-        with self.assertRaises(TypeError):
-            cs.wurzite(1, 2, 'u', 'Fe')
-        with self.assertRaises(TypeError):
-            cs.wurzite(1, 2, 0., 1)
-
-    def test_rocksalt(self):
-        actual_cell, actual_base, actual_atoms = cs.rocksalt(1, 'Fe')
-        desired_cell = np.identity(3)
-        desired_base = [(0.0, 0.0, 0.0), (0.5, 0.0, 0.5), (0.5, 0.5, 0.0), (0.0, 0.5, 0.5),
-                        (0.5, 0.5, 0.5), (0.0, 0.5, 0.0), (0.0, 0.0, 0.5), (0.5, 0.0, 0.0)]
-        desired_atoms = ['Fe'] * 8
-
-        self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
-        self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
-        self.assertEqual(actual_atoms, desired_atoms)
-
-        with self.assertRaises(TypeError):
-            cs.rocksalt('1', 'Fe')
-        with self.assertRaises(TypeError):
-            cs.rocksalt('1', ['Fe', 'Fe', 'Fe'])
-        with self.assertRaises(TypeError):
-            cs.rocksalt(1, 1)
-
-    def test_zincblende(self):
-        actual_cell, actual_base, actual_atoms = cs.zincblende(1, 'Fe')
-        desired_cell = np.identity(3)
-        desired_base = [(0.00, 0.00, 0.00), (0.50, 0.00, 0.50), (0.50, 0.50, 0.00), (0.00, 0.50, 0.50),
-                        (0.25, 0.25, 0.25), (0.75, 0.25, 0.75), (0.75, 0.75, 0.25), (0.25, 0.75, 0.75)]
-        desired_atoms = ['Fe'] * 8
-
-        self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.zincblende(1, ['Fe']*8)
-        self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.zincblende(1, ['Fe']*4)
-        self.assertEqual(actual_atoms, desired_atoms)
-
-        with self.assertRaises(TypeError):
-            cs.zincblende('1', 'Fe')
-        with self.assertRaises(TypeError):
-            cs.zincblende(1, ['Fe']*3)
-        with self.assertRaises(TypeError):
-            cs.zincblende(1, 1)
-
-    def test_perovskite(self):
-        actual_cell, actual_base, actual_atoms = cs.perovskite(1, 'Fe')
-        desired_cell = np.identity(3)
-        desired_base = [(0., 0., 0.), (0.5, 0.5, 0.5), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)]
-        desired_atoms = ['Fe'] * 5
-
-        self.assertIsNone(np.testing.assert_allclose(actual_cell, desired_cell, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.perovskite(1, ['Fe']*3)
-        self.assertIsNone(np.testing.assert_allclose(actual_base, desired_base, atol=1e-4))
-        actual_cell, actual_base, actual_atoms = cs.perovskite(1, ['Fe']*5)
-        self.assertEqual(actual_atoms, desired_atoms)
-        actual_cell, actual_base, actual_atoms = cs.perovskite(1, ['Fe'] * 2)
-        self.assertEqual(actual_atoms, desired_atoms)
-        with self.assertRaises(TypeError):
-            cs.perovskite('1', 'Fe')
-        with self.assertRaises(TypeError):
-            cs.perovskite(1, 1)
-
-    def test_structure_by_name(self):
-        with self.assertRaises(TypeError):
-            cs.structure_by_name(1)
-
-        actual = cs.structure_by_name('Gerd')
-        self.assertEqual(actual, {})
-
-        actual = cs.structure_by_name('FCC Fe')
-        self.assertIsInstance(actual, dict)
-        self.assertAlmostEqual(actual['a'], 0.3571)
-
-        actual = cs.structure_by_name('BCC Fe')
-        self.assertIsInstance(actual, dict)
-        self.assertAlmostEqual(actual['a'], 0.2866)
-
-        actual = cs.structure_by_name('diamond')
-        self.assertEqual(actual['symmetry'], 'zinc_blende')
-
-        actual = cs.structure_by_name('GaN Wurzite')
-        self.assertEqual(actual['symmetry'], 'wurzite')
-
-        actual = cs.structure_by_name('MgO')
-        self.assertEqual(actual['symmetry'], 'rocksalt')
-
-        actual = cs.structure_by_name('MoS2')
-        self.assertEqual(actual['symmetry'], 'dichalcogenide')
-
+    def test_plot_unit_cell(self):
+        atoms = ase.build.bulk('Al', 'fcc', cubic=True)
+        fig = cs.plot_unit_cell(atoms)
+        x_y_z = fig.axes[0].lines[0].get_xydata()
+        print(x_y_z)
 
 if __name__ == '__main__':
     unittest.main()

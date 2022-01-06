@@ -20,27 +20,73 @@ Usage:
 
 import numpy as np
 import itertools
-import scipy.spatial
 import ase
+import ase.spacegroup
+import ase.build
+import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
 
 # from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
-from matplotlib.patches import Circle  # , Ellipse, Rectangle
-from matplotlib.collections import PatchCollection
-
-# Crystal Plotting Routines
+# from matplotlib.patches import Circle  # , Ellipse, Rectangle
+# from matplotlib.collections import PatchCollection
 
 
-def ball_and_stick(tags, extend=1, max_bond_length=0.):
+def get_dictionary(atoms):
+    """
+    structure dictionary from ase.Atoms object
+    """
+    tags = {'unit_cell': atoms.cell.array,
+            'elements': atoms.get_chemical_formula(),
+            'base': atoms.get_scaled_positions(),
+            'metadata': atoms.info}
+
+    return tags
+
+
+def atoms_from_dictionary(tags):
+    atoms = ase.Atoms(cell=tags['unit_cell'],
+                      symbols=tags['elements'],
+                      scaled_positions=tags['base'])
+    if 'metadata' in tags:
+        atoms.info = tags['metadata']
+    return atoms
+
+
+def set_bond_radii(atoms):
+    bond_radii = np.ones(len(atoms))
+    for i in range(len(atoms)):
+        bond_radii[i] = electronFF[atoms.symbols[i]]['bond_length'][1]
+    atoms.info['bond_radii'] = bond_radii
+
+
+def plot_super_cell(super_cell, shift_x=0.):
+    """ make a super_cell to plot with extra atoms at periodic boundaries"""
+
+    if not isinstance(super_cell, ase.Atoms):
+        raise TypeError('Need an ase Atoms object')
+
+    super_cell2plot = super_cell * (2, 2, 2)
+    super_cell2plot.positions[:, 0] = super_cell2plot.positions[:, 0] - super_cell2plot.cell[0, 0] * shift_x
+
+    del super_cell2plot[super_cell2plot.positions[:, 2] > super_cell.cell[2, 2] + 0.1]
+    del super_cell2plot[super_cell2plot.positions[:, 1] > super_cell.cell[1, 1] + 0.1]
+    del super_cell2plot[super_cell2plot.positions[:, 0] > super_cell.cell[0, 0] + 0.1]
+    del super_cell2plot[super_cell2plot.positions[:, 0] < -0.1]
+    super_cell2plot.cell = super_cell.cell * (1, 1, 1)
+
+    return super_cell2plot
+
+
+def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     """Calculates the data to plot a ball and stick model
 
     Parameters
     ----------
-    tags: dict
-        dictionary containing the 'unit_cell', 'base' and 'elements' tags.
+    atoms: ase.Atoms object
+        object containing the structural information like 'cell', 'positions', and 'symbols' .
 
-    extend: 1 or 3 integers
+    extend: integer or list f 3 integers
         The *extend* argument scales the effective cell in which atoms
         will be included. It must either be a list of three integers or a single
         integer scaling all 3 directions.  By setting this value to one,
@@ -54,985 +100,97 @@ def ball_and_stick(tags, extend=1, max_bond_length=0.):
 
     Returns
     -------
-    corners,balls, Z, bonds: lists
-        These lists can be used to plot the
-    unit cell:
-        for x, y, z in corners:
-            l=mlab.plot3d( x,y,z, tube_radius=0.002)
-    bonds:
-        for x, y, z in bonds:
-            mlab.plot3d( x,y,z, tube_radius=0.02)
-    and atoms:
-        for i,atom in enumerate(balls):
-            mlab.points3d(atom[0],atom[1],atom[2],
-                          scale_factor=0.1,##ks.vdw_radii[Z[i]]/5,
-                          resolution=20,
-                          color=tuple(ks.jmol_colors [Z[i]]),
-                          scale_mode='none')
-
-    Please note that you'll need the *Z* list for coloring, or for radii that depend on elements
+    super_cell: ase.Atoms object
+        structure with additional information in info dictionary
     """
 
-    # Check in which form extend is given
-    if isinstance(extend, int):
-        extend = [extend]*3
+    if not isinstance(atoms, ase.Atoms):
+        raise TypeError('Need an ase Atoms object')
 
-    extend = np.array(extend, dtype=int)
+    from ase import neighborlist
+    from scipy import sparse
+    from scipy.sparse import dok_matrix
 
-    # Make the x,y, and z multiplicators
-    if len(extend) == 3:
-        x = np.linspace(0, extend[0], extend[0]+1)
-        y = np.linspace(0, extend[1], extend[1]+1)
-        z = np.linspace(0, extend[2], extend[2]+1)
-    else:
-        print('wrong extend parameter')
-        return
-
-    # Check whether this is the right kind of dictionary
-    if 'unit_cell' not in tags:
-        return
-    cell = tags['unit_cell']
-
+    super_cell = plot_super_cell(atoms*extend)
+    cell = super_cell.cell.array
     # Corners and Outline of unit cell
     h = (0, 1)
     corner_vectors = np.dot(np.array(list(itertools.product(h, h, h))), cell)
-    trace = [[0, 1], [1, 3], [3, 2], [2, 0], [0, 4], [4, 5], [5, 7], [6, 7], [6, 4], [1, 5], [2, 6], [3, 7]]
-    corners = []
+    corner_matrix = dok_matrix((8, 8), dtype=bool)
+    trace = [[0, 1], [1, 3], [2, 3], [0, 2], [0, 4], [4, 5], [5, 7], [6, 7], [4, 6], [1, 5], [2, 6], [3, 7]]
     for s, e in trace:
-        corners.append([*zip(corner_vectors[s], corner_vectors[e])])
-
-    # ball position and elements in supercell
-    super_cell = np.array(list(itertools.product(x, y, z)))  # all evaluated Miller indices
-
-    pos = np.add(super_cell, np.array(tags['base'])[:, np.newaxis])
-
-    atomic_number = []
-    for i in range(len(tags['elements'])):
-        atomic_number.append(electronFF[tags['elements'][i]]['Z'])
+        corner_matrix[s, e] = True
 
     # List of bond lengths taken from electronFF database below
     bond_lengths = []
-    for atom in tags['elements']:
-        bond_lengths.append(electronFF[atom]['bond_length'][0])
+    for atom in super_cell:
+        bond_lengths.append(electronFF[atom.symbol]['bond_length'][1])
 
-    # extend list of atomic numbers
-    zpp = []
-    for z in atomic_number:
-        zpp.append([z]*pos.shape[1])
-    zpp = np.array(zpp).flatten()
+    super_cell.set_cell(cell*2, scale_atoms=False)   # otherwise, corner atoms have distance 0
+    neighborList = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
+    neighborList.update(super_cell)
+    bond_matrix = neighborList.get_connectivity_matrix()
 
-    # reshape supercell atom positions
-    pos = pos.reshape((pos.shape[0]*pos.shape[1], pos.shape[2]))
+    del_double = []
+    for (k, s) in bond_matrix.keys():
+        if k > s:
+            del_double.append((k, s))
+    for key in del_double:
+        bond_matrix.pop(key)
 
-    # Make a mask that excludes all atoms outside of super cell
-    maskz = pos[:, 2] <= extend[2]
-    masky = pos[:, 1] <= extend[1]
-    maskx = pos[:, 0] <= extend[0]
-    mask = np.logical_and(maskx, np.logical_and(masky, maskz))   # , axis=1)
-
-    # Only use balls and elements inside super cell
-    balls = np.dot(pos[mask], cell)
-    atomic_number = zpp[mask]
-
-    # Get maximum bond length from list of bond -lengths taken from electronFF database
-    if max_bond_length == 0:
-        max_bond_length = np.median(bond_lengths)/5
-    # Check nearest neighbours within max_bond_length
-    tree = scipy.spatial.KDTree(balls)
-    nearest_neighbours = np.array(tree.query(balls, k=8, distance_upper_bound=max_bond_length))
-
-    # Calculate bonds
-    bonds = []
-    bond_indices = []
-    for i in range(nearest_neighbours.shape[1]):
-        for j in range(nearest_neighbours.shape[2]):
-            if nearest_neighbours[0, i, j] < max_bond_length:
-                if nearest_neighbours[0, i, j] > 0:
-                    # print(atoms[i],atoms[int(bonds[1,i,j])],bonds[:,i,j])
-                    bonds.append([*zip(balls[i], balls[int(nearest_neighbours[1, i, j])])])
-                    bond_indices.append([i, int(nearest_neighbours[1, i, j])])
-    return corners, balls, atomic_number, bonds
+    if super_cell.info is None:
+        super_cell.info = {}
+    super_cell.info['plot_cell'] = {'bond_matrix': bond_matrix, 'corner_vectors': corner_vectors,
+                                    'bond_length': bond_lengths, 'corner_matrix': corner_matrix}
+    super_cell.set_cell(cell/2, scale_atoms=False)
+    return super_cell
 
 
-def plot_unitcell_mayavi(atoms, maximum_bond_length=3.5, scale_factor=0.2, projected=False):
-    """
-    Makes a 3D plot of crystal structure with Mayavi
-
-    Parameters
-    ----------
-    atoms: ase.Atoms object
-        ase object with all information
-    maximum_bond_length: float
-        maximal distance between atoms to be still recognized as a bond
-    scale_factor: float
-        scaling factor for atom sizes
-    projected: boolean
-        projected plotting or not (parallel projection)
-
-    Returns
-    -------
-    3D plot
-
-    Dependencies
-    ------------
-    mlab of mayavi
-    """
-    try:
-        from mayavi import mlab
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError('We need mayavi installed for a 3d plot')
-
-    assert isinstance(atoms, ase.Atoms)
-    x = atoms.positions[:, 0]
-    y = atoms.positions[:, 1]
-    z = atoms.positions[:, 2]
-
-    atom_tree = scipy.spatial.cKDTree(atoms.positions)
-    connections = atom_tree.query_pairs(r=maximum_bond_length)
-    fig = mlab.figure(1, bgcolor=(0, 0, 0), size=(500, 350))
-    
-    mlab.clf()  # clear figure
-
-    pts = mlab.points3d(x, y, z, 1.5 * atoms.numbers.max() - atoms.numbers,
-                        scale_factor=scale_factor, resolution=10)
-    pts.mlab_source.dataset.lines = np.array(list(connections))
-
-    # Use a tube fitter to plot tubes on the link, varying the radius with the
-    # scalar value
-    tube = mlab.pipeline.tube(pts, tube_radius=0.15)
-    tube.filter.radius_factor = 1.
-    tube.filter.vary_radius = 'vary_radius_by_scalar'
-    mlab.pipeline.surface(tube, color=(0.8, 0.8, 0))
-
-    # parallel projection
-    mlab.gcf().scene.parallel_projection = not projected
-    # show plot
-    mlab.show()
-    return fig
-
-
-def plot_unitcell(tags):
+def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     """
     Simple plot of unit cell
     """
 
-    if 'max_bond_length' not in tags:
-        max_bond_length = 0.
-    else:
-        max_bond_length = tags['max_bond_length']
+    super_cell = ball_and_stick(atoms, extend=extend, max_bond_length=max_bond_length)
 
-    if 'extend' not in tags:
-        extend = 1
-    else:
-        extend = tags['extend']
-
-    corners, balls, atomic_number, bonds = ball_and_stick(tags, extend=extend, max_bond_length=max_bond_length)
-
-    maximum_position = balls.max()*1.05
-    maximum_x = balls[:, 0].max()
-    maximum_y = balls[:, 1].max()
-    maximum_z = balls[:, 2].max()
-
-    balls = balls - [maximum_x/2, maximum_y/2, maximum_z/2]
+    corners = super_cell.info['plot_cell']['corner_vectors']
+    positions = super_cell.positions - super_cell.cell.lengths()/2
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
-    for x, y, z in corners:
-        ax.plot3D(x-maximum_x/2, y-maximum_y/2, z-maximum_z/2, color="blue")
+
+
+    for line in super_cell.info['plot_cell']['corner_matrix'].keys():
+        ax.plot3D(corners[line, 0], corners[line, 1], corners[line, 2], color="blue")
 
     # draw bonds
-    for x, y, z in bonds:
-        ax.plot3D(x-maximum_x/2, y-maximum_y/2, z-maximum_z/2, color="black", linewidth=4)  # , tube_radius=0.02)
+    bond_matrix = super_cell.info['plot_cell']['bond_matrix']
+    for bond in super_cell.info['plot_cell']['bond_matrix'].keys():
+        ax.plot3D(positions[bond, 0], positions[bond, 1], positions[bond, 2], color="black", linewidth=4)
+        # , tube_radius=0.02)
 
     # draw atoms
-    for i, atom in enumerate(balls):
-        ax.scatter(atom[0], atom[1], atom[2],
-                   color=tuple(jmol_colors[atomic_number[i]]),
-                   alpha=1.0, s=50)
-    maximum_position = balls.max()*1.05
+    ax.scatter(super_cell.positions[:, 0], super_cell.positions[:, 1], super_cell.positions[:, 2],
+                   color=tuple(jmol_colors[super_cell.get_atomic_numbers()]), alpha=1.0, s=50)
+    maximum_position = super_cell.positions.max()*1.05
     ax.set_proj_type('ortho')
 
     ax.set_zlim(-maximum_position/2, maximum_position/2)
     ax.set_ylim(-maximum_position/2, maximum_position/2)
     ax.set_xlim(-maximum_position/2, maximum_position/2)
 
-    if 'name' in tags:
-        ax.set_title(tags['name'])
-
-    ax.set_xlabel('x [nm]')
-    ax.set_ylabel('y [nm]')
-    ax.set_zlabel('z [nm]')
-
-
-def cubic(a):
-    """ Cubic lattice of dimensions a x a x a. """
-
-    if a is None or not isinstance(a, (float, int)):
-        raise TypeError("lattice parameter needs to be a number")
-    return np.identity(3)*a
-
-
-def from_parameters(a, b, c, alpha, beta, gamma):
-    """ Create a unit cell  using lengths and angles (in degrees)."""
-
-    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)) or not isinstance(c, (int, float)):
-        raise TypeError('lattice parameters must be numbers')
-    if not isinstance(alpha, (int, float)) or not isinstance(beta, (int, float)) or not isinstance(gamma, (int, float)):
-        raise TypeError('angles must be numbers')
-
-    alpha_r = np.radians(alpha)
-    beta_r = np.radians(beta)
-    gamma_r = np.radians(gamma)
-    val = (np.cos(alpha_r) * np.cos(beta_r) - np.cos(gamma_r)) / (np.sin(alpha_r) * np.sin(beta_r))
-
-    # Sometimes rounding errors result in values slightly > 1.
-    if val > 1.:
-        val = 1.
-    if val < -1.:
-        val = -1.
-
-    gamma_star = np.arccos(val)
-    vector_a = [a * np.sin(beta_r), 0.0, a * np.cos(beta_r)]
-    vector_b = [-b * np.sin(alpha_r) * np.cos(gamma_star),
-                b * np.sin(alpha_r) * np.sin(gamma_star),
-                b * np.cos(alpha_r)]
-    vector_c = [0.0, 0.0, float(c)]
-    return np.array([vector_a, vector_b, vector_c])
-
-
-def tetragonal(a, c):
-    """ Tetragonal unit cell of dimensions a x a x c. """
-
-    if not isinstance(a, (int, float)) or not isinstance(c, (int, float)):
-        raise TypeError('lattice parameters must be numbers')
-
-    return from_parameters(a, a, c, 90, 90, 90)
-
-
-def bcc(lattice_parameter, elements):
-    """ BCC structure
-
-    Parameters
-    ----------
-    lattice_parameter: float or int
-        lattice parameter in nm
-    elements: str or list of strings
-        list or a string of a single element
-
-    Returns
-    -------
-    unit cell: np.array
-    base: np.array
-        relative atom positions
-    atoms: list of strings
-        list of elements
-    """
-
-    if not isinstance(lattice_parameter, (int, float)):
-        raise TypeError('lattice parameter needs to be a number')
-    if not isinstance(elements, (str, list)):
-        raise TypeError('elements need to be a string or a list of strings')
-    if isinstance(elements, str):
-        elements = [elements]
-    unit_cell = cubic(lattice_parameter)
-    base = np.array([(0., 0., 0.), (0.5, 0.5, 0.5)])
-    if len(elements) > 1:
-        atoms = [elements[0], elements[1]]
-    else:
-        atoms = [elements[0], elements[0]]
-    return unit_cell, base, atoms
-
-
-def fcc(lattice_parameter, elements):
-    """ FCC structure
-
-    Parameters
-    ----------
-    lattice_parameter: float or int
-        lattice parameter in nm
-    elements: str or list of strings
-        list or a string of a single element
-
-    Returns
-    -------
-    unit cell: np.array
-    base: np.array
-        relative atom positions
-    atoms: list of strings
-        list of elements
-    """
-
-    if not isinstance(lattice_parameter, (int, float)):
-        raise TypeError('lattice parameter needs to be a number')
-    if not isinstance(elements, (str, list)):
-        raise TypeError('elements need to be a string or a list of strings')
-    if isinstance(elements, str):
-        elements = [elements]
-
-    unit_cell = cubic(lattice_parameter)
-    base = np.array([(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.0), (0., 0.5, 0.5)])
-    if len(elements) > 3:
-        atoms = [elements[0], elements[1], elements[2], elements[3]]
-    elif len(elements) > 1:
-        atoms = [elements[0], elements[1], elements[1], elements[1]]
-    else:
-        atoms = [elements[0]] * 4
-    return unit_cell, base, atoms
-
-
-def dichalcogenide(a, c, u, elements):
-    """Dichalcogenide structure
-
-    Parameters:
-    -----------
-    a, c: floats
-        lattice parameters
-    u: float
-        relative shift parameter
-    elements: str or list of str
-        element or list of strings of elements
-
-    Returns
-    -------
-    unit_cell: np.array
-    base: np.array
-        relative atom positions
-    atoms: list of strings
-        list of elements
-    """
-
-    if not isinstance(a, (int, float)) or not isinstance(c, (int, float)) or not isinstance(u, (int, float)):
-        raise TypeError('lattice parameters and relative shift parameter  needs to be numbers')
-    if not isinstance(elements, (str, list)):
-        raise TypeError('elements need to be a string or a list of strings')
-    if isinstance(elements, str):
-        elements = [elements]
-
-    unit_cell = from_parameters(a, a, c, 90., 90., 120.)
-    base = [(1 / 3., 2 / 3., 1 / 4.), (2 / 3., 1 / 3., 3 / 4.),
-            (2 / 3., 1 / 3., 1 / 4. + u), (2 / 3., 1 / 3., 1 / 4. - u),
-            (1 / 3., 2 / 3., 3 / 4. + u), (1 / 3., 2 / 3., 3 / 4. - u)]
-
-    if len(elements) > 1:
-        atoms = [elements[0]] * 2 + [elements[1]] * 4
-    else:
-        atoms = [elements[0]] * 6
-    return unit_cell, base, atoms
-
-
-def wurzite(a, c, u, elements):
-    """ Wurzite structure
-
-    Parameters:
-    -----------
-    a, c: floats
-        lattice parameters
-    u: float
-        relative shift parameter
-    elements: str or list of str
-        element or list of strings of elements
-
-    Returns
-    -------
-    unit_cell: np.array
-    base: np.array
-        relative atom positions
-    atoms: list of strings
-        list of elements
-    """
-
-    if not isinstance(a, (int, float)) or not isinstance(c, (int, float)) or not isinstance(u, (int, float)):
-        raise TypeError('lattice parameters and relative shift parameter  needs to be numbers')
-    if not isinstance(elements, (str, list)):
-        raise TypeError('elements need to be a string or a list of strings')
-    if isinstance(elements, str):
-        elements = [elements]
-
-    unit_cell = from_parameters(a, a, c, 90., 90., 120.)
-    base = [(2. / 3., 1. / 3., .500), (1. / 3., 2. / 3., 0.000), (2. / 3., 1. / 3., 0.5 + u), (1. / 3., 2. / 3., u)]
-    if len(elements) > 1:
-        atoms = [elements[0]] * 2 + [elements[1]] * 2
-    else:
-        atoms = [elements[0]] * 4
-    return unit_cell, base, atoms
-
-
-def rocksalt(lattice_parameter, elements):
-    """ Rocksalt structure
-
-    Parameters
-    ----------
-    lattice_parameter: float or int
-        lattice parameter in nm
-    elements: str or list of strings
-        list or a string of a single element
-
-    Returns
-    -------
-    unit cell: np.array
-    base: np.array
-        relative atom positions
-    atoms: list of strings
-        list of elements
-    """
-
-    if not isinstance(lattice_parameter, (int, float)):
-        raise TypeError('lattice parameter needs to be a number')
-    if not isinstance(elements, (str, list)):
-        raise TypeError('elements need to be a string or a list of strings')
-    if isinstance(elements, str):
-        elements = [elements]
-
-    unit_cell = np.identity(3) * lattice_parameter
-    base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)]
-    base2 = np.array(base) + (0.5, 0.5, 0.5)
-    base2 = np.where(base2 == 1., 0, base2)
-    base = base + base2.tolist()
-    if len(elements) == 8:
-        atoms = elements
-    elif len(elements) == 2:
-        atoms = [elements[0]] * 4 + [elements[1]] * 4
-    elif len(elements) == 1:
-        atoms = [elements[0]] * 8
-    else:
-        raise TypeError('elements must be 1 2 or 8 elements long')
-    return unit_cell, base, atoms
-
-
-def zinc_blende(lattice_parameter, elements):
-    """Legacy of bad spelling use zincblende instead"""
-
-    return zincblende(lattice_parameter, elements)
-
-
-def zincblende(lattice_parameter, elements):
-    """ Zincblende structure
-
-    Parameters
-    ----------
-    lattice_parameter: float or int
-        lattice parameter in nm
-    elements: str or list of strings
-        list or a string of a single element
-
-    Returns
-    -------
-    unit cell: np.array
-    base: np.array
-        relative atom positions
-    atoms: list of strings
-        list of elements
-    """
-
-    if not isinstance(lattice_parameter, (int, float)):
-        raise TypeError('lattice parameter needs to be a number')
-    if not isinstance(elements, (str, list)):
-        raise TypeError('elements need to be a string or a list of strings')
-    if isinstance(elements, str):
-        elements = [elements]
-
-    unit_cell = np.identity(3) * lattice_parameter
-    base = [(0., 0., 0.), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)]
-    base = base + (np.array(base) + (.25, .25, .25)).tolist()
-    if len(elements) == 8:
-        atoms = elements
-    elif len(elements) == 4:
-        atoms = [elements[0], elements[0], elements[1], elements[1], elements[2], elements[2], elements[3], elements[3]]
-        # Z = [electronFF[elements[0]][Z],
-    elif len(elements) == 2:
-        atoms = [elements[0]] * 4 + [elements[1]] * 4
-    elif len(elements) == 1:
-        atoms = [elements[0]] * 8
-    else:
-        raise TypeError('elements must be 1, 2, 4, or 8 elements long')
-
-    return unit_cell, base, atoms
-
-
-def perovskite(lattice_parameter, elements):
-    """ Perovskite structure
-
-    Parameters
-    ----------
-    lattice_parameter: float or int
-        lattice parameter in nm
-    elements: str or list of strings
-        list or a string of a single element
-
-    Returns
-    -------
-    unit cell: np.array
-    base: np.array
-        relative atom positions
-    atoms: list of strings
-        list of elements
-    """
-
-    if not isinstance(lattice_parameter, (int, float)):
-        raise TypeError('lattice parameter needs to be a number')
-    if not isinstance(elements, (str, list)):
-        raise TypeError('elements need to be a string or a list of strings')
-    if isinstance(elements, str):
-        elements = [elements]
-
-    unit_cell = cubic(lattice_parameter)
-    base = np.array([(0., 0., 0.), (0.5, 0.5, 0.5), (0.5, 0.0, 0.5), (0.5, 0.5, 0.), (0., 0.5, 0.5)])
-
-    if len(elements) == 5:
-        atoms = elements
-    elif len(elements) == 3:
-        atoms = [elements[0], elements[1]] + [elements[2]] * 3
-    elif len(elements) == 2:
-        atoms = [elements[0]] + [elements[1]] * 4
-    elif len(elements) == 1:
-        atoms = [elements[0]] * 5
-    else:
-        raise TypeError('elements must be 1, 3, or 5 elements long')
-
-    return unit_cell, base, atoms
-
-def structure_to_ase(tags):
-    try:
-        import ase
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError('Ase needs to be installed to convert it.')
-    assert (isinstance(tags, dict))
-    for key in ['unit_cell', 'elements', 'base']:
-        if key not in tags:
-            raise TypeError('This dictionary does not contain a structure')
-    atoms = ase.Atoms()
-    atoms.cell = tags['unit_cell']
-    atoms.set_scaled_positions(tags['base'])
-    atoms.set_chemical_symbols(tags['elements'])
-    return atoms
-
-
-def structure_from_ase(atoms):
-    """
-    structure dictionary from ase.Atoms object
-
-    """
-    try:
-        import ase
-    except ModuleNotFoundError:
-        raise ModuleNotFoundError('Ase needs to be installed to convert it.')
-    assert (isinstance(atoms, ase.Atoms))
-
-    tags = {'unit_cell': atoms.cell,
-            'elements': atoms.get_chemical_symbols(),
-            'base': atoms.get_scaled_positions()}
-
-    return tags
-
-def structure_by_name(crystal):
-    """Provides unit cell as a structure matrix, the list of elements and the atom base
-
-    type "print(ks.crystal_data_base.keys())" for a list of pre-defined crystal structures
-    Please note that the chemical expressions are case sensitive.
-
-    Parameters:
-    -----------
-    crystal: str
-        name as crystal:
-
-    Returns:
-    --------
-    new dictionary with the following keys:
-        ['unit_cell']: the structure matrix
-        ['base']:      relative coordinates of atoms
-        ['elements']:     name of elements in same order as base
-        an empty dictionary will be returned if the name is not recognized.
-    """
-
-    # Check whether name is in the crystal_data_base
-
-    if not isinstance(crystal, str):
-        raise TypeError('Parameter crystal is a name and must be a string')
-
-    if crystal in cdb:
-        tags = cdb[crystal].copy()
-    else:
-        print('Crystal name not defined')
-        return {}
-
-    # Make crystal structure dictionary based on symmetry
-    if 'symmetry' in tags:
-        if tags['symmetry'] == 'BCC':
-            unit_cell, base, atoms = bcc(tags['a'], tags['elements'])
-
-        elif tags['symmetry'] == 'FCC':
-            unit_cell, base, atoms = fcc(tags['a'], tags['elements'])
-
-        elif tags['symmetry'].lower() == 'perovskite':
-            unit_cell, base, atoms = perovskite(tags['a'], tags['elements'])
-
-        elif tags['symmetry'].lower() == 'zinc_blende':
-            unit_cell, base, atoms = zinc_blende(tags['a'], tags['elements'])
-
-        elif tags['symmetry'] == 'wurzite':
-            unit_cell, base, atoms = wurzite(tags['a'], tags['c'], tags['u'], tags['elements'])
-
-        elif tags['symmetry'] == 'rocksalt':
-            unit_cell, base, atoms = rocksalt(tags['a'], tags['elements'])
-
-        elif tags['symmetry'] == 'dichalcogenide':
-            unit_cell, base, atoms = dichalcogenide(tags['a'], tags['c'], tags['u'], tags['elements'])
-        else:
-            raise TypeError("use a supported symmetry tag")
-        tags['unit_cell'] = unit_cell
-        tags['elements'] = atoms
-        tags['base'] = base
-
-    return tags
+    if 'name' in super_cell.info:
+        ax.set_title(super_cell.info['name'])
+
+    ax.set_xlabel('x [Å]')
+    ax.set_ylabel('y [Å]')
+    ax.set_zlabel('z [Å]')
+    return fig
 
 
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
-jmol_colors = np.array([
-    (1.000, 0.000, 0.000),  # None1.000,1.000,1.000),  # H
-    (0.851, 1.000, 1.000),  # He
-    (0.800, 0.502, 1.000),  # Li
-    (0.761, 1.000, 0.000),  # Be
-    (1.000, 0.710, 0.710),  # B
-    (0.565, 0.565, 0.565),  # C
-    (0.188, 0.314, 0.973),  # N
-    (1.000, 0.051, 0.051),  # O
-    (0.565, 0.878, 0.314),  # F
-    (0.702, 0.890, 0.961),  # Ne
-    (0.671, 0.361, 0.949),  # Na
-    (0.541, 1.000, 0.000),  # Mg
-    (0.749, 0.651, 0.651),  # Al
-    (0.941, 0.784, 0.627),  # Si
-    (1.000, 0.502, 0.000),  # P
-    (1.000, 1.000, 0.188),  # S
-    (0.122, 0.941, 0.122),  # Cl
-    (0.502, 0.820, 0.890),  # Ar
-    (0.561, 0.251, 0.831),  # K
-    (0.239, 1.000, 0.000),  # Ca
-    (0.902, 0.902, 0.902),  # Sc
-    (0.749, 0.761, 0.780),  # Ti
-    (0.651, 0.651, 0.671),  # V
-    (0.541, 0.600, 0.780),  # Cr
-    (0.612, 0.478, 0.780),  # Mn
-    (0.878, 0.400, 0.200),  # Fe
-    (0.941, 0.565, 0.627),  # Co
-    (0.314, 0.816, 0.314),  # Ni
-    (0.784, 0.502, 0.200),  # Cu
-    (0.490, 0.502, 0.690),  # Zn
-    (0.761, 0.561, 0.561),  # Ga
-    (0.400, 0.561, 0.561),  # Ge
-    (0.741, 0.502, 0.890),  # As
-    (1.000, 0.631, 0.000),  # Se
-    (0.651, 0.161, 0.161),  # Br
-    (0.361, 0.722, 0.820),  # Kr
-    (0.439, 0.180, 0.690),  # Rb
-    (0.000, 1.000, 0.000),  # Sr
-    (0.580, 1.000, 1.000),  # Y
-    (0.580, 0.878, 0.878),  # Zr
-    (0.451, 0.761, 0.788),  # Nb
-    (0.329, 0.710, 0.710),  # Mo
-    (0.231, 0.620, 0.620),  # Tc
-    (0.141, 0.561, 0.561),  # Ru
-    (0.039, 0.490, 0.549),  # Rh
-    (0.000, 0.412, 0.522),  # Pd
-    (0.753, 0.753, 0.753),  # Ag
-    (1.000, 0.851, 0.561),  # Cd
-    (0.651, 0.459, 0.451),  # In
-    (0.400, 0.502, 0.502),  # Sn
-    (0.620, 0.388, 0.710),  # Sb
-    (0.831, 0.478, 0.000),  # Te
-    (0.580, 0.000, 0.580),  # I
-    (0.259, 0.620, 0.690),  # Xe
-    (0.341, 0.090, 0.561),  # Cs
-    (0.000, 0.788, 0.000),  # Ba
-    (0.439, 0.831, 1.000),  # La
-    (1.000, 1.000, 0.780),  # Ce
-    (0.851, 1.000, 0.780),  # Pr
-    (0.780, 1.000, 0.780),  # Nd
-    (0.639, 1.000, 0.780),  # Pm
-    (0.561, 1.000, 0.780),  # Sm
-    (0.380, 1.000, 0.780),  # Eu
-    (0.271, 1.000, 0.780),  # Gd
-    (0.188, 1.000, 0.780),  # Tb
-    (0.122, 1.000, 0.780),  # Dy
-    (0.000, 1.000, 0.612),  # Ho
-    (0.000, 0.902, 0.459),  # Er
-    (0.000, 0.831, 0.322),  # Tm
-    (0.000, 0.749, 0.220),  # Yb
-    (0.000, 0.671, 0.141),  # Lu
-    (0.302, 0.761, 1.000),  # Hf
-    (0.302, 0.651, 1.000),  # Ta
-    (0.129, 0.580, 0.839),  # W
-    (0.149, 0.490, 0.671),  # Re
-    (0.149, 0.400, 0.588),  # Os
-    (0.090, 0.329, 0.529),  # Ir
-    (0.816, 0.816, 0.878),  # Pt
-    (1.000, 0.820, 0.137),  # Au
-    (0.722, 0.722, 0.816),  # Hg
-    (0.651, 0.329, 0.302),  # Tl
-    (0.341, 0.349, 0.380),  # Pb
-    (0.620, 0.310, 0.710),  # Bi
-    (0.671, 0.361, 0.000),  # Po
-    (0.459, 0.310, 0.271),  # At
-    (0.259, 0.510, 0.588),  # Rn
-    (0.259, 0.000, 0.400),  # Fr
-    (0.000, 0.490, 0.000),  # Ra
-    (0.439, 0.671, 0.980),  # Ac
-    (0.000, 0.729, 1.000),  # Th
-    (0.000, 0.631, 1.000),  # Pa
-    (0.000, 0.561, 1.000),  # U
-    (0.000, 0.502, 1.000),  # Np
-    (0.000, 0.420, 1.000),  # Pu
-    (0.329, 0.361, 0.949),  # Am
-    (0.471, 0.361, 0.890),  # Cm
-    (0.541, 0.310, 0.890),  # Bk
-    (0.631, 0.212, 0.831),  # Cf
-    (0.702, 0.122, 0.831),  # Es
-    (0.702, 0.122, 0.729),  # Fm
-    (0.702, 0.051, 0.651),  # Md
-    (0.741, 0.051, 0.529),  # No
-    (0.780, 0.000, 0.400),  # Lr
-    (0.800, 0.000, 0.349),  # Rf
-    (0.820, 0.000, 0.310),  # Db
-    (0.851, 0.000, 0.271),  # Sg
-    (0.878, 0.000, 0.220),  # Bh
-    (0.902, 0.000, 0.180),  # Hs
-    (0.922, 0.000, 0.149),  # Mt
-])
-
-# encoding: utf-8
-# crystal data base cbd
-cdb = {'aluminum': {'crystal_name': 'aluminum'}}
-cdb['aluminum']['symmetry'] = 'FCC'
-cdb['aluminum']['elements'] = ['Al']
-cdb['aluminum']['a'] = 0.405  # nm
-cdb['aluminum']['reference'] = 'W. Witt, Z. Naturforsch. A, 1967, 22A, 92'
-cdb['aluminum']['link'] = 'http://doi.org/10.1515/zna-1967-0115'
-cdb['Al'] = cdb['Aluminum'] = cdb['aluminum']
-
-cdb['gold'] = {}
-cdb['gold']['crystal_name'] = 'gold'
-cdb['gold']['symmetry'] = 'FCC'
-cdb['gold']['elements'] = ['Au']
-cdb['gold']['a'] = 0.40782  # nm
-cdb['gold']['reference'] = ''
-cdb['gold']['link'] = ''
-cdb['Au'] = cdb['Gold'] = cdb['gold']
-
-cdb['silver'] = {}
-cdb['silver']['crystal_name'] = 'silver'
-cdb['silver']['symmetry'] = 'FCC'
-cdb['silver']['elements'] = ['Ag']
-cdb['silver']['a'] = 0.40853  # nm
-cdb['silver']['reference'] = ''
-cdb['silver']['link'] = ''
-cdb['Ag'] = cdb['Silver'] = cdb['silver']
-
-cdb['diamond'] = {}
-cdb['diamond']['crystal_name'] = 'diamond'
-cdb['diamond']['symmetry'] = 'zinc_blende'
-cdb['diamond']['elements'] = ['C']
-cdb['diamond']['a'] = 0.35668  # nm
-cdb['diamond']['reference'] = ''
-cdb['diamond']['link'] = ''
-cdb['Diamond'] = cdb['diamond']
-
-cdb['germanium'] = {}
-cdb['germanium']['crystal_name'] = 'germanium'
-cdb['germanium']['symmetry'] = 'zinc_blende'
-cdb['germanium']['elements'] = ['Ge']
-cdb['germanium']['a'] = 0.566806348  # nm for 300K
-cdb['germanium']['reference'] = 'H. P. Singh, Acta Crystallogr., 1968, 24A, 469'
-cdb['germanium']['link'] = 'https://doi.org/10.1107/S056773946800094X'''
-cdb['Ge'] = cdb['Germanium'] = cdb['germanium']
-
-cdb['silicon'] = {}
-cdb['silicon']['crystal_name'] = 'silicon'
-cdb['silicon']['symmetry'] = 'zinc_blende'
-cdb['silicon']['elements'] = ['Si']
-cdb['silicon']['a'] = 0.566806348  # nm for 300K
-cdb['silicon']['reference'] = 'C. R. Hubbard, H. E. Swanson, and F. A. Mauer, J. Appl. Crystallogr., 1975, 8, 45'
-cdb['silicon']['link'] = 'https://doi.org/10.1107/S0021889875009508'
-cdb['Si'] = cdb['Silicon'] = cdb['silicon']
-
-cdb['GaAs'] = {}
-cdb['GaAs']['crystal_name'] = 'GaAs'
-cdb['GaAs']['symmetry'] = 'zinc_blende'
-cdb['GaAs']['elements'] = ['Ga', 'As']
-cdb['GaAs']['a'] = 0.565325  # nm for 300K
-cdb['GaAs']['reference'] = 'J.F.C. Baker, M. Hart, M.A.G. Halliwell, R. Heckingbottom, Solid-State Electronics, 19, ' \
-                           '1976, 331-334,'
-cdb['GaAs']['link'] = 'https://doi.org/10.1016/0038-1101(76)90031-9'
-
-cdb['FCC Fe'] = {}
-cdb['FCC Fe']['crystal_name'] = 'FCC Fe'
-cdb['FCC Fe']['symmetry'] = 'FCC'
-cdb['FCC Fe']['elements'] = ['Fe']
-cdb['FCC Fe']['a'] = 0.3571  # nm
-cdb['FCC Fe']['reference'] = 'R. Kohlhaas, P. Donner, and N. Schmitz-Pranghe, Z. Angew. Phys., 1967, 23, 245'
-cdb['FCC Fe']['link'] = ''
-cdb['fcc fe'] = cdb['FCC Fe']
-
-cdb['BCC Fe'] = {}
-cdb['BCC Fe']['crystal_name'] = 'BCC Fe'
-cdb['BCC Fe']['symmetry'] = 'BCC'
-cdb['BCC Fe']['elements'] = ['Fe']
-cdb['BCC Fe']['a'] = 0.2866  # nm
-cdb['BCC Fe']['reference'] = 'Z. S. Basinski, W. Hume-Rothery and A. L. Sutton, Proceedings of the Royal Society of ' \
-                             'London. Series A, Mathematical and Physical Sciences Vol. 229, No. 1179 ' \
-                             '(May 24, 1955), pp. 459-467'
-cdb['BCC Fe']['link'] = 'http://www.jstor.org/stable/99693'
-cdb['bcc fe'] = cdb['BCC Fe']
-
-cdb['SrTiO3'] = {}
-cdb['SrTiO3']['crystal_name'] = 'SrTiO3'
-cdb['SrTiO3']['symmetry'] = 'perovskite'
-cdb['SrTiO3']['elements'] = ['Sr', 'Ti', 'O']
-cdb['SrTiO3']['a'] = 0.3905268  # nm
-cdb['SrTiO3']['reference'] = 'M. Schmidbauer, A. Kwasniewski and J. Schwarzkopf, Acta Cryst. (2012). B68, 8-14'
-cdb['SrTiO3']['link'] = 'http://doi.org/10.1107/S0108768111046738'
-
-cdb['ZnO Wurzite'] = {}
-cdb['ZnO Wurzite']['crystal_name'] = 'ZnO Wurzite'
-cdb['ZnO Wurzite']['symmetry'] = 'wurzite'
-cdb['ZnO Wurzite']['elements'] = ['Zn', 'O']
-cdb['ZnO Wurzite']['a'] = 0.3278  # nm
-cdb['ZnO Wurzite']['c'] = 0.5292  # nm
-cdb['ZnO Wurzite']['u'] = 0.382  # nm
-cdb['ZnO Wurzite']['reference'] = ''
-cdb['ZnO Wurzite']['link'] = ''
-cdb['ZnO'] = cdb['ZnO wurzite'] = cdb['wZnO'] = cdb['ZnO Wurzite']
-
-cdb['GaN'] = {}
-cdb['GaN']['crystal_name'] = 'GaN Wurzite'
-cdb['GaN']['symmetry'] = 'wurzite'
-cdb['GaN']['elements'] = ['Ga', 'N']
-cdb['GaN']['a'] = 0.3186  # nm
-cdb['GaN']['c'] = 0.5186  # nm
-cdb['GaN']['u'] = 0.376393  # nm
-cdb['GaN']['reference'] = ''
-cdb['GaN']['link'] = ''
-cdb['GaN wurzite'] = cdb['wGaN'] = cdb['GaN Wurzite'] = cdb['GaN']
-
-cdb['MgO'] = {}
-cdb['MgO']['crystal_name'] = 'MgO'
-cdb['MgO']['symmetry'] = 'rocksalt'
-cdb['MgO']['elements'] = ['Mg', 'O']
-cdb['MgO']['a'] = 0.4256483  # nm
-cdb['MgO']['reference'] = ''
-cdb['MgO']['link'] = ''
-
-cdb['TiN'] = {}
-cdb['TiN']['crystal_name'] = 'TiN'
-cdb['TiN']['symmetry'] = 'rocksalt'
-cdb['TiN']['elements'] = ['Ti', 'N']
-cdb['TiN']['a'] = 0.425353445  # nm
-cdb['TiN']['reference'] = ''
-cdb['TiN']['link'] = ''
-cdb['TiN']['space_group'] = 225
-cdb['TiN']['symmetry_name'] = 'Fm-3m'
-
-cdb['MoS2'] = {}
-cdb['MoS2']['crystal_name'] = 'MoS2'
-cdb['MoS2']['symmetry'] = 'dichalcogenide'
-cdb['MoS2']['elements'] = ['Mo', 'S']
-cdb['MoS2']['a'] = 0.319031573  # nm
-cdb['MoS2']['c'] = 1.487900430  # nm
-cdb['MoS2']['u'] = 0.105174  # nm
-cdb['MoS2']['reference'] = ''
-cdb['MoS2']['link'] = ''
-
-cdb['WS2'] = {}
-cdb['WS2']['crystal_name'] = 'WS2'
-cdb['WS2']['symmetry'] = 'dichalcogenide'
-cdb['WS2']['elements'] = ['W', 'S']
-cdb['WS2']['a'] = 0.319073051  # nm
-cdb['WS2']['c'] = 1.420240204  # nm
-cdb['WS2']['u'] = 0.110759  # nm
-cdb['WS2']['reference'] = ''
-cdb['WS2']['link'] = ''
-
-cdb['WSe2'] = {}
-cdb['WSe2']['crystal_name'] = 'WSe2'
-cdb['WSe2']['symmetry'] = 'dichalcogenide'
-cdb['WSe2']['elements'] = ['W', 'Se']
-cdb['WSe2']['a'] = 0.332706918  # nm
-cdb['WSe2']['c'] = 1.506895072  # nm
-cdb['WSe2']['u'] = 0.111569  # nm
-cdb['WSe2']['reference'] = ''
-cdb['WSe2']['link'] = ''
-
-cdb['MoSe2'] = {}
-cdb['MoSe2']['crystal_name'] = 'MoSe2'
-cdb['MoSe2']['elements'] = ['Mo', 'Se']
-cdb['MoSe2']['a'] = 0.332694913  # nm
-cdb['MoSe2']['c'] = 1.545142322  # nm
-cdb['MoSe2']['u'] = 0.108249  # nm
-cdb['MoSe2']['reference'] = ''
-cdb['MoSe2']['link'] = ''
-
-cdb['ZnO hexagonal'] = {}
-cdb['ZnO hexagonal']['crystal_name'] = 'ZnO hexagonal'
-# cdb['ZnO hexagonal']['symmetry'] = 'hexagonal'
-cdb['ZnO hexagonal']['a'] = a_l = 0.3336  # nm
-cdb['ZnO hexagonal']['c'] = c_l = 0.4754  # not np.sqrt(8/3)*1
-cdb['ZnO hexagonal']['unit_cell'] = [[a_l, 0., 0.],
-                                     [np.cos(120 / 180 * np.pi) * a_l, np.sin(120 / 180 * np.pi) * a_l, 0.],
-                                     [0., 0., c_l]]
-cdb['ZnO hexagonal']['elements'] = ['Zn', 'Zn', 'O', 'O']
-base_l = [(2. / 3., 1. / 3., .500), (1. / 3., 2. / 3., 0.000), (2. / 3., 1. / 3., 0.0), (1. / 3., 2. / 3., .5)]
-cdb['ZnO hexagonal']['base'] = np.array(base_l)
-
-cdb['Graphite'] = {}
-cdb['Graphite']['crystal_name'] = 'Graphite'
-# cdb['Graphite']['symmetry'] = 'hexagonal'
-# ### Create graphite unit cell (or structure matrix)
-cdb['Graphite']['a'] = a_l = b_l = 0.2464  # nm
-cdb['Graphite']['c'] = c_l = 0.6711
-gamma_l = 60
-alpha_l = beta_l = 90
-
-cdb['Graphite']['unit_cell'] = from_parameters(a_l, b_l, c_l, alpha_l, beta_l, gamma_l)
-
-# ### Create graphite atom base
-# Elements of base
-cdb['Graphite']['elements'] = ['C'] * 4
-# atom positions in relative coordinates
-base_l = np.array([(0, 0, 0), (0, 0, 0.5), (1. / 3., 1. / 3., 0.000), (2. / 3., 2. / 3., 0.5)])
-cdb['Graphite']['base'] = np.array(base_l)
-cdb['Graphite']['reference'] = 'P. Trucano and R. Chen, Nature, 1975, 258, 136'
-cdb['Graphite']['link'] = 'https://doi.org/10.1038/258136a0'
-
-cdb['graphite'] = cdb['Graphite']
-
-cdb['CsCl'] = {}
-# Create CsCl structure
-cdb['CsCl']['a'] = a_l = 0.4209  # nm
-cdb['CsCl']['crystal_name'] = 'CsCl'
-cdb['CsCl']['unit_cell'] = np.identity(3) * a_l
-cdb['CsCl']['elements'] = ['Cs', 'Cl']
-cdb['CsCl']['base'] = np.array([[0, 0, 0], [0.5, 0.5, 0.5]])
-cdb['CsCl']['reference'] = ''
-cdb['CsCl']['link'] = ''
-
-cdb['PdSe2'] = {}
-# Create CsCl structure
-cdb['PdSe2']['crystal_name'] = 'PdSe2'
-cdb['PdSe2']['unit_cell'] = (np.identity(3) * (.579441832, 0.594542204, 0.858506072))
-cdb['PdSe2']['elements'] = ['Pd'] * 4 + ['Se'] * 8
-cdb['PdSe2']['base'] = np.array([[.5, .0, .0], [.0, 0.5, 0.0], [.5, 0.5, 0.5], [.0, 0.5, 0.5],
-                                 [0.611300, 0.119356, 0.585891],
-                                 [0.111300, 0.380644, 0.414109],
-                                 [0.388700, 0.619356, 0.914109],
-                                 [0.888700, 0.880644, 0.085891],
-                                 [0.111300, 0.119356, 0.914109],
-                                 [0.611300, 0.380644, 0.085891],
-                                 [0.888700, 0.619356, 0.585891],
-                                 [0.388700, 0.880644, 0.414109]])
-cdb['PdSe2']['reference'] = ''
-cdb['PdSe2']['link'] = ''
-
-crystal_data_base = cdb
+jmol_colors = ase.data.colors.jmol_colors
 
 
 # From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.

@@ -11,7 +11,8 @@ import sidpy
 from scipy.ndimage import gaussian_filter
 
 import sys
-sys.path.append("../pyTEMlib/")
+sys.path.insert(0, "../")
+
 import pyTEMlib.file_tools as ft
 ft.QT_available = False
 import pyTEMlib.atom_tools as atom_tools
@@ -75,7 +76,6 @@ class TestUtilityFunctions(unittest.TestCase):
 
     def test_atoms_clustering(self):
         image, atoms = make_test_data()
-
         clusters, distances, indices = atom_tools.atoms_clustering(atoms, atoms)
 
         self.assertTrue(np.isin(clusters, [0, 1, 2]).all())

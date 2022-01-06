@@ -1,20 +1,22 @@
 """file_tools: All tools to load and save data
+
+##################################
+
+ 2018 01 31 Included Nion Swift files to be opened
+ major revision 2020 09 to include sidpy and pyNSID data formats
+ 2022 change to ase format for structures: this changed the default unit of length to Angstrom!!!
+
+##################################
 """
-##################################
-#
-# 2018 01 31 Included Nion Swift files to be opened
-# major revision 2020 09 to include sidpy and pyNSID data formats
-#
-##################################
 
 import numpy as np
 import h5py
 import os
-import sys
+import pickle
 
 # For structure files of various flavor for instance POSCAR
 import ase.io
-import ipyfilechooser
+import ase
 
 # =============================================
 #   Include  pycroscopy libraries                                      #
@@ -22,30 +24,27 @@ import ipyfilechooser
 import SciFiReaders
 import pyNSID
 import sidpy
+import ipywidgets as widgets
+from IPython.display import display
 
 # =============================================
 #   Include  pyTEMlib libraries                                      #
 # =============================================
-
+import pyTEMlib.crystal_tools
 from .config_dir import config_path
-from .sidpy_tools import *
 
 QT_available = False
 
 Dimension = sidpy.Dimension
-nest_dict = sidpy.base.dict_utils.nest_dict
 
 get_slope = sidpy.base.num_utils.get_slope
-__version__ = '2021.3.1'
-
-nest_dict = sidpy.dict_utils.nest_dict
-
+__version__ = '2022.1.0'
 
 class FileWidget(object):
     """Widget to select directories or widgets from a list
 
     Works in google colab.
-    The widgets converts the name of the nion file to the one in Nion's swift software,
+    The widget converts the name of the nion file to the one in Nion's swift software,
     because it is otherwise incomprehensible
 
     Attributes
@@ -77,17 +76,14 @@ class FileWidget(object):
         self.dir_list = ['.', '..']
         self.display_list = ['.', '..']
 
+        self.dir_name = '.'
         if dir_name is None:
-            dir_name = get_last_path()
+            self.dir_name = get_last_path()
             self.save_path = True
-            self.get_directory(dir_name)
         elif os.path.isdir(dir_name):
-            self.get_directory(dir_name)
             self.dir_name = dir_name
-        else:
-            self.dir_name = '.'
-            self.get_directory(self.dir_name)
 
+        self.get_directory(self.dir_name)
         self.dir_list = ['.']
         self.extensions = extension
         self.file_name = ''
@@ -113,50 +109,23 @@ class FileWidget(object):
     def set_options(self):
         self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
         dir_list = os.listdir(self.dir_name)
-
-        file_list = []
-        display_file_list = []
-        directory_list = []
-
-        for i in range(len(dir_list)):
-            name = dir_list[i]
-            full_name = os.path.join(self.dir_name, name)
-
-            if os.path.isfile(full_name):
-                size = os.path.getsize(full_name) * 2 ** -20
-                basename, extension = os.path.splitext(name)
-                if self.extensions[0] == 'hf5':
-                    if extension in ['.hf5']:
-                        file_list.append(dir_list[i])
-                        display_file_list.append(f" {name}  - {size:.1f} MB")
-                else:
-                    file_list.append(dir_list[i])
-                    if extension in ['.h5', '.ndata']:
-                        reader = SciFiReaders.NionReader(full_name)
-                        dataset_nion = reader.read()
-                        display_file_list.append(f" {dataset_nion.title}{extension}  - {size:.1f} MB")
-                    elif extension in ['.hf5']:
-                        display_file_list.append(f" {name}  -- {size:.1f} MB")
-                    else:
-                        display_file_list.append(f' {name}  - {size:.1f} MB')
-            else:
-                directory_list.append(name)
-
-        sort = np.argsort(directory_list)
+        file_dict = update_directory_list(self.dir_name)
+       
+        sort = np.argsort(file_dict['directory_list'])
         self.dir_list = ['.', '..']
         self.display_list = ['.', '..']
         for j in sort:
-            self.display_list.append(f' * {directory_list[j]}')
-            self.dir_list.append(directory_list[j])
+            self.display_list.append(f" * {file_dict['directory_list'][j]}")
+            self.dir_list.append(file_dict['directory_list'][j])
 
-        sort = np.argsort(display_file_list)
+        sort = np.argsort(file_dict['display_file_list'])
 
         for i, j in enumerate(sort):
             if '--' in dir_list[j]:
-                self.display_list.append(f' {i:3} {display_file_list[j]}')
+                self.display_list.append(f" {i:3} {file_dict['display_file_list'][j]}")
             else:
-                self.display_list.append(f' {i:3}   {display_file_list[j]}')
-            self.dir_list.append(file_list[j])
+                self.display_list.append(f" {i:3}   {file_dict['display_file_list'][j]}")
+            self.dir_list.append(file_dict['file_list'][j])
 
         self.dir_label = os.path.split(self.dir_name)[-1] + ':'
         self.select_files.options = self.display_list
@@ -168,6 +137,131 @@ class FileWidget(object):
 
         elif os.path.isfile(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
             self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])
+
+
+class ChooseDataset(object):
+    """Widget to select dataset object """
+
+    def __init__(self, input_object, show_dialog=True):
+        if isinstance(input_object, sidpy.Dataset):
+            if isinstance(input_object.h5_dataset, h5py.Dataset):
+                self.current_channel = input_object.h5_dataset.parent
+        elif isinstance(input_object, h5py.Group):
+            self.current_channel = input_object
+        elif isinstance(input_object, h5py.Dataset):
+            self.current_channel = input_object.parent
+        else:
+            raise ValueError('Need hdf5 group or sidpy Dataset to determine image choices')
+        self.dataset_names = []
+        self.dataset_list = []
+        self.dataset_type = None
+        self.dataset = None
+        self.reader = pyNSID.NSIDReader(self.current_channel.file.filename)
+
+        self.get_dataset_list()
+        self.select_image = widgets.Dropdown(options=self.dataset_names,
+                                             value=self.dataset_names[0],
+                                             description='select dataset:',
+                                             disabled=False,
+                                             button_style='')
+        if show_dialog:
+            display(self.select_image)
+
+        self.select_image.observe(self.set_dataset, names='value')
+        self.set_dataset(0)
+        self.select_image.index = (len(self.dataset_names) - 1)
+
+    def get_dataset_list(self):
+        """ Get by Log number sorted list of datasets"""
+        datasets = self.reader.read()
+        order = []
+        for dset in datasets:
+            if self.dataset_type is None or dset.data_type == self.data_type:
+                if 'Log' in dset.title:
+                    position = dset.title.find('Log_') + 4
+                    order.append(int(dset.title[position:position + 3])+1)
+                else:
+                    order.append(0)
+        for index in np.argsort(order):
+            dset = datasets[index]
+            self.dataset_names.append('/'.join(dset.title.replace('-', '_').split('/')[-1:]))
+            self.dataset_list.append(dset)
+
+    def set_dataset(self, b):
+        index = self.select_image.index
+        self.dataset = self.dataset_list[index]
+        # Find
+        self.dataset.title = self.dataset.title.split('/')[-1]
+
+
+def add_to_dict(file_dict, name):
+    full_name = os.path.join(file_dict['directory'], name)
+    basename, extension = os.path.splitext(name)
+    size = os.path.getsize(full_name) * 2 ** -20
+    display_name = name
+    if len(extension) == 0:
+        display_file_list = f' {name}  - {size:.1f} MB' 
+    elif extension[0] == 'hf5':
+        if extension in ['.hf5']:
+            display_file_list = f" {name}  - {size:.1f} MB"
+    elif extension in ['.h5', '.ndata']:
+        try:
+            reader = SciFiReaders.NionReader(full_name)
+            dataset_nion = reader.read()
+            display_name = dataset_nion.title
+            display_file_list = f" {display_name}{extension}  - {size:.1f} MB"
+        except:
+            display_file_list = f" {name}  - {size:.1f} MB"
+    else:
+        display_file_list = f' {name}  - {size:.1f} MB'
+    file_dict[name] = {'display_string': display_file_list, 'basename': basename, 'extension': extension, 
+                       'size': size, 'display_name': display_name}
+
+    
+def update_directory_list(directory_name):
+    dir_list = os.listdir(directory_name)
+
+    if '.pyTEMlib.files.pkl' in dir_list:
+        with open(os.path.join(directory_name, '.pyTEMlib.files.pkl'), 'rb') as f:
+            file_dict = pickle.load(f)
+        if directory_name != file_dict['directory']:
+            print('directory moved since last time read')
+            file_dict['directory'] = directory_name
+        dir_list.remove('.pyTEMlib.files.pkl')
+    else:
+        file_dict = {'directory': directory_name}
+
+    # add new files
+    file_dict['file_list'] = []
+    file_dict['display_file_list'] = []
+    file_dict['directory_list'] = []
+    
+    for name in dir_list:
+        if os.path.isfile(os.path.join(file_dict['directory'], name)):
+            if name not in file_dict:
+                add_to_dict(file_dict, name)
+            file_dict['file_list'].append(name)
+            file_dict['display_file_list'].append(file_dict[name]['display_string'])
+        else:
+            file_dict['directory_list'].append(name)
+    remove_item = [] 
+    
+    # delete items of deleted files
+    save_pickle = False
+    
+    for name in file_dict.keys():
+        if name not in dir_list and name not in ['directory', 'file_list', 'directory_list', 'display_file_list']:
+            remove_item.append(name)
+        else:
+            if 'extension' in file_dict[name]:
+                save_pickle = True
+    for item in remove_item:
+        file_dict.pop(item)
+
+    if save_pickle:
+        with open(os.path.join(file_dict['directory'], '.pyTEMlib.files.pkl'), 'wb') as f:
+            pickle.dump(file_dict, f)
+    return file_dict
 
 
 ####
@@ -182,8 +276,7 @@ def get_qt_app():
         QT_available = True
     except ImportError:
         QT_available = False
-        
-    
+
     # start qt event loop
     _instance = QtWidgets.QApplication.instance()
     if not _instance:
@@ -254,14 +347,15 @@ def savefile_dialog_Qt(initial_file='*.hf5', file_types=None):
     else:
         return ''
 
+
+"""
 class open_file_dialog(ipyfilechooser.FileChooser):
     def __init__(self, directory=None):
-        if directory == None:
+        if directory is None:
             directory = get_last_path()
         super().__init__(directory) 
         self._use_dir_icons = True
-        
-        
+
     def _apply_selection(self):
         super()._apply_selection()
         selected = os.path.join(
@@ -279,11 +373,10 @@ class open_file_dialog(ipyfilechooser.FileChooser):
                 self._selected_filename,
                 'green'
             )
-        
         save_path(selected)
         
     def _set_form_values(self, path: str, filename: str) -> None:
-        """Set the form values."""
+        ""Set the form values.""
         # Disable triggers to prevent selecting an entry in the Select
         # box from automatically triggering a new event.
         self._pathlist.unobserve(
@@ -317,7 +410,8 @@ class open_file_dialog(ipyfilechooser.FileChooser):
             filter_pattern=self._filter_pattern
         )
 
-        # file/folder display names
+        # file/folder 
+        names
         dircontent_display_names = ipyfilechooser.utils.get_dir_contents(
             path,
             show_hidden=self._show_hidden,
@@ -396,7 +490,6 @@ class open_file_dialog(ipyfilechooser.FileChooser):
                 self._select.disabled = True
             else:
                 self._select.disabled = False
-        
     
     def set_display_names(self, dircontent_real_names, dircontent_display_names):
         
@@ -419,7 +512,7 @@ class open_file_dialog(ipyfilechooser.FileChooser):
                 else:
                     dircontent_display_names[i] = dircontent_display_names[i]
             
-        return dircontent_display_names
+        return dircontent_display_names"""
 
     
 def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
@@ -464,17 +557,17 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
         file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
                      'DM files (*.dm3);;Nion files (*.ndata *.h5);;All files (*)'
 
-        # file_types = [("TEM files",["*.dm*","*.hf*","*.ndata" ]),("pyUSID files","*.hf5"),("DM files","*.dm*"),
+        # file_types = [("TEM files",["*.dm*","*.hf*","*.ndata" ]),("pyNSID files","*.hf5"),("DM files","*.dm*"),
         # ("Nion files",["*.h5","*.ndata"]),("all files","*.*")]
 
     # Determine last path used
     path = get_last_path()
     _ = get_qt_app()
+    if QT_available:
+        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
 
-    filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
-
-    save_path(filename)
-    return filename
+        save_path(filename)
+        return filename
 
 
 def save_dataset(dataset, filename=None,  h5_group=None):
@@ -489,7 +582,8 @@ def save_dataset(dataset, filename=None,  h5_group=None):
         not used yet
 
     """
-    filename = open_file_dialog()
+    if filename is None:
+        filename = open_file_dialog_qt()
     h5_filename = get_h5_filename(filename)
     h5_file = h5py.File(h5_filename, mode='a')
     path, file_name = os.path.split(filename)
@@ -551,11 +645,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
 
     """
     if filename is None:
-        selected_file = open_file_dialog()
-        display(selected_file)
-        while selected_file.selected == None:
-            pass
-        file_name = selected_file.selected
+        selected_file = open_file_dialog_qt()
+        filename = selected_file
         
     else:
         if not isinstance(filename, str):
@@ -577,7 +668,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
                 datasets[0].h5_dataset.file.close()
             return datasets[0]
 
-        """ should go to no dataset found
+        """ 
+        should go to no dataset found
         if 'Raw_Data' in h5_group:
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
@@ -609,9 +701,9 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
 
         if write_hdf_file:
             filename = os.path.join(path,  dset.title+extension)
+            
             h5_filename = get_h5_filename(filename)
             h5_file = h5py.File(h5_filename, mode='a')
-
 
             if 'Measurement_000' in h5_file:
                 print('could not write dataset to file, try saving it with ft.save()')
@@ -625,7 +717,10 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
                 # dset.original_metadata = nest_dict(dset.original_metadata)
 
                 dset.h5_dataset = h5_dataset
-                pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
+                # pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
+                
+        save_path(path)
+        dset.structures = []
         return dset
     else:
         print('file type not handled yet.')
@@ -728,6 +823,10 @@ def log_results(h5_group, dataset=None, attributes=None):
         if hasattr(dataset, 'meta_data'):
             if 'analysis' in dataset.meta_data:
                 log_group['analysis'] = dataset.meta_data['analysis']
+        if hasattr(dataset, 'structures'):
+            for structure in dataset.structures:
+                h5_add_crystal_structure(log_group, structure)
+        
         dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
     if attributes is not None:
         for key, item in attributes.items():
@@ -746,13 +845,13 @@ def add_dataset(dataset, h5_group=None):
     ----------
     dataset: sidpy.Dataset
         data to write to file
-    h5_group: None, sidpy.Dataset, h5py.Group, h5py.Datset, h5py.File
+    h5_group: None, sidpy.Dataset, h5py.Group, h5py.Dataset, h5py.File
         identifier to which group the data are added (if None the dataset must have a valid h5_dataset)
 
     Returns
     -------
     log_group: h5py.Dataset
-        reference the dataset has been written to. (is also stored in h5_dataset attribute of sipy.Dataset)
+        reference the dataset has been written to. (is also stored in h5_dataset attribute of sidpy.Dataset)
     """
 
     if h5_group is None:
@@ -768,26 +867,46 @@ def add_dataset(dataset, h5_group=None):
     if not isinstance(h5_group, h5py.Group):
         raise TypeError('Need a valid identifier for a hdf5 group to store data in')
 
+    structures = []
+    if hasattr(dataset, 'structures'):
+        structures = dataset.structures.copy()
+        del dataset.structures
+        
     log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
     h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, log_group)
 
     if hasattr(dataset, 'meta_data'):
         if 'analysis' in dataset.meta_data:
             log_group['analysis'] = dataset.meta_data['analysis']
+    
+    for structure in structures:
+        h5_add_crystal_structure(log_group, structure)
 
     dataset.h5_dataset = h5_dataset
     return h5_dataset
 
 
-###
+# ##
 # Crystal Structure Read and Write
-###
+# ##
 def read_poscar(file_name=None):
     """
-    Open file dialog to select a POSCAR file from VASP
+    Open a POSCAR file from Vasp
+    If no file name is provided an open file dialog to select a POSCAR file appears
+    
+    Parameters
+    ---------- 
+    file_name: str
+        if None is provided an open file dialog will appear
+    
+    Return
+    ------
+    crystal: ase.Atoms
+        crystal structure in ase format
     """
+  
     if file_name is None:
-        file_name = open_file_dialog('POSCAR (POSCAR*.txt);;All files (*)')
+        file_name = open_file_dialog_qt('POSCAR (POSCAR*.txt);;All files (*)')
 
     # use ase package to read file
     base = os.path.basename(file_name)
@@ -795,14 +914,29 @@ def read_poscar(file_name=None):
     crystal = ase.io.read(file_name, format='vasp', parallel=False)
 
     # make dictionary and plot structure (not essential for further notebook)
-    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
-            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'name': base_name}
-    return tags
+    crystal.info = {'title':  base_name}
+    return crystal
 
 
 def read_cif(file_name=None, verbose=False):  # open file dialog to select cif file
+    """
+    Open a cif file
+    If no file name is provided an open file dialog to select a cif file appears
+    
+    Parameters
+    ---------- 
+    file_name: str
+        if None is provided an open file dialog will appear
+    verbose: bool
+    
+    Return
+    ------
+    crystal: ase.Atoms
+        crystal structure in ase format
+    """
+  
     if file_name is None:
-        file_name = open_file_dialog('cif (*.cif);;All files (*)')
+        file_name = open_file_dialog_qt('cif (*.cif);;All files (*)')
     # use ase package to read file
 
     base = os.path.basename(file_name)
@@ -810,48 +944,45 @@ def read_cif(file_name=None, verbose=False):  # open file dialog to select cif f
     crystal = ase.io.read(file_name, format='cif', store_tags=True, parallel=False)
 
     # make dictionary and plot structure (not essential for further notebook)
-    tags = {'unit_cell': crystal.cell * 1e-1, 'elements': crystal.get_chemical_symbols(),
-            'base': crystal.get_scaled_positions(), 'max_bond_length': 0.23, 'crystal_name': base_name, 'reference': {},
-            'info': {}}
+    if crystal.info is None:
+        crystal.info = {'title': base_name}
+    crystal.info.update({'title': base_name})
     if verbose:
         print('Opened cif file for ', crystal.get_chemical_formula())
 
-    for key in crystal.info:
-        if 'citat' in key or 'pub' in key:
-            tags['reference'][key] = crystal.info[key]
-            if verbose:
-                print(key, crystal.info[key])
-        else:
-            tags['info'][key] = crystal.info[key]
-
-    return tags
+    return crystal
 
 
-def h5_add_crystal_structure(h5_file, crystal_tags):
+def h5_add_crystal_structure(h5_file, input_structure):
     """Write crystal structure to NSID file"""
-    if not isinstance(crystal_tags, dict):
-        try:
-            import ase
-        except ModuleNotFoundError:
-            print('Need a dictionary or an ase.Atoms object with ase installed')
-        if isinstance(crystal_tags, ase.Atoms):
-            return
+
+    if isinstance(input_structure, ase.Atoms):
+        crystal_tags = pyTEMlib.crystal_tools.get_dictionary(input_structure)
+        if crystal_tags['metadata'] == {}:
+            crystal_tags['metadata'] = {'name': input_structure.get_chemical_formula()}
+    elif isinstance(input_structure, dict):
+        crystal_tags = input_structure
+    else:
+        raise TypeError('Need a dictionary or an ase.Atoms object with ase installed')
 
     structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
+        
     for key, item in crystal_tags.items():
-        structure_group[key] = item
+        if not isinstance(item, dict):
+            structure_group[key] = item
+            
     if 'base' in crystal_tags:
         structure_group['relative_positions'] = crystal_tags['base']
-    if 'crystal_name' in crystal_tags:
-        structure_group['title'] = str(crystal_tags['crystal_name'])
-        structure_group['_' + crystal_tags['crystal_name']] = str(crystal_tags['crystal_name'])
+    if 'title' in crystal_tags:
+        structure_group['title'] = str(crystal_tags['title'])
+        structure_group['_' + crystal_tags['title']] = str(crystal_tags['title'])
 
-    # structure_group['elements'] = np.array(crystal_tags['elements'], dtype='S')
-    if 'zone_axis' in crystal_tags:
-        structure_group['zone_axis'] = np.array(crystal_tags['zone_axis'], dtype=float)
-    else:
-        structure_group['zone_axis'] = np.array([1., 0., 0.], dtype=float)
-    h5_file.flush()
+    # ToDo: Save all of info dictionary
+    if 'metadata' in input_structure:
+        structure_group.create_group('metadata')
+        sidpy.hdf.hdf_utils.write_simple_attrs(structure_group['metadata'], input_structure['metadata'])
+    
+    h5_file.file.flush()
     return structure_group
 
 
@@ -866,11 +997,24 @@ def h5_add_to_structure(structure_group, crystal_tags):
 
 
 def h5_get_crystal_structure(structure_group):
-    """Read crystal structure  from NSID file"""
+    """Read crystal structure  from NSID file
+    Any additional information will be read as dictionary into the info attribute of the ase.Atoms object
+
+    Parameters
+    ----------
+    structure_group: h5py.Group
+        location in hdf5 file to where the structure information is stored
+
+    Returns
+    -------
+    atoms: ase.Atoms object
+        crystal structure in ase format
+
+    """
 
     crystal_tags = {'unit_cell': structure_group['unit_cell'][()],
                     'base': structure_group['relative_positions'][()],
-                    'crystal_name': structure_group['title'][()]}
+                    'title': structure_group['title'][()]}
     if '2D' in structure_group:
         crystal_tags['2D'] = structure_group['2D'][()]
     elements = structure_group['elements'][()]
@@ -878,9 +1022,14 @@ def h5_get_crystal_structure(structure_group):
     for e in elements:
         crystal_tags['elements'].append(e.astype(str, copy=False))
 
+    atoms = pyTEMlib.crystal_tools.atoms_from_dictionary(crystal_tags)
+    if 'metadata' in structure_group:
+        atoms.info = sidpy.hdf.hdf_utils.h5_group_to_dict(structure_group)
+
     if 'zone_axis' in structure_group:
-        crystal_tags['zone_axis'] = structure_group['zone_axis'][()]
-    return crystal_tags
+        atoms.info = {'experiment': {'zone_axis': structure_group['zone_axis'][()]}}
+    # ToDo: Read all of info dictionary
+    return atoms
 
 
 ###############################################
