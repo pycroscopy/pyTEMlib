@@ -40,16 +40,6 @@ from pyTEMlib.diffraction_plot import *
 _version_ = 0.6
 
 print('Using kinematic_scattering library version ', _version_, ' by G.Duscher')
-_spglib_present = True
-try:
-    import spglib
-except ModuleNotFoundError:
-    _spglib_present = False
-
-if _spglib_present:
-    print('Symmetry functions of spglib enabled')
-else:
-    print('spglib not installed; Symmetry functions of spglib disabled')
 
 inputKeys = [ 'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_inputKeys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad', 'mistilt', 'thickness',
@@ -196,46 +186,6 @@ def zone_mistilt(zone, angles):
     rot_z = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
 
     return np.dot(np.dot(np.dot(zone, rot_x), rot_y), rot_z)
-
-
-def get_symmetry(unit_cell, base, atoms, verbose=True):
-    """
-    Symmetry analysis with spglib
-
-    spglib must be installed
-    """
-    if _spglib_present:
-        if verbose:
-            print('#####################')
-            print('# Symmetry Analysis #')
-            print('#####################')
-
-        atomic_number = []
-        for i in range(len(atoms)):
-            a = atoms[i]
-            b = base[i]
-            atomic_number.append(electronFF[a]['Z'])
-            if verbose:
-                print(f'{i + 1}: {atomic_number[i]} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
-
-        lattice = (unit_cell, base, atomic_number)
-        spgroup = spglib.get_spacegroup(lattice)
-        sym = spglib.get_symmetry(lattice)
-
-        if verbose:
-            print("  Spacegroup  is %s." % spgroup)
-            print('  Crystal has {0} symmetry operation'.format(sym['rotations'].shape[0]))
-
-        p_lattice, p_positions, p_numbers = spglib.find_primitive(lattice, symprec=1e-5)
-        print("\n########################\n #Basis vectors of primitive Cell:")
-        for i in range(3):
-            print('[{0:.4f}, {1:.4f}, {2:.4f}]'.format(p_lattice[i][0], p_lattice[i][1], p_lattice[i][2]))
-
-        print('There {0} atoms and {1} species in primitive unit cell:'.format(len(p_positions), p_numbers))
-    else:
-        print('spglib is not installed')
-
-    return True
 
 
 def get_metric_tensor(matrix):
