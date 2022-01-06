@@ -9,7 +9,7 @@ import numpy as np
 import ase
 import ase.build
 import sys
-sys.path.insert(0, "../pyTEMlib/")
+sys.path.insert(0, "../")
 
 import pyTEMlib.graph_tools as graph
 from pyTEMlib import crystal_tools
@@ -95,11 +95,18 @@ class TestPolyhedraFunctions(unittest.TestCase):
         polyhedra = graph.find_polyhedra(atoms)
 
         data = graph.plot_bonds(atoms)
-        self.assertTrue(len(atoms.info['graph']['connectivity_matrix']) == 99)
+        
+        self.assertTrue(len(atoms.info['graph']['connectivity_matrix']) == 198)
         self.assertIsInstance(data[0], dict)
+        self.assertTrue(len(data) == 99)
+        
 
     def test_get_grain_boundary_polyhedra(self):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True) * (2, 2, 2)
         polyhedra = graph.find_polyhedra(atoms)
         indices = graph.get_grain_boundary_polyhedra(polyhedra, atoms)
         self.assertTrue(len(indices) >= 1)
+
+
+if __name__ == '__main__':
+    unittest.main()

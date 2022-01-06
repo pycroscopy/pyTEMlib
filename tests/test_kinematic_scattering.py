@@ -81,6 +81,9 @@ class TestUtilityFunctions(unittest.TestCase):
         atoms = ks.example(verbose=False)
         self.assertTrue(ks.check_sanity(atoms))
 
+
+class TestScatteringFunctions(unittest.TestCase):
+
     def test_ring_pattern_calculation(self):
         atoms = ks.example(verbose=False)
         ks.ring_pattern_calculation(atoms, verbose=True)
@@ -99,14 +102,20 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_feq(self):
         self.assertAlmostEqual(ks.feq('Au', 0.36), 7.43164303450277)
         self.assertAlmostEqual(ks.feq('Si', 1.26), 0.5398190143297035)
+        
+
+class TestScatteringFunctions(unittest.TestCase):
+
+    def test_ring_pattern_plot(self):
+        pass
 
     """
     def test_plotSAED(self):
         atoms, tags, output = ks.example(verbose=False)
 
         ks.kinematic_scattering(atoms, tags, output)
-        # ks.plotSAED(tags)
-
+        ks.plotSAED(tags)
+    
     def test_plotKikuchi(self):
         atoms, tags, output = ks.example(verbose=False)
 
@@ -143,3 +152,6 @@ class TestUtilityFunctions(unittest.TestCase):
         ks.kinematic_scattering(atoms, tags, output)
         # ks.diffraction_pattern(tags)
     """
+
+if __name__ == '__main__':
+    unittest.main()
