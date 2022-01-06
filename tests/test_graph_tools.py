@@ -96,7 +96,7 @@ class TestPolyhedraFunctions(unittest.TestCase):
 
         data = graph.plot_bonds(atoms)
         t = len(atoms.info['graph']['connectivity_matrix'])
-        self.assertTrue(len(atoms.info['graph']['connectivity_matrix']) > 1-)
+        self.assertTrue(len(atoms.info['graph']['connectivity_matrix']) > 10)
         self.assertIsInstance(data[0], dict)
         self.assertTrue(len(data) > 10)
         
