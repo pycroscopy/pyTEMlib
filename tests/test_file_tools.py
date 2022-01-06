@@ -21,7 +21,7 @@ class TestFileFunctions(unittest.TestCase):
     
     def test_open_file(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
-        file_name = os.path.join(file_path, '../example_data/GOLD-NP-DIFF.dm3')
+        file_name = os.path.join(file_path, '../example_data/GOLD_NP_DIFF.hf5')  # GOLD-NP-DIFF.dm3')
         dataset = ft.open_file(file_name)
         
         self.assertIsInstance(dataset, sidpy.Dataset)
