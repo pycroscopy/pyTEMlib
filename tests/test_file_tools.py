@@ -7,11 +7,9 @@ Created on December 28 2021
 import unittest
 import h5py
 
-
 import sys
 import os
 import ase.build
-# import sidpy
 sys.path.insert(0, "../")
 sys.path.insert(0, '../../sidpy/')
 import sidpy
@@ -44,7 +42,7 @@ class TestFileFunctions(unittest.TestCase):
         
     def test_update_directory_list(self):
         file_path = os.path.dirname(os.path.abspath(__file__)) 
-        file_dictionary = ft.update_directory_list(os.path.join(file_path, '../examples'))
+        file_dictionary = ft.update_directory_list(os.path.join(file_path, '../example_data'))
         self.assertIsInstance(file_dictionary, dict) 
         
     def test_get_last_path(self):
@@ -112,6 +110,7 @@ class TestFileFunctions(unittest.TestCase):
         new_dataset.structures = [atoms]
         atoms = ase.build.bulk('Cu', 'fcc', a=4.05, cubic=True)
         new_dataset.structures.append(atoms)
+        new_dataset.title = 'with_structure'
         
         log_group = ft.log_results(dataset, new_dataset)
         self.assertIsInstance(log_group, h5py.Group)
