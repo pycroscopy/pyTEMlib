@@ -78,5 +78,9 @@ class TestUtilityFunctions(unittest.TestCase):
         x_y_z = fig.axes[0].lines[0].get_xydata()
         print(x_y_z)
 
+    def test_get_symmetry(self):
+        atoms = ase.build.bulk('Al', 'fcc', cubic=True)
+        sym = cs.get_symmetry(atoms, verbose=True)
+        self.assertTrue(sym)
 if __name__ == '__main__':
     unittest.main()

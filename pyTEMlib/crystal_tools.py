@@ -27,6 +27,18 @@ import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
 
+_spglib_present = True
+try:
+    import spglib
+except ModuleNotFoundError:
+    _spglib_present = False
+
+if _spglib_present:
+    print('Symmetry functions of spglib enabled')
+else:
+    print('spglib not installed; Symmetry functions of spglib disabled')
+
+
 # from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
 # from matplotlib.patches import Circle  # , Ellipse, Rectangle
 # from matplotlib.collections import PatchCollection
@@ -51,6 +63,53 @@ def atoms_from_dictionary(tags):
     if 'metadata' in tags:
         atoms.info = tags['metadata']
     return atoms
+
+
+def get_symmetry(atoms, verbose=True):
+    """
+    Symmetry analysis with spglib
+
+    spglib must be installed
+
+    Parameters
+    ----------
+    atoms: ase.Atoms object
+        crystal structure
+    verbose: bool
+
+    Returns
+    -------
+
+    """
+    if _spglib_present:
+        if verbose:
+            print('#####################')
+            print('# Symmetry Analysis #')
+            print('#####################')
+
+        base = atoms.get_scaled_positions()
+        for i, atom in enumerate(atoms):
+            if verbose:
+                print(f'{i + 1}: {atom.atomic_number} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
+
+        lattice = (atoms.cell, atoms.get_scaled_positions(), atoms.numbers)
+        spgroup = spglib.get_spacegroup(lattice, symprec=1e-2)
+        sym = spglib.get_symmetry(lattice)
+
+        if verbose:
+            print("  Spacegroup  is %s." % spgroup)
+            print('  Crystal has {0} symmetry operation'.format(sym['rotations'].shape[0]))
+
+        p_lattice, p_positions, p_numbers = spglib.find_primitive(lattice, symprec=1e-5)
+        print("\n########################\n #Basis vectors of primitive Cell:")
+        for i in range(3):
+            print('[{0:.4f}, {1:.4f}, {2:.4f}]'.format(p_lattice[i][0], p_lattice[i][1], p_lattice[i][2]))
+
+        print('There {0} atoms and {1} species in primitive unit cell:'.format(len(p_positions), p_numbers))
+    else:
+        print('spglib is not installed')
+
+    return True
 
 
 def set_bond_radii(atoms):

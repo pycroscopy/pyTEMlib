@@ -9,6 +9,34 @@ import pyTEMlib.file_tools as ft
 
 
 class FileIconDialog(QtWidgets.QDialog):
+    """Qt5 Dialog to select directories or files from a list of Thumbnails
+
+    The dialog converts the name of the nion file to the one in Nion's swift software,
+    because it is otherwise incomprehensible. Any Icon in a hf5 file will be displayed.
+
+    Attributes
+    ----------
+    dir_name: str
+        name of starting directory
+    extension: list of str
+        extensions of files to be listed  in widget
+
+    Methods
+    -------
+    set_icon
+    set_all_icons
+    select
+    get_directory
+    update
+
+    Example
+    -------
+    >>file_view = pyTEMlib.file_tools_qt.FileIconDialog('.')
+    >>dataset = pyTEMlib.file_tools.open_file(file_view.file_name)
+    >>view=dataset.plot()
+
+    """
+
     def __init__(self, dir_name=None, extension=None):
         super().__init__(None, QtCore.Qt.WindowStaysOnTopHint)
         self.setModal(True)

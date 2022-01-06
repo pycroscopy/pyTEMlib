@@ -43,10 +43,6 @@ class TestUtilityFunctions(unittest.TestCase):
         with self.assertRaises(TypeError):
             ks.zone_mistilt([1j, 0, 0], [0,  0])
 
-    def test_get_symmetry(self):
-        # Todo: better test
-        self.assertTrue(ks.get_symmetry(np.identity(3), [[0, 0, 0], [0.5, 0.5, 0.5]], ['Fe', 'Fe']))
-
     def test_metric_tensor(self):
         # Todo: better testing
         np.testing.assert_allclose(ks.get_metric_tensor(np.identity(3)), np.identity(3))
@@ -102,7 +98,7 @@ class TestScatteringFunctions(unittest.TestCase):
     def test_feq(self):
         self.assertAlmostEqual(ks.feq('Au', 0.36), 7.43164303450277)
         self.assertAlmostEqual(ks.feq('Si', 1.26), 0.5398190143297035)
-        
+
 
 class TestScatteringFunctions2(unittest.TestCase):
 
