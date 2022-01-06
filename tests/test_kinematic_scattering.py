@@ -104,7 +104,7 @@ class TestScatteringFunctions(unittest.TestCase):
         self.assertAlmostEqual(ks.feq('Si', 1.26), 0.5398190143297035)
         
 
-class TestScatteringFunctions(unittest.TestCase):
+class TestScatteringFunctions2(unittest.TestCase):
 
     def test_ring_pattern_plot(self):
         pass

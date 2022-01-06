@@ -66,11 +66,11 @@ class TestUtilityFunctions(unittest.TestCase):
 
         atoms = ase.build.bulk('Al', 'fcc', cubic=True)
         tags = cs.get_dictionary(atoms)
-        self.assertListEqual(atoms.get_chemical_symbols(), tags['elements'])
+        self.assertTrue(atoms.get_chemical_formula() == tags['elements'])
         self.assertTrue(np.allclose(atoms.get_scaled_positions(), tags['base']))
 
         crystal2 = cs.atoms_from_dictionary(tags)
-        self.assertListEqual(crystal2.get_chemical_symbols(), tags['elements'])
+        self.assertTrue(crystal2.get_chemical_formula() == tags['elements'])
 
     def test_plot_unit_cell(self):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True)
