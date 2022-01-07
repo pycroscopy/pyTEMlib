@@ -6,7 +6,11 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from PIL import Image, ImageQt
 
 import pyTEMlib.file_tools as ft
+import matplotlib.pyplot as plt
 
+import warnings
+
+warnings.filterwarnings('ignore')
 
 class FileIconDialog(QtWidgets.QDialog):
     """Qt5 Dialog to select directories or files from a list of Thumbnails
@@ -55,7 +59,7 @@ class FileIconDialog(QtWidgets.QDialog):
         elif os.path.isdir(dir_name):
             self.dir_name = dir_name
 
-        self.get_directory(self.dir_name)
+        self.get_directory()
 
         # setting geometry
         self.setGeometry(100, 100, 500, 400)
@@ -89,27 +93,34 @@ class FileIconDialog(QtWidgets.QDialog):
         self.exec_()
 
     def set_icon(self):
+        plt.ioff()
+        figure = plt.figure(figsize=(1, 1))
         item = self.list_widget.currentItem().text()
         index = self.display_list.index(item)
         file_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[index]))
         dataset = ft.open_file(file_name)
-        dataset.set_thumbnail()
-        self.setWindowTitle(" Icon ")
+        dataset.set_thumbnail(figure=figure)
+        plt.close()
+        plt.ion()
         self.update()
 
     def set_all_icons(self):
+
+        plt.ioff()
+        figure = plt.figure(figsize=(1, 1))
         for item in self.dir_list:
             file_name = os.path.join(self.dir_name, item)
             if os.path.isfile(file_name):
                 base_name, extension = os.path.splitext(file_name)
                 if extension in ['.hf5', '.dm3', '.dm4', '.ndata', '.hf5']:
-                    print('--', item)
                     try:
                         dataset = ft.open_file(file_name)
-                        dataset.set_thumbnail()
-                        dataset.view.fig.close()
+                        dataset.set_thumbnail(figure=figure)
+                        dataset.h5_dataset.file.close()
                     except:
                         pass
+        plt.close()
+        plt.ion()
         self.update()
 
     def select(self):

@@ -16,7 +16,7 @@ import pickle
 
 # For structure files of various flavor for instance POSCAR
 import ase.io
-import ase
+import ipyfilechooser
 
 # =============================================
 #   Include  pycroscopy libraries                                      #
@@ -39,6 +39,7 @@ Dimension = sidpy.Dimension
 
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '2022.1.0'
+
 
 class FileWidget(object):
     """Widget to select directories or widgets from a list
@@ -110,7 +111,7 @@ class FileWidget(object):
         self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
         dir_list = os.listdir(self.dir_name)
         file_dict = update_directory_list(self.dir_name)
-       
+
         sort = np.argsort(file_dict['directory_list'])
         self.dir_list = ['.', '..']
         self.display_list = ['.', '..']
@@ -200,7 +201,7 @@ def add_to_dict(file_dict, name):
     size = os.path.getsize(full_name) * 2 ** -20
     display_name = name
     if len(extension) == 0:
-        display_file_list = f' {name}  - {size:.1f} MB' 
+        display_file_list = f' {name}  - {size:.1f} MB'
     elif extension[0] == 'hf5':
         if extension in ['.hf5']:
             display_file_list = f" {name}  - {size:.1f} MB"
@@ -214,10 +215,10 @@ def add_to_dict(file_dict, name):
             display_file_list = f" {name}  - {size:.1f} MB"
     else:
         display_file_list = f' {name}  - {size:.1f} MB'
-    file_dict[name] = {'display_string': display_file_list, 'basename': basename, 'extension': extension, 
+    file_dict[name] = {'display_string': display_file_list, 'basename': basename, 'extension': extension,
                        'size': size, 'display_name': display_name}
 
-    
+
 def update_directory_list(directory_name):
     dir_list = os.listdir(directory_name)
 
@@ -235,7 +236,7 @@ def update_directory_list(directory_name):
     file_dict['file_list'] = []
     file_dict['display_file_list'] = []
     file_dict['directory_list'] = []
-    
+
     for name in dir_list:
         if os.path.isfile(os.path.join(file_dict['directory'], name)):
             if name not in file_dict:
@@ -244,11 +245,11 @@ def update_directory_list(directory_name):
             file_dict['display_file_list'].append(file_dict[name]['display_string'])
         else:
             file_dict['directory_list'].append(name)
-    remove_item = [] 
-    
+    remove_item = []
+
     # delete items of deleted files
     save_pickle = False
-    
+
     for name in file_dict.keys():
         if name not in dir_list and name not in ['directory', 'file_list', 'directory_list', 'display_file_list']:
             remove_item.append(name)
@@ -701,7 +702,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
 
         if write_hdf_file:
             filename = os.path.join(path,  dset.title+extension)
-            
+
             h5_filename = get_h5_filename(filename)
             h5_file = h5py.File(h5_filename, mode='a')
 
@@ -718,7 +719,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
 
                 dset.h5_dataset = h5_dataset
                 # pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
-                
+
         save_path(path)
         dset.structures = []
         return dset
@@ -826,7 +827,7 @@ def log_results(h5_group, dataset=None, attributes=None):
         if hasattr(dataset, 'structures'):
             for structure in dataset.structures:
                 h5_add_crystal_structure(log_group, structure)
-        
+
         dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
     if attributes is not None:
         for key, item in attributes.items():
@@ -871,14 +872,14 @@ def add_dataset(dataset, h5_group=None):
     if hasattr(dataset, 'structures'):
         structures = dataset.structures.copy()
         del dataset.structures
-        
+
     log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
     h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, log_group)
 
     if hasattr(dataset, 'meta_data'):
         if 'analysis' in dataset.meta_data:
             log_group['analysis'] = dataset.meta_data['analysis']
-    
+
     for structure in structures:
         h5_add_crystal_structure(log_group, structure)
 
@@ -893,18 +894,18 @@ def read_poscar(file_name=None):
     """
     Open a POSCAR file from Vasp
     If no file name is provided an open file dialog to select a POSCAR file appears
-    
+
     Parameters
-    ---------- 
+    ----------
     file_name: str
         if None is provided an open file dialog will appear
-    
+
     Return
     ------
     crystal: ase.Atoms
         crystal structure in ase format
     """
-  
+
     if file_name is None:
         file_name = open_file_dialog_qt('POSCAR (POSCAR*.txt);;All files (*)')
 
@@ -922,19 +923,19 @@ def read_cif(file_name=None, verbose=False):  # open file dialog to select cif f
     """
     Open a cif file
     If no file name is provided an open file dialog to select a cif file appears
-    
+
     Parameters
-    ---------- 
+    ----------
     file_name: str
         if None is provided an open file dialog will appear
     verbose: bool
-    
+
     Return
     ------
     crystal: ase.Atoms
         crystal structure in ase format
     """
-  
+
     if file_name is None:
         file_name = open_file_dialog_qt('cif (*.cif);;All files (*)')
     # use ase package to read file
@@ -966,11 +967,11 @@ def h5_add_crystal_structure(h5_file, input_structure):
         raise TypeError('Need a dictionary or an ase.Atoms object with ase installed')
 
     structure_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Structure_')
-        
+
     for key, item in crystal_tags.items():
         if not isinstance(item, dict):
             structure_group[key] = item
-            
+
     if 'base' in crystal_tags:
         structure_group['relative_positions'] = crystal_tags['base']
     if 'title' in crystal_tags:
@@ -981,7 +982,7 @@ def h5_add_crystal_structure(h5_file, input_structure):
     if 'metadata' in input_structure:
         structure_group.create_group('metadata')
         sidpy.hdf.hdf_utils.write_simple_attrs(structure_group['metadata'], input_structure['metadata'])
-    
+
     h5_file.file.flush()
     return structure_group
 

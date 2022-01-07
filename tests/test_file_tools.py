@@ -16,9 +16,8 @@ import sidpy
 print(sidpy.__version__)
 import pyTEMlib.file_tools as ft
 
-
 class TestFileFunctions(unittest.TestCase):
-    
+
     def test_open_file(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/GOLD_NP_DIFF.hf5')  # GOLD-NP-DIFF.dm3')
