@@ -27,7 +27,7 @@ class FileIconDialog(QtWidgets.QDialog):
         elif os.path.isdir(dir_name):
             self.dir_name = dir_name
 
-        self.get_directory(self.dir_name)
+        self.get_directory()
 
         # setting geometry
         self.setGeometry(100, 100, 500, 400)
