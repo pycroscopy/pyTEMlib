@@ -29,7 +29,7 @@ class TestUtilityFunctions(unittest.TestCase):
         tetrahedron = np.asarray([[0, -1 / np.sqrt(3), 0], [0.5, 1 / (2 * np.sqrt(3)), 0],
                                   [-0.5, 1 / (2 * np.sqrt(3)), 0], [0, 0, np.sqrt(2 / 3)]])
         atom_radii = np.array([0.1, 0.1, 0.1, 0.2])
-        center, radius = graph.intersitital_sphere_center(tetrahedron, atom_radii)
+        center, radius = graph.interstitial_sphere_center(tetrahedron, atom_radii)
         self.assertEqual(center.shape, (3,))
         self.assertTrue(np.allclose(center, (0., 0., 0.1256), atol=1e-3))
         self.assertTrue(np.allclose(np.linalg.norm(tetrahedron-center, axis=1), atom_radii+radius, atol=1e-3))
@@ -39,7 +39,7 @@ class TestUtilityFunctions(unittest.TestCase):
         tetrahedron = np.asarray([[0, -1 / np.sqrt(3), 0], [0.5, 1 / (2 * np.sqrt(3)), 0],
                                   [-0.5, 1 / (2 * np.sqrt(3)), 0], [0, 0, np.sqrt(2 / 3)]])
         atom_radii = np.array([0.1, 0.1, 0.1, 0.1])
-        center, radius = graph.intersitital_sphere_center(tetrahedron, atom_radii)
+        center, radius = graph.interstitial_sphere_center(tetrahedron, atom_radii)
         center2, radius2 = graph.circum_center(tetrahedron)
 
         self.assertEqual(radius, radius2-atom_radii[0])
@@ -54,7 +54,7 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_circum_center_triangle_weighted(self):
         triangle = np.asarray([[5., 7.], [6., 6.], [2., -2.]])
 
-        center, radius = graph.intersitital_sphere_center(triangle, [0.3, 0.3, 0.4])
+        center, radius = graph.interstitial_sphere_center(triangle, [0.3, 0.3, 0.4])
         self.assertTrue(np.allclose(center, (2.04, 3.04), atol=1e-2))
 
     def test_circum_center_line(self):
@@ -94,16 +94,16 @@ class TestPolyhedraFunctions(unittest.TestCase):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True) * (2, 2, 2)
         polyhedra = graph.find_polyhedra(atoms)
 
-        data = graph.plot_bonds(atoms)
+        data = graph.plot_bonds(polyhedra)
         self.assertTrue(len(atoms.info['graph']['connectivity_matrix']) > 10)
         self.assertIsInstance(data[0], dict)
         self.assertTrue(len(data) > 10)
         
 
-    def test_get_grain_boundary_polyhedra(self):
+    def test_get_boundary_polyhedra(self):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True) * (2, 2, 2)
         polyhedra = graph.find_polyhedra(atoms)
-        indices = graph.get_grain_boundary_polyhedra(polyhedra, atoms)
+        indices = graph.get_boundary_polyhedra(polyhedra)
         self.assertTrue(len(indices) >= 1)
 
 

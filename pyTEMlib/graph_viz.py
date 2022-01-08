@@ -1,7 +1,16 @@
 """
+##################################################################
+# plotting functions for graph_tools
+##################################################################
 
+part of pyTEMlib
+a pycrosccopy package
+
+Author: Gerd Duscher
+First Version: 2022-01-08
 """
 import numpy as np
+import ase
 
 import plotly.graph_objects as go
 import plotly.express as px
@@ -10,7 +19,43 @@ import pyTEMlib.crystal_tools
 import pyTEMlib.graph_tools
 
 
+def plot_super_cell(super_cell, shift_x=0.):
+    """ make a super_cell to plot with extra atoms at periodic boundaries"""
+
+    if not isinstance(super_cell, ase.Atoms):
+        raise TypeError('Need an ase Atoms object')
+
+    plot_boundary = super_cell * (2, 2, 3)
+    plot_boundary.positions[:, 0] = plot_boundary.positions[:, 0] - super_cell.cell[0, 0] * shift_x
+
+    del plot_boundary[plot_boundary.positions[:, 2] > super_cell.cell[2, 2] * 1.5 + 0.1]
+    del plot_boundary[plot_boundary.positions[:, 1] > super_cell.cell[1, 1] + 0.1]
+    del plot_boundary[plot_boundary.positions[:, 0] > super_cell.cell[0, 0] + 0.1]
+    del plot_boundary[plot_boundary.positions[:, 0] < -0.1]
+    plot_boundary.cell = super_cell.cell * (1, 1, 1.5)
+
+    return plot_boundary
+
+
 def plot_polyhedron(polyhedra, indices, center=False):
+    """
+    Information to plot polyhedra with plotly
+
+    Parameter
+    ---------
+    polyhedra: dict
+        dictionary of all polyhedra
+    indices: list or integer
+        list or index of polyhedron to plot.
+    center: boolean
+        whether to center polyhedra on origin
+
+    Returns
+    -------
+    data: dict
+        instructions to plot for plotly
+    """
+
     if isinstance(indices, int):
         indices = [indices]
     if len(indices) == 0:
@@ -68,6 +113,19 @@ def plot_polyhedron(polyhedra, indices, center=False):
 
 
 def plot_bonds(polyhedra):
+    """
+    Information to plot bonds with plotly
+
+    Parameter
+    ---------
+    polyhedra: dict
+        dictionary of all polyhedra
+
+    Returns
+    -------
+    data: dict
+        instructions to plot for plotly
+    """
     indices = range(len(polyhedra))
 
     data = []
@@ -100,11 +158,64 @@ def plot_bonds(polyhedra):
     return data
 
 
+def get_boundary_polyhedra(polyhedra, boundary_x=0, boundary_width=0.5, verbose=True, z_lim=[0, 100]):
+    """
+    get indices of polyhedra at boundary (assumed to be parallel to x-axis)
+
+    Parameter
+    ---------
+    polyhedra: dict
+        dictionary of all polyhedra
+    boundary_x: float
+        position of boundary in Angstrom
+    boundary_width: float
+        width of boundary where center of polyhedra are considered in Angstrom
+    verbose: boolean
+        optional
+    z_lim: list
+        upper and lower limit of polyhedra to plot
+
+    Returns
+    -------
+    boundary_polyhedra: list
+        list of polyhedra at boundary
+    """
+    boundary_polyhedra = []
+    for key, polyhedron in polyhedra.items():
+        center = polyhedron['vertices'].mean(axis=0)
+        if abs(center[0] - boundary_x) < 0.5 and (z_lim[0] < center[2] < z_lim[1]):
+            boundary_polyhedra.append(key)
+            if verbose:
+                print(key, polyhedron['length'], center)
+
+    return boundary_polyhedra
+
+
 def plot_with_polyhedra(polyhedra, indices, atoms=None, title=''):
+    """
+    plot atoms and polyhedra with plotly
+
+    Parameter
+    ---------
+    polyhedra: dict
+        dictionary of all polyhedra
+    indices: list or integer
+        list or index of polyhedron to plot.
+    atoms: ase.Atoms
+        optional structure info to plot atoms (with correct color)
+
+    Returns
+    -------
+    fig: plotly.figure
+        plotly figure instance
+    """
+
     data = plot_polyhedron(polyhedra, indices)
+    if not isinstance(atoms, ase.Atoms):
+        atoms = None
+
     data[0]['opacity'] = 0.05
     fig = go.Figure(data=data)
-
     if atoms is not None:
         fig.add_trace(go.Scatter3d(
             mode='markers',
@@ -128,25 +239,42 @@ def plot_with_polyhedra(polyhedra, indices, atoms=None, title=''):
     return fig
 
 
-def plot_supercell(grain_boundary, size=(1, 1, 1), shift_x=0.25, title=''):
+def plot_supercell(supercell, size=(1, 1, 1), shift_x=0.25, title=''):
+    """
+    plot supercell with plotly
 
-    plot_boundary = pyTEMlib.graph_tools.plot_super_cell(grain_boundary * size, shift_x=shift_x)
+    Parameter
+    ---------
+    supercell: ase.Atoms
+        optional structure info to plot atoms (with correct color)
+    shift_x: float
+        amount of shift in x direction of supercell
+    title: str
+        title of plot
+
+    Returns
+    -------
+    fig: plotly.figure
+        plotly figure instance
+    """
+
+    plot_cell = pyTEMlib.graph_tools.plot_super_cell(supercell * size, shift_x=shift_x)
 
     # grain_boundary.cell.volume
-    grain_boundary_area = grain_boundary.cell.lengths()[1] / grain_boundary.cell.lengths()[2]
-    print(grain_boundary.symbols)
+    supercell_area = supercell.cell.lengths()[1] / supercell.cell.lengths()[2]
+    print(supercell.symbols)
     volume__bulk_atom = 16.465237835776012
-    ideal_volume = len(grain_boundary.positions) * volume__bulk_atom
-    print(len(grain_boundary.positions) * volume__bulk_atom, grain_boundary.cell.volume)
-    x_0 = ideal_volume / grain_boundary.cell.lengths()[1] / grain_boundary.cell.lengths()[2]
+    ideal_volume = len(supercell.positions) * volume__bulk_atom
+    print(len(supercell.positions) * volume__bulk_atom, supercell.cell.volume)
+    x_0 = ideal_volume / supercell.cell.lengths()[1] / supercell.cell.lengths()[2]
     print(f'Zero volume expansion supercell length: {x_0 / 10:.2f} nm; '
-          f' compared to actual {grain_boundary.cell.lengths()[0] / 10:.2f} nm')
+          f' compared to actual {supercell.cell.lengths()[0] / 10:.2f} nm')
 
     fig = go.Figure(data=[
-        go.Scatter3d(x=plot_boundary.positions[:, 0], y=plot_boundary.positions[:, 1], z=plot_boundary.positions[:, 2],
+        go.Scatter3d(x=plot_cell.positions[:, 0], y=plot_cell.positions[:, 1], z=plot_cell.positions[:, 2],
                      mode='markers',
                      marker=dict(
-                         color=plot_boundary.get_atomic_numbers(),
+                         color=plot_cell.get_atomic_numbers(),
                          size=5,
                          sizemode='diameter',
                          colorscale=["blue", "green", "red"]))])
@@ -166,6 +294,28 @@ def plot_supercell(grain_boundary, size=(1, 1, 1), shift_x=0.25, title=''):
 
 
 def plot_supercell_bonds(polyhedra, atoms, volumes=None, atom_size=15, title=''):
+    """
+    plot atoms and bonds with plotly
+
+    Parameter
+    ---------
+    polyhedra: dict
+        dictionary of all polyhedra
+    atoms: ase.Atoms
+        optional structure info to plot atoms (with correct color)
+    volumes: list
+        list of volumes, optional structure
+    atoms_size: float
+        sie of atoms to plot
+    title: str
+        title of plot
+
+    Returns
+    -------
+    fig: plotly.figure
+        plotly figure instance
+    """
+
     data = plot_bonds(polyhedra)
     if volumes is None:
         volumes = [atom_size] * len(atoms.get_atomic_numbers())
@@ -193,6 +343,27 @@ def plot_supercell_bonds(polyhedra, atoms, volumes=None, atom_size=15, title='')
 
 
 def plot_supercell_polyhedra(polyhedra, indices, atoms, volumes=None, title=''):
+    """
+    plot atoms and polyhedra with plotly
+
+    Parameter
+    ---------
+    polyhedra: dict
+        dictionary of all polyhedra
+    indices: list
+        list of indices of polyhedra to plot
+    atoms: ase.Atoms
+        optional structure info to plot atoms (with correct color)
+    volumes: list
+        list of volumes, optional structure
+    title: str
+        title of plot
+
+    Returns
+    -------
+    fig: plotly.figure
+        plotly figure instance
+    """
     data = plot_polyhedron(polyhedra, indices)
     if volumes is None:
         volumes = [10] * len(atoms.get_atomic_numbers())
@@ -220,6 +391,28 @@ def plot_supercell_polyhedra(polyhedra, indices, atoms, volumes=None, title=''):
 
 
 def show_polyhedra(polyhedra, boundary_polyhedra, atoms, volumes=None, title=f''):
+    """
+    plot polyhedra and atoms of vertices with plotly
+
+    Parameter
+    ---------
+    polyhedra: dict
+        dictionary of all polyhedra
+    boundary_polyhedra: list
+        list of indices of polyhedra to plot
+    atoms: ase.Atoms
+        optional structure info to plot atoms (with correct color)
+    volumes: list
+        list of volumes, optional structure
+    title: str
+        title of plot
+
+    Returns
+    -------
+    fig: plotly.figure
+        plotly figure instance
+    """
+
     data = plot_polyhedron(polyhedra, boundary_polyhedra)
     atom_indices = []
     for poly in boundary_polyhedra:
@@ -254,16 +447,3 @@ def show_polyhedra(polyhedra, boundary_polyhedra, atoms, volumes=None, title=f''
     fig.update_layout(scene_camera=camera, title=title)
     fig.update_scenes(camera_projection_type="orthographic")
     return fig
-
-
-def get_grain_boundary_polyhedra(polyhedra, atoms, grain_boundary_x=0, grain_boundary_width=0.5,
-                                 verbose=True, visible=range(4, 16), z_lim=[0, 100]):
-    boundary_polyhedra = []
-    for key, polyhedron in polyhedra.items():
-        center = polyhedron['vertices'].mean(axis=0)
-        if abs(center[0] - grain_boundary_x) < .5 and (z_lim[0] < center[2] < z_lim[1]):
-            boundary_polyhedra.append(key)
-            if verbose:
-                print(key, polyhedron['length'], center)
-
-    return boundary_polyhedra
