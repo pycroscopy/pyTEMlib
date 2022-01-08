@@ -257,7 +257,8 @@ def make_chi(theta, phi, aberrations):
 def objective_lens_function(ab, nx, ny, field_of_view, wavelength, aperture_size=10):
     """Objective len function to be convoluted with exit wave to derive image function
 
-    Input:
+    Parameter:
+    ----------
     ab: dict
         aberrations in nm should at least contain defocus (C10), and spherical abeeration (C30)
     nx: int
