@@ -6,26 +6,18 @@ Created on January 23 2021
 """
 import unittest
 import numpy as np
-
 import os
 import matplotlib as mpl
-if os.environ.get('DISPLAY', '') == '':
-    print('no display found. Using non-interactive Agg backend')
-mpl.use('Agg')
-import numpy as np
 import matplotlib.pyplot as plt
 
 import ase
 import ase.build
 
-
 import pyTEMlib.crystal_tools as cs
 
-import sys
-sys.path.append("../pyTEMlib/")
-
-if sys.version_info.major == 3:
-    unicode = str
+if os.environ.get('DISPLAY', '') == '':
+    print('no display found. Using non-interactive Agg backend')
+mpl.use('Agg')
 
 
 class TestUtilityFunctions(unittest.TestCase):
@@ -52,7 +44,6 @@ class TestUtilityFunctions(unittest.TestCase):
                          [0, 0, 0, 0, 0, 0, 0, 0, 1],
                          [0, 0, 0, 0, 0, 0, 0, 0, 0]]
         np.testing.assert_allclose(cell_2_plot.info['plot_cell']['bond_matrix'].toarray(), bonds_desired)
-
 
     def test_from_dictionary(self):
         tags = {'unit_cell': np.array([[4.05, 0, 0], [0, 4.05, 0], [0, 0, 4.05]]),
@@ -82,5 +73,18 @@ class TestUtilityFunctions(unittest.TestCase):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True)
         sym = cs.get_symmetry(atoms, verbose=True)
         self.assertTrue(sym)
+
+    def test_structure_by_name(self):
+        for key in cs.crystal_data_base.keys():
+            a = cs.structure_by_name(key)
+            self.assertIsInstance(a, ase.Atoms)
+
+        a = cs.structure_by_name('Graphite')
+        self.assertIsInstance(a, ase.Atoms)
+
+        a = cs.structure_by_name('MoS2')
+        self.assertIsInstance(a, ase.Atoms)
+
+
 if __name__ == '__main__':
     unittest.main()

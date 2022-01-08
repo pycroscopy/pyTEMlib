@@ -7,7 +7,7 @@ Author: Gerd Duscher
 
 Provides convenient functions to make most regular crystal structures
 
-Contains also a dictionary of crystal structures and atomic form factprs
+Contains also a dictionary of crystal structures and atomic form factors
 
 Units:
     everything is in SI units, except length is given in nm.
@@ -90,7 +90,7 @@ def get_symmetry(atoms, verbose=True):
         base = atoms.get_scaled_positions()
         for i, atom in enumerate(atoms):
             if verbose:
-                print(f'{i + 1}: {atom.atomic_number} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
+                print(f'{i + 1}: {atom.number} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
 
         lattice = (atoms.cell, atoms.get_scaled_positions(), atoms.numbers)
         spgroup = spglib.get_spacegroup(lattice, symprec=1e-2)
@@ -186,9 +186,9 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
         bond_lengths.append(electronFF[atom.symbol]['bond_length'][1])
 
     super_cell.set_cell(cell*2, scale_atoms=False)   # otherwise, corner atoms have distance 0
-    neighborList = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
-    neighborList.update(super_cell)
-    bond_matrix = neighborList.get_connectivity_matrix()
+    neighbor_list = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
+    neighbor_list.update(super_cell)
+    bond_matrix = neighbor_list.get_connectivity_matrix()
 
     del_double = []
     for (k, s) in bond_matrix.keys():
@@ -219,7 +219,6 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
 
-
     for line in super_cell.info['plot_cell']['corner_matrix'].keys():
         ax.plot3D(corners[line, 0], corners[line, 1], corners[line, 2], color="blue")
 
@@ -231,7 +230,7 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
 
     # draw atoms
     ax.scatter(super_cell.positions[:, 0], super_cell.positions[:, 1], super_cell.positions[:, 2],
-                   color=tuple(jmol_colors[super_cell.get_atomic_numbers()]), alpha=1.0, s=50)
+               color=tuple(jmol_colors[super_cell.get_atomic_numbers()]), alpha=1.0, s=50)
     maximum_position = super_cell.positions.max()*1.05
     ax.set_proj_type('ortho')
 
@@ -251,6 +250,312 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
 jmol_colors = ase.data.colors.jmol_colors
 
+
+def structure_by_name(crystal_name):
+    """
+        Provides crystal structure in ase.Atoms format.
+        Additional information is stored in the info attribute as a dictionary
+
+
+        Parameter
+        ---------
+        crystal_name: str
+            Please note that the chemical expressions are not case-sensitive.
+
+        Returns
+        -------
+        atoms: ase.Atoms
+            structure
+
+        Example
+        -------
+        >> #  for a list of pre-defined crystal structures
+        >> import pyTEMlib.crystal_tools
+        >> print(pyTEMlib.crystal_tools.crystal_data_base.keys())
+        >>
+        >> atoms = pyTEMlib.crystal_tools.structure_by_name('Silicon')
+        >> print(atoms)
+        >> print(atoms.info)
+
+    """
+
+    # Check whether name is in the crystal_data_base
+    import ase
+    import ase.build
+
+    if crystal_name.lower() in cdb:
+        tags = cdb[crystal_name.lower()].copy()
+    else:
+        print(f'Crystal name {crystal_name.lower()} not defined')
+        return
+
+    if 'symmetry' in tags:
+        if tags['symmetry'].lower() == 'fcc':
+            atoms = ase.build.bulk(tags['elements'], 'fcc', a=tags['a'], cubic=True)
+
+        elif tags['symmetry'].lower() == 'bcc':
+            atoms = ase.build.bulk(tags['elements'], 'bcc', a=tags['a'], cubic=True)
+
+        elif tags['symmetry'].lower() == 'diamond':
+            import ase.lattice.cubic
+            atoms = ase.lattice.cubic.Diamond(tags['elements'], latticeconstant=tags['a'])
+
+        elif 'rocksalt' in tags['symmetry']:  # B1
+            import ase.lattice.compounds
+            atoms = ase.lattice.compounds.Rocksalt(tags['elements'], latticeconstant=tags['a'])
+
+        elif 'zincblende' in tags['symmetry']:
+            import ase.lattice.compounds
+            atoms = ase.lattice.compounds.B3(tags['elements'], latticeconstant=tags['a'])
+
+        elif 'B2' in tags['symmetry']:
+            import ase.lattice.compounds
+            atoms = ase.lattice.compounds.B2(tags['elements'], latticeconstant=tags['a'])
+
+        elif 'graphite' in tags['symmetry']:
+            import ase.lattice.hexagonal
+            atoms = ase.lattice.hexagonal.Graphite(tags['elements'], latticeconstant={'a': tags['a'], 'c': tags['c']})
+
+        elif 'perovskite' in tags['symmetry']:
+            import ase.spacegroup
+            atom_positions = [(0.0, 0.0, 0.0), (0.5, 0.5, 0.5), (0.5, 0.5, 0.0)]
+            atoms = ase.spacegroup.crystal(tags['elements'], atom_positions, spacegroup=221, cellpar=tags['a'])
+
+        elif 'wurzite' in tags['symmetry']:
+            import ase.spacegroup
+            atom_positions = [(1 / 3, 2 / 3, 0.0), (1 / 3, 2 / 3, tags['u'])]
+            atoms = ase.spacegroup.crystal(tags['elements'], atom_positions, spacegroup=186,
+                                           cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 120])
+
+        elif 'rutile' in tags['symmetry']:
+            import ase.spacegroup
+            atoms = ase.spacegroup.crystal(tags['elements'], basis=[(0, 0, 0), (0.3, 0.3, 0.0)],
+                                           spacegroup=136, cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 90])
+        elif 'dichalcogenide' in tags['symmetry']:
+            import ase.spacegroup
+
+            u = tags['u']
+            base = [(1 / 3., 2 / 3., 1 / 4.), (2 / 3., 1 / 3., 3 / 4.),
+                    (2 / 3., 1 / 3., 1 / 4. + u), (2 / 3., 1 / 3., 1 / 4. - u),
+                    (1 / 3., 2 / 3., 3 / 4. + u), (1 / 3., 2 / 3., 3 / 4. - u)]
+            atoms = ase.spacegroup.crystal(tags['elements'][0] * 2 + tags['elements'][1] * 4, base, spacegroup=194,
+                                           cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 120])
+
+        elif tags['symmetry'].lower() in ['primitive', 'hexagonal']:
+            atoms = ase.Atoms(tags['elements'], cell=tags['unit_cell'], scaled_positions=tags['base'])
+
+        else:
+            print(' symmetry of structure is wrong')
+
+    atoms.info = {'structure': {'reference': tags['reference'], 'link': tags['link']},
+                  'title': tags['crystal_name']}
+    return atoms
+
+
+# crystal data base cbd
+cdb = {'aluminum': {'crystal_name': 'aluminum',
+                    'symmetry': 'FCC',
+                    'elements': 'Al',
+                    'a': 4.05,  # Angstrom
+                    'reference': 'W. Witt, Z. Naturforsch. A, 1967, 22A, 92',
+                    'link': 'http://doi.org/10.1515/zna-1967-0115'}}
+cdb['al'] = cdb['aluminium'] = cdb['aluminum']
+
+cdb['gold'] = {'crystal_name': 'gold',
+               'symmetry': 'FCC',
+               'elements': 'Au',
+               'a': 4.0782,  # Angstrom
+               'reference': '',
+               'link': ''}
+cdb['au'] = cdb['gold']
+
+cdb['silver'] = {'crystal_name': 'silver',
+                 'symmetry': 'FCC',
+                 'elements': 'Ag',
+                 'a': 4.0853,  # Angstrom
+                 'reference': '', 'link': ''}
+cdb['ag'] = cdb['silver']
+
+cdb['copper'] = {'crystal_name': 'copper',
+                 'symmetry': 'FCC',
+                 'elements': 'Cu',
+                 'a': 4.0853,  # Angstrom
+                 'reference': '', 'link': ''}
+cdb['cu'] = cdb['copper']
+
+cdb['diamond'] = {'crystal_name': 'diamond',
+                  'symmetry': 'diamond',
+                  'elements': 'C',
+                  'a': 3.5668,  # Angstrom
+                  'reference': '', 'link': ''}
+
+cdb['germanium'] = {'crystal_name': 'germanium',
+                    'symmetry': 'diamond',
+                    'elements': 'Ge',
+                    'a': 5.66806348,  # Angstrom for 300K
+                    'reference': 'H. P. Singh, Acta Crystallogr., 1968, 24A, 469',
+                    'link': 'https://doi.org/10.1107/S056773946800094X'}
+cdb['ge'] = cdb['germanium']
+
+cdb['silicon'] = {'crystal_name': 'silicon',
+                  'symmetry': 'diamond',
+                  'elements': 'Si',
+                  'a': 5.430880,  # Angstrom for 300K
+                  'reference': 'C. R. Hubbard, H. E. Swanson, and F. A. Mauer, J. Appl. Crystallogr., 1975, 8, 45',
+                  'link': 'https://doi.org/10.1107/S0021889875009508'}
+cdb['si'] = cdb['silicon']
+
+cdb['gaas'] = {'crystal_name': 'GaAs',
+               'symmetry': 'zincblende(B3)',
+               'elements': ['Ga', 'As'],
+               'a': 5.65325,  # Angstrom for 300K
+               'reference': 'J.F.C. Baker, M. Hart, M.A.G. Halliwell, R. Heckingbottom, Solid-State Electronics, 19, '
+                            '1976, 331-334,',
+               'link': 'https://doi.org/10.1016/0038-1101(76)90031-9'}
+
+cdb['fcc fe'] = {'crystal_name': 'FCC Fe',
+                 'symmetry': 'FCC',
+                 'elements': 'Fe',
+                 'a': 3.3571,  # Angstrom
+                 'reference': 'R. Kohlhaas, P. Donner, and N. Schmitz-Pranghe, Z. Angew. Phys., 1967, 23, 245',
+                 'link': ''}
+
+cdb['iron'] = {'crystal_name': 'BCC Fe',
+               'symmetry': 'BCC',
+               'elements': 'Fe',
+               'a': 2.866,  # Angstrom
+               'reference': 'Z. S. Basinski, W. Hume-Rothery and A. L. Sutton, Proceedings of the Royal Society of '
+                            'London. Series A, Mathematical and Physical Sciences Vol. 229, No. 1179 '
+                            '(May 24, 1955), pp. 459-467',
+               'link': 'http://www.jstor.org/stable/99693'}
+cdb['bcc fe'] = cdb['alpha iron'] = cdb['iron']
+
+cdb['srtio3'] = {'crystal_name': 'SrTiO3',
+                 'symmetry': 'perovskite',
+                 'elements': ['Sr', 'Ti', 'O'],
+                 'a': 3.905268,  # Angstrom
+                 'reference': 'M. Schmidbauer, A. Kwasniewski and J. Schwarzkopf, Acta Cryst. (2012). B68, 8-14',
+                 'link': 'http://doi.org/10.1107/S0108768111046738'}
+cdb['strontium titanate'] = cdb['srtio3']
+
+cdb['graphite'] = {'crystal_name': 'graphite',
+                   'symmetry': 'graphite hexagonal',
+                   'a': 2.464,
+                   'c': 6.711,
+                   'elements': 'C',
+                   'reference': 'P. Trucano and R. Chen, Nature, 1975, 258, 136',
+                   'link': 'https://doi.org/10.1038/258136a0'}
+
+cdb['cscl'] = {'crystal_name': 'CsCl',
+               'symmetry': 'CsCl (B2)',
+               'a': 4.209,  # Angstrom
+               'elements': ['Cs', 'Cl'],
+               'reference': '', 'link': ''}
+cdb['cesium chlorid'] = cdb['cscl']
+
+cdb['mgo'] = {'crystal_name': 'MgO',
+              'symmetry': 'rocksalt (B1)',
+              'elements': ['Mg', 'O'],
+              'a': 4.256483,  # Angstrom
+              'reference': '', 'link': ''}
+
+cdb['titanium nitride'] = {'crystal_name': 'TiN',
+                           'symmetry': 'rocksalt (B1)',
+                           'elements': ['Ti', 'N'],
+                           'a': 4.25353445,  # Angstrom
+                           'reference': '', 'link': '',
+                           'space_group': 225,
+                           'symmetry_name': 'Fm-3m'}
+
+cdb['zno wurzite'] = {'crystal_name': 'ZnO Wurzite',
+                      'symmetry': 'wurzite',
+                      'elements': ['Zn', 'O'],
+                      'a': 3.278,  # Angstrom
+                      'c': 5.292,  # Angstrom
+                      'u': 0.382,
+                      'reference': '', 'link': ''}
+cdb['zno'] = cdb['wzno'] = cdb['zno wurzite']
+
+cdb['gan'] = {'crystal_name': 'GaN Wurzite',
+              'symmetry': 'wurzite',
+              'elements': ['Ga', 'N'],
+              'a': 3.186,  # Angstrom
+              'c': 5.186,  # Angstrom
+              'u': 0.376393,
+              'reference': '', 'link': ''}
+cdb['gan wurzite'] = cdb['wgan'] = cdb['gallium nitride'] = cdb['gan']
+
+
+cdb['tio2'] = {'crystal_name': 'TiO2 rutile',
+               'symmetry': 'rutile',
+               'elements': ['Ti', 'O'],
+               'a': 4.6,  # Angstrom
+               'c': 2.95,  # Angstrom
+               'reference': '', 'link': ''}
+
+cdb['mos2'] = {'crystal_name': 'MoS2',
+               'symmetry': 'dichalcogenide',
+               'elements': ['Mo', 'S'],
+               'a': 3.19031573,  # Angstrom
+               'c': 14.87900430,  # Angstrom
+               'u': 0.105174,
+               'reference': '', 'link': ''}
+
+cdb['ws2'] = {'crystal_name': 'WS2',
+              'symmetry': 'dichalcogenide',
+              'elements': ['W', 'S'],
+              'a': 3.19073051,  # Angstrom
+              'c': 14.20240204,  # Angstrom
+              'u': 0.110759,
+              'reference': '', 'link': ''}
+
+cdb['wse2'] = {'crystal_name': 'WSe2',
+               'symmetry': 'dichalcogenide',
+               'elements': ['W', 'Se'],
+               'a': 3.32706918,  # Angstrom
+               'c': 15.06895072,  # Angstrom
+               'u': 0.111569,
+               'reference': '', 'link': ''}
+
+cdb['mose2'] = {'crystal_name': 'MoSe2',
+                'symmetry': 'dichalcogenide',
+                'elements': ['Mo', 'Se'],
+                'a': 3.32694913,  # Angstrom
+                'c': 15.45142322,  # Angstrom
+                'u': 0.108249,
+                'reference': '', 'link': ''}
+a_l = 0.3336
+c_l = 0.4754
+base_l = [(2. / 3., 1. / 3., .5), (1. / 3., 2. / 3., 0.), (2. / 3., 1. / 3., 0.), (1. / 3., 2. / 3., .5)]
+
+cdb['zno hexagonal'] = {'crystal_name': 'ZnO hexagonal',
+                        'symmetry': 'hexagonal',
+                        'a': a_l,  # nm
+                        'c': c_l,  # not np.sqrt(8/3)*1
+                        'elements': ['Zn', 'Zn', 'O', 'O'],
+                        'unit_cell': [[a_l, 0., 0.],
+                                      [np.cos(120 / 180 * np.pi) * a_l, np.sin(120 / 180 * np.pi) * a_l, 0.],
+                                      [0., 0., c_l]],
+                        'base': np.array(base_l),
+                        'reference': '', 'link': ''}
+
+cdb['pdse2'] = {'crystal_name': 'PdSe2',
+                'symmetry': 'primitive',
+                'unit_cell': (np.identity(3) * (.579441832, 0.594542204, 0.858506072)),
+                'elements': ['Pd'] * 4 + ['Se'] * 8,
+                'base': np.array([[.5, .0, .0], [.0, 0.5, 0.0],
+                                  [.5, 0.5, 0.5], [.0, 0.5, 0.5],
+                                  [0.611300, 0.119356, 0.585891],
+                                  [0.111300, 0.380644, 0.414109],
+                                  [0.388700, 0.619356, 0.914109],
+                                  [0.888700, 0.880644, 0.085891],
+                                  [0.111300, 0.119356, 0.914109],
+                                  [0.611300, 0.380644, 0.085891],
+                                  [0.888700, 0.619356, 0.585891],
+                                  [0.388700, 0.880644, 0.414109]]),
+                'reference': '', 'link': ''}
+
+crystal_data_base = cdb
 
 # From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
 electronFF = {
