@@ -6,26 +6,18 @@ Created on January 23 2021
 """
 import unittest
 import numpy as np
-
 import os
 import matplotlib as mpl
-if os.environ.get('DISPLAY', '') == '':
-    print('no display found. Using non-interactive Agg backend')
-mpl.use('Agg')
-import numpy as np
 import matplotlib.pyplot as plt
 
 import ase
 import ase.build
 
-
 import pyTEMlib.crystal_tools as cs
 
-import sys
-sys.path.append("../pyTEMlib/")
-
-if sys.version_info.major == 3:
-    unicode = str
+if os.environ.get('DISPLAY', '') == '':
+    print('no display found. Using non-interactive Agg backend')
+mpl.use('Agg')
 
 
 class TestUtilityFunctions(unittest.TestCase):
@@ -52,7 +44,6 @@ class TestUtilityFunctions(unittest.TestCase):
                          [0, 0, 0, 0, 0, 0, 0, 0, 1],
                          [0, 0, 0, 0, 0, 0, 0, 0, 0]]
         np.testing.assert_allclose(cell_2_plot.info['plot_cell']['bond_matrix'].toarray(), bonds_desired)
-
 
     def test_from_dictionary(self):
         tags = {'unit_cell': np.array([[4.05, 0, 0], [0, 4.05, 0], [0, 0, 4.05]]),
