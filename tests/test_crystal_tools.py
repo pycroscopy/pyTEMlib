@@ -82,5 +82,18 @@ class TestUtilityFunctions(unittest.TestCase):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True)
         sym = cs.get_symmetry(atoms, verbose=True)
         self.assertTrue(sym)
+
+    def test_structure_by_name(self):
+        for key in cs.crystal_data_base.keys():
+            a = cs.structure_by_name(key)
+            self.assertIsInstance(a, ase.Atoms)
+
+        a = cs.structure_by_name('Graphite')
+        self.assertIsInstance(a, ase.Atoms)
+
+        a = cs.structure_by_name('MoS2')
+        self.assertIsInstance(a, ase.Atoms)
+
+
 if __name__ == '__main__':
     unittest.main()

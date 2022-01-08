@@ -90,7 +90,7 @@ def get_symmetry(atoms, verbose=True):
         base = atoms.get_scaled_positions()
         for i, atom in enumerate(atoms):
             if verbose:
-                print(f'{i + 1}: {atom.atomic_number} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
+                print(f'{i + 1}: {atom.number} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
 
         lattice = (atoms.cell, atoms.get_scaled_positions(), atoms.numbers)
         spgroup = spglib.get_spacegroup(lattice, symprec=1e-2)
@@ -295,9 +295,7 @@ def structure_by_name(crystal_name):
             atoms = ase.build.bulk(tags['elements'], 'fcc', a=tags['a'], cubic=True)
 
         elif tags['symmetry'].lower() == 'bcc':
-            print("he")
             atoms = ase.build.bulk(tags['elements'], 'bcc', a=tags['a'], cubic=True)
-            print(atoms)
 
         elif tags['symmetry'].lower() == 'diamond':
             import ase.lattice.cubic
@@ -317,7 +315,7 @@ def structure_by_name(crystal_name):
 
         elif 'graphite' in tags['symmetry']:
             import ase.lattice.hexagonal
-            atoms = ase.lattice.hexagonal.Graphite(tags['elements']latticeconstant={'a': tags['a'],'c': tags['c']})
+            atoms = ase.lattice.hexagonal.Graphite(tags['elements'], latticeconstant={'a': tags['a'],'c': tags['c']})
 
         elif 'perovskite' in tags['symmetry']:
             import ase.spacegroup
@@ -491,6 +489,7 @@ cdb['gan wurzite'] = cdb['wgan'] = cdb['gallium nitride'] = cdb['gan']
 cdb['mos2'] = {'crystal_name': 'MoS2',
                'symmetry': 'dichalcogenide',
                'elements': ['Mo', 'S'],
+               'symmetry': 'dichalcogenide',
                'a': 3.19031573,  # Angstrom
                'c': 14.87900430,  # Angstrom
                'u': 0.105174,
@@ -513,6 +512,7 @@ cdb['wse2'] = {'crystal_name': 'WSe2',
                'reference': '', 'link': ''}
 
 cdb['mose2'] = {'crystal_name': 'MoSe2',
+                'symmetry': 'dichalcogenide',
                 'elements': ['Mo', 'Se'],
                 'a': 3.32694913,  # Angstrom
                 'c': 15.45142322,  # Angstrom
@@ -530,7 +530,8 @@ cdb['zno hexagonal'] = {'crystal_name': 'ZnO hexagonal',
                         'unit_cell': [[a_l, 0., 0.],
                                       [np.cos(120 / 180 * np.pi) * a_l, np.sin(120 / 180 * np.pi) * a_l, 0.],
                                       [0., 0., c_l]],
-                        'base': np.array(base_l)}
+                        'base': np.array(base_l),
+                        'reference': '', 'link': ''}
 
 cdb['pdse2'] = {'crystal_name': 'PdSe2',
                 'symmetry': 'primitive',
