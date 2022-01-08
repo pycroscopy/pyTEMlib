@@ -7,7 +7,7 @@ Author: Gerd Duscher
 
 Provides convenient functions to make most regular crystal structures
 
-Contains also a dictionary of crystal structures and atomic form factprs
+Contains also a dictionary of crystal structures and atomic form factors
 
 Units:
     everything is in SI units, except length is given in nm.
@@ -186,9 +186,9 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
         bond_lengths.append(electronFF[atom.symbol]['bond_length'][1])
 
     super_cell.set_cell(cell*2, scale_atoms=False)   # otherwise, corner atoms have distance 0
-    neighborList = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
-    neighborList.update(super_cell)
-    bond_matrix = neighborList.get_connectivity_matrix()
+    neighbor_list = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
+    neighbor_list.update(super_cell)
+    bond_matrix = neighbor_list.get_connectivity_matrix()
 
     del_double = []
     for (k, s) in bond_matrix.keys():
@@ -219,7 +219,6 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
 
-
     for line in super_cell.info['plot_cell']['corner_matrix'].keys():
         ax.plot3D(corners[line, 0], corners[line, 1], corners[line, 2], color="blue")
 
@@ -231,7 +230,7 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
 
     # draw atoms
     ax.scatter(super_cell.positions[:, 0], super_cell.positions[:, 1], super_cell.positions[:, 2],
-                   color=tuple(jmol_colors[super_cell.get_atomic_numbers()]), alpha=1.0, s=50)
+               color=tuple(jmol_colors[super_cell.get_atomic_numbers()]), alpha=1.0, s=50)
     maximum_position = super_cell.positions.max()*1.05
     ax.set_proj_type('ortho')
 
@@ -261,7 +260,7 @@ def structure_by_name(crystal_name):
         Parameter
         ---------
         crystal_name: str
-            Please note that the chemical expressions are not case sensitive.
+            Please note that the chemical expressions are not case-sensitive.
 
         Returns
         -------
@@ -315,7 +314,7 @@ def structure_by_name(crystal_name):
 
         elif 'graphite' in tags['symmetry']:
             import ase.lattice.hexagonal
-            atoms = ase.lattice.hexagonal.Graphite(tags['elements'], latticeconstant={'a': tags['a'],'c': tags['c']})
+            atoms = ase.lattice.hexagonal.Graphite(tags['elements'], latticeconstant={'a': tags['a'], 'c': tags['c']})
 
         elif 'perovskite' in tags['symmetry']:
             import ase.spacegroup
@@ -330,8 +329,8 @@ def structure_by_name(crystal_name):
 
         elif 'rutile' in tags['symmetry']:
             import ase.spacegroup
-            atoms = crystal(['Ti', 'O'], basis=[(0, 0, 0), (0.3, 0.3, 0.0)],
-                            spacegroup=136, cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 90])
+            atoms = ase.spacegroup.crystal(tags['elements'], basis=[(0, 0, 0), (0.3, 0.3, 0.0)],
+                                           spacegroup=136, cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 90])
         elif 'dichalcogenide' in tags['symmetry']:
             import ase.spacegroup
 
@@ -486,10 +485,17 @@ cdb['gan'] = {'crystal_name': 'GaN Wurzite',
               'reference': '', 'link': ''}
 cdb['gan wurzite'] = cdb['wgan'] = cdb['gallium nitride'] = cdb['gan']
 
+
+cdb['tio2'] = {'crystal_name': 'TiO2 rutile',
+               'symmetry': 'rutile',
+               'elements': ['Ti', 'O'],
+               'a': 4.6,  # Angstrom
+               'c': 2.95,  # Angstrom
+               'reference': '', 'link': ''}
+
 cdb['mos2'] = {'crystal_name': 'MoS2',
                'symmetry': 'dichalcogenide',
                'elements': ['Mo', 'S'],
-               'symmetry': 'dichalcogenide',
                'a': 3.19031573,  # Angstrom
                'c': 14.87900430,  # Angstrom
                'u': 0.105174,

@@ -9,7 +9,6 @@ import pyTEMlib.file_tools as ft
 import matplotlib.pyplot as plt
 
 import warnings
-
 warnings.filterwarnings('ignore')
 
 class FileIconDialog(QtWidgets.QDialog):
