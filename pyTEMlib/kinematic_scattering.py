@@ -1,6 +1,5 @@
 """
-KinsCat
-Kinematic Scattering Theory
+kinematic_scattering
 Copyright by Gerd Duscher
 
 The University of Tennessee, Knoxville
@@ -17,12 +16,12 @@ Sources:
        Appendix C
 
 Units:
-    everything is in SI units, except length is given in nm.
+    everything is in SI units, except length which is given in Angstrom.
 
 Usage:
     See the notebooks for examples of these routines
 
-All the input and output is done through a dictionary
+All the input and output is done through a ase.Atoms object and the dictionary in the info attribute
 """
 
 # numerical packages used
@@ -37,11 +36,11 @@ import pyTEMlib.file_tools as ft
 from pyTEMlib.crystal_tools import *
 from pyTEMlib.diffraction_plot import *
 
-_version_ = 0.6
+_version_ = "0.2022.1.0"
 
-print('Using kinematic_scattering library version ', _version_, ' by G.Duscher')
+print('Using kinematic_scattering library version {_version_ }  by G.Duscher')
 
-inputKeys = [ 'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
+inputKeys = ['acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_inputKeys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad', 'mistilt', 'thickness',
                       'dynamic correction', 'dynamic correction K0']
 
@@ -92,13 +91,13 @@ def Zuo_fig_3_18(verbose=True):
     a = 5.14  # A
     atoms = ase.build.bulk('Si', 'diamond', a=a, cubic=True)
 
-    experiment = {'acceleration_voltage_V': 99.2 * 1000.0, # V
+    experiment = {'acceleration_voltage_V': 99.2 * 1000.0,  # V
                   'convergence_angle_mrad': 7.15,  # mrad;
                   'zone_hkl': np.array([-2, 2, 1]),
                   'mistilt': np.array([0, 0, 0]),  # mistilt in degrees
-                  'Sg_max': .03 , # 1/A  maximum allowed excitation error
+                  'Sg_max': .03,  # 1/A  maximum allowed excitation error
                   'hkl_max': 9  # Highest evaluated Miller indices
-                 }
+                  }
     # Define Experimental Conditions
     if verbose:
         print('###########################')
@@ -207,12 +206,14 @@ def get_wavelength(e0):
     """
     Calculates the relativistic corrected de Broglie wavelength of an electron in Angstrom
 
-    Input:
-    ------
+    Parameter:
+    ---------
+    e0: float
         acceleration voltage in volt
-    Output:
+    Returns:
     -------
-        wave length in nm
+    wavelength: float
+        wave length in Angstrom
     """
     if not isinstance(e0, (int, float)):
         raise TypeError('Acceleration voltage has to be a real number')
@@ -616,10 +617,9 @@ def kinematic_scattering(atoms, verbose=False):
 
         Parameters
         ----------
-        tags: dict
-            dictionary with crystal structure:
-            'unit_cell', 'base' 'elements'
-            and with experimental parameters:
+        atoms: ase.Atoms
+            object with crystal structure:
+            and with experimental parameters in info attribute:
             'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max'
             Optional parameters are:
             'mistilt', convergence_angle_mrad', and 'crystal_name'
@@ -629,8 +629,8 @@ def kinematic_scattering(atoms, verbose=False):
 
         Returns
         -------
-        dict:
-            There are three sub_dictionaries:
+        ato,s:
+            There are three sub_dictionaries in info attribute:
             ['allowed'], ['forbidden'], and ['HOLZ']
             ['allowed'] and ['forbidden'] dictionaries contain:
                 ['Sg'], ['hkl'], ['g'], ['structure factor'], ['intensities'],
@@ -784,7 +784,7 @@ def kinematic_scattering(atoms, verbose=False):
 
     if verbose:
         print(f"Of the {len(g)} tested reciprocal_unit_cell points, {len(g_hkl)} "
-              f"have an excitation error less than {Sg_max:.2f} 1/nm")
+              f"have an excitation error less than {Sg_max:.2f} 1/Angstrom")
 
     # Calculate Structure Factors
     structure_factors = []
@@ -1099,10 +1099,10 @@ def make_pretty_labels(hkls, hex_label=False):
 
 
 def feq(element, q):
-    """Atomic form factor parametrized in 1/Angstrom but converted to 1/nm
+    """Atomic form factor parametrized in 1/Angstrom but converted to 1/Angstrom
 
     The atomic form factor is from Kirkland: Advanced Computing in Electron Microscopy 2nd edition, Appendix C.
-    From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
+    From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 3Ard ed.
     Calculation of electron form factor for specific q:
     Using equation Kirkland C.15
 
@@ -1111,7 +1111,7 @@ def feq(element, q):
     element: string
         element name
     q: float
-        magnitude of scattering vector in 1/nm -- (=> exp(-i*g.r), physics negative convention)
+        magnitude of scattering vector in 1/Angstrom -- (=> exp(-i*g.r), physics negative convention)
 
     Returns
     -------
@@ -1129,8 +1129,7 @@ def feq(element, q):
     if not isinstance(q, (float, int)):
         raise TypeError('Magnitude of scattering vector has to be a number of type float')
 
-    q = q
-    # q is now magnitude of scattering vector in 1/A -- (=> exp(-i*g.r), physics negative convention)
+    # q is in magnitude of scattering vector in 1/A -- (=> exp(-i*g.r), physics negative convention)
     param = electronFF[element]
     f_lorentzian = 0
     f_gauss = 0

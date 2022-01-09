@@ -315,8 +315,8 @@ def structure_by_name(crystal_name):
         elif 'graphite' in tags['symmetry']:
             base = [(0, 0, 0), (0, 0, 1/2), (2/3, 1/3, 0), (1/3, 2/3, 1/2)]
             structure_matrix = np.array([[tags['a'], 0., 0.],
-                                         [np.cos(np.pi/2) * tags['a'], np.sin(np.pi/2) * tags['a'], 0.],
-                                         [0., 0., np.tags['c']]])
+                                         [np.cos(np.pi/3*2)*tags['a'], np.sin(np.pi/3*2)*tags['a'], 0.],
+                                         [0., 0., tags['c']]])
 
             atoms = ase.Atoms(tags['elements'], cell=structure_matrix, scaled_positions=base)
 
@@ -327,7 +327,7 @@ def structure_by_name(crystal_name):
 
         elif 'wurzite' in tags['symmetry']:
             import ase.spacegroup
-            atom_positions = [(1 / 3, 2 / 3, 0.0), (1 / 3, 2 / 3, tags['u'])]
+            atom_positions = [(1/3, 2/3, 0.0), (1/3, 2/3, tags['u'])]
             atoms = ase.spacegroup.crystal(tags['elements'], atom_positions, spacegroup=186,
                                            cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 120])
 
