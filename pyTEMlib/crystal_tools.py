@@ -313,8 +313,12 @@ def structure_by_name(crystal_name):
             atoms = ase.lattice.compounds.B2(tags['elements'], latticeconstant=tags['a'])
 
         elif 'graphite' in tags['symmetry']:
-            import ase.lattice.hexagonal
-            atoms = ase.lattice.hexagonal.Graphite(tags['elements'], latticeconstant={'a': tags['a'], 'c': tags['c']})
+            base = [(0, 0, 0), (0, 0, 1/2), (2/3, 1/3, 0), (1/3, 2/3, 1/2)]
+            structure_matrix = np.array([[tags['a'], 0., 0.],
+                                         [np.cos(np.pi/2) * tags['a'], np.sin(np.pi/2) * tags['a'], 0.],
+                                         [0., 0., np.tags['c']]])
+
+            atoms = ase.Atoms(tags['elements'], cell=structure_matrix, scaled_positions=base)
 
         elif 'perovskite' in tags['symmetry']:
             import ase.spacegroup
@@ -440,9 +444,9 @@ cdb['strontium titanate'] = cdb['srtio3']
 
 cdb['graphite'] = {'crystal_name': 'graphite',
                    'symmetry': 'graphite hexagonal',
-                   'a': 2.464,
+                   'elements': 'C4',
+                   'a': 2.46772414,
                    'c': 6.711,
-                   'elements': 'C',
                    'reference': 'P. Trucano and R. Chen, Nature, 1975, 258, 136',
                    'link': 'https://doi.org/10.1038/258136a0'}
 
