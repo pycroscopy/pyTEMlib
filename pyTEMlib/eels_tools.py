@@ -44,6 +44,8 @@ import pickle  # pkg_resources,
 import pyTEMlib.file_tools as ft
 from pyTEMlib.config_dir import data_path
 
+from sidpy.base.num_utils import get_slope
+
 major_edges = ['K1', 'L3', 'M5', 'N5']
 all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'O1', 'O2',
              'O3', 'O4', 'O5', 'O6', 'O7', 'P1', 'P2', 'P3']
@@ -395,8 +397,8 @@ def find_all_edges(edge_onset, maximal_chemical_shift=5):
 def second_derivative(dataset, sensitivity):
     """Calculates second derivative of a sidpy.dataset"""
 
-    dim = ft.get_dimensions_by_type('spectral', dataset)
-    energy_scale = np.array(dim[0][1])
+    dim = dataset.get_spectrum_dims()
+    energy_scale = np.array(dataset._axes[dim[0]])
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
         spectrum = dataset.view.get_spectrum()
     else:
@@ -404,7 +406,7 @@ def second_derivative(dataset, sensitivity):
 
     spec = scipy.ndimage.gaussian_filter(spectrum, 3)
 
-    dispersion = ft.get_slope(energy_scale)
+    dispersion = get_slope(energy_scale)
     second_dif = np.roll(spec, -3) - 2 * spec + np.roll(spec, +3)
     second_dif[:3] = 0
     second_dif[-3:] = 0
@@ -430,8 +432,8 @@ def second_derivative(dataset, sensitivity):
 def find_edges(dataset, sensitivity=2.5):
     """find edges within a sidpy.Dataset"""
 
-    dim = ft.get_dimensions_by_type('spectral', dataset)
-    energy_scale = np.array(dim[0][1])
+    dim = dataset.get_spectrum_dims()
+    energy_scale = np.array(dataset._axes[dim[0]])
 
     second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
 
@@ -544,8 +546,8 @@ def make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss=None):
 
     """
     for key in edges:
-        if key.isdigit():
-            edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['Z'], coll_angle,
+        if str(key).isdigit():
+            edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['z'], coll_angle,
                                            edges[key]['chemical_shift']) / 1e10  # from barnes to 1/nm^2
             if low_loss is not None:
                 low_loss = np.roll(np.array(low_loss), 1024 - np.argmax(np.array(low_loss)))
@@ -1375,12 +1377,21 @@ def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
 
     Translate from original Fortran program
     Calculates the effective collection angle in mrad:
-    Input:
-    - energy_scale : numpy array (first and last energy loss of spectrum in eV)
-    - alpha, beta: float  (collection and convergence angle in mrad)
-    - beamKV: float (acceleration voltage in V)
-    Output:
-    - effective collection angle in mrad
+    Parameter
+    ---------
+    energy_scale: numpy array
+        first and last energy loss of spectrum in eV
+    alpha: float
+        convergence angle in mrad
+    beta: float
+        collection  angle in mrad
+    beamKV: float
+        acceleration voltage in V
+
+    Returns
+    -------
+    eff_beta: float
+        effective collection angle in mrad
 
     # function y = effbeta(ene,  alpha, beta, beam_kv)
     #
@@ -1424,11 +1435,6 @@ def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
     #       Universite Paris-Sud, F91405 ORSAY Cedex
     #       Phone : (33-1) 69 41 53 68
     #
-    #        real*8 pi,zx,zi,z1,z2,z3,z4,z5,z6,z7,x0,x1,x2,x3,x4,x5,x6,x7,x8
-    #        real*8 x9,x10,theta,dtheta,eta,etha2,beta
-    #        np.logical pr
-    pi = np.pi  # 3.14159;
-    #        pr=.true.               ! enable record of data
     """
     if beam_kv == 0:
         beam_kv = 100.0
