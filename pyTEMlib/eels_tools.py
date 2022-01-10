@@ -128,7 +128,7 @@ def set_previous_quantification(current_dataset):
     for key in current_channel:
         if 'Log' in key:
             if current_channel[key]['analysis'][()] == 'EELS_quantification':
-                current_dataset.metadata.update(ft.nest_dict(current_channel[key].attrs))
+                current_dataset.metadata.update((current_channel[key].attrs))  #ToDo: find red dictionary
                 found_metadata = True
                 print('found previous quantification')
 
@@ -240,7 +240,6 @@ def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_int
     pin_flat = [item for sublist in pin for item in sublist]
     [p_out, _] = leastsq(residuals_ll, np.array(pin_flat), ftol=1e-3, args=(fit_energy, fit_spectrum,
                                                                             only_positive_intensity))
-
     p = []
     for i in range(len(pin)):
         if only_positive_intensity:
@@ -989,8 +988,8 @@ def fix_energy_scale(spec, energy):
         end = startx + 2
         start = startx - 2
 
-    x = np.array(energy[start:end])
-    y = np.array(spec[start:end]).copy()
+    x = np.array(energy[int(start):int(end)])
+    y = np.array(spec[int(start):int(end)]).copy()
 
     y[np.nonzero(y <= 0)] = 1e-12
 

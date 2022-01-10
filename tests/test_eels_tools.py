@@ -43,7 +43,6 @@ class TestFileFunctions(unittest.TestCase):
         p = eels.fit_peaks(dataset, dataset.energy_loss.values, [[0 ,dataset.max(),.6]], start_channel, end_channel)
         dataset.h5_dataset.file.close()
         self.assertIsInstance(p, list)
-        print(p)
 
     def test_get_x_sections(self):
         x = eels.get_x_sections()
