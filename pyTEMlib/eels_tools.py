@@ -1377,12 +1377,21 @@ def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
 
     Translate from original Fortran program
     Calculates the effective collection angle in mrad:
-    Input:
-    - energy_scale : numpy array (first and last energy loss of spectrum in eV)
-    - alpha, beta: float  (collection and convergence angle in mrad)
-    - beamKV: float (acceleration voltage in V)
-    Output:
-    - effective collection angle in mrad
+    Parameter
+    ---------
+    energy_scale: numpy array
+        first and last energy loss of spectrum in eV
+    alpha: float
+        convergence angle in mrad
+    beta: float
+        collection  angle in mrad
+    beamKV: float
+        acceleration voltage in V
+
+    Returns
+    -------
+    eff_beta: float
+        effective collection angle in mrad
 
     # function y = effbeta(ene,  alpha, beta, beam_kv)
     #
@@ -1426,11 +1435,6 @@ def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
     #       Universite Paris-Sud, F91405 ORSAY Cedex
     #       Phone : (33-1) 69 41 53 68
     #
-    #        real*8 pi,zx,zi,z1,z2,z3,z4,z5,z6,z7,x0,x1,x2,x3,x4,x5,x6,x7,x8
-    #        real*8 x9,x10,theta,dtheta,eta,etha2,beta
-    #        np.logical pr
-    pi = np.pi  # 3.14159;
-    #        pr=.true.               ! enable record of data
     """
     if beam_kv == 0:
         beam_kv = 100.0

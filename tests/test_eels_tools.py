@@ -128,6 +128,7 @@ class TestFileFunctions(unittest.TestCase):
 
         self.assertTrue(len(z_loss) == len(dataset))
 
+
     def test_get_energy_shifts(self):
         """
         file_path = os.path.dirname(os.path.abspath(__file__))
@@ -137,3 +138,8 @@ class TestFileFunctions(unittest.TestCase):
         shifts = eels.get_energy_shifts(np.array(dataset).new_axis), dataset.energy_loss.values, 0.5)
         print(shifts)
         """
+
+    def test_effective_collection_angle(self):
+        eff_beta = eels.effective_collection_angle(np.arange(59,500), 10, 10, 200)
+
+        self.assertTrue(eff_beta >10)
