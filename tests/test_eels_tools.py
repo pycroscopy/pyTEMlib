@@ -17,6 +17,7 @@ import pyTEMlib.file_tools as ft
 
 import pyTEMlib.eels_tools as eels
 
+
 class TestFileFunctions(unittest.TestCase):
     def test_dm3_eels_info(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +41,7 @@ class TestFileFunctions(unittest.TestCase):
         dataset = ft.open_file(file_name)
         start_channel = np.searchsorted(dataset.energy_loss, -2)
         end_channel = np.searchsorted(dataset.energy_loss, 2)
-        p = eels.fit_peaks(dataset, dataset.energy_loss.values, [[0 ,dataset.max(),.6]], start_channel, end_channel)
+        p = eels.fit_peaks(dataset, dataset.energy_loss.values, [[0, dataset.max(), .6]], start_channel, end_channel)
         dataset.h5_dataset.file.close()
         self.assertIsInstance(p, list)
 
@@ -105,7 +106,7 @@ class TestFileFunctions(unittest.TestCase):
         dataset = ft.open_file(file_name)
         dataset.h5_dataset.file.close()
 
-        background, p = eels.power_law_background(dataset, dataset.energy_loss, [15,25], verbose=True)
+        background, p = eels.power_law_background(dataset, dataset.energy_loss, [15, 25], verbose=True)
 
         self.assertIsInstance(background, np.ndarray)
 
@@ -127,7 +128,6 @@ class TestFileFunctions(unittest.TestCase):
 
         self.assertTrue(len(z_loss) == len(dataset))
 
-
     def test_get_energy_shifts(self):
         """
         file_path = os.path.dirname(os.path.abspath(__file__))
@@ -139,6 +139,6 @@ class TestFileFunctions(unittest.TestCase):
         """
 
     def test_effective_collection_angle(self):
-        eff_beta = eels.effective_collection_angle(np.arange(59,500), 10, 10, 200)
+        eff_beta = eels.effective_collection_angle(np.arange(59, 500), 10, 10, 200)
 
-        self.assertTrue(eff_beta >10)
+        self.assertTrue(eff_beta > 10)

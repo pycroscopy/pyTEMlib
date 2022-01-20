@@ -119,6 +119,57 @@ def set_bond_radii(atoms):
     atoms.info['bond_radii'] = bond_radii
 
 
+def jmol_viewer(atoms, size=2):
+    """
+    jmol viewer of ase .Atoms object
+    requires jupyter-jsmol to be installed (available through conda or pip)
+
+    Parameter
+    ---------
+    atoms: ase.Atoms
+        structure info
+    size: int, list, or np.array of size 3; default 1
+        size of unit_cell; maximum = 8
+
+    Returns
+    -------
+    view: JsmolView object
+
+    Example
+    -------
+    from jupyter_jsmol import JsmolView
+    import ase
+    import ase.build
+    import itertools
+    import numpy as np
+    atoms = ase.build.bulk('Cu', 'fcc', a=5.76911, cubic=True)
+    for pos in list(itertools.product([0.25, .75], repeat=3)):
+        atoms += ase.Atom('Al', al2cu.cell.lengths()*pos)
+
+    view = plot_ase(atoms, size = 8)
+    display(view)
+    """
+    try:
+        from jupyter_jsmol import JsmolView
+    except ImportError:
+        print('this function is based on jupyter-jsmol, please install with: \n '
+              'conda install -c conda-forge jupyter-jsmol')
+        return
+
+    if isinstance(size, int):
+        size = [size] * 3
+
+    [a, b, c] = atoms.cell.lengths()
+    [alpha, beta, gamma] = atoms.cell.angles()
+
+    view = JsmolView.from_ase(atoms, f"{{{size[0]} {size[1]} {size[2]}}}"
+                                     f" unitcell {{{a:.3f} {b:.3f} {c:.3f} {alpha:.3f} {beta:.3f} {gamma:.3f}}}")
+
+    display(view)
+
+    return view
+
+
 def plot_super_cell(super_cell, shift_x=0.):
     """ make a super_cell to plot with extra atoms at periodic boundaries"""
 
