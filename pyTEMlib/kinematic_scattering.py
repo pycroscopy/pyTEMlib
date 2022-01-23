@@ -636,7 +636,7 @@ def kinematic_scattering(atoms, verbose=False):
                 ['Sg'], ['hkl'], ['g'], ['structure factor'], ['intensities'],
                 ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], ['HHOLZ'], ['label'], and ['Laue_zone']
             the ['HOLZ'] dictionary contains:
-                ['slope'], ['distance'], ['theta'], ['g deficient'], ['g excess'], ['hkl'], ['intensities'],
+                ['slope'], ['distance'], ['theta'], ['g_deficient'], ['g_excess'], ['hkl'], ['intensities'],
                 ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], and  ['HHOLZ']
             Please note that the Kikuchi lines are the HOLZ lines of ZOLZ
 
@@ -843,35 +843,31 @@ def kinematic_scattering(atoms, verbose=False):
 
     dif['forbidden'] = {}
     dif['forbidden']['Sg'] = s_g_forbidden
-    dif['forbidden']['hkl'] = hkl_forbidden
+    dif['forbidden']['hkl'] = hkl_forbidden.copy()
     dif['forbidden']['g'] = g_forbidden
-
-    # Dynamically Allowed Reflection
-    indices = range(len(hkl_allowed))
-    dynamic_allowed = [False] * len(hkl_forbidden)
-
-    ls = hkl_forbidden.tolist()
-
-    comb = [list(x) for x in itertools.permutations(indices, 2)]
-    for i in range(len(comb)):
-        possible = (hkl_allowed[comb[i][0]] + hkl_allowed[comb[i][1]]).tolist()
-        if possible in ls:
-            dynamic_allowed[ls.index(possible)] = True
-
-    dynamic_allowed = np.array(dynamic_allowed, dtype=int)
-    dif['dynamical allowed'] = {}
-    dif['dynamical allowed']['Sg'] = s_g_forbidden[dynamic_allowed]
-    dif['dynamical allowed']['hkl'] = hkl_forbidden[dynamic_allowed]
-    dif['dynamical allowed']['g'] = g_forbidden[dynamic_allowed]
-
-    if verbose:
-        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamical allowed']['g'].shape[0]} "
-              f"can be dynamically activated.")
-        print(dif['dynamical allowed']['hkl'])
-
+    
     # Make pretty labels
     hkl_label = make_pretty_labels(hkl_allowed)
     dif['allowed']['label'] = hkl_label
+    hkl_label = make_pretty_labels(hkl_forbidden)
+    dif['forbidden']['label'] = hkl_label
+
+    # Dynamically Allowed Reflection
+    indices = range(len(hkl_allowed))
+    combinations = [list(x) for x in itertools.permutations(indices, 2)]
+    hkl_forbidden = hkl_forbidden.tolist()
+    dynamicallly_allowed = np.zeros(len(hkl_fobidden), dtype=bool)
+    for [i, j] in combinations:
+        possible = (hkl_allowed[i] + hkl_allowed[j]).tolist()
+        if possible in hkl_fobidden:
+            dynamicallly_allowed[hkl_fobidden.index(possible)] = True
+    dif['forbidden']['dynamicallly_allowed'] = dynamicallly_allowed
+
+    if verbose:
+        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamical_allowed']['g'].shape[0]} "
+              f"can be dynamically activated.")
+        # print(dif['forbidden']['hkl'][dynamicallly_allowed])
+
 
     # Center of Laue Circle
     laue_circle = np.dot(tags['nearest_zone_axis'], tags['reciprocal_unit_cell'])
@@ -879,9 +875,9 @@ def kinematic_scattering(atoms, verbose=False):
     laue_circle = laue_circle / np.linalg.norm(laue_circle) * k0
     laue_circle[2] = 0
 
-    dif['laue_circle'] = laue_circle
+    dif['Laue_circle'] = laue_circle
     if verbose:
-        print('laue_circle', laue_circle)
+        print('Laue_circle', laue_circle)
 
     # ###########################
     # Calculate Laue Zones (of allowed reflections)
@@ -940,7 +936,7 @@ def kinematic_scattering(atoms, verbose=False):
         laue_circle = laue_circle / np.linalg.norm(laue_circle) * k0
         laue_circle[2] = 0
 
-        zone_tags['laue_circle'] = laue_circle
+        zone_tags['Laue_circle'] = laue_circle
         # Rotate to nearest zone axis
 
         tags_new_zone['zone_hkl']
@@ -999,7 +995,7 @@ def kinematic_scattering(atoms, verbose=False):
         dif['Kikuchi']['theta'] = theta2
         dif['Kikuchi']['hkl'] = hkl_kikuchi
         dif['Kikuchi']['g_hkl'] = g_hkl_kikuchi
-        dif['Kikuchi']['g deficient'] = gd2
+        dif['Kikuchi']['g_deficient'] = gd2
         dif['Kikuchi']['min dist'] = gd2 + laue_circle
 
     k_g = k0
@@ -1040,8 +1036,8 @@ def kinematic_scattering(atoms, verbose=False):
     # a line is now given by
     dif['HOLZ']['distance'] = distance
     dif['HOLZ']['theta'] = theta
-    dif['HOLZ']['g deficient'] = gd
-    dif['HOLZ']['g excess'] = gd + g_allowed
+    dif['HOLZ']['g_deficient'] = gd
+    dif['HOLZ']['g_excess'] = gd + g_allowed
     dif['HOLZ']['g_allowed'] = g_allowed.copy()
 
     dif['HOLZ']['ZOLZ'] = ZOLZ
