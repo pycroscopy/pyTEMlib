@@ -573,7 +573,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
         ax.set_facecolor(atoms.info['output']['background'])
 
     if diffraction_pattern is not None:
-        plt.imshow(diffraction_pattern, extent=info.get_extent(), cmap='gray')
+        plt.imshow(diffraction_pattern, extent=diffraction_pattern.get_extent(), cmap='gray')
 
     ix = np.argsort((points ** 2).sum(axis=1))
     p = points[ix]
