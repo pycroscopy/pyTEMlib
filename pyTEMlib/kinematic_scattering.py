@@ -729,7 +729,6 @@ def kinematic_scattering(atoms, verbose=False):
     rotation_matrix = get_rotation_matrix(tags)
 
     if verbose:
-
         print(f"Rotation alpha {np.rad2deg(tags['y-axis rotation alpha']):.1f} degree, "
               f" beta {np.rad2deg(tags['x-axis rotation beta']):.1f} degree")
         print(f"from zone axis {tags['zone_hkl']}")
@@ -779,6 +778,7 @@ def kinematic_scattering(atoms, verbose=False):
     hkl_all = hkl.copy()
     s_g = S[reflections]
     g_hkl = g[reflections]
+    
     hkl = hkl[reflections]
     g_norm = g_norm[reflections]
 
@@ -797,7 +797,12 @@ def kinematic_scattering(atoms, verbose=False):
         structure_factors.append(F)
 
     F = structure_factors = np.array(structure_factors)
+    
+    shift_x = k0 * np.tan(np.deg2rad(tags['mistilt alpha degree']))
+    shift_y = k0 * np.tan(np.deg2rad(tags['mistilt beta degree']))
 
+    g_hkl += [shift_x, shift_y, 0]
+    
     # Sort reflection in allowed and forbidden #
     allowed = np.absolute(F) > 0.000001  # allowed within numerical error
 
@@ -853,21 +858,23 @@ def kinematic_scattering(atoms, verbose=False):
     dif['forbidden']['label'] = hkl_label
 
     # Dynamically Allowed Reflection
+    """
     indices = range(len(hkl_allowed))
     combinations = [list(x) for x in itertools.permutations(indices, 2)]
     hkl_forbidden = hkl_forbidden.tolist()
-    dynamicallly_allowed = np.zeros(len(hkl_fobidden), dtype=bool)
+    dynamicallly_allowed = np.zeros(len(hkl_forbidden), dtype=bool)
     for [i, j] in combinations:
         possible = (hkl_allowed[i] + hkl_allowed[j]).tolist()
-        if possible in hkl_fobidden:
-            dynamicallly_allowed[hkl_fobidden.index(possible)] = True
+        if possible in hkl_forbidden:
+            dynamicallly
+            _allowed[hkl_forbidden.index(possible)] = True
     dif['forbidden']['dynamicallly_allowed'] = dynamicallly_allowed
-
+   
     if verbose:
         print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamical_allowed']['g'].shape[0]} "
               f"can be dynamically activated.")
         # print(dif['forbidden']['hkl'][dynamicallly_allowed])
-
+    """
 
     # Center of Laue Circle
     laue_circle = np.dot(tags['nearest_zone_axis'], tags['reciprocal_unit_cell'])
