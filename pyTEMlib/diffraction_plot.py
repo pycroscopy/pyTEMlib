@@ -393,7 +393,7 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
     # show image in background
     ####
     if plot_diffraction_pattern:
-        plt.imshow(info, extent=info.get_extent(), cmap='gray')
+        plt.imshow(diffraction_pattern, extent=diffraction_pattern.get_extent(), cmap='gray')
 
     ax.set_aspect("equal")
 

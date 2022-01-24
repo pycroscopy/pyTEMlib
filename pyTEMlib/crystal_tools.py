@@ -151,6 +151,7 @@ def jmol_viewer(atoms, size=2):
     """
     try:
         from jupyter_jsmol import JsmolView
+        from IPython.display import display
     except ImportError:
         print('this function is based on jupyter-jsmol, please install with: \n '
               'conda install -c conda-forge jupyter-jsmol')
