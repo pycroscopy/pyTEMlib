@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 
+
 class FileIconDialog(QtWidgets.QDialog):
     """Qt5 Dialog to select directories or files from a list of Thumbnails
 

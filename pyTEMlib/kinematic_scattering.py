@@ -202,23 +202,23 @@ def vector_norm(g):
     return np.sqrt(g[:, 0] ** 2 + g[:, 1] ** 2 + g[:, 2] ** 2)
 
 
-def get_wavelength(e0):
+def get_wavelength(acceleration_voltage):
     """
     Calculates the relativistic corrected de Broglie wavelength of an electron in Angstrom
 
     Parameter:
     ---------
-    e0: float
+    acceleration_voltage: float
         acceleration voltage in volt
     Returns:
     -------
     wavelength: float
         wave length in Angstrom
     """
-    if not isinstance(e0, (int, float)):
+    if not isinstance(acceleration_voltage, (int, float)):
         raise TypeError('Acceleration voltage has to be a real number')
-    eV = const.e * e0
-    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**10
+    eU = const.e * acceleration_voltage
+    return const.h/np.sqrt(2*const.m_e*eU*(1+eU/(2*const.m_e*const.c**2)))*10**10
 
 
 def find_nearest_zone_axis(tags):
@@ -268,7 +268,7 @@ def find_nearest_zone_axis(tags):
 
 
 def find_angles(zone):
-    """Microscope stage cooordinates of zone"""
+    """Microscope stage coordinates of zone"""
 
     # rotation around y-axis
     r = np.sqrt(zone[1] ** 2 + zone[2] ** 2)
@@ -393,7 +393,7 @@ def check_sanity(atoms, verbose_level=0):
 
     if output['SpotPattern']:
         if 'mistilt alpha degree' not in tags:
-            # mistilt is in microcope coordinates
+            # mistilt is in microscope coordinates
             tags['mistilt alpha'] = tags['mistilt alpha degree'] = 0.0
             if verbose_level > 0:
                 print('Setting undefined input:  tags[\'mistilt alpha\'] = 0.0 ')
@@ -474,8 +474,6 @@ def ring_pattern_calculation(atoms, verbose=False):
     ----------
     atoms: Crystal
         crystal structure
-    tags: dict
-        dictionary of experimental conditions
     verbose: verbose print outs
         set to False
     Returns
@@ -647,7 +645,7 @@ def kinematic_scattering(atoms, verbose=False):
 
     # Check sanity
     if atoms.info is None:
-        atoms.info={'output': {}, 'experimental': {}}
+        atoms.info = {'output': {}, 'experimental': {}}
     elif 'output' in atoms.info:
         output = atoms.info['output']
     else:
@@ -677,7 +675,7 @@ def kinematic_scattering(atoms, verbose=False):
     # reciprocal_unit_cell
 
     # We use the linear algebra package of numpy to invert the unit_cell "matrix"
-    reciprocal_unit_cell = atoms.cell.reciprocal() # np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
+    reciprocal_unit_cell = atoms.cell.reciprocal()  # np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
     tags['reciprocal_unit_cell'] = reciprocal_unit_cell
     inverse_metric_tensor = get_metric_tensor(reciprocal_unit_cell)
 
