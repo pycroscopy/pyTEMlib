@@ -276,7 +276,7 @@ def find_interstitial_clusters(overlapping_pairs):
 
 
 def make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all):
-    """ make polygons from convex hulls of vetices around interstitial positions"""
+    """ make polygons from convex hulls of vertices around interstitial positions"""
     polyhedra = {}
     for index, cluster in tqdm(enumerate(clusters)):
         cc = []
@@ -363,7 +363,7 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
 
     print('Define conventional interstitial polyhedra')
     running_number = index + 0
-    for index in trange(len(voronoi_vertices)):
+    for index in range(len(voronoi_vertices)):
         if index not in visited_all:
             vertices = voronoi_tetrahedrons[index]
             hull = scipy.spatial.ConvexHull(atoms.positions[vertices])

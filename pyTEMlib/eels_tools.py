@@ -128,7 +128,7 @@ def set_previous_quantification(current_dataset):
     for key in current_channel:
         if 'Log' in key:
             if current_channel[key]['analysis'][()] == 'EELS_quantification':
-                current_dataset.metadata.update((current_channel[key].attrs))  #ToDo: find red dictionary
+                current_dataset.metadata.update((current_channel[key].attrs))   # ToDo: find red dictionary
                 found_metadata = True
                 print('found previous quantification')
 
@@ -224,7 +224,7 @@ def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_int
     end_fit: int
         channel where fit starts
     only_positive_intensity: boolean
-        allows only for positive amplitueds if True; default = False)
+        allows only for positive amplitudes if True; default = False
 
     Returns
     -------
@@ -254,17 +254,17 @@ def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_int
 
 
 def get_x_sections(z=0):
-    """Reads X-ray fluorescent cross sections from a pickle file.
+    """Reads X-ray fluorescent cross-sections from a pickle file.
 
     Parameters
     ----------
     z: int
-        atomic number if zero all cross sections will be returned
+        atomic number if zero all cross-sections will be returned
 
     Returns
     -------
     dictionary
-        cross section of a element or of all elements if z = 0
+        cross-section of an element or of all elements if z = 0
 
     """
     pkl_file = open(data_path + '/edges_db.pkl', 'rb')
@@ -489,18 +489,18 @@ def make_edges(edges_present, energy_scale, e_0, coll_angle, low_loss=None):
     edges_present: list
         list of edges
     energy_scale: numpy array
-        energy scale on which to make cross section
+        energy scale on which to make cross-section
     e_0: float
         acceleration voltage (in V)
     coll_angle: float
         collection angle in mrad
     low_loss: numpy array with same length as energy_scale
-        low_less spectrum with which to convolve the cross section (default=None)
+        low_less spectrum with which to convolve the cross-section (default=None)
 
     Returns
     -------
     edges: dict
-        dictionary with all information on cross section
+        dictionary with all information on cross-section
     """
     x_sections = get_x_sections()
     edges = {}
@@ -1054,7 +1054,7 @@ def resolution_function(energy_scale, spectrum, width, verbose=False):
 
     [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
     if verbose:
-        print('Fit of a Product of two Lorentzians')
+        print('Fit of a Product of two Lorentzian')
         print('Positions: ', p_zl[2], p_zl[5], 'Distance: ', p_zl[2] - p_zl[5])
         print('Width: ', p_zl[0], p_zl[3])
         print('Areas: ', p_zl[1], p_zl[4])
@@ -1218,7 +1218,7 @@ def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
         chemical shift of edge in eV
     """
     beta = beta * 0.001  # collection half angle theta [rad]
-    # thetamax = self.parent.spec[0].convAngle * 0.001  # collection half angle theta [rad]
+    # theta_max = self.parent.spec[0].convAngle * 0.001  # collection half angle theta [rad]
     dispersion = energy_scale[1] - energy_scale[0]
 
     x_sections = get_x_sections(z)
@@ -1259,7 +1259,7 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
     """probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)
 
     Gives probabilities of dielectric function eps relative to zero-loss integral (i0 = 1) per eV
-    Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011)
+    Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
 
     # function drude(ep,ew,eb,epc,e0,beta,nn,tnm)
     # Given the plasmon energy (ep), plasmon fwhm (ew) and binding energy(eb),
@@ -1269,7 +1269,7 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
     # The output is e, ssd into the file drude.ssd (for use in Flog etc.)
     # and e,eps1 ,eps2 into drude.eps (for use in Kroeger etc.)
     # Gives probabilities relative to zero-loss integral (i0 = 1) per eV
-    # Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011)
+    # Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
     # Version 10.11.26
 
 
@@ -1536,7 +1536,7 @@ def kroeger_core(e_data, a_data, eps_data, ee, thick, relativistic=True):
     # Calculate fixed terms of equation
     va = 1 - (511. / (511. + ee)) ** 2  # ee is incident energy in keV
     v = c * np.sqrt(va)
-    beta = v / c  # non relativistic for =1
+    beta = v / c  # non-relativistic for =1
 
     if relativistic:
         gamma = 1. / np.sqrt(1 - beta ** 2)
@@ -1681,7 +1681,7 @@ def kroeger_core2(e_data, a_data, eps_data, acceleration_voltage_kev, thickness,
     v = c * np.sqrt(va)
 
     if relativistic:
-        beta = v / c  # non relativistic for =1
+        beta = v / c  # non-relativistic for =1
         gamma = 1. / np.sqrt(1 - beta ** 2)
     else:
         beta = 1
@@ -1818,7 +1818,7 @@ def read_msa(msa_string):
     if 'XPERCHAN' in parameters:
         parameters['XPERCHAN'] = str(parameters['XPERCHAN']).split(' ')[0]
         parameters['OFFSET'] = str(parameters['OFFSET']).split(' ')[0]
-        parameters['enery_scale'] = np.arange(len(y)) * float(parameters['XPERCHAN']) + float(parameters['OFFSET'])
+        parameters['energy_scale'] = np.arange(len(y)) * float(parameters['XPERCHAN']) + float(parameters['OFFSET'])
     return parameters
 
 

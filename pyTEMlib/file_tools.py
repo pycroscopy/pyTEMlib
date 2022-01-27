@@ -157,7 +157,7 @@ class ChooseDataset(object):
         self.dataset_list = []
         self.dataset_type = None
         self.dataset = None
-        self.reader = pyNSID.NSIDReader(self.current_channel.file.filename)
+        self.reader = SciFiReaders.NSIDReader(self.current_channel.file.filename)
 
         self.get_dataset_list()
         self.select_image = widgets.Dropdown(options=self.dataset_names,

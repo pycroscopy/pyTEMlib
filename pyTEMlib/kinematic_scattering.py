@@ -202,23 +202,23 @@ def vector_norm(g):
     return np.sqrt(g[:, 0] ** 2 + g[:, 1] ** 2 + g[:, 2] ** 2)
 
 
-def get_wavelength(e0):
+def get_wavelength(acceleration_voltage):
     """
     Calculates the relativistic corrected de Broglie wavelength of an electron in Angstrom
 
     Parameter:
     ---------
-    e0: float
+    acceleration_voltage: float
         acceleration voltage in volt
     Returns:
     -------
     wavelength: float
         wave length in Angstrom
     """
-    if not isinstance(e0, (int, float)):
+    if not isinstance(acceleration_voltage, (int, float)):
         raise TypeError('Acceleration voltage has to be a real number')
-    eV = const.e * e0
-    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**10
+    eU = const.e * acceleration_voltage
+    return const.h/np.sqrt(2*const.m_e*eU*(1+eU/(2*const.m_e*const.c**2)))*10**10
 
 
 def find_nearest_zone_axis(tags):
@@ -268,7 +268,7 @@ def find_nearest_zone_axis(tags):
 
 
 def find_angles(zone):
-    """Microscope stage cooordinates of zone"""
+    """Microscope stage coordinates of zone"""
 
     # rotation around y-axis
     r = np.sqrt(zone[1] ** 2 + zone[2] ** 2)
@@ -393,7 +393,7 @@ def check_sanity(atoms, verbose_level=0):
 
     if output['SpotPattern']:
         if 'mistilt alpha degree' not in tags:
-            # mistilt is in microcope coordinates
+            # mistilt is in microscope coordinates
             tags['mistilt alpha'] = tags['mistilt alpha degree'] = 0.0
             if verbose_level > 0:
                 print('Setting undefined input:  tags[\'mistilt alpha\'] = 0.0 ')
@@ -474,8 +474,6 @@ def ring_pattern_calculation(atoms, verbose=False):
     ----------
     atoms: Crystal
         crystal structure
-    tags: dict
-        dictionary of experimental conditions
     verbose: verbose print outs
         set to False
     Returns
@@ -636,7 +634,7 @@ def kinematic_scattering(atoms, verbose=False):
                 ['Sg'], ['hkl'], ['g'], ['structure factor'], ['intensities'],
                 ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], ['HHOLZ'], ['label'], and ['Laue_zone']
             the ['HOLZ'] dictionary contains:
-                ['slope'], ['distance'], ['theta'], ['g deficient'], ['g excess'], ['hkl'], ['intensities'],
+                ['slope'], ['distance'], ['theta'], ['g_deficient'], ['g_excess'], ['hkl'], ['intensities'],
                 ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], and  ['HHOLZ']
             Please note that the Kikuchi lines are the HOLZ lines of ZOLZ
 
@@ -647,7 +645,7 @@ def kinematic_scattering(atoms, verbose=False):
 
     # Check sanity
     if atoms.info is None:
-        atoms.info={'output': {}, 'experimental': {}}
+        atoms.info = {'output': {}, 'experimental': {}}
     elif 'output' in atoms.info:
         output = atoms.info['output']
     else:
@@ -677,7 +675,7 @@ def kinematic_scattering(atoms, verbose=False):
     # reciprocal_unit_cell
 
     # We use the linear algebra package of numpy to invert the unit_cell "matrix"
-    reciprocal_unit_cell = atoms.cell.reciprocal() # np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
+    reciprocal_unit_cell = atoms.cell.reciprocal()  # np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
     tags['reciprocal_unit_cell'] = reciprocal_unit_cell
     inverse_metric_tensor = get_metric_tensor(reciprocal_unit_cell)
 
@@ -729,7 +727,6 @@ def kinematic_scattering(atoms, verbose=False):
     rotation_matrix = get_rotation_matrix(tags)
 
     if verbose:
-
         print(f"Rotation alpha {np.rad2deg(tags['y-axis rotation alpha']):.1f} degree, "
               f" beta {np.rad2deg(tags['x-axis rotation beta']):.1f} degree")
         print(f"from zone axis {tags['zone_hkl']}")
@@ -779,6 +776,7 @@ def kinematic_scattering(atoms, verbose=False):
     hkl_all = hkl.copy()
     s_g = S[reflections]
     g_hkl = g[reflections]
+    
     hkl = hkl[reflections]
     g_norm = g_norm[reflections]
 
@@ -797,7 +795,12 @@ def kinematic_scattering(atoms, verbose=False):
         structure_factors.append(F)
 
     F = structure_factors = np.array(structure_factors)
+    
+    shift_x = k0 * np.tan(np.deg2rad(tags['mistilt alpha degree']))
+    shift_y = k0 * np.tan(np.deg2rad(tags['mistilt beta degree']))
 
+    g_hkl += [shift_x, shift_y, 0]
+    
     # Sort reflection in allowed and forbidden #
     allowed = np.absolute(F) > 0.000001  # allowed within numerical error
 
@@ -843,35 +846,33 @@ def kinematic_scattering(atoms, verbose=False):
 
     dif['forbidden'] = {}
     dif['forbidden']['Sg'] = s_g_forbidden
-    dif['forbidden']['hkl'] = hkl_forbidden
+    dif['forbidden']['hkl'] = hkl_forbidden.copy()
     dif['forbidden']['g'] = g_forbidden
-
-    # Dynamically Allowed Reflection
-    indices = range(len(hkl_allowed))
-    dynamic_allowed = [False] * len(hkl_forbidden)
-
-    ls = hkl_forbidden.tolist()
-
-    comb = [list(x) for x in itertools.permutations(indices, 2)]
-    for i in range(len(comb)):
-        possible = (hkl_allowed[comb[i][0]] + hkl_allowed[comb[i][1]]).tolist()
-        if possible in ls:
-            dynamic_allowed[ls.index(possible)] = True
-
-    dynamic_allowed = np.array(dynamic_allowed, dtype=int)
-    dif['dynamical allowed'] = {}
-    dif['dynamical allowed']['Sg'] = s_g_forbidden[dynamic_allowed]
-    dif['dynamical allowed']['hkl'] = hkl_forbidden[dynamic_allowed]
-    dif['dynamical allowed']['g'] = g_forbidden[dynamic_allowed]
-
-    if verbose:
-        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamical allowed']['g'].shape[0]} "
-              f"can be dynamically activated.")
-        print(dif['dynamical allowed']['hkl'])
-
+    
     # Make pretty labels
     hkl_label = make_pretty_labels(hkl_allowed)
     dif['allowed']['label'] = hkl_label
+    hkl_label = make_pretty_labels(hkl_forbidden)
+    dif['forbidden']['label'] = hkl_label
+
+    # Dynamically Allowed Reflection
+    """
+    indices = range(len(hkl_allowed))
+    combinations = [list(x) for x in itertools.permutations(indices, 2)]
+    hkl_forbidden = hkl_forbidden.tolist()
+    dynamicallly_allowed = np.zeros(len(hkl_forbidden), dtype=bool)
+    for [i, j] in combinations:
+        possible = (hkl_allowed[i] + hkl_allowed[j]).tolist()
+        if possible in hkl_forbidden:
+            dynamicallly
+            _allowed[hkl_forbidden.index(possible)] = True
+    dif['forbidden']['dynamicallly_allowed'] = dynamicallly_allowed
+   
+    if verbose:
+        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamical_allowed']['g'].shape[0]} "
+              f"can be dynamically activated.")
+        # print(dif['forbidden']['hkl'][dynamicallly_allowed])
+    """
 
     # Center of Laue Circle
     laue_circle = np.dot(tags['nearest_zone_axis'], tags['reciprocal_unit_cell'])
@@ -879,9 +880,9 @@ def kinematic_scattering(atoms, verbose=False):
     laue_circle = laue_circle / np.linalg.norm(laue_circle) * k0
     laue_circle[2] = 0
 
-    dif['laue_circle'] = laue_circle
+    dif['Laue_circle'] = laue_circle
     if verbose:
-        print('laue_circle', laue_circle)
+        print('Laue_circle', laue_circle)
 
     # ###########################
     # Calculate Laue Zones (of allowed reflections)
@@ -940,7 +941,7 @@ def kinematic_scattering(atoms, verbose=False):
         laue_circle = laue_circle / np.linalg.norm(laue_circle) * k0
         laue_circle[2] = 0
 
-        zone_tags['laue_circle'] = laue_circle
+        zone_tags['Laue_circle'] = laue_circle
         # Rotate to nearest zone axis
 
         tags_new_zone['zone_hkl']
@@ -999,7 +1000,7 @@ def kinematic_scattering(atoms, verbose=False):
         dif['Kikuchi']['theta'] = theta2
         dif['Kikuchi']['hkl'] = hkl_kikuchi
         dif['Kikuchi']['g_hkl'] = g_hkl_kikuchi
-        dif['Kikuchi']['g deficient'] = gd2
+        dif['Kikuchi']['g_deficient'] = gd2
         dif['Kikuchi']['min dist'] = gd2 + laue_circle
 
     k_g = k0
@@ -1040,8 +1041,8 @@ def kinematic_scattering(atoms, verbose=False):
     # a line is now given by
     dif['HOLZ']['distance'] = distance
     dif['HOLZ']['theta'] = theta
-    dif['HOLZ']['g deficient'] = gd
-    dif['HOLZ']['g excess'] = gd + g_allowed
+    dif['HOLZ']['g_deficient'] = gd
+    dif['HOLZ']['g_excess'] = gd + g_allowed
     dif['HOLZ']['g_allowed'] = g_allowed.copy()
 
     dif['HOLZ']['ZOLZ'] = ZOLZ
