@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 
-import matplotlib as mpl
 import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Circle  # , Ellipse, Rectangle
@@ -19,8 +18,7 @@ import sidpy
 
 def plot_reciprocal_unit_cell_2D(atoms):
     """Plot # unit cell in reciprocal space in 2D"""
-    
-    
+
     reciprocal_unit_cell = atoms.get_reciprocal_cell()
 
     # ignore y direction
@@ -28,12 +26,8 @@ def plot_reciprocal_unit_cell_2D(atoms):
     x = [reciprocal_unit_cell[0, 0], reciprocal_unit_cell[0, 0], reciprocal_unit_cell[1, 0], reciprocal_unit_cell[1, 0]]
     z = [reciprocal_unit_cell[0, 2], reciprocal_unit_cell[2, 2], reciprocal_unit_cell[2, 2], reciprocal_unit_cell[0, 2]]
 
-    #print(x, z)
-    #print(reciprocal_unit_cell)
-
     # Plot 2D
     fig = plt.figure()
-    # ax = fig.add_subplot(111)
     ax = plt.gca()  # current axis
 
     ax.scatter(x, z, c='red', s=80)
@@ -77,12 +71,10 @@ def plot_reciprocal_unit_cell_2D(atoms):
 # ####################
 def plotSAED_parameter(gray=False):
 
-    tags = {}
-    tags['convergence_angle_A-1'] = 0
-
-    tags['background'] = 'white'  # 'white'  'grey'
-    tags['color_map'] = 'plasma'  # ,'cubehelix'#'Greys'#'plasma'
-    tags['color_reflections'] = 'intensity'
+    tags = {'convergence_angle_A-1': 0,
+            'background': 'white',  # 'white'  'grey'
+            'color_map': 'plasma',  # ,'cubehelix' #'Greys'#'plasma'
+            'color_reflections': 'intensity'}
 
     if gray:
         tags['color_map'] = 'gray'
@@ -121,32 +113,31 @@ def plotSAED_parameter(gray=False):
 ########################
 # Plot Kikuchi Pattern #
 ########################
-def plotKikuchi(tags, grey=False):
-    tags = {}
-    tags['background'] = 'black'  # 'white'  'grey'
-    tags['color_map'] = 'plasma'  # ,'cubehelix'#'Greys'#'plasma'
-    tags['color_reflections'] = 'intensity'
+def plotKikuchi(grey=False):
+    tags = {'background': 'black',  # 'white'  'grey'
+            'color_map': 'plasma',  # ,'cubehelix'#'Greys'#'plasma'
+            'color_reflections': 'intensity',
+            'plot_HOLZ': 0,
+            'plot_HOLZ_excess': 0,
+            'plot_Kikuchi': 1,
+            'plot_reflections': 1,
+            'label_HOLZ': 0,
+            'label_Kikuchi': 0,
+            'label_reflections': 0,
+            'label_color': 'white',
+            'label_size': 10,
+            'color_Kikuchi': 'green',
+            'linewidth_HOLZ': -1,  # -1: linewidth according to intensity (structure factor F^2
+            'linewidth_Kikuchi': -1,  # -1: linewidth according to intensity (structure factor F^2
+            'color_Laue_Zones': ['red', 'blue', 'green', 'blue', 'green'],  # , 'green', 'red'] #for OLZ give a sequence
+            'color_zero': 'white',  # 'None' #'white'
+            'color_ring_zero': 'None',  # 'Red' #'white' #, 'None'
+            'width_ring_zero': 2}
 
-    tags['plot_HOLZ'] = 0
-    tags['plot_HOLZ_excess'] = 0
-    tags['plot_Kikuchi'] = 1
-    tags['plot_reflections'] = 1
-
-    tags['label_HOLZ'] = 0
-    tags['label_Kikuchi'] = 0
-    tags['label_reflections'] = 0
-
-    tags['label_color'] = 'white'
-    tags['label_size'] = 10
-
-    tags['color_Kikuchi'] = 'green'
-    tags['linewidth_HOLZ'] = -1  # -1: linewidth according to intensity (structure factor F^2
-    tags['linewidth_Kikuchi'] = -1  # -1: linewidth according to intensity (structure factor F^2
-
-    tags['color_Laue_Zones'] = ['red', 'blue', 'green', 'blue', 'green']  # , 'green', 'red'] #for OLZ give a sequence
-    tags['color_zero'] = 'white'  # 'None' #'white'
-    tags['color_ring_zero'] = 'None'  # 'Red' #'white' #, 'None'
-    tags['width_ring_zero'] = 2
+    if grey:
+        tags['color_map'] = 'gray'
+        tags['background'] = '#303030'  # 'darkgray'
+        tags['color_reflections'] = 'intensity'
     
     return tags
 
@@ -158,35 +149,13 @@ def plotKikuchi(tags, grey=False):
 ########################
 
 def plotHOLZ_parameter(grey=False):
-    tags = {}
-    tags['background'] = 'gray'  # 'white'  'grey'
-    tags['color_map'] = 'plasma'  # ,'cubehelix'#'Greys'#'plasma'
-    tags['color_reflections'] = 'intensity'
-
-    tags['plot_HOLZ'] = 1
-    tags['plot_HOLZ_excess'] = 1
-    tags['plot_Kikuchi'] = 1
-    tags['plot_reflections'] = 1
-
-    tags['label_HOLZ'] = 0
-    tags['label_Kikuchi'] = 0
-    tags['label_reflections'] = 0
-
-    tags['label_color'] = 'white'
-    tags['label_size'] = 12
-
-    tags['color_Kikuchi'] = 'green'
-    tags['linewidth_HOLZ'] = 1  # -1: linewidth according to intensity (structure factor F^2
-    tags['linewidth_Kikuchi'] = -1  # -1: linewidth according to intensity (structure factor F^2
-
-    tags['color_Laue_Zones'] = ['red', 'blue', 'lightblue', 'green', 'red']  # for OLZ give a sequence
-    tags['color_zero'] = 'None'  # 'white'
-    tags['color_ring_zero'] = 'Red'  # 'Red' #'white' #, 'None'
-    tags['width_ring_zero'] = 2
-
-    tags['plot_rotation'] = 0.  # degree
-    tags['plot_shift_x'] = -0.0
-    tags['plot_shift_y'] = 0.0
+    tags = {'background': 'gray', 'color_map': 'plasma', 'color_reflections': 'intensity', 'plot_HOLZ': 1,
+            'plot_HOLZ_excess': 1, 'plot_Kikuchi': 1, 'plot_reflections': 1, 'label_HOLZ': 0, 'label_Kikuchi': 0,
+            'label_reflections': 0, 'label_color': 'white', 'label_size': 12, 'color_Kikuchi': 'green',
+            'linewidth_HOLZ': 1, 'linewidth_Kikuchi': -1,
+            'color_Laue_Zones': ['red', 'blue', 'lightblue', 'green', 'red'], 'color_zero': 'None',
+            'color_ring_zero': 'Red', 'width_ring_zero': 2, 'plot_rotation': 0., 'plot_shift_x': -0.0,
+            'plot_shift_y': 0.0}  # 'white'  'grey'
 
     # plotDiffPattern(holz,True)
     return tags
@@ -197,33 +166,11 @@ def plotHOLZ_parameter(grey=False):
 ########################
 
 def plotCBED_parameter():
-    tags = {}
-    tags['background'] = 'black'  # 'white'  'grey'
-    tags['color_map'] = 'plasma'  # ,'cubehelix'#'Greys'#'plasma'
-    tags['color_reflections'] = 'intensity'
-
-    tags['plot_HOLZ'] = 1
-    tags['plot_HOLZ_excess'] = 1
-    tags['plot_Kikuchi'] = 1
-    tags['plot_reflections'] = 1
-
-    tags['label_HOLZ'] = 0
-    tags['label_Kikuchi'] = 0
-    tags['label_reflections'] = 0
-
-    tags['label_color'] = 'white'
-    tags['label_size'] = 10
-
-    tags['color_Kikuchi'] = 'green'
-    tags['linewidth_HOLZ'] = -1  # -1: linewidth according to intensity (structure factor F^2
-    tags['linewidth_Kikuchi'] = -1  # -1: linewidth according to intensity (structure factor F^2
-
-    tags['color_reflections'] = 'intensity'
-
-    tags['color_Laue_Zones'] = ['red', 'blue', 'green']  # , 'green', 'red'] #for OLZ give a sequence
-    tags['color_zero'] = 'white'  # 'None' #'white'
-    tags['color_ring_zero'] = 'Red'  # 'Red' #'white' #, 'None'
-    tags['width_ring_zero'] = 2
+    tags = {'background': 'black', 'color_map': 'plasma', 'color_reflections': 'intensity', 'plot_HOLZ': 1,
+            'plot_HOLZ_excess': 1, 'plot_Kikuchi': 1, 'plot_reflections': 1, 'label_HOLZ': 0, 'label_Kikuchi': 0,
+            'label_reflections': 0, 'label_color': 'white', 'label_size': 10, 'color_Kikuchi': 'green',
+            'linewidth_HOLZ': -1, 'linewidth_Kikuchi': -1, 'color_Laue_Zones': ['red', 'blue', 'green'],
+            'color_zero': 'white', 'color_ring_zero': 'Red', 'width_ring_zero': 2}  # 'white'  'grey'
 
     # plotDiffPattern(tags,True)
     return tags
@@ -356,14 +303,14 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
     
     if isinstance(atoms, dict):
         tags = atoms
-    elif  isinstance(atoms, ase.Atoms):
+    elif isinstance(atoms, ase.Atoms):
         if 'diffraction' in atoms.info:
             tags = atoms.info['diffraction']
             plot_diffraction_pattern = True
         else:
             raise TypeError('Diffraction information must be in metadata')
     else:
-        raise TypeError('Diffraction info must be in sidly Dataset or dictionary form')
+        raise TypeError('Diffraction info must be in sidpy Dataset or dictionary form')
         
     d = tags['Ring_Pattern']['allowed']['g norm']
     label = tags['Ring_Pattern']['allowed']['label']
@@ -408,7 +355,7 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
         labelx = str(sizex) + ' 1/nm'
         scalebar = AnchoredSizeBar(ax.transData, sizex, labelx, loc=3,
                                    pad=0.5, color='white', frameon=False)
-        # size_vertical=.2, fill_bar = True) # will be implented in matplotlib 2.1
+        # size_vertical=.2, fill_bar = True) # will be implemented in matplotlib 2.1
 
         ax.add_artist(scalebar)
         ax.axis('off')
@@ -446,7 +393,6 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
         plt.xlim(l, r)
         plt.ylim(t, b)
 
-
     fg.show()
     return fg
 
@@ -454,44 +400,47 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
 def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
     """
     Plot of spot diffraction pattern with matplotlib
-    
+    Plot of spot diffraction pattern with matplotlib
+
     Parameters
     ----------
-    info: dictionary or ase.Atoms object
+    atoms: dictionary or ase.Atoms object
         information stored as dictionary either directly or in info attribute of ase.Atoms object
+    diffraction_pattern: None or sidpy.Dataset
+        diffraction pattern in background
     grey: bool
-        ploting in greyscale if True
+        plotting in greyscale if True
         
     Returns
     -------
     fig: matplotlib figure
-        refereence to matplolib figure
+        reference to matplotlib figure
     """
     
     if isinstance(atoms, dict):
-        tagsD = atoms
+        tags_out = atoms
         
-    elif  isinstance(atoms, ase.Atoms):
+    elif isinstance(atoms, ase.Atoms):
         if 'diffraction' in atoms.info:
-            tagsD = atoms.info['diffraction']
+            tags_out = atoms.info['diffraction']
             plot_diffraction_pattern = True
         else:
             raise TypeError('Diffraction information must be in info dictionary of ase.Atoms object')
     else:
-        raise TypeError('Diffraction info must be in ase.Atoms objec or dictionary form')
+        raise TypeError('Diffraction info must be in ase.Atoms object or dictionary form')
         
     if 'output' not in atoms.info:
         return
     
     # Get information from dictionary
-    HOLZ = tagsD['HOLZ']
-    ZOLZ = tagsD['allowed']['ZOLZ']
-    Kikuchi = tagsD['Kikuchi']
+    HOLZ = tags_out['HOLZ']
+    ZOLZ = tags_out['allowed']['ZOLZ']
+    Kikuchi = tags_out['Kikuchi']
 
-    Laue_Zone = tagsD['allowed']['Laue_Zone']
+    Laue_Zone = tags_out['allowed']['Laue_Zone']
 
-    label = tagsD['allowed']['label']
-    hkl_label = tagsD['allowed']['hkl']
+    label = tags_out['allowed']['label']
+    hkl_label = tags_out['allowed']['hkl']
 
     angle = np.radians(atoms.info['output']['plot_rotation'])  # mrad
     c = np.cos(angle)
@@ -499,21 +448,21 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
     r_mat = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
 
     # HOLZ and Kikuchi lines coordinates in Hough space
-    LC = tagsD['Laue_circle']
-    gd = np.dot(tagsD['HOLZ']['g_deficient'] + LC, r_mat)
-    ge = np.dot(tagsD['HOLZ']['g_excess'] + LC, r_mat)
-    points = np.dot(tagsD['allowed']['g'] + LC, r_mat)
+    LC = tags_out['Laue_circle']
+    gd = np.dot(tags_out['HOLZ']['g_deficient'] + LC, r_mat)
+    ge = np.dot(tags_out['HOLZ']['g_excess'] + LC, r_mat)
+    points = np.dot(tags_out['allowed']['g'] + LC, r_mat)
 
-    theta = tagsD['HOLZ']['theta'] + angle
+    theta = tags_out['HOLZ']['theta'] + angle
 
-    if 'thickness' not in tagsD:
-        tagsD['thickness'] = 0.
-    if tagsD['thickness'] > 0.1:
-        intensity = np.real(tagsD['allowed']['Ig'])
+    if 'thickness' not in tags_out:
+        tags_out['thickness'] = 0.
+    if tags_out['thickness'] > 0.1:
+        intensity = np.real(tags_out['allowed']['Ig'])
     else:
-        intensity = tagsD['allowed']['intensities']
+        intensity = tags_out['allowed']['intensities']
 
-    radius = atoms.info['output']['convergence_angle_A-1']
+    radius = atoms.info['experimental']['convergence_angle_A-1']
 
     if radius < 0.1:
         radiusI = 2
@@ -521,40 +470,40 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
         radiusI = radius
     # Beginning and ends of HOLZ lines
     maxlength = radiusI * 1.3
-    Hxp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
-    Hyp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
-    Hxm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
-    Hym = gd[:, 1] - maxlength * np.sin(np.pi - theta)
+    h_xp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
+    h_yp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
+    h_xm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
+    h_ym = gd[:, 1] - maxlength * np.sin(np.pi - theta)
 
     # Beginning and ends of excess HOLZ lines
     maxlength = radiusI * .8
-    Exp = ge[:, 0] + maxlength * np.cos(np.pi - theta)
-    Eyp = ge[:, 1] + maxlength * np.sin(np.pi - theta)
-    Exm = ge[:, 0] - maxlength * np.cos(np.pi - theta)
-    Eym = ge[:, 1] - maxlength * np.sin(np.pi - theta)
+    e_xp = ge[:, 0] + maxlength * np.cos(np.pi - theta)
+    e_yp = ge[:, 1] + maxlength * np.sin(np.pi - theta)
+    e_xm = ge[:, 0] - maxlength * np.cos(np.pi - theta)
+    e_ym = ge[:, 1] - maxlength * np.sin(np.pi - theta)
 
     # Beginning and ends of HOLZ lines
     maxlength = 20
-    Kxp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
-    Kyp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
-    Kxm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
-    Kym = gd[:, 1] - maxlength * np.sin(np.pi - theta)
+    k_xp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
+    k_yp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
+    k_xm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
+    k_ym = gd[:, 1] - maxlength * np.sin(np.pi - theta)
 
     if atoms.info['output']['linewidth_Kikuchi'] < 0:
         if len(intensity[ZOLZ]) > 0:
-            intensity_Kikuchi = intensity * 4. / intensity[ZOLZ].max()
+            intensity_kikuchi = intensity * 4. / intensity[ZOLZ].max()
         else:
-            intensity_Kikuchi = intensity
+            intensity_kikuchi = intensity
     else:
-        intensity_Kikuchi = np.ones(len(intensity)) * atoms.info['output']['linewidth_Kikuchi']
+        intensity_kikuchi = np.ones(len(intensity)) * atoms.info['output']['linewidth_Kikuchi']
 
     if atoms.info['output']['linewidth_HOLZ'] < 0:
-        intensity_HOLZ = np.log(intensity + 1)
+        intensity_holz = np.log(intensity + 1)
 
-        if tagsD['HOLZ']['HOLZ'].any():
-            pass  # intensity_HOLZ = intensity/intensity[tagsD['HOLZ']['HOLZ']].max()*4.
+        if tags_out['HOLZ']['HOLZ'].any():
+            pass  # intensity_holz = intensity/intensity[tags_out['HOLZ']['HOLZ']].max()*4.
     else:
-        intensity_HOLZ = np.ones(len(intensity)) * atoms.info['output']['linewidth_HOLZ']
+        intensity_holz = np.ones(len(intensity)) * atoms.info['output']['linewidth_HOLZ']
 
     # #######
     # Plot #
@@ -579,7 +528,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
     p = points[ix]
     inten = intensity[ix]
     reflection = hkl_label[ix]
-    Lauecolor = []
+    laue_color = []
 
     labelP = ''
     lineLabel = []
@@ -609,9 +558,9 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
 
     for i in range(int(Laue_Zone.max()) + 1):
         if i < len(atoms.info['output']['color_Laue_Zones']):
-            Lauecolor.append(atoms.info['output']['color_Laue_Zones'][i])
+            laue_color.append(atoms.info['output']['color_Laue_Zones'][i])
         else:
-            Lauecolor.append(atoms.info['output']['color_Laue_Zones'][-1])
+            laue_color.append(atoms.info['output']['color_Laue_Zones'][-1])
 
     if 'plot_labels' not in atoms.info['output']:
         atoms.info['output']['plot_labels'] = True
@@ -622,109 +571,107 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
                     ax.scatter(points[i, 0], points[i, 1], c=np.log(intensity[i] + 1), cmap=cm, s=100)
 
                     if atoms.info['output']['plot_labels']:
-                            plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
-                    #print(label[i])
-
+                        plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
             else:
                 for i in range(len(Laue_Zone)):
-                    color = Lauecolor[int(Laue_Zone[i])]
+                    color = laue_color[int(Laue_Zone[i])]
                     ax.scatter(points[i, 0], points[i, 1], c=color, cmap=cm, s=100)
                     if atoms.info['output']['plot_labels']:
                         plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
-                    #print(label[i])
 
-            ax.scatter(0, 0, c=atoms.info['output']['color_zero'], s=100)
+            ax.scatter(LC[0], LC[1], c=atoms.info['output']['color_zero'], s=100)
             radius = .2
         else:
             ix = np.argsort((points ** 2).sum(axis=1))
             p = points[ix]
             inten = intensity[ix]
             if atoms.info['output']['color_reflections'] == 'intensity':
-                circles(p[:, 0], p[:, 1], s=radius, c=np.log(inten + 1), cmap=cm, alpha=0.9, edgecolor='', picker=5)  #
+                circles(p[:, 0], p[:, 1], s=radius, c=np.log(inten + 1), cmap=cm, alpha=0.9, edgecolor=None, picker=5)
             else:
                 for i in range(len(Laue_Zone)):
-                    color = Lauecolor[int(Laue_Zone[i])]
+                    color = laue_color[int(Laue_Zone[i])]
                     circles(p[i, 0], p[i, 1], s=radius, c=color, cmap=cm, alpha=0.9, edgecolor='', picker=5)  #
                     plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
 
     if 'plot_dynamically_allowed' not in atoms.info['output']:
         atoms.info['output']['plot_dynamically_allowed'] = False
     if atoms.info['output']['plot_dynamically_allowed']:
-        dyn_allowed = tagsD['dynamical_allowed']['g']
-        dyn_label = tagsD['dynamical_allowed']['hkl']
+        dyn_allowed = tags_out['dynamical_allowed']['g']
+        dyn_label = tags_out['dynamical_allowed']['hkl']
         
-        color = Lauecolor[0]
-        ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c=color, alpha = 0.4, s=70)
+        color = laue_color[0]
+        ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c=color, alpha=0.4, s=70)
         if atoms.info['output']['plot_labels']:
             plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
 
     k = 0
     if atoms.info['output']['plot_HOLZ']:
-        for i in range(len(Hxp)):
+        for i in range(len(h_xp)):
         
-            if tagsD['HOLZ']['HOLZ'][i]:
-                color = Lauecolor[int(Laue_Zone[i])]
-                if tagsD['plot_HOLZ']:
+            if tags_out['HOLZ']['HOLZ'][i]:
+                color = laue_color[int(Laue_Zone[i])]
+                if atoms.info['output']['plot_HOLZ']:
                     # plot HOLZ lines
-                    line, = plt.plot((Hxp[i], Hxm[i]), (Hyp[i], Hym[i]), c=color, linewidth=intensity_HOLZ[i], picker=5)
-                    if tagsD['label_HOLZ']:  ## Add indices
-                        plt.text(Hxp[i], Hyp[i], label[i], fontsize=8)
+                    line, = plt.plot((h_xp [i], h_xm[i]), (h_yp [i], h_ym[i]), c=color, linewidth=intensity_holz[i],
+                                     picker=5)
+                    if atoms.info['output']['label_HOLZ']:  # Add indices
+                        plt.text(h_xp [i], h_yp [i], label[i], fontsize=8)
                     lineLabel.append(hkl_label[i])
-                    # print(i, hkl_label[i], intensity_HOLZ[i])
+                    # print(i, hkl_label[i], intensity_holz[i])
 
-                if tagsD['plot_HOLZ_excess']:
-                    line, = plt.plot((Exp[i], Exm[i]), (Eyp[i], Eym[i]), c=color, linewidth=intensity_HOLZ[i])
+                if atoms.info['output']['plot_HOLZ_excess']:
+                    line, = plt.plot((e_xp[i], e_xm[i]), (e_yp[i], e_ym[i]), c=color, linewidth=intensity_holz[i])
                     lineLabel.append(hkl_label[i])
 
-                    if tagsD['label_HOLZ']:  ## Add indices
-                        plt.text(Exp[i], Eyp[i], label[i], fontsize=8)
-
-
+                    if atoms.info['output']['label_HOLZ']:  # Add indices
+                        plt.text(e_xp[i], e_yp[i], label[i], fontsize=8)
             else:
                 # Plot Kikuchi lines
-                if tagsD['plot_Kikuchi']:
-                    line, = plt.plot((Kxp[i], Kxm[i]), (Kyp[i], Kym[i]), c=tagsD['color_Kikuchi'],
-                                     linewidth=intensity_Kikuchi[i] / 10, picker=5)
-                    if tagsD['label_Kikuchi']:  # Add indices
+                if atoms.info['output']['plot_Kikuchi']:
+                    line, = plt.plot((k_xp[i], k_xm[i]), (k_yp[i], k_ym[i]), c=atoms.info['output']['color_Kikuchi'],
+                                     linewidth=intensity_kikuchi[i] / 10, picker=5)
+                    if atoms.info['output']['label_Kikuchi']:  # Add indices
 
-                        plt.text(Kxp[i], Kyp[i], label[i], fontsize=tagsD['label_size'], color=tagsD['label_color'])
+                        plt.text(k_xp[i], k_yp[i], label[i], fontsize=atoms.info['output']['label_size'],
+                                 color=atoms.info['output']['label_color'])
                     lineLabel.append(hkl_label[i])
     elif atoms.info['output']['plot_Kikuchi']:
         # Beginning and ends of Kikuchi lines
         maxlength = atoms.info['experimental']['plot_FOV']
-        gd = tagsD['Kikuchi']['min dist']
-        theta = tagsD['Kikuchi']['theta']
-        Kxp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
-        Kyp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
-        Kxm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
-        Kym = gd[:, 1] - maxlength * np.sin(np.pi - theta)
-        for i in range(len(Kxp)):
-            line, = plt.plot((Kxp[i], Kxm[i]), (Kyp[i], Kym[i]), c=atoms.info['output']['color_Kikuchi'], linewidth=2)
+        gd = atoms.info['output']['Kikuchi']['min dist']
+        theta = atoms.info['output']['Kikuchi']['theta']
+        k_xp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
+        k_yp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
+        k_xm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
+        k_ym = gd[:, 1] - maxlength * np.sin(np.pi - theta)
+        for i in range(len(k_xp)):
+            line, = plt.plot((k_xp[i], k_xm[i]), (k_yp[i], k_ym[i]), c=atoms.info['output']['color_Kikuchi'],
+                             linewidth=2)
 
     def format_coord(x, y):
         return labelP + 'x=%1.4f, y=%1.4f' % (x, y)
 
     ax.format_coord = format_coord
 
-    if not (atoms.info['output']['color_ring_zero'] == 'None'):
-        ring = plt.Circle((0, 0), radius, color=atoms.info['output']['color_ring_zero'], fill=False, linewidth=2)
+    if atoms.info['output']['color_ring_zero'] != 'None':
+        ring = plt.Circle(LC, radius, color=atoms.info['output']['color_ring_zero'], fill=False, linewidth=2)
         ax.add_artist(ring)
         # print(ring)
-    if not atoms.info['output']['color_zero'] == 'None':
-        circle = plt.Circle((0, 0), radius, color=atoms.info['output']['color_zero'], linewidth=2)
+    if atoms.info['output']['color_zero'] != 'None':
+        circle = plt.Circle(LC, radius, color=atoms.info['output']['color_zero'], linewidth=2)
         ax.add_artist(circle)
 
     plt.axis('equal')
-    if 'plot_FOV' in tagsD:
-        l = -tagsD['plot_FOV'] / 2
-        r = tagsD['plot_FOV'] / 2
-        t = -tagsD['plot_FOV'] / 2
-        b = tagsD['plot_FOV'] / 2
+    if 'plot_FOV' in tags_out:
+        l = -tags_out['plot_FOV'] / 2
+        r = tags_out['plot_FOV'] / 2
+        t = -tags_out['plot_FOV'] / 2
+        b = tags_out['plot_FOV'] / 2
         plt.xlim(l, r)
         plt.ylim(t, b)
 
     fig.canvas.mpl_connect('pick_event', onpick)
     # texfig.savefig("HOLZ")
 
-    # plt.title( tagsD['crystal'])
+    # plt.title( tags_out['crystal'])
     plt.show()

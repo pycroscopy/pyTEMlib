@@ -310,8 +310,8 @@ def get_rotation_matrix(tags):
     # angle of zone with Z around x,y:
     alpha, beta = find_angles(zone)
 
-    alpha = alpha + tags['mistilt alpha']
-    beta = beta + tags['mistilt beta']
+    alpha = alpha + tags['mistilt_alpha']
+    beta = beta + tags['mistilt_beta']
 
     tags['y-axis rotation alpha'] = alpha
     tags['x-axis rotation beta'] = beta
@@ -329,14 +329,14 @@ def get_rotation_matrix(tags):
     alpha_nearest, beta_nearest = find_angles(zone_nearest)
 
     # calculate mistilt of nearest zone axis
-    tags['mistilt nearest_zone alpha'] = alpha - alpha_nearest
-    tags['mistilt nearest_zone beta'] = beta - beta_nearest
+    tags['mistilt_nearest_zone alpha'] = alpha - alpha_nearest
+    tags['mistilt_nearest_zone beta'] = beta - beta_nearest
 
     tags['nearest_zone_axes'] = {}
     tags['nearest_zone_axes']['0'] = {}
     tags['nearest_zone_axes']['0']['hkl'] = tags['nearest_zone_axis']
-    tags['nearest_zone_axes']['0']['mistilt alpha'] = alpha - alpha_nearest
-    tags['nearest_zone_axes']['0']['mistilt beta'] = beta - beta_nearest
+    tags['nearest_zone_axes']['0']['mistilt_alpha'] = alpha - alpha_nearest
+    tags['nearest_zone_axes']['0']['mistilt_beta'] = beta - beta_nearest
 
     # find polar coordinates of next nearest zones
     tags['nearest_zone_axes']['amount'] = len(tags['next_nearest_zone_axes']) + 1
@@ -352,8 +352,8 @@ def get_rotation_matrix(tags):
         tags['nearest_zone_axes'][str(i + 1)]['g'] = zone_near
         alpha_nearest, beta_nearest = find_angles(zone_near)
 
-        tags['nearest_zone_axes'][str(i + 1)]['mistilt alpha'] = alpha - alpha_nearest
-        tags['nearest_zone_axes'][str(i + 1)]['mistilt beta'] = beta - beta_nearest
+        tags['nearest_zone_axes'][str(i + 1)]['mistilt_alpha'] = alpha - alpha_nearest
+        tags['nearest_zone_axes'][str(i + 1)]['mistilt_beta'] = beta - beta_nearest
         # print('other' , i, np.rad2deg([alpha, alpha_nearest, beta, beta_nearest]))
 
     return rotation_matrix
@@ -392,21 +392,21 @@ def check_sanity(atoms, verbose_level=0):
     ############################################
 
     if output['SpotPattern']:
-        if 'mistilt alpha degree' not in tags:
+        if 'mistilt_alpha degree' not in tags:
             # mistilt is in microscope coordinates
-            tags['mistilt alpha'] = tags['mistilt alpha degree'] = 0.0
+            tags['mistilt_alpha'] = tags['mistilt_alpha degree'] = 0.0
             if verbose_level > 0:
-                print('Setting undefined input:  tags[\'mistilt alpha\'] = 0.0 ')
+                print('Setting undefined input:  tags[\'mistilt_alpha\'] = 0.0 ')
         else:
-            tags['mistilt alpha'] = np.deg2rad(tags['mistilt alpha degree'])
+            tags['mistilt_alpha'] = np.deg2rad(tags['mistilt_alpha degree'])
 
-        if 'mistilt beta degree' not in tags:
+        if 'mistilt_beta degree' not in tags:
             # mistilt is in microscope coordinates
-            tags['mistilt beta'] = tags['mistilt beta degree'] = 0.0
+            tags['mistilt_beta'] = tags['mistilt_beta degree'] = 0.0
             if verbose_level > 0:
-                print('Setting undefined input:  tags[\'mistilt beta\'] = 0.0')
+                print('Setting undefined input:  tags[\'mistilt_beta\'] = 0.0')
         else:
-            tags['mistilt beta'] = np.deg2rad(tags['mistilt beta degree'])
+            tags['mistilt_beta'] = np.deg2rad(tags['mistilt_beta degree'])
 
         if 'convergence_angle_mrad' not in tags:
             tags['convergence_angle_mrad'] = 0.
@@ -730,18 +730,18 @@ def kinematic_scattering(atoms, verbose=False):
         print(f"Rotation alpha {np.rad2deg(tags['y-axis rotation alpha']):.1f} degree, "
               f" beta {np.rad2deg(tags['x-axis rotation beta']):.1f} degree")
         print(f"from zone axis {tags['zone_hkl']}")
-        print(f"Tilting {1} by {np.rad2deg(tags['mistilt alpha']):.2f} " 
-              f" in alpha and {np.rad2deg(tags['mistilt beta']):.2f} in beta direction results in :")
+        print(f"Tilting {1} by {np.rad2deg(tags['mistilt_alpha']):.2f} " 
+              f" in alpha and {np.rad2deg(tags['mistilt_beta']):.2f} in beta direction results in :")
         # list(tags['zone_hkl'])
         #
         # print(f"zone axis {list(tags['nearest_zone_axis'])} with a mistilt of "
-        #      f"{np.rad2deg(tags['mistilt nearest_zone alpha']):.2f} in alpha "
-        #      f"and {np.rad2deg(tags['mistilt nearest_zone beta']):.2f} in beta direction")
+        #      f"{np.rad2deg(tags['mistilt_nearest_zone alpha']):.2f} in alpha "
+        #      f"and {np.rad2deg(tags['mistilt_nearest_zone beta']):.2f} in beta direction")
         nearest = tags['nearest_zone_axes']
         print('Next nearest zone axes are:')
         for i in range(1, nearest['amount']):
-            print("{(nearest[str(i)]['hkl']}, {np.rad2deg(nearest[str(i)]['mistilt alpha']):.2f}, "
-                  "{np.rad2deg(nearest[str(i)]['mistilt beta']):.2f}, ")
+            print("{(nearest[str(i)]['hkl']}, {np.rad2deg(nearest[str(i)]['mistilt_alpha']):.2f}, "
+                  "{np.rad2deg(nearest[str(i)]['mistilt_beta']):.2f}, ")
 
     k0_unit_vector = np.array([0, 0, 1])  # incident unit wave vector
     k0_vector = k0_unit_vector * k0  # incident  wave vector
@@ -796,10 +796,10 @@ def kinematic_scattering(atoms, verbose=False):
 
     F = structure_factors = np.array(structure_factors)
     
-    shift_x = k0 * np.tan(np.deg2rad(tags['mistilt alpha degree']))
-    shift_y = k0 * np.tan(np.deg2rad(tags['mistilt beta degree']))
+    # shift_x = k0 * np.tan(np.deg2rad(tags['mistilt_alpha degree']))
+    # shift_y = k0 * np.tan(np.deg2rad(tags['mistilt_beta degree']))
 
-    g_hkl += [shift_x, shift_y, 0]
+    # g_hkl += [shift_x, shift_y, 0]
     
     # Sort reflection in allowed and forbidden #
     allowed = np.absolute(F) > 0.000001  # allowed within numerical error
@@ -926,8 +926,8 @@ def kinematic_scattering(atoms, verbose=False):
     ####################################
 
     tags_new_zone = tags.copy()
-    tags_new_zone['mistilt alpha'] = 0
-    tags_new_zone['mistilt beta'] = 0
+    tags_new_zone['mistilt_alpha'] = 0
+    tags_new_zone['mistilt_beta'] = 0
 
     for i in range(1):  # tags['nearest_zone_axes']['amount']):
 
@@ -946,8 +946,8 @@ def kinematic_scattering(atoms, verbose=False):
 
         tags_new_zone['zone_hkl']
 
-        theta = -(zone_tags['mistilt alpha'])
-        phi = -(zone_tags['mistilt beta'])
+        theta = -(zone_tags['mistilt_alpha'])
+        phi = -(zone_tags['mistilt_beta'])
 
         # first we rotate phi about z-axis
         c, s = np.cos(phi), np.sin(phi)

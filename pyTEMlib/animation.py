@@ -196,7 +196,7 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
     exact_bragg: boolean
         whether to tilt into exact Bragg condition or along zone axis
     shift: boolean
-        whether to shift exact Bragg condition onto zone axis origin
+        whether to shift exact Bragg-condition onto zone axis origin
     laue_zone: int
         first or second Laue zone only
     color: string
@@ -204,12 +204,13 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
     """
 
     k_0 = [0, 1 / ks.get_wavelength(600)]
+
     d = 5.  # lattice parameter in nm
 
     if laue_zone == 0:
         s_g = 1 / d + 0.06
     else:
-        s_g = 1
+        s_g = .1
 
     g = np.linspace(-5, 6, 12) * 1 / d
     g_d = np.array([5. / d + laue_zone * 1 / d / 2, laue_zone * 1 / d])
@@ -245,11 +246,11 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
                                   edgecolor=color, fill=False)
     plt.gca().add_artist(ewald_sphere)
 
-    plt.gca().arrow(g[-1] + 1 / d / 4, 1 / d / 2, 0, 1 / d / 2, head_width=0.03, head_length=0.04, fc='k',
-                    ec='k', length_includes_head=True)
-    plt.gca().arrow(g[-1] + 1 / d / 4, 1 / d / 2, 0, -1 / d / 2, head_width=0.03, head_length=0.04, fc='k',
-                    ec='k', length_includes_head=True)
-    plt.gca().annotate("$|g_{HOLZ}|$", xytext=(g[-1] + 1 / d / 3, 1 / d / 3), xy=(g[-1] + 1 / d / 3, 1 / d / 3))
+    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, 1 / d / 2, head_width=0.03, head_length=0.04, fc='k', ec='k',
+                    length_includes_head=True)
+    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, -1 / d / 2, head_width=0.03, head_length=0.04, fc='k', ec='k',
+                    length_includes_head=True)
+    plt.gca().annotate("$|g_{HOLZ}|$", xytext=(g[-1] + .1 / d / 3, 1 / d / 3), xy=(g[-1] + 1 / d / 3, 1 / d / 3))
 
     # k_0
     plt.scatter(k_0[0], k_0[1])
@@ -277,10 +278,9 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
     plt.plot([k_0[0], g_sg[0] / 2 + shift_x], [k_0[1], g_sg[1] / 2 + shift_y], color=color, linewidth=1, alpha=0.5,
              linestyle='--')
     # d_theta = np.degrees(np.arctan(k_0[0]/k_0[1]))
-    bragg_angle = patches.Arc((k_0[0], k_0[1]), width=k_0[1], height=k_0[1],
-                              theta1=-90 + d_theta,
-                              theta2=-90 + d_theta + np.degrees(np.arcsin(np.linalg.norm(g_sg / 2) / k_0[1])),
-                              fc=color, ec=color)
+    bragg_angle = patches.Arc((k_0[0], k_0[1]), width=k_0[1], height=k_0[1], theta1=-90 + d_theta,
+                              theta2=-90 + d_theta + np.degrees(np.arcsin(np.linalg.norm(g_sg / 2) / k_0[1])), fc=color,
+                              ec=color)
 
     plt.gca().annotate(r"$\theta $", xytext=(k_0[0] / 1.3, k_0[1] / 1.5), xy=(k_0[0] / 2 + g_d[0] / 4, k_0[1] / 2))
     plt.gca().add_patch(bragg_angle)
@@ -292,11 +292,11 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
                                           theta1=-90 + d_theta,
                                           theta2=-90,
                                           fc=color, ec=color, linewidth=3)
-            plt.gca().annotate(r"$d \theta $", xytext=(k_0[0] - 1.3, k_0[1] / 3.7),
+            plt.gca().annotate(r"$d \theta $", xytext=(k_0[0] - .13, k_0[1] / 3.7),
                                xy=(k_0[0] + g_d[0] / 4, k_0[1] / 2))
-            plt.gca().arrow(shift_x, -2, 0, 2, head_width=0.05, head_length=0.06, fc=color,
-                            ec='black', length_includes_head=True, linewidth=3)
-            plt.gca().annotate("deficient line", xytext=(shift_x * 2, -2), xy=(shift_x, 0))
+            plt.gca().arrow(shift_x, -.2, 0, .2, head_width=0.05, head_length=0.06, fc=color, ec='black',
+                            length_includes_head=True, linewidth=3)
+            plt.gca().annotate("deficient line", xytext=(shift_x * 2, -.2), xy=(shift_x, 0))
         else:
             deviation_angle = patches.Arc((0, 0), width=k_0[1], height=k_0[1],
                                           theta1=np.degrees(d_theta2),
@@ -306,13 +306,13 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
 
         plt.gca().add_patch(deviation_angle)
     plt.gca().set_aspect('equal')
-    plt.xlim(-1.4, 1.4)
-    plt.ylim(-.4, k_0[1] * 1.1)
+    plt.gca().set_ylim(-.5, 2.2)
+    plt.gca().set_xlim(-1.1, 1.6)
 
 
 def deficient_kikuchi_line(s_g=0., color_b='black'):
-    k_len = 1 / ks.get_wavelength(200)
-    d = .2  # lattice parameter in nm
+    k_len = 1 / ks.get_wavelength(20)
+    d = 2  # lattice parameter in nm
 
     g = np.linspace(-2, 2, 5) * 1 / d
     g_d = np.array([1 / d, 0])
@@ -325,8 +325,8 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
 
     k_0 = np.array([-np.sin(theta - alpha) * k_len, np.cos(theta - alpha) * k_len])
     k_d = np.array([-np.sin(-theta - alpha) * k_len, np.cos(-theta - alpha) * k_len])
-    k_i = np.array([-np.sin(theta - alpha) * 3, np.cos(theta - alpha) * 3])
-    k_i_t = np.array([-np.sin(-alpha) * 3, np.cos(-alpha) * 3])
+    k_i = np.array([-np.sin(theta - alpha) * 1., np.cos(theta - alpha) * 1.])
+    k_i_t = np.array([-np.sin(-alpha), np.cos(-alpha)])
 
     kk_e = np.array([-np.sin(-theta) * k_len, np.cos(-theta) * k_len])
     kk_d = np.array([-np.sin(theta) * k_len, np.cos(theta) * k_len])
@@ -337,58 +337,59 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
     plt.gca().add_artist(ewald_sphere)
 
     # K_0
-    plt.plot([k_0[0], k_0[0]], [k_0[1], k_0[1] + 4], color='gray', linestyle='-', alpha=0.3)
+    plt.plot([k_0[0], k_0[0]], [k_0[1], k_0[1] + .4], color='gray', linestyle='-', alpha=0.3)
 
-    plt.gca().arrow(k_0[0] + k_i[0], k_0[1] + k_i[1], -k_i[0], -k_i[1], head_width=0.3, head_length=0.4, fc=color_b,
+    plt.gca().arrow(k_0[0] + k_i[0], k_0[1] + k_i[1], -k_i[0], -k_i[1], head_width=0.01, head_length=0.015, fc=color_b,
                     ec=color_b, length_includes_head=True)
     plt.plot([k_0[0] + k_i_t[0], k_0[0] - k_i_t[0]], [k_0[1] + k_i_t[1], k_0[1] - k_i_t[1]], color='black',
              linestyle='--', alpha=0.5)
     plt.scatter(k_0[0], k_0[1], color='black')
-    plt.gca().arrow(k_0[0], k_0[1], -k_0[0], -k_0[1], head_width=0.3, head_length=0.4, fc=color_b,
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0], -k_0[1], head_width=0.01, head_length=0.015, fc=color_b,
                     ec=color_b, length_includes_head=True)
     plt.gca().annotate("K$_0$", xytext=(-k_0[0] / 2, 0), xy=(k_0[0] / 2, 0))
 
-    plt.gca().arrow(k_0[0], k_0[1], -k_d[0], -k_d[1], head_width=0.3, head_length=0.4, fc=color_b,
+    plt.gca().arrow(k_0[0], k_0[1], -k_d[0], -k_d[1], head_width=0.01, head_length=0.015, fc=color_b,
                     ec=color_b, length_includes_head=True)
-
     # K_e excess line
-    plt.gca().arrow(k_0[0], k_0[1], -kk_e[0], -kk_e[1], head_width=0.3, head_length=0.4, fc='red',
+    plt.gca().arrow(k_0[0], k_0[1], -kk_e[0], -kk_e[1], head_width=0.01, head_length=0.015, fc='red',
                     ec='red', length_includes_head=True)
     plt.gca().annotate("excess", xytext=(k_0[0] - kk_e[0], -1), xy=(-kk_e[0] + k_0[0], 0))
-    plt.plot([k_0[0] - kk_e[0], k_0[0] - kk_e[0]], [-1, 1], color='red')
+    plt.plot([k_0[0] - kk_e[0], k_0[0] - kk_e[0]], [-.1, .1], color='red')
 
     # k_d deficient line
-    plt.gca().arrow(k_0[0], k_0[1], -kk_d[0], -kk_d[1], head_width=0.3, head_length=0.4, fc='blue',
+    plt.gca().arrow(k_0[0], k_0[1], -kk_d[0], -kk_d[1], head_width=0.01, head_length=0.015, fc='blue',
                     ec='blue', length_includes_head=True)
-    plt.plot([k_0[0] - kk_d[0], k_0[0] - kk_d[0]], [-1, 1], color='blue')
+    plt.plot([k_0[0] - kk_d[0], k_0[0] - kk_d[0]], [-.1, .1], color='blue')
     plt.gca().annotate("deficient", xytext=(k_0[0] - kk_d[0], -1), xy=(k_0[0] - kk_d[0], 0))
 
     # s_g excitation Error of HOLZ reflection
-    plt.gca().arrow(g_d[0], g_d[1], 0, s_g, head_width=0.3, head_length=0.4, fc='k',
+    plt.gca().arrow(g_d[0], g_d[1], 0, s_g, head_width=0.01, head_length=0.015, fc='k',
                     ec='k', length_includes_head=True)
     plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3), xy=(g_d[0] * 1.01, g_d[1] + s_g / 3))
 
     theta = np.degrees(theta)
     alpha = np.degrees(alpha)
 
-    bragg_angle = patches.Arc((k_0[0], k_0[1]), width=5.5, height=5.5,
+    bragg_angle = patches.Arc((k_0[0], k_0[1]), width=.55, height=.55,
                               theta1=90 + theta - alpha, theta2=90 - alpha, fc='black', ec='black')
     if alpha > 0:
-        deviation_angle = patches.Arc((k_0[0], k_0[1]), width=6, height=6,
+        deviation_angle = patches.Arc((k_0[0], k_0[1]), width=.6, height=.6,
                                       theta1=90 - alpha, theta2=90, fc='black', ec='red')
     else:
-        deviation_angle = patches.Arc((k_0[0], k_0[1]), width=6, height=6,
+        deviation_angle = patches.Arc((k_0[0], k_0[1]), width=.6, height=.6,
                                       theta1=90, theta2=90 - alpha, fc='black', ec='red')
 
-    plt.gca().annotate(r"$\theta$", xytext=(k_0[0] + k_i_t[0] / 1.3, k_0[1] + 2), xy=(k_0[0] + k_i_t[0], k_0[1] + 2))
-    plt.gca().annotate(r"$\alpha$", xytext=(k_0[0] + k_i_t[0] / 1.3, k_0[1] + 3), xy=(k_0[0] + k_i_t[0], k_0[1] + 3),
+    plt.gca().annotate(r"$\theta$", xytext=(k_0[0] + k_i_t[0] / 20, k_0[1] + .2), xy=(k_0[0] + k_i_t[0], k_0[1] + .2))
+    plt.gca().annotate(r"$\alpha$", xytext=(k_0[0] + k_i_t[0] / 10, k_0[1] + .3), xy=(k_0[0] + k_i_t[0], k_0[1] + .3),
                        color='red')
     plt.gca().add_patch(bragg_angle)
     plt.gca().add_patch(deviation_angle)
 
-    plt.xlim(-12, 12)
-    plt.ylim(-2, k_0[1] * 1.4)
     plt.gca().set_aspect('equal')
+    plt.gca().set_xlabel('angle (1/$\AA$)')
+    plt.gca().set_ylim(-.1, k_0[1] * 2.2)
+    plt.gca().set_xlim(-.2, 1.03)
+
 
 
 class InteractiveAberration(object):
