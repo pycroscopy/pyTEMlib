@@ -62,7 +62,7 @@ class TestUtilityFunctions(unittest.TestCase):
             ks.get_wavelength('lattice_parameter')
 
     def test_get_rotation_matrix(self):
-        tags = {'zone_hkl': [1, 1, 1], 'mistilt alpha': 0, 'mistilt beta': 0, 'reciprocal_unit_cell': np.identity(3)}
+        tags = {'zone_hkl': [1, 1, 1], 'mistilt_alpha': 0, 'mistilt_beta': 0, 'reciprocal_unit_cell': np.identity(3)}
 
         matrix = ks.get_rotation_matrix(tags)
         matrix_desired = [[0.81649658,  0., 0.57735027],
