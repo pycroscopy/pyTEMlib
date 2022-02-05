@@ -687,7 +687,7 @@ def kinematic_scattering(atoms, verbose=False):
     # Incident wave vector k0 in vacuum and material
     ############################################
 
-    ratio = (1 + 1.9569341 * tags['acceleration_voltage_V']) / (np.pi * volume_unit_cell)
+    #atio = (1 + 1.9569341 * tags['acceleration_voltage_V']) / (np.pi * volume_unit_cell)
 
     u0 = 0  # in (Ang)
     # atom form factor of zero reflection angle is the inner potential in 1/A
@@ -695,7 +695,7 @@ def kinematic_scattering(atoms, verbose=False):
         u0 += feq(atoms[i].symbol, 0)
 
     # Conversion of inner potential to Volts
-    u0 = u0 * ratio   # inner potential in 1/Ang^2
+    # u0 = u0 * ratio   # inner potential in 1/Ang^2
 
     scattering_factor_to_volts = (const.h ** 2) * (1e10 ** 2) / (2 * np.pi * const.m_e * const.e) * volume_unit_cell
 
