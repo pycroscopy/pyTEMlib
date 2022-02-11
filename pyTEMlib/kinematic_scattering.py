@@ -607,6 +607,33 @@ def ring_pattern_calculation(atoms, verbose=False):
     atoms.info['Ring_Pattern']['allowed']['label'] = hkl_label
 
 
+def get_dynamically_allowed(atoms, verbose=False):
+    if not isinstance(atoms, ase.Atoms):
+        print ('we need an ase atoms object as input')
+    if 'diffraction' not in atoms.info:
+        print('Run the kinematic_scattering function first')
+
+    # Dynamically Allowed Reflection
+
+    dif = atoms.info['diffraction']
+    hkl_allowed = dif['allowed']['hkl']
+    hkl_forbidden = dif['forbidden']['hkl']
+    indices = range(len(hkl_allowed))
+    combinations = [list(x) for x in itertools.permutations(indices, 2)]
+    hkl_forbidden = hkl_forbidden.tolist()
+    dynamically_allowed = np.zeros(len(hkl_forbidden), dtype=bool)
+    for [i, j] in combinations:
+        possible = (hkl_allowed[i] + hkl_allowed[j]).tolist()
+        if possible in hkl_forbidden:
+            dynamically_allowed[hkl_forbidden.index(possible)] = True
+    dif['forbidden']['dynamically_allowed'] = dynamically_allowed
+
+    if verbose:
+        print(f"Of the {len(hkl_forbidden)} forbidden reflection {dynamically_allowed.sum()} "
+              f"can be dynamically activated.")
+        # print(dif['forbidden']['hkl'][dynamically_allowed])
+
+
 def kinematic_scattering(atoms, verbose=False):
     """
         All kinematic scattering calculation
@@ -687,7 +714,7 @@ def kinematic_scattering(atoms, verbose=False):
     # Incident wave vector k0 in vacuum and material
     ############################################
 
-    #atio = (1 + 1.9569341 * tags['acceleration_voltage_V']) / (np.pi * volume_unit_cell)
+    #ratio = (1 + 1.9569341 * tags['acceleration_voltage_V']) / (np.pi * volume_unit_cell)
 
     u0 = 0  # in (Ang)
     # atom form factor of zero reflection angle is the inner potential in 1/A
@@ -740,9 +767,8 @@ def kinematic_scattering(atoms, verbose=False):
         nearest = tags['nearest_zone_axes']
         print('Next nearest zone axes are:')
         for i in range(1, nearest['amount']):
-            print("{(nearest[str(i)]['hkl']}, {np.rad2deg(nearest[str(i)]['mistilt_alpha']):.2f}, "
-                  "{np.rad2deg(nearest[str(i)]['mistilt_beta']):.2f}, ")
-
+            print(f"{nearest[str(i)]['hkl']}: mistilt: {np.rad2deg(nearest[str(i)]['mistilt_alpha']):6.2f}, "
+                  f"{np.rad2deg(nearest[str(i)]['mistilt_beta']):6.2f}")
     k0_unit_vector = np.array([0, 0, 1])  # incident unit wave vector
     k0_vector = k0_unit_vector * k0  # incident  wave vector
     cent = k0_vector  # center of Ewald sphere
@@ -795,12 +821,7 @@ def kinematic_scattering(atoms, verbose=False):
         structure_factors.append(F)
 
     F = structure_factors = np.array(structure_factors)
-    
-    # shift_x = k0 * np.tan(np.deg2rad(tags['mistilt_alpha degree']))
-    # shift_y = k0 * np.tan(np.deg2rad(tags['mistilt_beta degree']))
 
-    # g_hkl += [shift_x, shift_y, 0]
-    
     # Sort reflection in allowed and forbidden #
     allowed = np.absolute(F) > 0.000001  # allowed within numerical error
 
@@ -916,10 +937,10 @@ def kinematic_scattering(atoms, verbose=False):
     if verbose:
         print(' hkl  \t Laue zone \t Intensity (*1 and \t log) \t length \n')
         for i in range(len(hkl_allowed)):
-            print(
-                ' {0} \t {1} \t {2:.3f} \t  {3:.3f} \t  {4:.3f}   '.format(hkl_allowed[i], g_allowed[i], intensities[i],
-                                                                           np.log(intensities[i] + 1),
-                                                                           g_norm_allowed[i]))
+            print(' {0} \t {1} \t {2:.3f} \t  {3:.3f} \t  {4:.3f}   '.format(hkl_allowed[i],
+                                                                             g_allowed[i], intensities[i],
+                                                                             np.log(intensities[i] + 1),
+                                                                             g_norm_allowed[i]))
 
     ####################################
     # Calculate HOLZ and Kikuchi Lines #
