@@ -252,6 +252,59 @@ def circles(x, y, s, c='b', vmin=None, vmax=None, **kwargs):
     return collection
 
 
+from scipy.interpolate import interp1d
+from scipy.ndimage import map_coordinates
+
+
+def cartesian2polar(x, y, grid, r, t, order=3):
+    R, T = np.meshgrid(r, t)
+
+    new_x = R * np.cos(T)
+    new_y = R * np.sin(T)
+
+    ix = interp1d(x, np.arange(len(x)))
+    iy = interp1d(y, np.arange(len(y)))
+
+    new_ix = ix(new_x.ravel())
+    new_iy = iy(new_y.ravel())
+
+    return map_coordinates(grid, np.array([new_ix, new_iy]),
+                           order=order).reshape(new_x.shape)
+
+
+def warp(diff, center):
+    """
+    Define original polar grid
+
+    Parameter:
+    ----------
+    diff: sidpy object or numpy ndarray of
+        diffraction pattern
+    center: list or numpy array of length 2
+        coordinates of center in pixel
+
+    Return:
+    ------
+    numpy array of diffraction pattern in polar coordinates
+
+    """
+    nx = diff.shape[0]
+    ny = diff.shape[1]
+
+    x = np.linspace(1, nx, nx, endpoint=True) - center[0]
+    y = np.linspace(1, ny, ny, endpoint=True) - center[1]
+    z = diff
+
+    # Define new polar grid
+    nr = int(min([center[0], center[1], diff.shape[0] - center[0], diff.shape[1] - center[1]]) - 1)
+    print(nr)
+    nt = 360 * 3
+
+    r = np.linspace(1, nr, nr)
+    t = np.linspace(0., np.pi, nt, endpoint=False)
+    return cartesian2polar(x, y, z, r, t, order=3).T
+
+
 def topolar(img, order=1):
     """
     Transform img to its polar coordinate representation.
@@ -290,15 +343,15 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
     
     Parameters
     ----------
-    info: dictionary or sidpy.Dataset
+    atoms: dictionary or sidpy.Dataset
         information stored as dictionary either directly or in metadata attribute of sidpy.Dataset
     grey: bool
-        ploting in greyscale if True
+        plotting in greyscale if True
         
     Returns
     -------
     fig: matplotlib figure
-        refereence to matplolib figure
+        reference to matplotlib figure
     """
     
     if isinstance(atoms, dict):
@@ -595,14 +648,35 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
 
     if 'plot_dynamically_allowed' not in atoms.info['output']:
         atoms.info['output']['plot_dynamically_allowed'] = False
+    if 'plot_forbidden' not in atoms.info['output']:
+        atoms.info['output']['plot_forbidden'] = False
+
     if atoms.info['output']['plot_dynamically_allowed']:
-        dyn_allowed = tags_out['dynamical_allowed']['g']
-        dyn_label = tags_out['dynamical_allowed']['hkl']
-        
-        color = laue_color[0]
-        ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c=color, alpha=0.4, s=70)
+        if 'dynamically_allowed' not in atoms.info['diffraction']['forbidden']:
+            print('To plot dynamically allowed reflections you must run the get_dynamically_allowed function of '
+                  'kinematic_scattering library first!')
+        else:
+            points = atoms.info['diffraction']['forbidden']['g']
+            dynamically_allowed = atoms.info['diffraction']['forbidden']['dynamically_allowed']
+            dyn_allowed = atoms.info['diffraction']['forbidden']['g'][dynamically_allowed, :]
+            dyn_label = atoms.info['diffraction']['forbidden']['hkl'][dynamically_allowed, :]
+
+            color = laue_color[0]
+            ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
+            if atoms.info['output']['plot_labels']:
+                plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
+            if atoms.info['output']['plot_forbidden']:
+                forbidden_g = atoms.info['diffraction']['forbidden']['g'][np.logical_not(dynamically_allowed), :]
+                forbidden_hkl = atoms.info['diffraction']['forbidden']['hkl'][np.logical_not(dynamically_allowed), :]
+                ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
+                if atoms.info['output']['plot_labels']:
+                    plt.text(forbidden_g[i, 0], forbidden_g[i, 1], forbidden_hkl[i], fontsize=8)
+    elif atoms.info['output']['plot_forbidden']:
+        forbidden_g = atoms.info['diffraction']['forbidden']['g']
+        forbidden_hkl = atoms.info['diffraction']['forbidden']['hkl']
+        ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
         if atoms.info['output']['plot_labels']:
-            plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
+            plt.text(forbidden_g[i, 0], forbidden_g[i, 1], forbidden_hkl[i], fontsize=8)
 
     k = 0
     if atoms.info['output']['plot_HOLZ']:
@@ -638,8 +712,8 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
     elif atoms.info['output']['plot_Kikuchi']:
         # Beginning and ends of Kikuchi lines
         maxlength = atoms.info['experimental']['plot_FOV']
-        gd = atoms.info['output']['Kikuchi']['min dist']
-        theta = atoms.info['output']['Kikuchi']['theta']
+        gd = atoms.info['diffraction']['Kikuchi']['min dist']
+        theta = atoms.info['diffraction']['Kikuchi']['theta']
         k_xp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
         k_yp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
         k_xm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
