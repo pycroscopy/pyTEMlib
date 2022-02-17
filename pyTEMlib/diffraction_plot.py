@@ -712,8 +712,8 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
     elif atoms.info['output']['plot_Kikuchi']:
         # Beginning and ends of Kikuchi lines
         maxlength = atoms.info['experimental']['plot_FOV']
-        gd = atoms.info['output']['Kikuchi']['min dist']
-        theta = atoms.info['output']['Kikuchi']['theta']
+        gd = atoms.info['diffraction']['Kikuchi']['min dist']
+        theta = atoms.info['diffraction']['Kikuchi']['theta']
         k_xp = gd[:, 0] + maxlength * np.cos(np.pi - theta)
         k_yp = gd[:, 1] + maxlength * np.sin(np.pi - theta)
         k_xm = gd[:, 0] - maxlength * np.cos(np.pi - theta)
