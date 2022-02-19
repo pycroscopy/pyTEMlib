@@ -633,8 +633,412 @@ def get_dynamically_allowed(atoms, verbose=False):
               f"can be dynamically activated.")
         # print(dif['forbidden']['hkl'][dynamically_allowed])
 
-
 def kinematic_scattering(atoms, verbose=False):
+    """
+        All kinematic scattering calculation
+
+        Calculates Bragg spots, Kikuchi lines, excess, and deficient HOLZ lines
+
+        Parameters
+        ----------
+        atoms: ase.Atoms
+            object with crystal structure:
+            and with experimental parameters in info attribute:
+            'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max'
+            Optional parameters are:
+            'mistilt', convergence_angle_mrad', and 'crystal_name'
+            verbose = True will give extended output of the calculation
+        verbose: boolean
+            default is False
+
+        Returns
+        -------
+        atoms:
+            There are three sub_dictionaries in info attribute:
+            ['allowed'], ['forbidden'], and ['HOLZ']
+            ['allowed'] and ['forbidden'] dictionaries contain:
+                ['Sg'], ['hkl'], ['g'], ['structure factor'], ['intensities'],
+                ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], ['HHOLZ'], ['label'], and ['Laue_zone']
+            the ['HOLZ'] dictionary contains:
+                ['slope'], ['distance'], ['theta'], ['g_deficient'], ['g_excess'], ['hkl'], ['intensities'],
+                ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], and  ['HHOLZ']
+            Please note that the Kikuchi lines are the HOLZ lines of ZOLZ
+
+            There are also a few parameters stored in the main dictionary:
+                ['wave_length_nm'], ['reciprocal_unit_cell'], ['inner_potential_V'], ['incident_wave_vector'],
+                ['volume'], ['theta'], ['phi'], and ['incident_wave_vector_vacuum']
+    """
+
+    # Check sanity
+    if atoms.info is None:
+        atoms.info = {'output': {}, 'experimental': {}}
+    elif 'output' in atoms.info:
+        output = atoms.info['output']
+    else:
+        output = atoms.info['output'] = {}
+
+    output['SpotPattern'] = True
+
+    if 'experimental' not in atoms.info:
+        tags = atoms.info['experimental'] = {}
+
+    if not check_sanity(atoms):
+        print('Input is not complete, stopping')
+        print('Try \'example()\' for example input')
+        return
+
+    tags = atoms.info['experimental']
+    
+    tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
+    
+    # ###########################################
+    # reciprocal_unit_cell 
+    # ###########################################
+    unit_cell = atoms.cell.array
+    tags['unit_cell'] = unit_cell
+    metric_tensor = get_metric_tensor(unit_cell)  # converts hkl to g vectors and back
+    tags['metric_tensor'] = metric_tensor
+    volume_unit_cell = atoms.cell.volume
+
+    # We use the linear algebra package of numpy to invert the unit_cell "matrix"
+    reciprocal_unit_cell = atoms.cell.reciprocal()  # np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell
+    tags['reciprocal_unit_cell'] = reciprocal_unit_cell
+    inverse_metric_tensor = get_metric_tensor(reciprocal_unit_cell)
+
+        
+    # ###########################################
+    # Incident wave vector k0 in vacuum and material 
+    # ###########################################
+
+    # Incident wave vector K0 in vacuum and material 
+    u0 = 0.0 # in (Ang)
+    # atom form factor of zero reflection angle is the inner potential in 1/A
+    for i in range(len(atoms)):
+        u0 += feq(atoms[i].symbol, 0.0)
+
+    angstrom_conversion = 1.0e10  # So [1A (in m)] * angstrom_conversion = 1
+    # NanometerConversion = 1.0e9
+
+    scattering_factor_to_volts = (const.h ** 2) * (1e10 ** 2) / (2 * np.pi * const.m_e * const.e) * volume_unit_cell
+    tags['inner_potential_V'] = u0 * scattering_factor_to_volts
+    if verbose:
+        print(f'The inner potential is {u0:.1f} V')
+
+    # Calculating incident wave vector magnitude 'k0' in material
+    wl = tags['wave_length']
+    tags['incident_wave_vector_vacuum'] = 1 / wl
+    
+    k_0 = tags['incident_wave_vector'] = np.sqrt(1 / wl**2 + u0/volume_unit_cell)  # 1/Ang
+
+    tags['convergence_angle_A-1'] = k_0*np.sin(tags['convergence_angle_mrad']/1000.)
+
+    if verbose:
+        print(f"Using an acceleration voltage of {tags['acceleration_voltage_V']/1000:.1f}kV")
+        print(f'Magnitude of incident wave vector in material: {k_0:.4f} 1/Ang and in vacuum: {1/wl:.4f} 1/Ang')
+        print(f"Which is an wave length of {1/k_0 * 100.:.3f} pm in the material and {wl * 100.:.3f} pm "
+              f"in the vacuum")
+        print(f"The convergence angle of {tags['convergence_angle_mrad']:.1f}mrad "
+              f"= {tags['convergence_angle_A-1']:.2f} 1/A")
+        print(f"Magnitude of incident wave vector in material: {k_0:.1f} 1/A which is a wavelength {100/k_0:.3f} pm")
+
+    # ############
+    # Rotate
+    # ############
+    
+    # get rotation matrix to rotate zone axis onto z-axis
+    rotation_matrix = get_rotation_matrix(tags)
+    
+    if verbose:
+        print(f"Rotation alpha {np.rad2deg(tags['y-axis rotation alpha']):.1f} degree, "
+              f" beta {np.rad2deg(tags['x-axis rotation beta']):.1f} degree")
+        print(f"from zone axis {tags['zone_hkl']}")
+        print(f"Tilting {1} by {np.rad2deg(tags['mistilt_alpha']):.2f} " 
+              f" in alpha and {np.rad2deg(tags['mistilt_beta']):.2f} in beta direction results in :")
+        # list(tags['zone_hkl'])
+        #
+        # print(f"zone axis {list(tags['nearest_zone_axis'])} with a mistilt of "
+        #      f"{np.rad2deg(tags['mistilt_nearest_zone alpha']):.2f} in alpha "
+        #      f"and {np.rad2deg(tags['mistilt_nearest_zone beta']):.2f} in beta direction")
+        nearest = tags['nearest_zone_axes']
+        print('Next nearest zone axes are:')
+        for i in range(1, nearest['amount']):
+            print(f"{nearest[str(i)]['hkl']}: mistilt: {np.rad2deg(nearest[str(i)]['mistilt_alpha']):6.2f}, "
+                  f"{np.rad2deg(nearest[str(i)]['mistilt_beta']):6.2f}")
+    # rotate incident wave vector 
+    k0_unit_vector = np.array([0, 0, 1])  # incident unit wave vector
+    k0_vector = k0_unit_vector * k_0  # incident  wave vector
+    cent = k0_vector  # center of Ewald sphere
+
+    if verbose:
+        print('Center of Ewald sphere ', k0_vector)
+
+    # #######################
+    # Find all Miller indices whose reciprocal point lays near the Ewald sphere with radius k_0 
+    # within a maximum excitation error Sg
+    # #######################
+    
+    hkl_max = tags['hkl_max']
+    Sg_max = tags['Sg_max']  # 1/Ang  maximum allowed excitation error
+    
+    h = np.linspace(-hkl_max, hkl_max, 2*hkl_max+1)  # all evaluated single Miller Indices
+    hkl = np.array(list(itertools.product(h, h, h)))  # all evaluated Miller indices
+    g_non_rot = np.dot(hkl, reciprocal_unit_cell)  # all evaluated reciprocal_unit_cell points
+    g_norm = np.linalg.norm(g_non_rot, axis=1)   # length of all vectors
+    not_zero = g_norm > 0
+    g_non_rot = g_non_rot[not_zero]  # zero reflection will make problems further on, so we exclude it.
+    g_norm = g_norm[not_zero]
+    hkl = hkl[not_zero]
+    g = np.dot(g_non_rot, rotation_matrix)
+    
+    # #######################
+    # Calculate excitation errors for all reciprocal_unit_cell points
+    # #######################
+    
+    # Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
+    S=(k_0**2-np.linalg.norm(g - k0_vector, axis=1)**2)/(2*k_0)
+    
+    #g_mz = g - k0_vector
+    #in_sqrt = g_mz[:, 2]**2 + np.linalg.norm(g_mz, axis=1)**2 - k_0**2
+    #in_sqrt[in_sqrt < 0] = 0.
+    #S = -g_mz[:, 2] - np.sqrt(in_sqrt)
+    
+    # #######################
+    # Determine reciprocal_unit_cell points with excitation error less than the maximum allowed one: Sg_max
+    # #######################
+    
+    reflections = abs(S) < Sg_max   # This is now a boolean array with True for all possible reflections
+    
+    Sg = S[reflections]
+    g_hkl = g[reflections]
+    g_hkl_non_rot = g_non_rot[reflections]
+    hkl = hkl[reflections]
+    g_norm = g_norm[reflections]
+
+    if verbose:
+        print('Of the {0} tested reciprocal_unit_cell points, {1} have an excitation error less than {2:.2f} 1/nm'.
+              format(len(g), len(g_hkl), Sg_max))
+        
+    # #################################
+    # Calculate Structure Factors
+    # ################################
+    
+    structure_factors = []
+    for j in range(len(g_hkl)):
+        F = 0
+        for b in range(len(atoms)):
+            f = feq(atoms[b].symbol, g_norm[j])  # Atomic form factor for element and momentum change (g vector)
+            F += f * np.exp(-2*np.pi*1j*(g_hkl_non_rot[j]*atoms.positions[b]).sum())        
+        structure_factors.append(F)
+    F = structure_factors = np.array(structure_factors)
+    
+    # ###########################################
+    # Sort reflection in allowed and forbidden #
+    # ###########################################
+    
+    allowed = np.absolute(F) > 0.000001    # allowed within numerical error 
+
+    if verbose:
+        print('Of the {0} possible reflection {1} are allowed.'.format(hkl.shape[0], allowed.sum()))
+        
+    # information of allowed reflections
+    s_g_allowed = Sg[allowed]
+    hkl_allowed = hkl[allowed][:]
+    g_allowed = g_hkl[allowed, :]
+    F_allowed = F[allowed]
+    g_norm_allowed = g_norm[allowed]
+
+    atoms.info['diffraction'] = {}
+    dif = atoms.info['diffraction']
+    dif['allowed'] = {}
+    dif['allowed']['Sg'] = s_g_allowed
+    dif['allowed']['hkl'] = hkl_allowed
+    dif['allowed']['g'] = g_allowed
+    dif['allowed']['structure factor'] = F_allowed
+    
+    # Calculate Extinction Distance  Reimer 7.23
+    # - makes only sense for non zero F
+
+    xi_g = np.real(np.pi * volume_unit_cell * k_0 / F_allowed)
+
+    # Calculate Intensity of beams  Reimer 7.25
+    if 'thickness' not in tags:
+        tags['thickness'] = 0.
+    thickness = tags['thickness']
+    if thickness > 0.1:
+        I_g = np.real(np.pi ** 2 / xi_g ** 2 * np.sin(np.pi * thickness * s_g_allowed) ** 2 / (np.pi * s_g_allowed)**2)
+        dif['allowed']['Ig'] = I_g
+
+    dif['allowed']['intensities'] = intensities = np.real(F_allowed) ** 2
+    
+    # Calculate Extinction Distance  Reimer 7.23
+    # - makes only sense for non zero F
+
+    xi_g = np.real(np.pi * volume_unit_cell * k_0 / F_allowed)
+
+    # ###########################
+    # Calculate Intensities (of allowed reflections)
+    # ###########################
+    
+    # Calculate Intensity of beams  Reimer 7.25
+    if 'thickness' not in tags:
+        tags['thickness'] = 0.
+    thickness = tags['thickness']
+    if thickness > 0.1:
+        I_g = np.real(np.pi ** 2 / xi_g ** 2 * np.sin(np.pi * thickness * s_g_allowed) ** 2 / (np.pi * s_g_allowed)**2)
+        dif['allowed']['Ig'] = I_g
+
+    dif['allowed']['intensities'] = intensities = np.real(F_allowed) ** 2
+    
+    # information of forbidden reflections
+    forbidden = np.logical_not(allowed)
+    Sg_forbidden = Sg[forbidden]
+    hkl_forbidden = hkl[forbidden]
+    g_forbidden = g_hkl[forbidden]
+    F_forbidden = F[forbidden]
+    
+    dif['forbidden'] = {}
+    dif['forbidden']['Sg'] = Sg_forbidden
+    dif['forbidden']['hkl'] = hkl_forbidden
+    dif['forbidden']['g'] = g_forbidden
+
+    # ##########################
+    # Make pretty labels
+    # ##########################
+    hkl_label = make_pretty_labels(hkl_allowed)
+    dif['allowed']['label'] = hkl_label
+    hkl_label = make_pretty_labels(hkl_forbidden)
+    dif['forbidden']['label'] = hkl_label
+    
+    # Center of Laue Circle
+    laue_circle = np.dot(tags['nearest_zone_axis'], tags['reciprocal_unit_cell'])
+    laue_circle = np.dot(laue_circle, rotation_matrix)
+    laue_circle = laue_circle / np.linalg.norm(laue_circle) * k_0
+    laue_circle[2] = 0
+
+    dif['Laue_circle'] = laue_circle
+    if verbose:
+        print('Laue_circle', laue_circle)
+
+    
+    # ###########################
+    # Calculate Laue Zones (of allowed reflections)
+    # ###########################
+    # Below is the expression given in most books.
+    # However, that would only work for orthogonal crystal systems
+    # Laue_Zone = abs(np.dot(hkl_allowed,tags['zone_hkl']))  # works only for orthogonal systems
+
+    # This expression works for all crystal systems
+    # Remember we have already tilted, and so the dot product is trivial and gives only the z-component.
+    length_zone_axis = np.linalg.norm(np.dot(tags['zone_hkl'], tags['unit_cell']))
+    laue_zone = abs(np.dot(hkl_allowed, tags['nearest_zone_axis']))
+    dif['allowed']['Laue_Zone']  = laue_zone
+
+    ZOLZ_forbidden = abs(np.floor(g_forbidden[:, 2]*length_zone_axis+0.5)) == 0
+    
+    dif['forbidden']['Laue_Zone'] = ZOLZ_forbidden
+    ZOLZ = laue_zone == 0
+    FOLZ = laue_zone == 1
+    SOLZ = laue_zone == 2
+    HOLZ = laue_zone > 0
+    HOLZp = laue_zone > 2
+
+    dif['allowed']['ZOLZ'] = ZOLZ
+    dif['allowed']['FOLZ'] = FOLZ
+    dif['allowed']['SOLZ'] = SOLZ
+    dif['allowed']['HOLZ'] = HOLZ
+    dif['allowed']['HOLZ_plus'] = dif['allowed']['HHOLZ'] = HOLZp
+    
+    if verbose:
+        print(' There are {0} allowed reflections in the zero order Laue Zone'.format(ZOLZ.sum()))
+        print(' There are {0} allowed reflections in the first order Laue Zone'.format((laue_zone == 1).sum()))
+        print(' There are {0} allowed reflections in the second order Laue Zone'.format((laue_zone == 2).sum()))
+        print(' There are {0} allowed reflections in the other higher order Laue Zones'.format((laue_zone > 2).sum()))
+        
+    if verbose == 2:
+        print(' hkl  \t Laue zone \t Intensity (*1 and \t log) \t length \n')
+        for i in range(len(hkl_allowed)):
+            print(' {0} \t {1} \t {2:.3f} \t  {3:.3f} \t  {4:.3f}   '.format(hkl_allowed[i], g_allowed[i], 
+                                                                             intensities[i], np.log(intensities[i]+1), 
+                                                                             g_norm_allowed[i]))  
+   
+    # ##########################
+    # Dynamically Activated forbidden reflections
+    # ##########################
+   
+    double_diffraction = (np.sum(np.array(list(itertools.combinations(hkl_allowed[ZOLZ], 2))), axis=1))
+    
+    dynamical_allowed = []
+    still_forbidden = []
+    for i, hkl in enumerate(hkl_forbidden):
+        if ZOLZ_forbidden[i]:
+            if hkl.tolist() in double_diffraction.tolist():
+                dynamical_allowed.append(i)
+            else:
+                still_forbidden.append(i)
+    dif['forbidden']['dynamically_activated'] = dynamical_allowed
+    dif['forbidden']['forbidden'] = dynamical_allowed
+    if verbose:
+        print('Length of zone axis vector in real space {0} nm'.format(np.round(length_zone_axis, 3)))
+        print(f'There are {len(dynamical_allowed)} forbidden but dynamical activated diffraction spots:')
+        # print(tags['forbidden']['hkl'][dynamical_allowed])
+
+    # ###################################
+    # Calculate HOLZ and Kikuchi Lines #
+    # ###################################
+
+    # Dynamic Correction
+
+    # Equation Spence+Zuo 3.86a
+    gamma_1 = - 1./(2.*k_0) * (intensities / (2.*k_0*s_g_allowed)).sum()
+    # print('gamma_1',gamma_1)
+
+    # Equation Spence+Zuo 3.84
+    Kg = k_0 - k_0*gamma_1/(g_allowed[:, 2]+1e-15)
+    Kg[ZOLZ] = k_0
+    
+    # Calculate angle between K0 and deficient cone vector
+    # For dynamic calculations K0 is replaced by Kg
+    Kg[:] = k_0
+    d_theta = np.arcsin(g_norm_allowed/Kg/2.)-np.arcsin(np.abs(g_allowed[:, 2])/g_norm_allowed)
+
+    # calculate length of distance of deficient cone to K0 in ZOLZ plane
+    gd_length = 2*np.sin(d_theta/2)*k_0
+    
+    # Calculate nearest point of HOLZ and Kikuchi lines
+    g_closest = g_allowed.copy()
+    g_closest = g_closest*(gd_length/np.linalg.norm(g_closest, axis=1))[:, np.newaxis]
+    
+    g_closest[:, 2] = 0.
+    
+    # calculate and save line in Hough space coordinates (distance and theta)
+    slope = g_closest[:, 0]/(g_closest[:, 1]+1e-10)
+    distance = gd_length
+    theta = np.arctan2(g_allowed[:, 0], g_allowed[:, 1])
+    
+    dif['HOLZ'] = {}
+    dif['HOLZ']['slope'] = slope
+    # a line is now given by
+    
+    dif['HOLZ']['distance'] = distance
+    dif['HOLZ']['theta'] = theta
+    
+    dif['HOLZ']['g deficient'] = g_closest
+    dif['HOLZ']['g excess'] = g_closest+g_allowed
+    
+    dif['HOLZ']['ZOLZ'] = ZOLZ
+    dif['HOLZ']['HOLZ'] = HOLZ
+    dif['HOLZ']['FOLZ'] = FOLZ
+    dif['HOLZ']['SOLZ'] = SOLZ
+    dif['HOLZ']['HHOLZ'] = HOLZp  # even higher HOLZ
+    
+    dif['HOLZ']['hkl'] = dif['allowed']['hkl']
+    dif['HOLZ']['intensities'] = intensities
+    
+    if verbose:
+        print('pyTEMlib\'s  \"kinematic_scattering\" finished')
+	
+
+def kinematic_scattering2(atoms, verbose=False):
     """
         All kinematic scattering calculation
 
@@ -714,27 +1118,22 @@ def kinematic_scattering(atoms, verbose=False):
     # Incident wave vector k0 in vacuum and material
     ############################################
 
-    #ratio = (1 + 1.9569341 * tags['acceleration_voltage_V']) / (np.pi * volume_unit_cell)
-
-    u0 = 0  # in (Ang)
+    u0 = 0.0  # in (Ang)
     # atom form factor of zero reflection angle is the inner potential in 1/A
     for i in range(len(atoms)):
-        u0 += feq(atoms[i].symbol, 0)
-
-    # Conversion of inner potential to Volts
-    # u0 = u0 * ratio   # inner potential in 1/Ang^2
+        u0 += feq(atoms[i].symbol, 0.0)
 
     scattering_factor_to_volts = (const.h ** 2) * (1e10 ** 2) / (2 * np.pi * const.m_e * const.e) * volume_unit_cell
 
     tags['inner_potential_V'] = u0 * scattering_factor_to_volts
     if verbose:
-        print('The inner potential is {0:.1f}V'.format(u0))
+        print(f'The inner potential is {u0:.1f} V')
 
     # Calculating incident wave vector magnitude 'k0' in material
     wl = tags['wave_length']
     tags['incident_wave_vector_vacuum'] = 1 / wl
 
-    k0 = tags['incident_wave_vector'] = np.sqrt(1 / wl ** 2 + u0)  # 1/Ang
+    k0 = tags['incident_wave_vector'] = np.sqrt(1 / wl**2 + u0)  # 1/Ang
 
     tags['convergence_angle_A-1'] = k0 * np.sin(tags['convergence_angle_mrad'] / 1000.)
     if verbose:
@@ -781,20 +1180,27 @@ def kinematic_scattering(atoms, verbose=False):
     hkl_max = tags['hkl_max']
     Sg_max = tags['Sg_max']  # 1/A  maximum allowed excitation error
 
-    h = np.linspace(-hkl_max, hkl_max, 2 * hkl_max + 1)  # all evaluated single Miller Indices
+    h = np.linspace(-hkl_max, hkl_max, 2 * hkl_max + 1)  # all evaluated single Miller indices
     hkl = np.array(list(itertools.product(h, h, h)))  # all evaluated Miller indices
-    g = np.dot(hkl, reciprocal_unit_cell)  # all evaluated reciprocal_unit_cell points
-    g = np.dot(g, rotation_matrix)  # rotate these reciprocal_unit_cell points
+    g_non_rot = np.dot(hkl, reciprocal_unit_cell)  # all evaluated reciprocal_unit_cell points
+	
+    g = np.dot(g_non_rot, rotation_matrix)  # rotate these reciprocal_unit_cell points
     g_norm = vector_norm(g)  # length of all vectors
     not_zero = g_norm > 0
     g = g[not_zero]  # zero reflection will make problems further on, so we exclude it.
+    g_non_rot = g_non_rot[not_zero]
     g_norm = g_norm[not_zero]
     hkl = hkl[not_zero]
 
-    # Calculate excitation errors for all reciprocal_unit_cell points
-    # Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
-
+	# Calculate excitation errors for all reciprocal_unit_cell points
+	# Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
     S = (k0 ** 2 - vector_norm(g - cent) ** 2) / (2 * k0)
+    g_mz = g - k0_vector
+    in_sqrt = g_mz[:, 2]**2 + np.linalg.norm(g_mz, axis=1)**2 - k0**2
+    in_sqrt[in_sqrt < 0] = 0.
+    S2 = -g_mz[:, 2] - np.sqrt(in_sqrt)
+    #print(S)
+    #print(S2)
 
     # Determine reciprocal_unit_cell points with excitation error less than the maximum allowed one: Sg_max
 
@@ -804,6 +1210,7 @@ def kinematic_scattering(atoms, verbose=False):
     g_hkl = g[reflections]
     
     hkl = hkl[reflections]
+    g_hkl_non_rot = g_non_rot[reflections]
     g_norm = g_norm[reflections]
 
     if verbose:
@@ -811,12 +1218,13 @@ def kinematic_scattering(atoms, verbose=False):
               f"have an excitation error less than {Sg_max:.2f} 1/Angstrom")
 
     # Calculate Structure Factors
+    base = atoms.positions
     structure_factors = []
     for j in range(len(g_hkl)):
         F = 0
         for b in range(len(atoms)):
             f = feq(atoms[b].symbol, np.linalg.norm(g_hkl[j]))
-            F += f * np.exp(-2 * np.pi * 1j * (hkl[j] * atoms.get_scaled_positions()[b]).sum())
+            F += f * np.exp(-2 * np.pi * 1j * (g_hkl_non_rot[j] * atoms.positions[b]).sum())
 
         structure_factors.append(F)
 
@@ -996,7 +1404,7 @@ def kinematic_scattering(atoms, verbose=False):
             F = 0
             for b in range(len(atoms)):
                 f = feq(atoms[b].symbol, np.linalg.norm(g_hkl_kikuchi2[j]))
-                F += f * np.exp(-2 * np.pi * 1j * (hkl_kikuchi2[j] * atoms.get_scaled_positions()[b]).sum())
+                F += f * np.exp(-2 * np.pi * 1j * (g_hkl_kikuchi2[j] * atoms.positions[b]).sum())
 
             structure_factors.append(F)
 
