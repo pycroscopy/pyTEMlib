@@ -787,7 +787,7 @@ def kinematic_scattering(atoms, verbose=False):
     not_zero = g_norm > 0
     g_non_rot = g_non_rot[not_zero]  # zero reflection will make problems further on, so we exclude it.
     g_norm = g_norm[not_zero]
-    hkl = hkl[not_zero]
+    hkl_all = hkl[not_zero]
     g = np.dot(g_non_rot, rotation_matrix)
     
     # #######################
@@ -811,7 +811,7 @@ def kinematic_scattering(atoms, verbose=False):
     Sg = S[reflections]
     g_hkl = g[reflections]
     g_hkl_non_rot = g_non_rot[reflections]
-    hkl = hkl[reflections]
+    hkl = hkl_all[reflections]
     g_norm = g_norm[reflections]
 
     if verbose:
@@ -1022,8 +1022,8 @@ def kinematic_scattering(atoms, verbose=False):
     dif['HOLZ']['distance'] = distance
     dif['HOLZ']['theta'] = theta
     
-    dif['HOLZ']['g deficient'] = g_closest
-    dif['HOLZ']['g excess'] = g_closest+g_allowed
+    dif['HOLZ']['g_deficient'] = g_closest
+    dif['HOLZ']['g_excess'] = g_closest+g_allowed
     
     dif['HOLZ']['ZOLZ'] = ZOLZ
     dif['HOLZ']['HOLZ'] = HOLZ
@@ -1033,10 +1033,72 @@ def kinematic_scattering(atoms, verbose=False):
     
     dif['HOLZ']['hkl'] = dif['allowed']['hkl']
     dif['HOLZ']['intensities'] = intensities
-    
+
+    ####################################
+    # Calculate HOLZ and Kikuchi Lines #
+    ####################################
+
+    tags_kikuchi = tags.copy()
+    tags_kikuchi['mistilt_alpha'] = 0
+    tags_kikuchi['mistilt_beta'] = 0
+
+    for i in range(1):  # tags['nearest_zone_axes']['amount']):
+
+        zone_tags = tags['nearest_zone_axes'][str(i)]
+        tags_kikuchi['zone_hkl'] = zone_tags['hkl']
+        if verbose:
+            print('Calculating Kikuchi lines for zone: ', zone_tags['hkl'])
+
+        tags_kikuchi['Laue_circle'] = laue_circle
+        # Rotate to nearest zone axis
+        rotation_matrix = get_rotation_matrix(tags_kikuchi)
+
+
+        g_kikuchi_all = np.dot(g_non_rot, rotation_matrix)
+
+        ZOLZ = abs(g_kikuchi_all[:, 2]) < .1
+
+        g_kikuchi = g_kikuchi_all[ZOLZ]
+        S=(k_0**2-np.linalg.norm(g_kikuchi - k0_vector, axis=1)**2)/(2*k_0)
+        reflections = abs(S) < .01  # This is now a boolean array with True for all possible reflections
+        g_kikuchi = g_kikuchi[reflections]
+        hkl_kikuchi = (hkl_all[ZOLZ])[reflections]
+
+        structure_factors = []
+        for j in range(len(g_kikuchi)):
+            F = 0
+            for b in range(len(atoms)):
+                f = feq(atoms[b].symbol, np.linalg.norm(g_kikuchi[j]))
+                F += f * np.exp(-2 * np.pi * 1j * (g_kikuchi[j] * atoms.positions[b]).sum())
+            structure_factors.append(F)
+
+        F = np.array(structure_factors)
+
+        allowed_kikuchi = np.absolute(F) > 0.000001
+
+        g_kikuchi = g_kikuchi[allowed_kikuchi]
+        hkl_kikuchi = hkl_kikuchi[allowed_kikuchi]
+
+        gd2 = g_kikuchi / 2.
+        gd2[:, 2] = 0.
+
+        # calculate and save line in Hough space coordinates (distance and theta)
+        slope2 = gd2[:, 0] / (gd2[:, 1] + 1e-20)
+        distance2 = np.sqrt(gd2[:, 0] * gd2[:, 0] + gd2[:, 1] * gd2[:, 1])
+        theta2 = np.arctan(slope2)
+
+        dif['Kikuchi'] = {}
+        dif['Kikuchi']['slope'] = slope2
+        dif['Kikuchi']['distance'] = distance2
+        dif['Kikuchi']['theta'] = theta2
+        dif['Kikuchi']['hkl'] = hkl_kikuchi
+        dif['Kikuchi']['g_hkl'] = g_kikuchi
+        dif['Kikuchi']['g_deficient'] = gd2
+        dif['Kikuchi']['min_dist'] = gd2 + laue_circle
+
     if verbose:
         print('pyTEMlib\'s  \"kinematic_scattering\" finished')
-	
+
 
 def kinematic_scattering2(atoms, verbose=False):
     """
