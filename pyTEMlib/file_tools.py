@@ -303,10 +303,7 @@ def save_path(filename):
         path = '.'
     return path
 
-
-
-
-
+"""
 class open_file_dialog(ipyfilechooser.FileChooser):
     def __init__(self, directory=None):
         if directory is None:
