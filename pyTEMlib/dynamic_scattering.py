@@ -37,9 +37,6 @@ def potential_1dim(element, r):
     rydberg_div_e = scipy.constants.value('Rydberg constant times hc in eV')  # in V
     e0 = 2 * rydberg_div_e * scipy.constants.value('Bohr radius') * 1e10      # now in V A
 
-    # conversion to Angstrom
-    r = r * 10
-
     pre_factor = 2 * np.pi ** 2 * a0 * e0
 
     param = ks.electronFF[element]  # parametrized form factors
@@ -50,7 +47,7 @@ def potential_1dim(element, r):
         f_gauss += param['fc'][i] / param['fd'][i] * np.exp(-np.pi ** 2 * r ** 2 / param['fd'][i])
     f_lorentz[0, 0] = f_lorentz[0, 1]
     # / 100 is  conversion from V Angstrom^2 to V  nm^2
-    return pre_factor * (2 * f_lorentz + f_gauss) / 100  # V-nm^2
+    return pre_factor * (2 * f_lorentz + f_gauss)  # V Angstrom^2
 
 
 def potential_2dim(element, nx, ny, n_cell_x, n_cell_y, lattice_parameter, base):
