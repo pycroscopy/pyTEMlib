@@ -333,7 +333,7 @@ class open_file_dialog(ipyfilechooser.FileChooser):
             )
         save_path(selected)
         
-    def _set_form_values(self, path: str, filename: str) -> None:
+    def _set_form_values(self, path: str, filename: str):
         ""Set the form values.""
         # Disable triggers to prevent selecting an entry in the Select
         # box from automatically triggering a new event.
