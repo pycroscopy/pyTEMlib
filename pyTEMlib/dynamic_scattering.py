@@ -220,14 +220,14 @@ def make_chi(theta, phi, aberrations):
     ###
     phi and theta are meshgrids of the angles in polar coordinates.
     aberrations is a dictionary with the aberrations coefficients
-    Attention: an empty aberrations dictionary will give you a perfect aberration
+    Attention: an empty aberration dictionary will give you a perfect aberration
     """
 
     chi = np.zeros(theta.shape)
-    for n in range(6):  ## First Sum up to fifth order
+    for n in range(6):  # First Sum up to fifth order
         term_first_sum = np.power(theta, n + 1) / (n + 1)  # term in first sum
 
-        second_sum = np.zeros(theta.shape)  ## second Sum intialized with zeros
+        second_sum = np.zeros(theta.shape)  # second Sum initialized with zeros
         for m in range((n + 1) % 2, n + 2, 2):
             # print(n, m)
 
@@ -257,13 +257,13 @@ def objective_lens_function(ab, nx, ny, field_of_view, wavelength, aperture_size
     Parameter:
     ----------
     ab: dict
-        aberrations in nm should at least contain defocus (C10), and spherical abeeration (C30)
+        aberrations in nm should at least contain defocus (C10), and spherical aberration (C30)
     nx: int
         number of pixel in x direction
     ny: int
         number of pixel in y direction
     field_of_view: float
-        field of fiew of potential
+        field of view of potential
     wavelength: float
         wavelength in nm
     aperture_size: float
