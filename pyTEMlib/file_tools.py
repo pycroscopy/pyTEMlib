@@ -34,11 +34,17 @@ import pyTEMlib.crystal_tools
 from .config_dir import config_path
 
 QT_available = False
+try:
+    from pyTEMlib.open_file_dialog_qt import *
+    QT_available = True
+except ImportError:
+    print('QT Dialogs are not available')
+
 
 Dimension = sidpy.Dimension
 
 get_slope = sidpy.base.num_utils.get_slope
-__version__ = '2022.1.0'
+__version__ = '2022.1.1'
 
 
 class FileWidget(object):
@@ -270,22 +276,6 @@ def update_directory_list(directory_name):
 ####
 
 
-def get_qt_app():
-    """will start QT Application if not running yet and returns QApplication """
-    try:
-        from PyQt5 import QtGui, QtWidgets, QtCore
-        QT_available = True
-    except ImportError:
-        QT_available = False
-
-    # start qt event loop
-    _instance = QtWidgets.QApplication.instance()
-    if not _instance:
-        # print('not_instance')
-        _instance = QtWidgets.QApplication([])
-
-    return _instance
-
 
 def get_last_path():
     """Returns the path of the file last opened"""
@@ -312,42 +302,6 @@ def save_path(filename):
     else:
         path = '.'
     return path
-
-
-def savefile_dialog_Qt(initial_file='*.hf5', file_types=None):
-    """Opens a save dialog in QT and returns name of file. New now with initial file"""
-
-    # Check whether QT is available
-    """will start QT Application if not running yet and returns QApplication """
-    try:
-        from PyQt5 import QtGui, QtWidgets, QtCore
-        QT_available = True
-    except ImportError:
-        QT_available = False
-        
-    if not QT_available:
-        print('No QT dialog')
-        return None
-    else:
-        if file_types is None:
-            file_types = "All files (*)"
-    try:
-        get_qt_app()
-    except BaseException:
-        pass
-
-    # Determine last path used
-    path = get_last_path()
-
-    filename = sidpy.io.interface_utils.savefile_dialog(initial_file, file_types=file_types, file_path=path)
-    save_path(filename)
-
-    if len(filename) > 3:
-        h5_file_name = get_h5_filename(filename)
-        return h5_file_name
-    else:
-        return ''
-
 
 """
 class open_file_dialog(ipyfilechooser.FileChooser):
@@ -376,7 +330,7 @@ class open_file_dialog(ipyfilechooser.FileChooser):
             )
         save_path(selected)
         
-    def _set_form_values(self, path: str, filename: str) -> None:
+    def _set_form_values(self, path: str, filename: str):
         ""Set the form values.""
         # Disable triggers to prevent selecting an entry in the Select
         # box from automatically triggering a new event.
@@ -552,8 +506,8 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
         
     # determine file types by extension
     if file_types is None:
-        file_types = 'TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
-                     'DM files (*.dm3);;Nion files (*.ndata *.h5);;All files (*)'
+        file_types = 'TEM files (*.dm3 *.emi *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
+                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
     elif file_types == 'pyNSID':
         file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
                      'DM files (*.dm3);;Nion files (*.ndata *.h5);;All files (*)'
@@ -675,18 +629,28 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
         """
+    
 
-    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5']:
+    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emi']:
 
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DM3Reader(filename)
+        elif extension == '.emi':
+            try:
+                import hyperspy.api as hs
+            except ImportError:
+                print('This file type needs hyperspy to be installed to be able to be read')
+            s = hs.load(filename)
+            dset = SciFiReaders.convert_hyperspy(s)
+
         else:   # extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
 
         path, file_name = os.path.split(filename)
         basename, _ = os.path.splitext(file_name)
-        dset = reader.read()
+        if extension != '.emi':
+            dset = reader.read()
 
         if extension in ['.dm3', '.dm4']:
             dset.title = (basename.strip().replace('-', '_')).split('/')[-1]
@@ -795,7 +759,7 @@ def log_results(h5_group, dataset=None, attributes=None):
 
     Parameters
     ----------
-    h5_group: hd5py.Group
+    h5_group: hd5py.Group, or sidpy.Dataset
         groups where result group are to be stored
     dataset: sidpy.Dataset or None
         sidpy dataset to be stored
