@@ -12,9 +12,27 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
+def get_qt_app():
+    """
+    will start QT Application if not running yet
+
+    :returns: QApplication
+
+    """
+
+    # start qt event loop
+    _instance = QtWidgets.QApplication.instance()
+    if not _instance:
+        # print('not_instance')
+        _instance = QtWidgets.QApplication([])
+
+    return _instance
+
+
 class FileIconDialog(QtWidgets.QDialog):
     """Qt5 Dialog to select directories or files from a list of Thumbnails
 
+    The dialog converts the name of the nion file to the one in Nion's swift software,
     The dialog converts the name of the nion file to the one in Nion's swift software,
     because it is otherwise incomprehensible. Any Icon in a hf5 file will be displayed.
 

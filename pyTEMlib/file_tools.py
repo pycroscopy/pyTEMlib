@@ -44,7 +44,7 @@ except ImportError:
 Dimension = sidpy.Dimension
 
 get_slope = sidpy.base.num_utils.get_slope
-__version__ = '2022.1.1'
+__version__ = '2022.3.3'
 
 
 class FileWidget(object):
