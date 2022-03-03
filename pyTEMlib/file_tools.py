@@ -35,7 +35,7 @@ from .config_dir import config_path
 
 QT_available = False
 try:
-    from pyTEMlib.open_file_dialog_qt import *
+    from pyTEMlib.file_tools_qt import *
     QT_available = True
 except ImportError:
     print('QT Dialogs are not available')
@@ -924,7 +924,7 @@ def h5_add_crystal_structure(h5_file, input_structure):
     if isinstance(input_structure, ase.Atoms):
         crystal_tags = pyTEMlib.crystal_tools.get_dictionary(input_structure)
         if crystal_tags['metadata'] == {}:
-            crystal_tags['metadata'] = {'name': input_structure.get_chemical_formula()}
+            crystal_tags['metadata'] = {'title': input_structure.get_chemical_formula()}
     elif isinstance(input_structure, dict):
         crystal_tags = input_structure
     else:
