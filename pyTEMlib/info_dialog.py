@@ -65,11 +65,11 @@ class InfoDialog(QtWidgets.QDialog):
         if not hasattr(self.dataset, 'meta_data'):
             self.dataset.meta_data = {}
 
-        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, dataset)
-        if len(self.spec_dim) != 1:
+        spec_dim = dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
+        if len(spec_dim) != 1:
             raise TypeError('We need exactly one SPECTRAL dimension')
-        self.spec_dim = self.spec_dim[0]
-        self.energy_scale = self.spec_dim[1].values.copy()
+        self.spec_dim = self.dataset._axes[spec_dim[0]]
+        self.energy_scale = self.spec_dim.values.copy()
 
         minimum_info = {'offset': self.energy_scale[0],
                         'dispersion': self.energy_scale[1] - self.energy_scale[0],
@@ -86,10 +86,10 @@ class InfoDialog(QtWidgets.QDialog):
                 self.experiment[key] = item
 
     def set_dimension(self):
-        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, self.dataset)
-        self.spec_dim = self.spec_dim[0]
-        old_energy_scale = self.spec_dim[1]
-        self.dataset.set_dimension(self.spec_dim[0], sidpy.Dimension(np.array(self.energy_scale),
+        spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
+        self.spec_dim = self.dataset._axes[spec_dim[0]]
+        old_energy_scale = self.spec_dim
+        self.dataset.set_dimension(spec_dim[0], sidpy.Dimension(np.array(self.energy_scale),
                                                                      name=old_energy_scale.name,
                                                                      dimension_type=sidpy.DimensionType.SPECTRAL,
                                                                      units='eV',
@@ -193,10 +193,10 @@ class InfoDialog(QtWidgets.QDialog):
         self.energy_dlg.show()
 
     def set_energy(self, k):
-        self.spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, self.dataset)
-        self.spec_dim = self.spec_dim[0]
+        spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
+        self.spec_dim = self.dataset._axes[spec_dim[0]]
 
-        self.energy_scale = self.spec_dim[1]
+        self.energy_scale = self.spec_dim.values
         self.experiment['offset'] = self.energy_scale[0]
         self.experiment['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
         self.update()
