@@ -126,9 +126,9 @@ class EELSDialog(QtWidgets.QDialog):
         index = self.ui.list3.currentIndex()  # which edge
         edge = self.edges[str(index)]
 
-        if 'Z' in edge:
+        if 'z' in edge:
             self.ui.list5.setCurrentIndex(self.ui.edge_sym.index(edge['symmetry']))
-            self.ui.edit4.setText(str(edge['Z']))
+            self.ui.edit4.setText(str(edge['z']))
             self.ui.unit4.setText(edge['element'])
             self.ui.edit6.setText(f"{edge['onset']:.2f}")
             self.ui.edit7.setText(f"{edge['start_exclude']:.2f}")
@@ -148,8 +148,8 @@ class EELSDialog(QtWidgets.QDialog):
         zz = eels.get_z(z)
         for key, edge in self.edges.items():
             if key.isdigit():
-                if 'Z' in edge:
-                    if zz == edge['Z']:
+                if 'z' in edge:
+                    if zz == edge['z']:
                         return False
 
         major_edge = ''
@@ -187,7 +187,7 @@ class EELSDialog(QtWidgets.QDialog):
         start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
         end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
 
-        self.edges[str(index)] = {'Z': zz, 'symmetry': key, 'element': eels.elements[zz],
+        self.edges[str(index)] = {'z': zz, 'symmetry': key, 'element': eels.elements[zz],
                                   'onset': x_section[key]['onset'], 'end_exclude': end_exclude,
                                   'start_exclude': start_exclude}
         self.edges[str(index)]['all_edges'] = all_edges
@@ -443,14 +443,14 @@ class EELSDialog(QtWidgets.QDialog):
                 index = number_of_edges
             self.ui.list3.setCurrentIndex(index)
             if str(index) not in self.edges:
-                self.edges[str(index)] = {'Z': 0, 'symmetry': 'K1', 'element': 'H', 'onset': 0, 'end_exclude': 0,
+                self.edges[str(index)] = {'z': 0, 'symmetry': 'K1', 'element': 'H', 'onset': 0, 'end_exclude': 0,
                                           'start_exclude': 0, 'areal_density': 0}
 
             self.update()
         elif sender.objectName() == 'symmetry_list':
             sym = self.ui.list5.currentText()
             index = self.ui.list3.currentIndex()
-            zz = self.edges[str(index)]['Z']
+            zz = self.edges[str(index)]['z']
             if zz > 1:
                 x_section = eels.get_x_sections(zz)
                 if sym in x_section:

@@ -32,6 +32,7 @@ from IPython.display import display
 # =============================================
 import pyTEMlib.crystal_tools
 from .config_dir import config_path
+from .sidpy_tools import *
 
 QT_available = False
 try:
