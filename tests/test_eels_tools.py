@@ -129,16 +129,24 @@ class TestFileFunctions(unittest.TestCase):
         self.assertTrue(len(z_loss) == len(dataset))
 
     def test_get_energy_shifts(self):
-        """
+
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
         dataset = ft.open_file(file_name)
+        dataset.h5_dataset.file.close()
+        new_dataset = np.zeros([2,1, dataset.shape[0]])
+        new_dataset[0, 0, :] = np.array(dataset)
+        new_dataset[1, 0, :] = np.array(dataset)
 
-        shifts = eels.get_energy_shifts(np.array(dataset).new_axis), dataset.energy_loss.values, 0.5)
-        print(shifts)
-        """
+        shifts = eels.get_energy_shifts(new_dataset, dataset.energy_loss.values, 0.5)
+        self.assertTrue(np.isclose(shifts[0, 0], -0.22673, rtol=1e-04))
+        self.assertTrue(np.isclose(shifts[1, 0], -0.22673, rtol=1e-04))
 
     def test_effective_collection_angle(self):
         eff_beta = eels.effective_collection_angle(np.arange(59, 500), 10, 10, 200)
 
         self.assertTrue(eff_beta > 10)
+
+    def test_get_db_spectra(self):
+        spec_db = eels.get_spectrum_eels_db(formula='MgO', edge='K', title=None, element='O')
+        self.assertIsInstance(spec_db, dict)

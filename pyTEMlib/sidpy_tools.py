@@ -9,6 +9,7 @@ from IPython.display import display
 
 import sidpy
 
+
 class ChooseDataset(object):
     """Widget to select dataset object """
 
@@ -60,9 +61,8 @@ class ChooseDataset(object):
     def set_dataset(self, b):
         index = self.select_image.index
         self.dataset = self.dataset_list[index]
-        ## Find
+        # Find
         self.dataset.title = self.dataset.title.split('/')[-1]
-
 
 
 def get_dimensions_by_order(dims_in, dataset):
@@ -152,4 +152,3 @@ def get_extent(dataset):
     """get extent to plot with matplotlib"""
     image_dims = get_image_dims(dataset)
     return dataset.get_extent(image_dims)
-

@@ -14,6 +14,7 @@ import matplotlib.widgets as mwidgets
 
 import sidpy
 import pyTEMlib.file_tools as ft
+import pyTEMlib.sidpy_tools
 # import pyTEMlib.probe_tools
 
 from tqdm.auto import trange, tqdm
@@ -54,7 +55,7 @@ except ImportError:
     _SimpleITK_present = False
 
 if not _SimpleITK_present:
-    print('SimpleITK not installed; Registration Functions for Image Stacks not available\n'+
+    print('SimpleITK not installed; Registration Functions for Image Stacks not available\n' +
           'install with: conda install -c simpleitk simpleitk ')
 
 
@@ -177,18 +178,26 @@ def fourier_transform(dset):
     selection = []
     image_dim = []
     # image_dim = get_image_dims(sidpy.DimensionTypes.SPATIAL)
+
     if dset.data_type == sidpy.DataType.IMAGE_STACK:
-        for dim, axis in dset._axes.items():
-            if axis.dimension_type == sidpy.DimensionType.SPATIAL:
-                selection.append(slice(None))
-                image_dim.append(dim)
-            elif axis.dimension_type == sidpy.DimensionType.TEMPORAL or len(dset) == 3:
-                selection.append(slice(None))
-                stack_dim = dim
-            else:
-                selection.append(slice(0, 1))
+        image_dim = dset.get_image_dims()
+        stack_dim = dset.get_dimensions_by_type('TEMPORAL')
+
         if len(image_dim) != 2:
             raise ValueError('need at least two SPATIAL dimension for an image stack')
+
+        for i in range(dset.dims):
+            if i in image_dim:
+                selection.append(slice(None))
+            if len(stack_dim) == 0:
+                stack_dim = i
+                selection.append(slice(None))
+            elif i in stack_dim:
+                stack_dim = i
+                selection.append(slice(None))
+            else:
+                selection.append(slice(0, 1))
+
         image_stack = np.squeeze(np.array(dset)[selection])
         new_image = np.sum(np.array(image_stack), axis=stack_dim)
     elif dset.data_type == sidpy.DataType.IMAGE:
@@ -199,7 +208,7 @@ def fourier_transform(dset):
     new_image = new_image - new_image.min()
     fft_transform = (np.fft.fftshift(np.fft.fft2(new_image)))
 
-    image_dims = ft.get_image_dims(dset)
+    image_dims = pyTEMlib.sidpy_tools.get_image_dims(dset)
 
     units_x = '1/' + dset._axes[image_dims[0]].units
     units_y = '1/' + dset._axes[image_dims[1]].units
@@ -315,8 +324,8 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
     """
     Use spots in diffractogram for a Fourier Filter
 
-    Parameters
-    ----------
+    Parameters:
+    -----------
     dset: sidpu.Dataset
         image to be filtered
     spots: np.ndarray(N,2)
@@ -500,6 +509,7 @@ def demon_registration(dataset, verbose=False):
         demon_registered.metadata['input_crop'] = dataset.metadata['input_crop']
     if 'input_shape' in dataset.metadata:
         demon_registered.metadata['input_shape'] = dataset.metadata['input_shape']
+    demon_registered.metadata['input_dataset'] = dataset.source
     return demon_registered
 
 
@@ -529,38 +539,48 @@ def rigid_registration(dataset):
     if dataset.data_type.name != 'IMAGE_STACK':
         raise TypeError('Registration makes only sense for an image stack')
 
-    nopix = dataset.shape[1]
-    nopiy = dataset.shape[2]
-    nimages = dataset.shape[0]
+
+    frame_dim = dataset.get_dimensions_by_type(['temporal'])
+    image_dims = dataset.get_dimensions_by_type(['spatial'])
+
+    nopix = dataset.shape[image_dims[0]]
+    nopiy = dataset.shape[image_dims[1]]
+    nimages = dataset.shape[frame_dim[0]]
 
     print('Stack contains ', nimages, ' images, each with', nopix, ' pixels in x-direction and ', nopiy,
           ' pixels in y-direction')
-    fixed = np.array(dataset[0])
+
+    data_array = np.moveaxis(np.array(dataset), frame_dim[0], 0)
+
+    fixed = np.array(data_array[0])
     fft_fixed = np.fft.fft2(fixed)
 
     relative_drift = [[0., 0.]]
 
     for i in trange(nimages):
-        moving = np.array(dataset[i])
+        moving = np.array(data_array[i])
         fft_moving = np.fft.fft2(moving)
         if skimage.__version__[:4] == '0.16':
             raise DeprecationWarning('Old scikit image version does not work')
         else:
             shift = registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
-
         fft_fixed = fft_moving
-
         relative_drift.append(shift[0])
 
-    rig_reg, drift = rig_reg_drift(dataset, relative_drift)
+    rig_reg, drift = rig_reg_drift(data_array, relative_drift)
 
     crop_reg, input_crop = crop_image_stack(rig_reg, drift)
 
-    rigid_registered = dataset.like_data(crop_reg)
+    rigid_registered = sidpy.Dataset.from_array(data_array)
+    rigid_registered.set_dimension(0, dataset._axes[frame_dim[0]])
+    rigid_registered.set_dimension(1, dataset._axes[image_dims[0]])
+    rigid_registered.set_dimension(2, dataset._axes[image_dims[1]])
+    rigid_registered.data_type = 'Image_stack'
+
     rigid_registered.title = 'Rigid Registration'
     rigid_registered.source = dataset.title
     rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
-                                 'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
+                                 'input_crop': input_crop, 'input_shape': np.array(dataset.shape)[image_dims]}
 
     return rigid_registered
 
@@ -940,6 +960,7 @@ def calculate_ctf(wavelength, cs, defocus, k):
         reciprocal scale
 
     Returns:
+    --------
     ctf: numpy array
         contrast transfer function
 

@@ -233,7 +233,10 @@ class EnergySelector(QtWidgets.QDialog):
         self.edit1.setFocus()
         self.plot()
 
-        self.selector = RangeSelector(self.axis, self.line_select_callback)
+        self.selector = SpanSelector(self.axis, self.line_select_callback, 
+                                     direction="horizontal", 
+                                     span_stays=True,
+                                     props=dict(facecolor='blue', alpha=0.2))
         self.edit1.setText(f'{self.x_min:.3f}')
         self.edit2.setText(f'{self.x_max:.3f}')
         self.edit3.setText(f'{self.dispersion:.4f}')
@@ -243,7 +246,7 @@ class EnergySelector(QtWidgets.QDialog):
         y_min, y_max = self.axis.get_ylim()
         self.x_min = self.selector.extents[0]
         self.x_max = self.selector.extents[1]
-        self.selector.extents = (self.x_min, self.x_max, y_min, y_max)
+        # self.selector.extents = (self.x_min, self.x_max, y_min, y_max)
 
         self.edit1.setText(f'{self.x_min:.3f}')
         self.edit2.setText(f'{self.x_max:.3f}')
@@ -314,10 +317,10 @@ class EnergySelector(QtWidgets.QDialog):
                                                                       dimension_type='spectral'))
         else:
             pass
-        self.selector.set_active(False)
+        self.selector.set_visible(False)
         self.signal_selected[bool].emit(True)
         self.accept()
-
+        
     def plot(self):
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             self.spectrum = self.dataset.view.get_spectrum()
@@ -336,7 +339,7 @@ class EnergySelector(QtWidgets.QDialog):
     def update(self):
         x_limit = self.axis.get_xlim()
         y_limit = self.axis.get_ylim()
-        self.selector.extents = (self.x_min, self.x_max, y_limit[0], y_limit[1])
+        self.selector.extents = (self.x_min, self.x_max)
 
         x_limit = np.array(x_limit) + self.change
 
@@ -546,7 +549,7 @@ def get_likely_edges(energy_scale):
         if element in selected_edges_unsorted:
             for key in selected_edges_unsorted[element]:
                 if selected_edges_unsorted[element][key]['intensity'] == 'major':
-                    likely_edges.append(x_sections[str(element)]['name'])  # = {'Z':element, 'symmetry': key}
+                    likely_edges.append(x_sections[str(element)]['name'])  # = {'z':element, 'symmetry': key}
 
     return likely_edges
 
