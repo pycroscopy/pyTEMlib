@@ -113,7 +113,7 @@ def voronoi_volumes(atoms):
             vol[i] = 0
         else:
             try:
-                hull = scipy.spatial.ConvexHull(v.vertices[indices])
+                hull = scipy.spatial.ConvexHull(v.simplices[indices])
                 vol[i] = hull.volume
             except:
                 vol[i] = 0.
@@ -217,7 +217,7 @@ def get_voronoi(tetrahedra, atoms, optimize=True):
     r_vv = []
     r_aa = []
     print('Find interstitials (finding centers for different elements takes a bit)')
-    for vertices in tqdm(tetrahedra.vertices):
+    for vertices in tqdm(tetrahedra.simplices):
         r_a = []
         for vert in vertices:
             r_a.append(bond_radii[vert])
