@@ -6,7 +6,7 @@ from matplotlib.patches import Circle  # , Ellipse, Rectangle
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 
-from scipy.ndimage.interpolation import geometric_transform
+from scipy.ndimage import geometric_transform
 import ase
 import numpy as np
 import sidpy
