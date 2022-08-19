@@ -6,7 +6,9 @@ from matplotlib.patches import Circle  # , Ellipse, Rectangle
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 
-from scipy.ndimage import geometric_transform
+from scipy.interpolate import interp1d
+from scipy.ndimage import map_coordinates, geometric_transform
+
 import ase
 import numpy as np
 import sidpy
@@ -250,10 +252,6 @@ def circles(x, y, s, c='b', vmin=None, vmax=None, **kwargs):
     if c is not None:
         plt.sci(collection)
     return collection
-
-
-from scipy.interpolate import interp1d
-from scipy.ndimage import map_coordinates
 
 
 def cartesian2polar(x, y, grid, r, t, order=3):
@@ -506,7 +504,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
     # HOLZ and Kikuchi lines coordinates in Hough space
     LC = tags_out['Laue_circle']
     gd = np.dot(tags_out['HOLZ']['g_deficient'] + LC, r_mat)
-    ge = np.dot(tags_out['HOLZ']['g_excess'] , r_mat)
+    ge = np.dot(tags_out['HOLZ']['g_excess'], r_mat)
     points = np.dot(tags_out['allowed']['g'] + LC, r_mat)
 
     theta = tags_out['HOLZ']['theta'] + angle
@@ -583,7 +581,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
         ax.set_facecolor(atoms.info['output']['background'])
 
     if diffraction_pattern is not None:
-        plt.imshow(diffraction_pattern, extent=diffraction_pattern.get_extent([0,1]), cmap='gray')
+        plt.imshow(diffraction_pattern, extent=diffraction_pattern.get_extent([0, 1]), cmap='gray')
 
     ix = np.argsort((points ** 2).sum(axis=1))
     p = points[ix]
@@ -696,10 +694,10 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
                 color = laue_color[int(Laue_Zone[i])]
                 if atoms.info['output']['plot_HOLZ']:
                     # plot HOLZ lines
-                    line, = plt.plot((h_xp [i], h_xm[i]), (h_yp [i], h_ym[i]), c=color, linewidth=intensity_holz[i],
+                    line, = plt.plot((h_xp[i], h_xm[i]), (h_yp[i], h_ym[i]), c=color, linewidth=intensity_holz[i],
                                      picker=5)
                     if atoms.info['output']['label_HOLZ']:  # Add indices
-                        plt.text(h_xp [i], h_yp [i], label[i], fontsize=8)
+                        plt.text(h_xp[i], h_yp[i], label[i], fontsize=8)
                     lineLabel.append(hkl_label[i])
                     # print(i, hkl_label[i], intensity_holz[i])
 
