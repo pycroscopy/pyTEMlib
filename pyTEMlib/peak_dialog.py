@@ -86,7 +86,7 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.set_peak_list()
 
         # check whether a core loss analysis has been done previously
-        if not hasattr(self, 'core_loss') and  'edges' in self.dataset.metadata:
+        if not hasattr(self, 'core_loss') and 'edges' in self.dataset.metadata:
             self.core_loss = True
         else:
             self.core_loss = False
@@ -190,7 +190,7 @@ class PeakFitDialog(QtWidgets.QDialog):
         end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
 
         energy_scale = self.energy_scale[start_channel:end_channel]
-        # select the core loss model if it exists. Otherwise we will fit to the full spectrum.
+        # select the core loss model if it exists. Otherwise, we will fit to the full spectrum.
         if self.core_loss:
             print('Core loss model found. Fitting on top of the model.')
             model = self.dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
@@ -449,6 +449,7 @@ class PeakFitDialog(QtWidgets.QDialog):
         self.ui.fit_button.clicked.connect(self.fit_peaks)
         self.ui.listwls.activated[str].connect(self.on_list_enter)
         self.ui.listwl.activated[str].connect(self.on_list_enter)
+
 
 def smooth(dataset, iterations, advanced_present):
     """Gaussian mixture model (non-Bayesian)

@@ -90,10 +90,10 @@ class InfoDialog(QtWidgets.QDialog):
         self.spec_dim = self.dataset._axes[spec_dim[0]]
         old_energy_scale = self.spec_dim
         self.dataset.set_dimension(spec_dim[0], sidpy.Dimension(np.array(self.energy_scale),
-                                                                     name=old_energy_scale.name,
-                                                                     dimension_type=sidpy.DimensionType.SPECTRAL,
-                                                                     units='eV',
-                                                                     quantity='energy loss'))
+                                                                name=old_energy_scale.name,
+                                                                dimension_type=sidpy.DimensionType.SPECTRAL,
+                                                                units='eV',
+                                                                quantity='energy loss'))
 
     def update(self):
 

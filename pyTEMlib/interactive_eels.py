@@ -40,7 +40,7 @@ PeakFitDialog = peak_dialog.PeakFitDialog
 class PeriodicTableDialog(QtWidgets.QDialog):
     """ Modal dialog to get a selection of elements.
 
-    Elements that are not having a valid cross sections are disabled.
+    Elements that are not having a valid cross-sections are disabled.
 
     Parameters
     ----------
@@ -352,7 +352,7 @@ class EnergySelector(QtWidgets.QDialog):
 class RegionSelector(object):
     """Selects fitting region and the regions that are excluded for each edge.
 
-        Select a region with a spanSelector and then type 'a' for all of the fitting region or a number for the edge
+        Select a region with a spanSelector and then type 'a' for all the fitting region or a number for the edge
         you want to define the region excluded from the fit (solid state effects).
 
         see Chapter4 'CH4-Working_with_X-Sections,ipynb' notebook
@@ -1195,13 +1195,8 @@ class EdgesAtCursor(object):
         self.ax.figure.canvas.mpl_disconnect(self.mouse_cid)
 
 
-
 def make_box_layout():
-     return widgets.Layout(
-        border='solid 1px black',
-        margin='0px 10px 10px 0px',
-        padding='5px 5px 5px 5px'
-     )
+    return widgets.Layout(border='solid 1px black', margin='0px 10px 10px 0px', padding='5px 5px 5px 5px')
     
 
 class plot_EELS(widgets.HBox):
@@ -1209,6 +1204,7 @@ class plot_EELS(widgets.HBox):
         super().__init__()
         output = widgets.Output()
         self.dataset = dataset
+        self.spec_dim = 0
         initial_color = '#FF00DD'
  
         with output:
@@ -1260,11 +1256,11 @@ class plot_EELS(widgets.HBox):
         button_main_elements = widgets.Button(description='Main Elements')
         
         controls = widgets.VBox([
-            widgets.HBox([self.offset,widgets.Label('eV')]),
-            widgets.HBox([self.dispersion,widgets.Label('eV/channel')]),
-            widgets.HBox([self.exposure,widgets.Label('s')]),
+            widgets.HBox([self.offset, widgets.Label('eV')]),
+            widgets.HBox([self.dispersion, widgets.Label('eV/channel')]),
+            widgets.HBox([self.exposure, widgets.Label('s')]),
             button_energy_scale,
-            widgets.HBox([ button_elements_at_cursor, button_main_elements])
+            widgets.HBox([button_elements_at_cursor, button_main_elements])
         ])
             
         controls.layout = make_box_layout()
@@ -1292,7 +1288,7 @@ class plot_EELS(widgets.HBox):
         """Draw line in plot"""
         self.line.set_ydata(self.dataset)
         self.line.set_xdata(self.dataset.dim_0.values)
-        #self.axis.plot(self.dataset.energy_loss, self.dataset)
+        # self.axis.plot(self.dataset.energy_loss, self.dataset)
         self.fig.canvas.draw()
         
     def line_color(self, change):

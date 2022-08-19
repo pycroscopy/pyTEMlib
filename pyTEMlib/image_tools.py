@@ -297,7 +297,7 @@ def diffractogram_spots(dset, spot_threshold):
 
     # spot detection (for future reference there is no symmetry assumed here)
     data = np.array(np.log(1+np.abs(dset)))
-    data = (data - data.min())
+    data = data - data.min()
     data = data/data.max()
     # some images are strange and blob_log does not work on the power spectrum
     try:
@@ -326,7 +326,7 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
 
     Parameters:
     -----------
-    dset: sidpu.Dataset
+    dset: sidpy.Dataset
         image to be filtered
     spots: np.ndarray(N,2)
         sorted spots in diffractogram in 1/nm
@@ -471,6 +471,9 @@ def demon_registration(dataset, verbose=False):
 
     fixed_np = np.average(np.array(dataset), axis=0)
 
+    if not _SimpleITK_present:
+        print('This feature is not available: \n Please install simpleITK with: conda install simpleitk -c simpleitk')
+
     fixed = sitk.GetImageFromArray(fixed_np)
     fixed = sitk.DiscreteGaussian(fixed, 2.0)
 
@@ -538,7 +541,6 @@ def rigid_registration(dataset):
         raise TypeError('We need a sidpy.Dataset')
     if dataset.data_type.name != 'IMAGE_STACK':
         raise TypeError('Registration makes only sense for an image stack')
-
 
     frame_dim = dataset.get_dimensions_by_type(['temporal'])
     image_dims = dataset.get_dimensions_by_type(['spatial'])
@@ -632,7 +634,8 @@ def crop_image_stack(rig_reg, drift):
     rig_reg: numpy array (N,x,y)
     drift: list (2,B)
 
-    Returns:
+    Returns
+    -------
     numpy array
     """
 
@@ -828,7 +831,6 @@ def rebin(im, binning=2):
         return im.reshape((im.shape[0]//binning, binning, im.shape[1]//binning, binning)).mean(axis=3).mean(1)
     else:
         raise TypeError('not a 2D image')
-        return im
 
 
 def cart2pol(points):
@@ -959,8 +961,8 @@ def calculate_ctf(wavelength, cs, defocus, k):
     k: numpy array
         reciprocal scale
 
-    Returns:
-    --------
+    Returns
+    -------
     ctf: numpy array
         contrast transfer function
 
@@ -1085,7 +1087,7 @@ def decon_lr(o_image, probe,  verbose=False):
     over_d = 2 * ap_angle / wl
 
     dx = o_image.x[1]-o_image.x[0]
-    dk = 1.0 / float(o_image.x[-1])  # last value of x axis is field of view
+    dk = 1.0 / float(o_image.x[-1])  # last value of x-axis is field of view
     screen_width = 1 / dx
 
     aperture = np.ones(o_image.shape, dtype=np.complex64)
@@ -1102,7 +1104,6 @@ def decon_lr(o_image, probe,  verbose=False):
     tp1 = t_xv ** 2 + t_yv ** 2 >= app_ratio ** 2
     aperture[tp1.T] = 0.
     # print(app_ratio, screen_width, dk)
-
 
     progress = tqdm(total=500)
     # de = 100
@@ -1136,7 +1137,7 @@ def decon_lr(o_image, probe,  verbose=False):
             print('terminate')
         progress.update(1)
     progress.write(f"converged in {i} iterations")
-    #progress.close()
+    # progress.close()
     print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  iterations')
     est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
     out_dataset = o_image.like_data(est2)

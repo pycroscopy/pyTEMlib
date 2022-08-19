@@ -6,10 +6,10 @@ import scipy.ndimage as ndimage
 
 def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
     """Make a Gaussian shaped probe """
-    size_x = size_x/2
-    size_y = size_y/2
+    size_x = size_x / 2
+    size_y = size_y / 2
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
-    g = np.exp(-((x-x0)**2 + (y-y0)**2) / 2.0 / width**2)
+    g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / 2.0 / width ** 2)
     probe = g / g.sum() * intensity
 
     return probe
@@ -21,7 +21,7 @@ def make_lorentz(size_x, size_y, gamma=1.0, x0=0., y0=0., intensity=1.):
     size_x = np.floor(size_x / 2)
     size_y = np.floor(size_y / 2)
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
-    g = gamma / (2*np.pi) / np.power(((x-x0)**2 + (y-y0)**2 + gamma**2), 1.5)
+    g = gamma / (2 * np.pi) / np.power(((x - x0) ** 2 + (y - y0) ** 2 + gamma ** 2), 1.5)
     probe = g / g.sum() * intensity
     return probe
 
@@ -39,9 +39,9 @@ def make_chi(phi, theta, aberrations):
     maximum_aberration_order = 5
     chi = np.zeros(theta.shape)
     for n in range(maximum_aberration_order + 1):  # First Sum up to fifth order
-        term_first_sum = np.power(theta, n+1) / (n + 1)  # term in first sum
+        term_first_sum = np.power(theta, n + 1) / (n + 1)  # term in first sum
 
-        second_sum = np.zeros(theta.shape)  # second Sum intialized with zeros
+        second_sum = np.zeros(theta.shape)  # second Sum initialized with zeros
         for m in range((n + 1) % 2, n + 2, 2):
             if m > 0:
                 if f'C{n}{m}a' not in aberrations:  # Set non existent aberrations coefficient to zero
@@ -100,10 +100,10 @@ def get_chi(ab, size_x, size_y, verbose=False):
     return chi, aperture
 
 
-def print_abberrations(ab):
+def print_aberrations(ab):
     from IPython.display import HTML, display
     output = '<html><body>'
-    output += f"Abberrations [nm] for acceleration voltage: {ab['acceleration_voltage']/1e3:.0f} kV"
+    output += f"Aberrations [nm] for acceleration voltage: {ab['acceleration_voltage'] / 1e3:.0f} kV"
     output += '<table>'
     output += f"<tr><td> C10 </td><td> {ab['C10']:.1f} </tr>"
     output += f"<tr><td> C12a </td><td> {ab['C12a']:20.1f} <td> C12b </td><td> {ab['C12b']:20.1f} </tr>"
@@ -165,34 +165,34 @@ def get_ronchigram(size, ab, scale='mrad'):
 
 def get_chi_2(ab, u, v):
     chi1 = ab['C10'] * (u ** 2 + v ** 2) / 2 \
-         + ab['C12a'] * (u ** 2 - v ** 2) / 2 \
-         - ab['C12b'] * u * v
+           + ab['C12a'] * (u ** 2 - v ** 2) / 2 \
+           - ab['C12b'] * u * v
 
     chi2 = ab['C21a'] * (u ** 3 + u * v ** 2) / 3 \
-         - ab['C21b'] * (u ** 2 * v + v ** 3) / 3 \
-         + ab['C23a'] * (u ** 3 - 3 * u * v ** 2) / 3 \
-         - ab['C23b'] * (3 * u ** 2 * v - v ** 3) / 3
+           - ab['C21b'] * (u ** 2 * v + v ** 3) / 3 \
+           + ab['C23a'] * (u ** 3 - 3 * u * v ** 2) / 3 \
+           - ab['C23b'] * (3 * u ** 2 * v - v ** 3) / 3
 
     chi3 = ab['C30'] * (u ** 4 + 2 * u ** 2 * v ** 2 + v ** 4) / 4 \
-         + ab['C32a'] * (u ** 4 - v ** 4) / 4 \
-         - ab['C32b'] * (u ** 3 * v + u * v ** 3) / 2 \
-         + ab['C34a'] * (u ** 4 - 6 * u ** 2 * v ** 2 + v ** 4) / 4 \
-         - ab['C34b'] * (4 * u ** 3 * v - 4 * u * v ** 3) / 4
+           + ab['C32a'] * (u ** 4 - v ** 4) / 4 \
+           - ab['C32b'] * (u ** 3 * v + u * v ** 3) / 2 \
+           + ab['C34a'] * (u ** 4 - 6 * u ** 2 * v ** 2 + v ** 4) / 4 \
+           - ab['C34b'] * (4 * u ** 3 * v - 4 * u * v ** 3) / 4
 
     chi4 = ab['C41a'] * (u ** 5 + 2 * u ** 3 * v ** 2 + u * v ** 4) / 5 \
-         - ab['C41b'] * (u ** 4 * v + 2 * u ** 2 * v ** 3 + v ** 5) / 5 \
-         + ab['C43a'] * (u ** 5 - 2 * u ** 3 * v ** 2 - 3 * u * v ** 4) / 5 \
-         - ab['C43b'] * (3 * u ** 4 * v + 2 * u ** 2 * v ** 3 - v ** 5) / 5 \
-         + ab['C45a'] * (u ** 5 - 10 * u ** 3 * v ** 2 + 5 * u * v ** 4) / 5 \
-         - ab['C45b'] * (5 * u ** 4 * v - 10 * u ** 2 * v ** 3 + v ** 5) / 5
+           - ab['C41b'] * (u ** 4 * v + 2 * u ** 2 * v ** 3 + v ** 5) / 5 \
+           + ab['C43a'] * (u ** 5 - 2 * u ** 3 * v ** 2 - 3 * u * v ** 4) / 5 \
+           - ab['C43b'] * (3 * u ** 4 * v + 2 * u ** 2 * v ** 3 - v ** 5) / 5 \
+           + ab['C45a'] * (u ** 5 - 10 * u ** 3 * v ** 2 + 5 * u * v ** 4) / 5 \
+           - ab['C45b'] * (5 * u ** 4 * v - 10 * u ** 2 * v ** 3 + v ** 5) / 5
 
     chi5 = ab['C50'] * (u ** 6 + 3 * u ** 4 * v ** 2 + 3 * u ** 2 * v ** 4 + v ** 6) / 6 \
-         + ab['C52a'] * (u ** 6 + u ** 4 * v ** 2 - u ** 2 * v ** 4 - v ** 6) / 6 \
-         - ab['C52b'] * (2 * u ** 5 * v + 4 * u ** 3 * v ** 3 + 2 * u * v ** 5) / 6 \
-         + ab['C54a'] * (u ** 6 - 5 * u ** 4 * v ** 2 - 5 * u ** 2 * v ** 4 + v ** 6) / 6 \
-         - ab['C54b'] * (4 * u ** 5 * v - 4 * u * v ** 5) / 6 \
-         + ab['C56a'] * (u ** 6 - 15 * u ** 4 * v ** 2 + 15 * u ** 2 * v ** 4 - v ** 6) / 6 \
-         - ab['C56b'] * (6 * u ** 5 * v - 20 * u ** 3 * v ** 3 + 6 * u * v ** 5) / 6
+           + ab['C52a'] * (u ** 6 + u ** 4 * v ** 2 - u ** 2 * v ** 4 - v ** 6) / 6 \
+           - ab['C52b'] * (2 * u ** 5 * v + 4 * u ** 3 * v ** 3 + 2 * u * v ** 5) / 6 \
+           + ab['C54a'] * (u ** 6 - 5 * u ** 4 * v ** 2 - 5 * u ** 2 * v ** 4 + v ** 6) / 6 \
+           - ab['C54b'] * (4 * u ** 5 * v - 4 * u * v ** 5) / 6 \
+           + ab['C56a'] * (u ** 6 - 15 * u ** 4 * v ** 2 + 15 * u ** 2 * v ** 4 - v ** 6) / 6 \
+           - ab['C56b'] * (6 * u ** 5 * v - 20 * u ** 3 * v ** 3 + 6 * u * v ** 5) / 6
 
     chi = chi1 + chi2 + chi3 + chi4 + chi5
     return chi * 2 * np.pi / ab['wavelength']
@@ -202,30 +202,30 @@ def get_d2chidu2(ab, u, v):
     d2chi1du2 = ab['C10'] + ab['C12a']
 
     d2chi2du2 = ab['C21a'] * 2 * u \
-              - ab['C21b'] * 2 / 3 * v \
-              + ab['C23a'] * 2 * u \
-              - ab['C23b'] * 2 * v
+                - ab['C21b'] * 2 / 3 * v \
+                + ab['C23a'] * 2 * u \
+                - ab['C23b'] * 2 * v
 
     d2chi3du2 = ab['C30'] * (3 * u ** 2 + v ** 2) \
-              + ab['C32a'] * 3 * u ** 2 \
-              - ab['C32b'] * 3 * u * v \
-              + ab['C34a'] * (3 * u ** 2 - 3 * v ** 2) \
-              - ab['C34b'] * 6 * u * v
+                + ab['C32a'] * 3 * u ** 2 \
+                - ab['C32b'] * 3 * u * v \
+                + ab['C34a'] * (3 * u ** 2 - 3 * v ** 2) \
+                - ab['C34b'] * 6 * u * v
 
     d2chi4du2 = ab['C41a'] * 4 / 5 * (5 * u ** 3 + 3 * u * v ** 2) \
-              - ab['C41b'] * 4 / 5 * (3 * u ** 2 * v + v ** 3) \
-              + ab['C43a'] * 4 / 5 * (5 * u ** 3 - 3 * u * v ** 2) \
-              - ab['C43b'] * 4 / 5 * (9 * u ** 2 * v + v ** 3) \
-              + ab['C45a'] * 4 * (u ** 3 - 3 * u * v ** 2) \
-              - ab['C45b'] * 4 * (3 * u ** 2 * v - v ** 3)
+                - ab['C41b'] * 4 / 5 * (3 * u ** 2 * v + v ** 3) \
+                + ab['C43a'] * 4 / 5 * (5 * u ** 3 - 3 * u * v ** 2) \
+                - ab['C43b'] * 4 / 5 * (9 * u ** 2 * v + v ** 3) \
+                + ab['C45a'] * 4 * (u ** 3 - 3 * u * v ** 2) \
+                - ab['C45b'] * 4 * (3 * u ** 2 * v - v ** 3)
 
     d2chi5du2 = ab['C50'] * (5 * u ** 4 + 6 * u ** 2 * v ** 2 + v ** 4) \
-              + ab['C52a'] * (15 * u ** 4 + 6 * u ** 2 * v ** 2 - v ** 4) / 3 \
-              - ab['C52b'] * (20 * u ** 3 * v + 12 * u * v ** 3) / 3 \
-              + ab['C54a'] * 5 / 3 * (3 * u ** 4 - 6 * u ** 2 * v ** 2 - v ** 4) \
-              - ab['C54b'] * 5 / 3 * (8 * u ** 3 * v) \
-              + ab['C56a'] * 5 * (u ** 4 - 6 * u ** 2 * v ** 2 + v ** 4) \
-              - ab['C56b'] * 20 * (u ** 3 * v - u * v ** 3)
+                + ab['C52a'] * (15 * u ** 4 + 6 * u ** 2 * v ** 2 - v ** 4) / 3 \
+                - ab['C52b'] * (20 * u ** 3 * v + 12 * u * v ** 3) / 3 \
+                + ab['C54a'] * 5 / 3 * (3 * u ** 4 - 6 * u ** 2 * v ** 2 - v ** 4) \
+                - ab['C54b'] * 5 / 3 * (8 * u ** 3 * v) \
+                + ab['C56a'] * 5 * (u ** 4 - 6 * u ** 2 * v ** 2 + v ** 4) \
+                - ab['C56b'] * 20 * (u ** 3 * v - u * v ** 3)
 
     d2chidu2 = d2chi1du2 + d2chi2du2 + d2chi3du2 + d2chi4du2 + d2chi5du2
     return d2chidu2
@@ -528,7 +528,7 @@ def make_chi1(phi, theta, wavelength, ab, c1_include):
 def probe2(ab, size_x, size_y, tags, verbose=False):
     """
 
-    * This function creates a incident STEM probe
+    * This function creates an incident STEM probe
     * at position (0,0)
     * with parameters given in ab dictionary
     *
@@ -552,7 +552,7 @@ def probe2(ab, size_x, size_y, tags, verbose=False):
     *    "Correction of spherical and Chromatic Aberration
     *     in a low Voltage SEM", Optik 98 (3), 112-118 (1995)
     * [2] O.L. Krivanek, N. Delby, A.R. Lupini,
-    *    "Towards sub-Angstroem Electron Beams",
+    *    "Towards sub-Angstrom Electron Beams",
     *    Ultramicroscopy 78, 1-11 (1999)
     *
 

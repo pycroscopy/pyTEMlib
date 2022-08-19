@@ -391,7 +391,6 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
     plt.gca().set_xlim(-.2, 1.03)
 
 
-
 class InteractiveAberration(object):
     """
     ### Interactive explanation of aberrations

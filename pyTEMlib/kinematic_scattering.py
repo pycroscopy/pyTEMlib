@@ -172,11 +172,11 @@ def zone_mistilt(zone, angles):
 
     alpha, beta, gamma = np.radians(angles)
 
-    # first we rotate alpha about x axis
+    # first we rotate alpha about x-axis
     c, s = np.cos(alpha), np.sin(alpha)
     rot_x = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
 
-    # second we rotate beta about y axis
+    # second we rotate beta about y-axis
     c, s = np.cos(beta), np.sin(beta)
     rot_y = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
 
@@ -289,7 +289,7 @@ def stage_rotation_matrix(alpha, beta):
     # FIRST we rotate beta about x-axis
     c, s = np.cos(beta), np.sin(beta)
     rot_x = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
-    # second we rotate alpha about y axis
+    # second we rotate alpha about y-axis
     c, s = np.cos(alpha), np.sin(alpha)
     rot_y = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
 
@@ -474,7 +474,7 @@ def ring_pattern_calculation(atoms, verbose=False):
     ----------
     atoms: Crystal
         crystal structure
-    verbose: verbose print outs
+    verbose: verbose print-outs
         set to False
     Returns
     -------
@@ -609,7 +609,7 @@ def ring_pattern_calculation(atoms, verbose=False):
 
 def get_dynamically_allowed(atoms, verbose=False):
     if not isinstance(atoms, ase.Atoms):
-        print ('we need an ase atoms object as input')
+        print('we need an ase atoms object as input')
     if 'diffraction' not in atoms.info:
         print('Run the kinematic_scattering function first')
 
@@ -632,6 +632,7 @@ def get_dynamically_allowed(atoms, verbose=False):
         print(f"Of the {len(hkl_forbidden)} forbidden reflection {dynamically_allowed.sum()} "
               f"can be dynamically activated.")
         # print(dif['forbidden']['hkl'][dynamically_allowed])
+
 
 def kinematic_scattering(atoms, verbose=False):
     """
@@ -705,13 +706,12 @@ def kinematic_scattering(atoms, verbose=False):
     tags['reciprocal_unit_cell'] = reciprocal_unit_cell
     inverse_metric_tensor = get_metric_tensor(reciprocal_unit_cell)
 
-        
     # ###########################################
     # Incident wave vector k0 in vacuum and material 
     # ###########################################
 
     # Incident wave vector K0 in vacuum and material 
-    u0 = 0.0 # in (Ang)
+    u0 = 0.0  # in (Ang)
     # atom form factor of zero reflection angle is the inner potential in 1/A
     for i in range(len(atoms)):
         u0 += feq(atoms[i].symbol, 0.0)
@@ -773,7 +773,7 @@ def kinematic_scattering(atoms, verbose=False):
         print('Center of Ewald sphere ', k0_vector)
 
     # #######################
-    # Find all Miller indices whose reciprocal point lays near the Ewald sphere with radius k_0 
+    # Find all Miller indices whose reciprocal point lies near the Ewald sphere with radius k_0
     # within a maximum excitation error Sg
     # #######################
     
@@ -795,12 +795,12 @@ def kinematic_scattering(atoms, verbose=False):
     # #######################
     
     # Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
-    S=(k_0**2-np.linalg.norm(g - k0_vector, axis=1)**2)/(2*k_0)
+    S = (k_0**2-np.linalg.norm(g - k0_vector, axis=1)**2)/(2*k_0)
     
-    #g_mz = g - k0_vector
-    #in_sqrt = g_mz[:, 2]**2 + np.linalg.norm(g_mz, axis=1)**2 - k_0**2
-    #in_sqrt[in_sqrt < 0] = 0.
-    #S = -g_mz[:, 2] - np.sqrt(in_sqrt)
+    # g_mz = g - k0_vector
+    # in_sqrt = g_mz[:, 2]**2 + np.linalg.norm(g_mz, axis=1)**2 - k_0**2
+    # in_sqrt[in_sqrt < 0] = 0.
+    # S = -g_mz[:, 2] - np.sqrt(in_sqrt)
     
     # #######################
     # Determine reciprocal_unit_cell points with excitation error less than the maximum allowed one: Sg_max
@@ -856,7 +856,7 @@ def kinematic_scattering(atoms, verbose=False):
     dif['allowed']['structure factor'] = F_allowed
     
     # Calculate Extinction Distance  Reimer 7.23
-    # - makes only sense for non zero F
+    # - makes only sense for non-zero F
 
     xi_g = np.real(np.pi * volume_unit_cell * k_0 / F_allowed)
 
@@ -871,7 +871,7 @@ def kinematic_scattering(atoms, verbose=False):
     dif['allowed']['intensities'] = intensities = np.real(F_allowed) ** 2
     
     # Calculate Extinction Distance  Reimer 7.23
-    # - makes only sense for non zero F
+    # - makes only sense for non-zero F
 
     xi_g = np.real(np.pi * volume_unit_cell * k_0 / F_allowed)
 
@@ -919,7 +919,6 @@ def kinematic_scattering(atoms, verbose=False):
     if verbose:
         print('Laue_circle', laue_circle)
 
-    
     # ###########################
     # Calculate Laue Zones (of allowed reflections)
     # ###########################
@@ -931,7 +930,7 @@ def kinematic_scattering(atoms, verbose=False):
     # Remember we have already tilted, and so the dot product is trivial and gives only the z-component.
     length_zone_axis = np.linalg.norm(np.dot(tags['zone_hkl'], tags['unit_cell']))
     laue_zone = abs(np.dot(hkl_allowed, tags['nearest_zone_axis']))
-    dif['allowed']['Laue_Zone']  = laue_zone
+    dif['allowed']['Laue_Zone'] = laue_zone
 
     ZOLZ_forbidden = abs(np.floor(g_forbidden[:, 2]*length_zone_axis+0.5)) == 0
     
@@ -1053,13 +1052,12 @@ def kinematic_scattering(atoms, verbose=False):
         # Rotate to nearest zone axis
         rotation_matrix = get_rotation_matrix(tags_kikuchi)
 
-
         g_kikuchi_all = np.dot(g_non_rot, rotation_matrix)
 
         ZOLZ = abs(g_kikuchi_all[:, 2]) < .1
 
         g_kikuchi = g_kikuchi_all[ZOLZ]
-        S=(k_0**2-np.linalg.norm(g_kikuchi - k0_vector, axis=1)**2)/(2*k_0)
+        S = (k_0**2-np.linalg.norm(g_kikuchi - k0_vector, axis=1)**2)/(2*k_0)
         reflections = abs(S) < .01  # This is now a boolean array with True for all possible reflections
         g_kikuchi = g_kikuchi[reflections]
         hkl_kikuchi = (hkl_all[ZOLZ])[reflections]
@@ -1245,7 +1243,7 @@ def kinematic_scattering2(atoms, verbose=False):
     h = np.linspace(-hkl_max, hkl_max, 2 * hkl_max + 1)  # all evaluated single Miller indices
     hkl = np.array(list(itertools.product(h, h, h)))  # all evaluated Miller indices
     g_non_rot = np.dot(hkl, reciprocal_unit_cell)  # all evaluated reciprocal_unit_cell points
-	
+
     g = np.dot(g_non_rot, rotation_matrix)  # rotate these reciprocal_unit_cell points
     g_norm = vector_norm(g)  # length of all vectors
     not_zero = g_norm > 0
@@ -1254,15 +1252,13 @@ def kinematic_scattering2(atoms, verbose=False):
     g_norm = g_norm[not_zero]
     hkl = hkl[not_zero]
 
-	# Calculate excitation errors for all reciprocal_unit_cell points
-	# Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
+    # Calculate excitation errors for all reciprocal_unit_cell points
+    # Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
     S = (k0 ** 2 - vector_norm(g - cent) ** 2) / (2 * k0)
     g_mz = g - k0_vector
     in_sqrt = g_mz[:, 2]**2 + np.linalg.norm(g_mz, axis=1)**2 - k0**2
     in_sqrt[in_sqrt < 0] = 0.
     S2 = -g_mz[:, 2] - np.sqrt(in_sqrt)
-    #print(S)
-    #print(S2)
 
     # Determine reciprocal_unit_cell points with excitation error less than the maximum allowed one: Sg_max
 
@@ -1314,7 +1310,7 @@ def kinematic_scattering2(atoms, verbose=False):
     dif['allowed']['structure factor'] = F_allowed
 
     # Calculate Extinction Distance  Reimer 7.23
-    # - makes only sense for non zero F
+    # - makes only sense for non-zero F
 
     xi_g = np.real(np.pi * volume_unit_cell * k0 / F_allowed)
 
@@ -1351,18 +1347,18 @@ def kinematic_scattering2(atoms, verbose=False):
     indices = range(len(hkl_allowed))
     combinations = [list(x) for x in itertools.permutations(indices, 2)]
     hkl_forbidden = hkl_forbidden.tolist()
-    dynamicallly_allowed = np.zeros(len(hkl_forbidden), dtype=bool)
+    dynamically_allowed = np.zeros(len(hkl_forbidden), dtype=bool)
     for [i, j] in combinations:
         possible = (hkl_allowed[i] + hkl_allowed[j]).tolist()
         if possible in hkl_forbidden:
-            dynamicallly
+            dynamically
             _allowed[hkl_forbidden.index(possible)] = True
-    dif['forbidden']['dynamicallly_allowed'] = dynamicallly_allowed
+    dif['forbidden']['dynamically_allowed'] = dynamically_allowed
    
     if verbose:
-        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamical_allowed']['g'].shape[0]} "
+        print(f"Of the {g_forbidden.shape[0]} forbidden reflection {dif['dynamically_allowed']['g'].shape[0]} "
               f"can be dynamically activated.")
-        # print(dif['forbidden']['hkl'][dynamicallly_allowed])
+        # print(dif['forbidden']['hkl'][dynamically_allowed])
     """
 
     # Center of Laue Circle
@@ -1444,7 +1440,7 @@ def kinematic_scattering2(atoms, verbose=False):
         c, s = np.cos(phi), np.sin(phi)
         rot_z = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
 
-        # second we rotate theta about y axis
+        # second we rotate theta about y-axis
         c, s = np.cos(theta), np.sin(theta)
         rot_y = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
 
