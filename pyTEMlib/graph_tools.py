@@ -329,7 +329,7 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
 
     polyhedra = {}
     import scipy.sparse
-    connectivity_matrix = scipy.sparse.dok_matrix((len(atoms), len(atoms)), dtype=np.bool)
+    connectivity_matrix = scipy.sparse.dok_matrix((len(atoms), len(atoms)), dtype=bool)
 
     print('Define clustered interstitial polyhedra')
     for index, cluster in tqdm(enumerate(clusters)):

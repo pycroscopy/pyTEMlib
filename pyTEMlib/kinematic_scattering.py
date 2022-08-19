@@ -582,7 +582,7 @@ def ring_pattern_calculation(atoms, verbose=False):
     atoms.info['Ring_Pattern']['profile_x'] = np.linspace(0, unique.max(), 2048)
     step_size = atoms.info['Ring_Pattern']['profile_x'][1]
     intensity = np.zeros(2048)
-    x_index = [(unique / step_size + 0.5).astype(np.int)]
+    x_index = [(unique / step_size + 0.5).astype(int)]
     intensity[x_index] = np.array(np.real(reflections_F)) * np.array(np.real(reflections_F))
     atoms.info['Ring_Pattern']['profile_y delta'] = intensity
 
