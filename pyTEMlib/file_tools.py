@@ -34,6 +34,7 @@ import pyTEMlib.crystal_tools
 from .config_dir import config_path
 from .sidpy_tools import *
 
+from pyTEMlib.sidpy_tools import *
 QT_available = False
 try:
     from pyTEMlib.file_tools_qt import *
