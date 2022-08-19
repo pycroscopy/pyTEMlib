@@ -8,6 +8,10 @@ pyTEMlib
 .. image:: https://img.shields.io/pypi/v/pyTEMlib.svg
     :target: https://pypi.org/project/pyTEMlib/
     :alt: PyPI
+    
+.. image:: https://img.shields.io/conda/vn/conda-forge/pyTEMlib.svg
+    :target: https://github.com/conda-forge/pyTEMlib-feedstock
+    :alt: conda-forge
 
 .. image:: https://codecov.io/gh/pycroscopy/pyTEMlib/branch/master/graph/badge.svg?token=
     :target: https://codecov.io/gh/pycroscopy/pyTEMlib

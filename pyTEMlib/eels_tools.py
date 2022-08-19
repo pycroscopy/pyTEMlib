@@ -24,7 +24,7 @@ import scipy
 from scipy.interpolate import interp1d, splrep  # splev, splint
 from scipy import interpolate
 from scipy.signal import peak_prominences
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 
 from scipy import constants
 import matplotlib.pyplot as plt

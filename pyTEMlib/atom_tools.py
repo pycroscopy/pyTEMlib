@@ -159,7 +159,6 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     gauss_amplitude = []
     gauss_intensity = []
 
-    done = 0
     for i in trange(len(atoms)):
         x, y = atoms[i][0:2]
         x = int(x)

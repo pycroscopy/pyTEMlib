@@ -16,7 +16,7 @@ def potential_1dim(element, r):
 
     The projected potential will be in units of V nm^2,
     however, internally we will use Angstrom instead of nm!
-    The basis for this calculations are the atomic form factors of Kirkland 2𝑛𝑑 edition
+    The basis for these calculations are the atomic form factors of Kirkland 2𝑛𝑑 edition
     following the equation in  Appendix C page 252.
 
     Parameter
@@ -251,7 +251,7 @@ def make_chi(theta, phi, aberrations):
     return chi
 
 
-def objective_lens_function(ab, nx, ny, field_of_view, wavelength, aperture_size=10):
+def objective_lens_function(ab, nx, ny, field_of_view, aperture_size=10):
     """Objective len function to be convoluted with exit wave to derive image function
 
     Parameter:
