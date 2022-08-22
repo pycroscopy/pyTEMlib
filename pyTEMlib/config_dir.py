@@ -8,7 +8,7 @@ config_dir: setup of directory ~/.pyTEMlib for custom sources and database
 """
 import os
 import shutil
-from pkg_resources import  resource_filename
+from pkg_resources import resource_filename
 
 config_files = ['microscopes.csv', 'edges_db.csv', 'edges_db.pkl', 'fparam.txt']
 
@@ -27,7 +27,7 @@ if os.path.isdir(config_path) is False:
     os.mkdir(config_path)
 
 for file in config_files:
-    templates_file = os.path.join(data_path, file)
+    templates_file = resource_filename(__name__, 'data/'+ file)
     config_file = os.path.join(config_path, file)
     if os.path.isfile(config_file) is False:
         shutil.copy(templates_file, config_file)
