@@ -31,4 +31,7 @@ for file in config_files:
     with importlib_resources.as_file(ref) as templates_file:
         config_file = os.path.join(config_path, file)
         if os.path.isfile(config_file) is False:
-            shutil.copy(templates_file, config_file)
+            try:
+                shutil.copy(templates_file, config_file)
+            except FileNotFoundError:
+                pass
