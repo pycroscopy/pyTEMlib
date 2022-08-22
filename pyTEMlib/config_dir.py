@@ -9,7 +9,8 @@ config_dir: setup of directory ~/.pyTEMlib for custom sources and database
 import os
 import shutil
 from pkg_resources import resource_filename
-import importlib.resources
+import importlib
+
 config_files = ['microscopes.csv', 'edges_db.csv', 'edges_db.pkl', 'fparam.txt']
 
 data_path = resource_filename(__name__, 'data')
