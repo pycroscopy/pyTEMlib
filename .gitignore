@@ -166,3 +166,4 @@ pyTEMlib/data/old/fparam.txt
 pyTEMlib/data/old/microscopes.csv
 pyTEMlib/data/old/microscopes.xml
 pyTEMlib/data/old/path.txt
+pyTEMlib/edges_db_old.py
