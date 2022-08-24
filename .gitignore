@@ -161,3 +161,9 @@ example_data/AL_DFoffset0.00-44.hf5
 example_data/AL_DFoffset0.00-45.hf5
 example_data/AL_DFoffset0.00-46.hf5
 example_data/AL_DFoffset0.00-47.hf5
+pyTEMlib/data/old/edges_db.csv
+pyTEMlib/data/old/fparam.txt
+pyTEMlib/data/old/microscopes.csv
+pyTEMlib/data/old/microscopes.xml
+pyTEMlib/data/old/path.txt
+pyTEMlib/edges_db_old.py
