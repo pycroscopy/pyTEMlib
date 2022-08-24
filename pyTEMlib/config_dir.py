@@ -33,9 +33,9 @@ lines = ['Microscope,E0,alpha,beta,pppc,correlation_factor,VOA_conv,EELS_b1,EELS
          'UltraSTEM 200,2.00E+05,30,50,1,1,6.24E+06,0.45,1,2,0,0,0,0,0,0']
 
 config_file = os.path.join(config_path, 'microscopes.csv')
-if os.path.isfile(config_file) is False:
-    with open(config_file, 'w') as f:
-        f.writelines(lines)
+#if os.path.isfile(config_file) is False:
+with open(config_file, 'w') as f:
+    f.write('\n'.join(lines))
 
 config_file = os.path.join(config_path, 'edges_db.pkl')
 ref = importlib_resources.files('pyTEMlib') / 'data/edges_db.pkl'
