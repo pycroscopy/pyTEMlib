@@ -5,14 +5,11 @@ Created on December 28 2021
 @author: Gerd Duscher
 """
 import unittest
-import h5py
 
-import sys
 import os
-import ase.build
 import numpy as np
 import sidpy
-print(sidpy.__version__)
+# print(sidpy.__version__)
 import pyTEMlib.file_tools as ft
 
 import pyTEMlib.eels_tools as eels
@@ -48,7 +45,7 @@ class TestFileFunctions(unittest.TestCase):
     def test_get_x_sections(self):
         x = eels.get_x_sections()
         self.assertIsInstance(x, dict)
-        self.assertEqual(len(x), 82)
+        self.assertEqual(len(x), 49)
         x = eels.get_x_sections(14)
 
         self.assertIsInstance(x, dict)

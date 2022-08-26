@@ -16,6 +16,7 @@ from pyTEMlib.config_dir import config_path
 microscopes_file = os.path.join(config_path, 'microscopes.csv')
 
 
+
 class Microscope(object):
     """Class to read configuration file and provide microscope information"""
     microscopes = {}

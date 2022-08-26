@@ -42,7 +42,7 @@ import pickle  # pkg_resources,
 
 # ## And we use the image tool library of pyTEMlib
 import pyTEMlib.file_tools as ft
-from pyTEMlib.config_dir import data_path
+from pyTEMlib.config_dir import x_sections
 
 from sidpy.base.num_utils import get_slope
 
@@ -267,10 +267,10 @@ def get_x_sections(z=0):
         cross-section of an element or of all elements if z = 0
 
     """
-    pkl_file = open(data_path + '/edges_db.pkl', 'rb')
-    x_sections = pickle.load(pkl_file)
-    pkl_file.close()
-
+    # pkl_file = open(data_path + '/edges_db.pkl', 'rb')
+    # x_sections = pickle.load(pkl_file)
+    #pkl_file.close()
+    # x_sections = pyTEMlib.config_dir.x_sections
     z = int(z)
 
     if z < 1:
