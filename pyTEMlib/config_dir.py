@@ -18,6 +18,7 @@ elif os.name in ['nt', 'dos']:
     os_name = 'windows'
 else:
     config_path = '.'
+print('conf_dir', config_path)
 if os.path.isdir(config_path) is False:
     # messages.information("Creating config directory: %s" % config_path)
     os.mkdir(config_path)
@@ -30,7 +31,7 @@ lines = ['Microscope,E0,alpha,beta,pppc,correlation_factor,VOA_conv,EELS_b1,EELS
          'UltraSTEM 200,2.00E+05,30,50,1,1,6.24E+06,0.45,1,2,0,0,0,0,0,0']
 
 config_file = os.path.join(config_path, 'microscopes.csv')
-if os.path.isfile(config_file) is True:  # Do not overwrite users microscopy files
+if os.path.isfile(config_file) is False:  # Do not overwrite users microscopy files
     with open(config_file, 'w') as f:
         f.write('\n'.join(lines))
 

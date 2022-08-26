@@ -11,9 +11,14 @@ updated 2021
 
 import csv
 import os.path
+import sys
 
-from pyTEMlib.config_dir import config_path
+sys.path.append("../pyTEMlib/")
+
+
+from config_dir import config_path
 microscopes_file = os.path.join(config_path, 'microscopes.csv')
+
 
 
 class Microscope(object):
