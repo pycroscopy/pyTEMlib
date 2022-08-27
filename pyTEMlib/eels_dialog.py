@@ -14,7 +14,7 @@ from pyTEMlib import eels_dlg
 import numpy as np
 
 from pyTEMlib import eels_tools as eels
-from pyTEMlib import interactive_eels
+
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
 
@@ -25,6 +25,8 @@ import sidpy
 _version = 000
 
 if Qt_available:
+    from pyTEMlib import eels_dialog_utilities
+
     class EELSDialog(QtWidgets.QDialog):
         """
         EELS Input Dialog for Chemical Analysis
@@ -70,8 +72,8 @@ if Qt_available:
             if len(initial_elements) > 0:
                 self.set_elements(initial_elements)
 
-            self.pt_dialog = interactive_eels.PeriodicTableDialog(energy_scale=self.energy_scale,
-                                                                  initial_elements=initial_elements)
+            self.pt_dialog = eels_dialog_utilities.PeriodicTableDialog(energy_scale=self.energy_scale,
+                                                                       initial_elements=initial_elements)
             self.pt_dialog.signal_selected[list].connect(self.set_elements)
 
             self.dataset.plot()
