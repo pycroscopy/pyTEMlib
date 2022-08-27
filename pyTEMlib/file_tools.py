@@ -36,7 +36,7 @@ from .sidpy_tools import *
 from pyTEMlib.sidpy_tools import *
 QT_available = False
 try:
-    from pyTEMlib.file_tools_qt import *
+    from pyTEMlib.file_tools_qt_old import *
     QT_available = True
 except ImportError:
     print('QT Dialogs are not available')
