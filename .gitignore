@@ -167,3 +167,4 @@ pyTEMlib/data/old/microscopes.csv
 pyTEMlib/data/old/microscopes.xml
 pyTEMlib/data/old/path.txt
 pyTEMlib/edges_db_old.py
+pyTEMlib/file_tools_qt_old.py
