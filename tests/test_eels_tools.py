@@ -45,7 +45,7 @@ class TestFileFunctions(unittest.TestCase):
     def test_get_x_sections(self):
         x = eels.get_x_sections()
         self.assertIsInstance(x, dict)
-        self.assertEqual(len(x), 49)
+        self.assertEqual(len(x), 82)
         x = eels.get_x_sections(14)
 
         self.assertIsInstance(x, dict)
@@ -131,7 +131,7 @@ class TestFileFunctions(unittest.TestCase):
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
         dataset = ft.open_file(file_name)
         dataset.h5_dataset.file.close()
-        new_dataset = np.zeros([2,1, dataset.shape[0]])
+        new_dataset = np.zeros([2, 1, dataset.shape[0]])
         new_dataset[0, 0, :] = np.array(dataset)
         new_dataset[1, 0, :] = np.array(dataset)
 
