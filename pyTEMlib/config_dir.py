@@ -18,7 +18,7 @@ elif os.name in ['nt', 'dos']:
     os_name = 'windows'
 else:
     config_path = '.'
-print('conf_dir', config_path)
+
 if os.path.isdir(config_path) is False:
     # messages.information("Creating config directory: %s" % config_path)
     os.mkdir(config_path)
