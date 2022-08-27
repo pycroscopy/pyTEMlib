@@ -42,7 +42,7 @@ import pickle  # pkg_resources,
 
 # ## And we use the image tool library of pyTEMlib
 import pyTEMlib.file_tools as ft
-from pyTEMlib.config_dir import x_sections
+from pyTEMlib.xrpa_x_sections import x_sections
 
 from sidpy.base.num_utils import get_slope
 
