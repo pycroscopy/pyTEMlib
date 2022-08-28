@@ -12,14 +12,13 @@ except:
     Qt_available = False
     print('Qt dialogs are not available')
 
-
-
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
 from matplotlib.figure import Figure
 
 from pyTEMlib.microscope import microscope
 
 if Qt_available:
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
+
     class MySICanvas(Canvas):
         def __init__(self, parent, width=10, height=10, dpi=100):
             self.figure = Figure(figsize=(width, height), dpi=dpi)
