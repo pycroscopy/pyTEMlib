@@ -15,7 +15,7 @@ except:
     print('Qt dialogs are not available')
 
 from pyTEMlib import info_dlg
-import pyTEMlib.interactive_eels as ieels
+import pyTEMlib.eels_dialog_utilities as ieels
 from pyTEMlib.microscope import microscope
 
 from pyTEMlib import file_tools as ft

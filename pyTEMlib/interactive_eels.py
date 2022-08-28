@@ -5,8 +5,8 @@ this file provides additional dialogs for EELS quantification
 Author: Gerd Duscher
 """
 
-import numpy as np
 Qt_available = True
+
 try:
     from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -25,4 +25,3 @@ if Qt_available:
     CurveVisualizer = eels_dialog.CurveVisualizer
     InfoDialog = info_dialog.InfoDialog
     PeakFitDialog = peak_dialog.PeakFitDialog
-
