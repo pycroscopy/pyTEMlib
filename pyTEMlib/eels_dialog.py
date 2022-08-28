@@ -30,8 +30,6 @@ if Qt_available:
     class EELSDialog(QtWidgets.QDialog):
         """
         EELS Input Dialog for Chemical Analysis
-
-
         """
 
         def __init__(self, dataset=None):
