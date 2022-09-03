@@ -14,7 +14,7 @@ import h5py
 import os
 import pickle
 
-# For structure files of various flavor for instance POSCAR
+# For structure files of various flavor for instance POSCAR and other theory packages
 import ase.io
 
 # =============================================
