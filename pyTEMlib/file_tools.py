@@ -371,7 +371,7 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
 
 def save_dataset(dataset, filename=None,  h5_group=None):
-    """Saves a dataset to a file in pyNSID format
+    """ Saves a dataset to a file in pyNSID format
     Parameters
     ----------
     dataset: sidpy.Dataset
@@ -485,10 +485,11 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         elif extension == '.emi':
             try:
                 import hyperspy.api as hs
+                s = hs.load(filename)
+                dset = SciFiReaders.convert_hyperspy(s)
             except ImportError:
                 print('This file type needs hyperspy to be installed to be able to be read')
-            s = hs.load(filename)
-            dset = SciFiReaders.convert_hyperspy(s)
+                return
 
         else:   # extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
@@ -600,7 +601,7 @@ def log_results(h5_group, dataset=None, attributes=None):
     """Log Results in hdf5-file
 
     Saves either a sidpy.Dataset or dictionary in a hdf5-file.
-    The group for the result will consist of 'Log_ and a running index.
+    The group for the result will consist of 'Log_' and a running index.
     That group will be placed in h5_group.
 
     Parameters

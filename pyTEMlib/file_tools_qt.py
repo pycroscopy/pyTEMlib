@@ -11,12 +11,14 @@ except:
 
 from PIL import Image, ImageQt
 import matplotlib.pyplot as plt
-
 import warnings
 warnings.filterwarnings('ignore')
 
 
 if Qt_available:
+    import pyTEMlib.file_tools as ft
+
+
     class FileIconDialog(QtWidgets.QDialog):
         """Qt5 Dialog to select directories or files from a list of Thumbnails
 
