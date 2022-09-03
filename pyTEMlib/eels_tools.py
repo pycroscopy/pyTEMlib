@@ -128,7 +128,7 @@ def set_previous_quantification(current_dataset):
     for key in current_channel:
         if 'Log' in key:
             if current_channel[key]['analysis'][()] == 'EELS_quantification':
-                current_dataset.metadata.update((current_channel[key].attrs))   # ToDo: find red dictionary
+                current_dataset.metadata.update(current_channel[key].attrs)   # ToDo: find red dictionary
                 found_metadata = True
                 print('found previous quantification')
 
@@ -269,7 +269,7 @@ def get_x_sections(z=0):
     """
     # pkl_file = open(data_path + '/edges_db.pkl', 'rb')
     # x_sections = pickle.load(pkl_file)
-    #pkl_file.close()
+    # pkl_file.close()
     # x_sections = pyTEMlib.config_dir.x_sections
     z = int(z)
 
