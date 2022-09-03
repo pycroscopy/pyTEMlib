@@ -30,17 +30,16 @@ from IPython.display import display
 #   Include  pyTEMlib libraries                                      #
 # =============================================
 import pyTEMlib.crystal_tools
-from .config_dir import config_path
-from .sidpy_tools import *
+from pyTEMlib.config_dir import config_path
+from pyTEMlib.sidpy_tools import *
 
 from pyTEMlib.sidpy_tools import *
-QT_available = False
+Qt_available = True
 try:
-    from pyTEMlib.file_tools_qt import *
-    QT_available = True
-except ImportError:
-    print('QT Dialogs are not available')
-
+    from PyQt5 import QtCore, QtWidgets, QtGui
+except:
+    print('Qt dialogs are not available')
+    Qt_available = False
 
 Dimension = sidpy.Dimension
 
@@ -302,7 +301,8 @@ def save_path(filename):
         path = '.'
     return path
 
-if QT_available:
+
+if Qt_available:
     def get_qt_app():
         """
         will start QT Application if not running yet
@@ -363,7 +363,7 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
     # Determine last path used
     path = get_last_path()
 
-    if QT_available:
+    if Qt_available:
         _ = get_qt_app()
         filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
         save_path(filename)
@@ -437,6 +437,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         name of file to be opened, if filename is None, a QT file dialog will try to open
     h5_group: hd5py.Group
         not used yet #TODO: provide hook for usage of external chosen group
+    write_hdf_file: bool
+        set to false so that sidpy dataset will not be written to hf5-file automatically
 
     Returns
     -------
@@ -474,7 +476,6 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
         """
-    
 
     elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emi']:
 

@@ -10,7 +10,6 @@ except:
     Qt_available = False
 
 from PIL import Image, ImageQt
-import pyTEMlib.file_tools as ft
 import matplotlib.pyplot as plt
 
 import warnings
