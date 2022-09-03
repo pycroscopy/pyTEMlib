@@ -36,7 +36,7 @@ from .sidpy_tools import *
 from pyTEMlib.sidpy_tools import *
 QT_available = False
 try:
-    from pyTEMlib.file_tools_qt_old import *
+    from pyTEMlib.file_tools_qt import *
     QT_available = True
 except ImportError:
     print('QT Dialogs are not available')
@@ -302,7 +302,24 @@ def save_path(filename):
         path = '.'
     return path
 
-    
+if QT_available:
+    def get_qt_app():
+        """
+        will start QT Application if not running yet
+
+        :returns: QApplication
+
+        """
+
+        # start qt event loop
+        _instance = QtWidgets.QApplication.instance()
+        if not _instance:
+            # print('not_instance')
+            _instance = QtWidgets.QApplication([])
+
+        return _instance
+
+
 def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
     """Opens a File dialog which is used in open_file() function
 
@@ -331,12 +348,7 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     """
     """will start QT Application if not running yet and returns QApplication """
-    try:
-        from PyQt5 import QtGui, QtWidgets, QtCore
-        QT_available = True
-    except ImportError:
-        QT_available = False
-        
+
     # determine file types by extension
     if file_types is None:
         file_types = 'TEM files (*.dm3 *.emi *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
@@ -350,10 +362,10 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     # Determine last path used
     path = get_last_path()
-    _ = get_qt_app()
-    if QT_available:
-        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
 
+    if QT_available:
+        _ = get_qt_app()
+        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
         save_path(filename)
         return filename
 
