@@ -39,6 +39,10 @@ The data are all presented as `sidpy.Dataset <https://pycroscopy.github.io/sidpy
 
 Install pyTEMlib via pip as:
 
-``python3 -m pip install  pyTEMlib``
- 
-This command is also built into the `example notebooks <https://github.com/pycroscopy/pyTEMlib/notebooks>`_
+``python3 -m pip install pyTEMlib``
+
+or via conda:
+
+``conda install pyTEMlib -c conda-forge``
+
+These installation options are also available in the `example notebooks <https://github.com/pycroscopy/pyTEMlib/notebooks>`_
