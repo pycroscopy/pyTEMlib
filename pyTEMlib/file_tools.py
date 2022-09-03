@@ -14,7 +14,7 @@ import h5py
 import os
 import pickle
 
-# For structure files of various flavor for instance POSCAR
+# For structure files of various flavor for instance POSCAR and other theory packages
 import ase.io
 
 # =============================================
@@ -30,17 +30,16 @@ from IPython.display import display
 #   Include  pyTEMlib libraries                                      #
 # =============================================
 import pyTEMlib.crystal_tools
-from .config_dir import config_path
-from .sidpy_tools import *
+from pyTEMlib.config_dir import config_path
+from pyTEMlib.sidpy_tools import *
 
 from pyTEMlib.sidpy_tools import *
-QT_available = False
+Qt_available = True
 try:
-    from pyTEMlib.file_tools_qt_old import *
-    QT_available = True
-except ImportError:
-    print('QT Dialogs are not available')
-
+    from PyQt5 import QtCore, QtWidgets, QtGui
+except:
+    print('Qt dialogs are not available')
+    Qt_available = False
 
 Dimension = sidpy.Dimension
 
@@ -302,7 +301,25 @@ def save_path(filename):
         path = '.'
     return path
 
-    
+
+if Qt_available:
+    def get_qt_app():
+        """
+        will start QT Application if not running yet
+
+        :returns: QApplication
+
+        """
+
+        # start qt event loop
+        _instance = QtWidgets.QApplication.instance()
+        if not _instance:
+            # print('not_instance')
+            _instance = QtWidgets.QApplication([])
+
+        return _instance
+
+
 def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
     """Opens a File dialog which is used in open_file() function
 
@@ -331,12 +348,7 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     """
     """will start QT Application if not running yet and returns QApplication """
-    try:
-        from PyQt5 import QtGui, QtWidgets, QtCore
-        QT_available = True
-    except ImportError:
-        QT_available = False
-        
+
     # determine file types by extension
     if file_types is None:
         file_types = 'TEM files (*.dm3 *.emi *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
@@ -350,16 +362,16 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     # Determine last path used
     path = get_last_path()
-    _ = get_qt_app()
-    if QT_available:
-        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
 
+    if Qt_available:
+        _ = get_qt_app()
+        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
         save_path(filename)
         return filename
 
 
 def save_dataset(dataset, filename=None,  h5_group=None):
-    """Saves a dataset to a file in pyNSID format
+    """ Saves a dataset to a file in pyNSID format
     Parameters
     ----------
     dataset: sidpy.Dataset
@@ -425,6 +437,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         name of file to be opened, if filename is None, a QT file dialog will try to open
     h5_group: hd5py.Group
         not used yet #TODO: provide hook for usage of external chosen group
+    write_hdf_file: bool
+        set to false so that sidpy dataset will not be written to hf5-file automatically
 
     Returns
     -------
@@ -462,7 +476,6 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
             dataset = read_old_h5group(h5_group)
             dataset.h5_dataset = h5_group['Raw_Data']
         """
-    
 
     elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emi']:
 
@@ -472,10 +485,11 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         elif extension == '.emi':
             try:
                 import hyperspy.api as hs
+                s = hs.load(filename)
+                dset = SciFiReaders.convert_hyperspy(s)
             except ImportError:
                 print('This file type needs hyperspy to be installed to be able to be read')
-            s = hs.load(filename)
-            dset = SciFiReaders.convert_hyperspy(s)
+                return
 
         else:   # extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
@@ -587,7 +601,7 @@ def log_results(h5_group, dataset=None, attributes=None):
     """Log Results in hdf5-file
 
     Saves either a sidpy.Dataset or dictionary in a hdf5-file.
-    The group for the result will consist of 'Log_ and a running index.
+    The group for the result will consist of 'Log_' and a running index.
     That group will be placed in h5_group.
 
     Parameters
