@@ -70,55 +70,6 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
 # drude_lorentz(epsInf,leng, ep, eb, gamma, e, Amplitude)
 # zl_func( p,  x)
 
-################################################################
-# Read Functions
-#################################################################
-
-
-def read_dm3_eels_info(original_metadata):
-    """Reed dm3 file from a nested dictionary like original_metadata of sidpy.Dataset"""
-
-    if 'DM' not in original_metadata:
-        return {}
-    main_image = original_metadata['DM']['chosen_image']
-    exp_dictionary = original_metadata['ImageList'][str(main_image)]['ImageTags']
-    experiment = {}
-    if 'EELS' in exp_dictionary:
-        if 'Acquisition' in exp_dictionary['EELS']:
-            for key, item in exp_dictionary['EELS']['Acquisition'].items():
-                if 'Exposure' in key:
-                    _, units = key.split('(')
-                    if units[:-1] == 's':
-                        experiment['single_exposure_time'] = item
-                if 'Integration' in key:
-                    _, units = key.split('(')
-                    if units[:-1] == 's':
-                        experiment['exposure_time'] = item
-                if 'frames' in key:
-                    experiment['number_of_frames'] = item
-
-        if 'Experimental Conditions' in exp_dictionary['EELS']:
-            for key, item in exp_dictionary['EELS']['Experimental Conditions'].items():
-                if 'Convergence' in key:
-                    experiment['convergence_angle'] = item
-                if 'Collection' in key:
-                    # print(item)
-                    # for val in item.values():
-                    experiment['collection_angle'] = item
-    if 'Microscope Info' in exp_dictionary:
-        if 'Voltage' in exp_dictionary['Microscope Info']:
-            experiment['acceleration_voltage'] = exp_dictionary['Microscope Info']['Voltage']
-        if 'Name' in exp_dictionary['Microscope Info']:
-            experiment['microscope'] = exp_dictionary['Microscope Info']['Name']
-
-    if 'number_of_frames' not in experiment:
-        experiment['number_of_frames'] = 1
-    if 'exposure_time' not in experiment:
-        if 'single_exposure_time' in experiment:
-            experiment['exposure_time'] = experiment['number_of_frames'] * experiment['single_exposure_time']
-
-    return experiment
-
 
 def set_previous_quantification(current_dataset):
     """Set previous quantification from a sidpy.Dataset"""
@@ -134,7 +85,7 @@ def set_previous_quantification(current_dataset):
 
     if not found_metadata:
         # setting important experimental parameter
-        current_dataset.metadata['experiment'] = read_dm3_eels_info(current_dataset.original_metadata)
+        current_dataset.metadata['experiment'] = ft.read_dm3_eels_info(current_dataset.original_metadata)
 
         if 'experiment' not in current_dataset.metadata:
             current_dataset.metadata['experiment'] = {}

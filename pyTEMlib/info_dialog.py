@@ -82,7 +82,7 @@ if Qt_available:
                             'exposure_time': 0.0,
                             'convergence_angle': 0.0, 'collection_angle': 0.0,
                             'acceleration_voltage': 100.0, 'binning': 1, 'conversion': 1.0,
-                            'flux': 1.0, 'current': 1.0, 'SI_bin_x': 1, 'SI_bin_y': 1}
+                            'flux_ppm': -1.0, 'flux_unit': 'counts', 'current': 1.0, 'SI_bin_x': 1, 'SI_bin_y': 1}
             if 'experiment' not in self.dataset.metadata:
                 self.dataset.metadata['experiment'] = minimum_info
             self.experiment = self.dataset.metadata['experiment']
@@ -113,8 +113,10 @@ if Qt_available:
 
             self.ui.binningEdit.setText(f"{self.experiment['binning']}")
             self.ui.conversionEdit.setText(f"{self.experiment['conversion']:.2f}")
-            self.ui.fluxEdit.setText(f"{self.experiment['flux']:.2f}")
+            self.ui.fluxEdit.setText(f"{self.experiment['flux_ppm']:.2f}")
+            self.ui.fluxUnit.setText(f"{self.experiment['flux_unit']}")
             self.ui.VOAEdit.setText(f"{self.experiment['current']:.2f}")
+            self.ui.statusBar.showMessage('Message in statusbar.')
 
         def on_enter(self):
             sender = self.sender()
@@ -149,10 +151,13 @@ if Qt_available:
                 value = float(str(sender.displayText()).strip())
                 self.experiment['acceleration_voltage'] = value*1000.0
                 sender.setText(f"{value:.2f}")
-            elif sender == self.ui.E0Edit:
+            elif sender == self.ui.fluxEdit:
                 value = float(str(sender.displayText()).strip())
-                self.experiment['acceleration_voltage'] = value
-                sender.setText(f"{value:.2f}")
+                if value == 0:
+                    self.set_flux()
+                else:
+                    self.experiment['flux_ppm'] = value
+                    sender.setText(f"{value:.2f}")
             elif sender == self.ui.binXEdit or sender == self.ui.binYEdit:
                 if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
                     bin_x = int(self.ui.binXEdit.displayText())
@@ -176,10 +181,16 @@ if Qt_available:
             x_limit = self.axis.get_xlim()
             y_limit = self.axis.get_ylim()
             self.axis.clear()
+            if self.experiment['flux_ppm'] > 0:
+                spectrum /= self.experiment['flux_ppm']
 
             self.axis.plot(self.energy_scale, spectrum, label='spectrum')
             self.axis.set_xlim(x_limit)
             self.axis.set_ylim(y_limit)
+            if self.experiment['flux_ppm'] > 0:
+                self.axis.set_ylabel('scattering intensity (ppm)')
+            self.axis.set_xlabel('energy_loss (eV)')
+
             self.figure.canvas.draw_idle()
 
         def on_list_enter(self):
@@ -207,6 +218,34 @@ if Qt_available:
             self.experiment['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
             self.update()
 
+        def set_flux(self, file_name=None):
+            dset = ft.open_file()
+            if dset is None:
+                return
+
+            exposure_time = -1.0
+
+            if dset.data_type.name == 'IMAGE' or 'SPECTRUM' in dset.data_type.name:
+                if 'exposure_time' in dset.metadata['experiment']:
+                    exposure_time = dset.metadata['experiment']['exposure_time']
+                else:
+                    exposure_time = 1.0
+                    dset.metadata['experiment']['exposure_time'] = -1
+                    print('Did not find exposure time assume 1s')
+
+            if exposure_time > 0:
+                dispersion = self.energy_scale[1] - self.energy_scale[0]
+                self.experiment['flux_ppm'] = np.sum(np.array(dset*1e-6))/exposure_time*self.experiment['exposure_time'] / dispersion
+                self.experiment['flux_units'] = 'counts'
+                self.experiment['flux_source'] = file_name
+                self.experiment['flux_metadata'] = dset.metadata
+                y_limit = self.axis.get_ylim()
+                self.axis.set_ylim(y_limit / self.experiment['flux_ppm'])
+
+            self.update()
+
+            self.plot()
+
         def on_check(self):
             pass
 
@@ -225,5 +264,6 @@ if Qt_available:
             self.ui.fluxEdit.editingFinished.connect(self.on_enter)
             self.ui.VOAEdit.editingFinished.connect(self.on_enter)
             self.ui.energy_button.clicked.connect(self.set_energy_scale)
+            self.ui.get_flux_button.clicked.connect(self.set_flux)
             self.ui.binXEdit.editingFinished.connect(self.on_enter)
             self.ui.binYEdit.editingFinished.connect(self.on_enter)

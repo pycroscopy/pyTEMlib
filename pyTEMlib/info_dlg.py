@@ -156,6 +156,10 @@ if Qt_available:
             self.layout.addWidget(self.binningEdit, row, 1)
 
             row += 1
+            self.get_flux_button = QtWidgets.QPushButton('Get Flux', dialog)
+            self.layout.addWidget(self.get_flux_button, row, 1)
+
+            row += 1
             self.conversionLabel = QtWidgets.QLabel("Conversion")
             self.conversionEdit = QtWidgets.QLineEdit(" 25.0")
             self.conversionEdit.setValidator(valid_float)
@@ -211,6 +215,9 @@ if Qt_available:
             self.layout.addWidget(self.binYLabel, row, 0)
             self.layout.addWidget(self.binYEdit, row, 1)
             self.layout.addWidget(self.binYUnit, row, 2)
+
+            self.statusBar = QtWidgets.QStatusBar()
+            self.layout.addWidget(self.statusBar, row+1, 0, 1, 4)
 
             dialog.setLayout(self.layout)
 
