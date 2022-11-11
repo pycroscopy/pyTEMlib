@@ -85,7 +85,7 @@ def set_previous_quantification(current_dataset):
 
     if not found_metadata:
         # setting important experimental parameter
-        current_dataset.metadata['experiment'] = ft.read_dm3_eels_info(current_dataset.original_metadata)
+        current_dataset.metadata['experiment'] = ft.read_dm3_info(current_dataset.original_metadata)
 
         if 'experiment' not in current_dataset.metadata:
             current_dataset.metadata['experiment'] = {}

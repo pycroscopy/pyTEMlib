@@ -37,7 +37,7 @@ from pyTEMlib.sidpy_tools import *
 Qt_available = True
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
-except :
+except ModuleNotFoundError :
     print('Qt dialogs are not available')
     Qt_available = False
 
@@ -468,6 +468,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         else:
             if not write_hdf_file:
                 datasets[0].h5_dataset.file.close()
+                # datasets[0].h5_dataset = None
             return datasets[0]
 
         """ 
@@ -735,7 +736,7 @@ def log_results(h5_group, dataset=None, attributes=None):
             if 'analysis' in dataset.meta_data:
                 log_group['analysis'] = dataset.meta_data['analysis']
         if hasattr(dataset, 'structures'):
-            for structure in dataset.structures:
+            for structure in dataset.structures.values():
                 h5_add_crystal_structure(log_group, structure)
 
         dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
@@ -778,20 +779,15 @@ def add_dataset(dataset, h5_group=None):
     if not isinstance(h5_group, h5py.Group):
         raise TypeError('Need a valid identifier for a hdf5 group to store data in')
 
-    structures = []
-    if hasattr(dataset, 'structures'):
-        structures = dataset.structures.copy()
-        del dataset.structures
-
     log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
     h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, log_group)
 
     if hasattr(dataset, 'meta_data'):
         if 'analysis' in dataset.meta_data:
             log_group['analysis'] = dataset.meta_data['analysis']
-
-    for structure in structures:
-        h5_add_crystal_structure(log_group, structure)
+    if hasattr(dataset, 'structures'):
+        for structure in dataset.structures.values():
+            h5_add_crystal_structure(log_group, structure)
 
     dataset.h5_dataset = h5_dataset
     return h5_dataset
@@ -864,10 +860,11 @@ def read_cif(file_name=None, verbose=False):  # open file dialog to select cif f
     return crystal
 
 
-def h5_add_crystal_structure(h5_file, input_structure):
+def h5_add_crystal_structure(h5_file, input_structure, name=None):
     """Write crystal structure to NSID file"""
 
     if isinstance(input_structure, ase.Atoms):
+
         crystal_tags = pyTEMlib.crystal_tools.get_dictionary(input_structure)
         if crystal_tags['metadata'] == {}:
             crystal_tags['metadata'] = {'title': input_structure.get_chemical_formula()}
