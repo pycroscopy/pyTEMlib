@@ -105,6 +105,7 @@ class TestFileFunctions(unittest.TestCase):
         #dataset.h5_dataset.file.close()
         
     def test_log_results(self):
+        pass
         #file_path = os.path.dirname(os.path.abspath(__file__))
         #file_name = os.path.join(file_path, '../example_data/GOLD_NP_DIFF.hf5')
         #dataset = ft.open_file(file_name, write_hdf_file=True)
