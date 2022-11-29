@@ -37,7 +37,7 @@ from pyTEMlib.sidpy_tools import *
 Qt_available = True
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
-except:
+except ModuleNotFoundError :
     print('Qt dialogs are not available')
     Qt_available = False
 
@@ -197,7 +197,7 @@ class ChooseDataset(object):
     def set_dataset(self, b):
         index = self.select_image.index
         self.dataset = self.dataset_list[index]
-        # Find
+        # Fnd
         self.dataset.title = self.dataset.title.split('/')[-1]
 
 
@@ -420,7 +420,7 @@ def save_dataset(dataset, filename=None,  h5_group=None):
     return h5_dataset
 
 
-def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=False,
+def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file=False,
     """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
 
     If no filename is provided the QT open_file windows opens (if QT_available==True)
@@ -468,6 +468,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         else:
             if not write_hdf_file:
                 datasets[0].h5_dataset.file.close()
+                # datasets[0].h5_dataset = None
             return datasets[0]
 
         """ 
@@ -482,6 +483,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DM3Reader(filename)
+
         elif extension == '.emi':
             try:
                 import hyperspy.api as hs
@@ -508,9 +510,10 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
                     if 'ImageData' in dset.original_metadata['ImageList']['0']:
                         if 'Data' in dset.original_metadata['ImageList']['0']['ImageData']:
                             del dset.original_metadata['ImageList']['0']['ImageData']['Data']
+
         dset.filename = basename.strip().replace('-', '_')
         # dset.original_metadata = flatten_dict(dset.original_metadata)
-
+        read_essential_metadata(dset)
         if write_hdf_file:
             filename = os.path.join(path,  dset.title+extension)
 
@@ -532,11 +535,108 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=True):  # save_file=
                 # pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
 
         save_path(path)
-        dset.structures = []
         return dset
     else:
         print('file type not handled yet.')
         return
+
+
+################################################################
+# Read Functions
+#################################################################
+
+def read_essential_metadata(dataset):
+    """Updates dataset.metadata['experiment'] with essential information read from original metadata
+
+    This depends on whether it is originally a nion or a dm3 file
+    """
+    if not isinstance(dataset, sidpy.Dataset):
+        raise TypeError("we need a sidpy.Dataset")
+
+    if 'metadata' in dataset.original_metadata:
+        if 'hardware_source' in dataset.original_metadata['metadata']:
+            experiment_dictionary = read_nion_image_info(dataset.original_metadata)
+    if 'DM' in dataset.original_metadata:
+        experiment_dictionary = read_dm3_info(dataset.original_metadata)
+    if 'experiment' not in dataset.metadata:
+        dataset.metadata['experiment'] = {}
+    dataset.metadata['experiment'].update(experiment_dictionary)
+
+
+def read_dm3_info(original_metadata):
+    """Read essential parameter from original_metadata originating from a dm3 file"""
+    if not isinstance(original_metadata, dict):
+        raise TypeError('We need a dictionary to read')
+
+    if 'DM' not in original_metadata:
+        return {}
+    main_image = original_metadata['DM']['chosen_image']
+    exp_dictionary = original_metadata['ImageList'][str(main_image)]['ImageTags']
+    experiment = {}
+    if 'EELS' in exp_dictionary:
+        if 'Acquisition' in exp_dictionary['EELS']:
+            for key, item in exp_dictionary['EELS']['Acquisition'].items():
+                if 'Exposure' in key:
+                    _, units = key.split('(')
+                    if units[:-1] == 's':
+                        experiment['single_exposure_time'] = item
+                if 'Integration' in key:
+                    _, units = key.split('(')
+                    if units[:-1] == 's':
+                        experiment['exposure_time'] = item
+                if 'frames' in key:
+                    experiment['number_of_frames'] = item
+
+        if 'Experimental Conditions' in exp_dictionary['EELS']:
+            for key, item in exp_dictionary['EELS']['Experimental Conditions'].items():
+                if 'Convergence' in key:
+                    experiment['convergence_angle'] = item
+                if 'Collection' in key:
+                    # print(item)
+                    # for val in item.values():
+                    experiment['collection_angle'] = item
+        if 'number_of_frames' not in experiment:
+            experiment['number_of_frames'] = 1
+        if 'exposure_time' not in experiment:
+            if 'single_exposure_time' in experiment:
+                experiment['exposure_time'] = experiment['number_of_frames'] * experiment['single_exposure_time']
+
+    else:
+        if 'Acquisition' in exp_dictionary:
+            if 'Parameters' in exp_dictionary['Acquisition']:
+                if 'High Level' in exp_dictionary['Acquisition']['Parameters']:
+                    if 'Exposure (s)' in exp_dictionary['Acquisition']['Parameters']['High Level']:
+                        experiment['exposure_time'] = exp_dictionary['Acquisition']['Parameters']['High Level'][
+                            'Exposure (s)']
+
+    if 'Microscope Info' in exp_dictionary:
+        if 'Microscope' in exp_dictionary['Microscope Info']:
+            experiment['microscope'] = exp_dictionary['Microscope Info']['Microscope']
+        if 'Voltage' in exp_dictionary['Microscope Info']:
+            experiment['acceleration_voltage'] = exp_dictionary['Microscope Info']['Voltage']
+
+    return experiment
+
+
+def read_nion_image_info(original_metadata):
+    """Read essential parameter from original_metadata originating from a dm3 file"""
+    if not isinstance(original_metadata, dict):
+        raise TypeError('We need a dictionary to read')
+    if 'metadata' not in original_metadata:
+        return {}
+    if 'hardware_source' not in original_metadata['metadata']:
+        return {}
+    if 'ImageScanned' not in original_metadata['metadata']['hardware_source']:
+        return {}
+
+    exp_dictionary = original_metadata['metadata']['hardware_source']['ImageScanned']
+    experiment = exp_dictionary
+    # print(exp_dictionary)
+    if 'autostem' in exp_dictionary:
+        pass
+        #print('auto')
+
+    # print(exp_dictionary.keys())
 
 
 def get_h5_filename(fname):
@@ -636,7 +736,7 @@ def log_results(h5_group, dataset=None, attributes=None):
             if 'analysis' in dataset.meta_data:
                 log_group['analysis'] = dataset.meta_data['analysis']
         if hasattr(dataset, 'structures'):
-            for structure in dataset.structures:
+            for structure in dataset.structures.values():
                 h5_add_crystal_structure(log_group, structure)
 
         dataset.h5_dataset = log_group[dataset.title.replace('-', '_')][dataset.title.replace('-', '_')]
@@ -679,20 +779,15 @@ def add_dataset(dataset, h5_group=None):
     if not isinstance(h5_group, h5py.Group):
         raise TypeError('Need a valid identifier for a hdf5 group to store data in')
 
-    structures = []
-    if hasattr(dataset, 'structures'):
-        structures = dataset.structures.copy()
-        del dataset.structures
-
     log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
     h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, log_group)
 
     if hasattr(dataset, 'meta_data'):
         if 'analysis' in dataset.meta_data:
             log_group['analysis'] = dataset.meta_data['analysis']
-
-    for structure in structures:
-        h5_add_crystal_structure(log_group, structure)
+    if hasattr(dataset, 'structures'):
+        for structure in dataset.structures.values():
+            h5_add_crystal_structure(log_group, structure)
 
     dataset.h5_dataset = h5_dataset
     return h5_dataset
@@ -765,10 +860,11 @@ def read_cif(file_name=None, verbose=False):  # open file dialog to select cif f
     return crystal
 
 
-def h5_add_crystal_structure(h5_file, input_structure):
+def h5_add_crystal_structure(h5_file, input_structure, name=None):
     """Write crystal structure to NSID file"""
 
     if isinstance(input_structure, ase.Atoms):
+
         crystal_tags = pyTEMlib.crystal_tools.get_dictionary(input_structure)
         if crystal_tags['metadata'] == {}:
             crystal_tags['metadata'] = {'title': input_structure.get_chemical_formula()}

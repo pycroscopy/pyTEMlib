@@ -9,7 +9,9 @@ import unittest
 import os
 import numpy as np
 import sidpy
-# print(sidpy.__version__)
+print(sidpy.__version__)
+import sys
+sys.path.insert(0, '../')
 import pyTEMlib.file_tools as ft
 
 import pyTEMlib.eels_tools as eels
@@ -18,19 +20,24 @@ import pyTEMlib.eels_tools as eels
 class TestFileFunctions(unittest.TestCase):
     def test_dm3_eels_info(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
+        print(file_path)
+
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
+        print(file_name)
         dataset = ft.open_file(file_name)
-        dataset.h5_dataset.file.close()
-        metadata = eels.read_dm3_eels_info(dataset.original_metadata)
+        if dataset.h5_dataset is not None:
+            dataset.h5_dataset.file.close()
+        metadata = ft.read_dm3_info(dataset.original_metadata)
         self.assertIsInstance(metadata, dict)
         self.assertEqual(metadata['exposure_time'], 10.0)
 
     def test_set_previous_quantification(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
+        dataset = ft.open_file(file_name,  write_hdf_file=True)
         eels.set_previous_quantification(dataset)
-        dataset.h5_dataset.file.close()
+        if dataset.h5_dataset is not None:
+            dataset.h5_dataset.file.close()
 
     def test_fit_peaks(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
@@ -39,7 +46,8 @@ class TestFileFunctions(unittest.TestCase):
         start_channel = np.searchsorted(dataset.energy_loss, -2)
         end_channel = np.searchsorted(dataset.energy_loss, 2)
         p = eels.fit_peaks(dataset, dataset.energy_loss.values, [[0, dataset.max(), .6]], start_channel, end_channel)
-        dataset.h5_dataset.file.close()
+        if dataset.h5_dataset is not None:
+            dataset.h5_dataset.file.close()
         self.assertIsInstance(p, list)
 
     def test_get_x_sections(self):
@@ -70,7 +78,6 @@ class TestFileFunctions(unittest.TestCase):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
         dataset = ft.open_file(file_name)
-        dataset.h5_dataset.file.close()
 
         derivative, noise_level = eels.second_derivative(dataset, 1.0)
 
@@ -80,8 +87,8 @@ class TestFileFunctions(unittest.TestCase):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
         dataset = ft.open_file(file_name)
-        dataset.h5_dataset.file.close()
-
+        if dataset.h5_dataset is not None:
+            dataset.h5_dataset.file.close()
         selected_edges = eels.find_edges(dataset)
 
         self.assertIsInstance(selected_edges, list)
@@ -101,7 +108,8 @@ class TestFileFunctions(unittest.TestCase):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
         dataset = ft.open_file(file_name)
-        dataset.h5_dataset.file.close()
+        if dataset.h5_dataset is not None:
+            dataset.h5_dataset.file.close()
 
         background, p = eels.power_law_background(dataset, dataset.energy_loss, [15, 25], verbose=True)
 
@@ -130,7 +138,6 @@ class TestFileFunctions(unittest.TestCase):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
         dataset = ft.open_file(file_name)
-        dataset.h5_dataset.file.close()
         new_dataset = np.zeros([2, 1, dataset.shape[0]])
         new_dataset[0, 0, :] = np.array(dataset)
         new_dataset[1, 0, :] = np.array(dataset)

@@ -488,10 +488,7 @@ if Qt_available:
                 self.edges['low_loss'] = {}
             if 'spectrum' not in self.edges['low_loss']:
                 spectrum_ll = ft.open_file(write_hdf_file=False)
-                try:
-                    spectrum_ll.metadata = eels.read_dm3_eels_info(spectrum_ll.original_metadata)
-                except:
-                    pass
+
                 self.edges['low_loss']['spectrum'] = np.array(spectrum_ll)
             self.spectrum_ll = self.edges['low_loss']['spectrum']
 
