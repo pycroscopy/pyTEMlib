@@ -370,6 +370,8 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
         return filename
 
 
+
+
 def save_dataset(dataset, filename=None,  h5_group=None):
     """ Saves a dataset to a file in pyNSID format
     Parameters
@@ -389,36 +391,66 @@ def save_dataset(dataset, filename=None,  h5_group=None):
     path, file_name = os.path.split(filename)
     basename, _ = os.path.splitext(file_name)
 
-    if h5_group is None:
-        if 'Measurement_000' in h5_file:
-            h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Measurement_')
-        else:
-            h5_group = h5_file.create_group('Measurement_000')
+    if isinstance(dataset, dict):
+        h5_group = save_dataset_dictionary(h5_file, dataset)
+        return h5_group
 
-        if 'Channel_000' in h5_group:
-            h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
-        else:
-            h5_group = h5_group.create_group('Channel_000')
+    elif isinstance(dataset, sidpy.Dataset):
+        h5_dataset = save_single_dataset(h5_file, dataset, h5_group=h5_group)
+        return h5_dataset.parent
+    else:
+        raise TypeError('Only sidpy.datasets or dictionaries can be saved with pyTEMlib')
+
+def save_single_dataset(h5_file, dataset, h5_group=None):
+    if h5_group is None:
+        h5_measurement_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Measurement_')
+        h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_measurement_group, 'Channel_')
 
     elif isinstance(h5_group, str):
         if h5_group not in h5_file:
             h5_group = h5_file.create_group(h5_group)
         else:
-
             if h5_group[-1] == '/':
                 h5_group = h5_group[:-1]
 
             channel = h5_group.split('/')[-1]
-            h5_group = h5_group[:-len(channel)]
+            h5_measurement_group = h5_group[:-len(channel)]
             h5_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
     else:
         raise ValueError('h5_group needs to be string or None')
-    dataset.original_metadata['original_title'] = dataset.title
-    dataset.title = basename
+
     h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, h5_group)
     dataset.h5_dataset = h5_dataset
+    h5_dataset.file.flush()
     return h5_dataset
 
+def save_dataset_dictionary(h5_file, datasets):
+    h5_measurement_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Measurement_')
+    for key, dataset in datasets.items():
+        if key[-1] == '/':
+            key = key[:-1]
+        if isinstance(dataset, sidpy.Dataset):
+            h5_group = h5_measurement_group.create_group(key)
+            h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, h5_group)
+            dataset.h5_dataset = h5_dataset
+            h5_dataset.file.flush()
+        elif isinstance(dataset, dict):
+            sidpy.hdf.hdf_utils.write_dict_to_h5_group(h5_measurement_group, dataset, key)
+        else:
+            print('could not save item ', key, 'of dataset dictionary')
+    return h5_measurement_group
+
+
+def h5_group_to_dict(group, group_dict={}):
+    if not isinstance(group, h5py.Group):
+        raise TypeError('we need a h5py group to read from')
+    if not isinstance(group_dict, dict):
+        raise TypeError('group_dict needs to be a python dictionary')
+
+    group_dict[group.name.split('/')[-1]] = dict(group.attrs)
+    for key in group.keys():
+        h5_group_to_dict(group[key], group_dict[group.name.split('/')[-1]])
+    return group_dict
 
 def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file=False,
     """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
@@ -464,12 +496,24 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         datasets = reader.read()
         if len(datasets) < 1:
             print('no hdf5 dataset found in file')
-            return
+            return {}
         else:
+            dataset_dict = {}
+            for index, dataset in enumerate(datasets):
+                title = dataset.title.split('/')[2]
+                dataset_dict[title] = dataset
+                if index ==0:
+                    file = datasets[0].h5_dataset.file
+                    master_group = datasets[0].h5_dataset.parent.parent.parent
+            for key in master_group.keys():
+
+                if key not in dataset_dict:
+                    dataset_dict[key] = h5_group_to_dict(master_group[key])
+                    print()
             if not write_hdf_file:
-                datasets[0].h5_dataset.file.close()
+                file.close()
                 # datasets[0].h5_dataset = None
-            return datasets[0]
+            return dataset_dict
 
         """ 
         should go to no dataset found
@@ -511,31 +555,16 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                         if 'Data' in dset.original_metadata['ImageList']['0']['ImageData']:
                             del dset.original_metadata['ImageList']['0']['ImageData']['Data']
 
+        dset.original_metadata['original_title'] = dset.title
         dset.filename = basename.strip().replace('-', '_')
-        # dset.original_metadata = flatten_dict(dset.original_metadata)
         read_essential_metadata(dset)
+
+        datasets={'Channel_000': dset}
         if write_hdf_file:
-            filename = os.path.join(path,  dset.title+extension)
-
-            h5_filename = get_h5_filename(filename)
-            h5_file = h5py.File(h5_filename, mode='a')
-
-            if 'Measurement_000' in h5_file:
-                print('could not write dataset to file, try saving it with ft.save()')
-            else:
-                if not isinstance(h5_group, h5py.Group):
-                    h5_group = h5_file.create_group('Measurement_000/Channel_000')
-                # dset.axes = dset._axes
-                # dset.attrs = {}
-                h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dset, h5_group)
-
-                # dset.original_metadata = nest_dict(dset.original_metadata)
-
-                dset.h5_dataset = h5_dataset
-                # pyNSID.io.hdf_utils.make_nexus_compatible(h5_dataset)
+            h5_master_group = save_dataset(datasets, filename=filename)
 
         save_path(path)
-        return dset
+        return datasets
     else:
         print('file type not handled yet.')
         return
@@ -785,9 +814,7 @@ def add_dataset(dataset, h5_group=None):
     if hasattr(dataset, 'meta_data'):
         if 'analysis' in dataset.meta_data:
             log_group['analysis'] = dataset.meta_data['analysis']
-    if hasattr(dataset, 'structures'):
-        for structure in dataset.structures.values():
-            h5_add_crystal_structure(log_group, structure)
+
 
     dataset.h5_dataset = h5_dataset
     return h5_dataset
