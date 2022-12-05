@@ -10,12 +10,13 @@ import h5py
 import sys
 import os
 import ase.build
-sys.path.insert(0, "../")
-sys.path.insert(1, '../../sidpy/')
-sys.path.insert(1, '../../pyNSID/')
+sys.path.insert(0, '../../pyNSID/')
+sys.path.insert(1, "../")
+
 import sidpy
 import pyNSID
 print(sidpy.__version__)
+print('pyNSID', pyNSID.__version__)
 import pyTEMlib.file_tools as ft
 
 class TestFileFunctions(unittest.TestCase):
@@ -69,41 +70,42 @@ class TestFileFunctions(unittest.TestCase):
         dataset = ft.open_file(file_name, write_hdf_file=True)
         self.assertIsInstance(dataset, sidpy.Dataset)
         self.assertIsInstance(dataset.h5_dataset, h5py.Dataset)
-        dataset.h5_dataset.file.close()
+        dataset['Channel_000'].h5_dataset.file.close()
         
     def test_add_structure(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/GOLD_NP_DIFF.hf5')
-        dataset = ft.open_file(file_name, write_hdf_file=True)
-        
-        atoms = ase.build.bulk('Al', 'fcc', a=4.05, cubic=True)
-        
-        h5_group = dataset.h5_dataset.file
-        structure_group = ft.h5_add_crystal_structure(h5_group, atoms)
-        self.assertTrue(structure_group.name[:11] == '/Structure_')
-        
-        h5_group = dataset.h5_dataset.parent.parent
-        structure_group = ft.h5_add_crystal_structure(h5_group, atoms)
-        self.assertTrue('/Measurement_000/Channel_000/Structure_' == structure_group.name[:-3])
-        dataset.h5_dataset.file.close()
+        datasets = ft.open_file(file_name, write_hdf_file=True)
+        datasets['Channel_000'].structures.update({'Al': ase.build.bulk('Al', 'fcc', a=4.05, cubic=True)})
+        h5_group = ft.save_dataset(datasets, '../example_data/GOLD_NP_DIFF-2.hf5')
+
+        # self.assertTrue('Structure_' in h5_group['Channel_000'])
+        datasets['Channel_000'].h5_dataset.file.close()
+        #h5_group.file.close()
         
     def test_add_dataset(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
+        #file_name = os.path.join(file_path, '../example_data/GOLD-NP-DIFF.dm3')
+        #dataset2 = ft.open_file(file_name, write_hdf_file=True)
+        #dataset2.h5_dataset.file.close()
+
         file_name = os.path.join(file_path, '../example_data/GOLD_NP_DIFF.hf5')
-        #dataset = ft.open_file(file_name, write_hdf_file=True)
+        dataset = ft.open_file(file_name, write_hdf_file=True)
 
-        #new_dataset =  dataset.copy()
-        #atoms = ase.build.bulk('Al', 'fcc', a=4.05, cubic=True)
-        #new_dataset.structures.update({'Al': atoms})
-        #atoms = ase.build.bulk('Cu', 'fcc', a=4.05, cubic=True)
-        #new_dataset.structures.update({'Cu': atoms})
+        new_dataset =  dataset.copy()
+        atoms = ase.build.bulk('Al', 'fcc', a=4.05, cubic=True)
+        new_dataset['Channel_000'].structures.update({'Al': atoms})
+        atoms = ase.build.bulk('Cu', 'fcc', a=4.05, cubic=True)
+        new_dataset['Channel_000'].structures.update({'Cu': atoms})
 
-        #h5_dataset = ft.add_dataset(new_dataset, dataset)
-        #self.assertIsInstance(h5_dataset, h5py.Dataset)
-        #self.assertTrue('Structure_000' in h5_dataset.parent.parent)
-        #self.assertTrue('Structure_001' in h5_dataset.parent.parent)
-        #dataset.h5_dataset.file.close()
-        
+        h5_dataset = ft.add_dataset(new_dataset['Channel_000'], dataset['Channel_000'])
+        self.assertIsInstance(h5_dataset, h5py.Dataset)
+        self.assertTrue('Structure_000' in h5_dataset.parent)
+        self.assertTrue('Structure_001' in h5_dataset.parent)
+        self.assertTrue('Structure_001/Cu' in h5_dataset.parent)
+        dataset['Channel_000'].h5_dataset.file.close()
+
+
     def test_log_results(self):
         pass
         #file_path = os.path.dirname(os.path.abspath(__file__))
