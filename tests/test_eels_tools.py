@@ -23,26 +23,20 @@ class TestFileFunctions(unittest.TestCase):
         print(file_path)
 
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        print(file_name)
-        dataset = ft.open_file(file_name)
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
         if dataset.h5_dataset is not None:
             dataset.h5_dataset.file.close()
         metadata = ft.read_dm3_info(dataset.original_metadata)
         self.assertIsInstance(metadata, dict)
         self.assertEqual(metadata['exposure_time'], 10.0)
 
-    def test_set_previous_quantification(self):
-        file_path = os.path.dirname(os.path.abspath(__file__))
-        file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name,  write_hdf_file=True)
-        eels.set_previous_quantification(dataset)
-        if dataset.h5_dataset is not None:
-            dataset.h5_dataset.file.close()
 
     def test_fit_peaks(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
         start_channel = np.searchsorted(dataset.energy_loss, -2)
         end_channel = np.searchsorted(dataset.energy_loss, 2)
         p = eels.fit_peaks(dataset, dataset.energy_loss.values, [[0, dataset.max(), .6]], start_channel, end_channel)
@@ -77,8 +71,8 @@ class TestFileFunctions(unittest.TestCase):
     def test_second_derivative(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
-
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
         derivative, noise_level = eels.second_derivative(dataset, 1.0)
 
         self.assertIsInstance(derivative, np.ndarray)
@@ -86,7 +80,8 @@ class TestFileFunctions(unittest.TestCase):
     def test_find_edges(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
         if dataset.h5_dataset is not None:
             dataset.h5_dataset.file.close()
         selected_edges = eels.find_edges(dataset)
@@ -107,7 +102,8 @@ class TestFileFunctions(unittest.TestCase):
     def test_power_law_background(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
         if dataset.h5_dataset is not None:
             dataset.h5_dataset.file.close()
 
@@ -118,7 +114,8 @@ class TestFileFunctions(unittest.TestCase):
     def test_fix_energy_scale(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
 
         fwhm, fit_mu = eels.fix_energy_scale(dataset, dataset.energy_loss)
 
@@ -127,7 +124,8 @@ class TestFileFunctions(unittest.TestCase):
     def test_resolution_function(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
 
         z_loss, p_zl = eels.resolution_function(dataset.energy_loss.values, np.array(dataset), 0.5, verbose=True)
 
@@ -137,7 +135,9 @@ class TestFileFunctions(unittest.TestCase):
 
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        dataset = ft.open_file(file_name)
+        datasets = ft.open_file(file_name)
+        dataset = datasets['Channel_000']
+
         new_dataset = np.zeros([2, 1, dataset.shape[0]])
         new_dataset[0, 0, :] = np.array(dataset)
         new_dataset[1, 0, :] = np.array(dataset)
