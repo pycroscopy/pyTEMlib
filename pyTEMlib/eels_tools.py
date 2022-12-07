@@ -70,7 +70,7 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
 # drude_lorentz(epsInf,leng, ep, eb, gamma, e, Amplitude)
 # zl_func( p,  x)
 
-
+###
 def set_previous_quantification(current_dataset):
     """Set previous quantification from a sidpy.Dataset"""
 
@@ -95,11 +95,11 @@ def set_previous_quantification(current_dataset):
             current_dataset.metadata['experiment']['collection_angle'] = 50
         if 'acceleration_voltage' not in current_dataset.metadata['experiment']:
             current_dataset.metadata['experiment']['acceleration_voltage'] = 200000
+###
 
-
-################################################################
+# ###############################################################
 # Peak Fit Functions
-#################################################################
+# ################################################################
 
 
 def residuals_smooth(p, x, y, only_positive_intensity):
