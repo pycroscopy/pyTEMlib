@@ -185,3 +185,7 @@ example_data/GOLD-NP-DIFF-2.hf5
 .pyTEMlib.files.pkl
 .pyTEMlib.files.pkl
 .pyTEMlib.files.pkl
+example_data/GOLD-NP-DIFF-1.hf5
+example_data/GOLD-NP-DIFF-2-2.hf5
+example_data/GOLD-NP-DIFF-3.hf5
+notebooks/Untitled.ipynb
