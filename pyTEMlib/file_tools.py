@@ -150,6 +150,7 @@ class ChooseDataset(object):
     """Widget to select dataset object """
 
     def __init__(self, input_object, show_dialog=True):
+        self.datasets = None
         if isinstance(input_object, sidpy.Dataset):
             if isinstance(input_object.h5_dataset, h5py.Dataset):
                 self.current_channel = input_object.h5_dataset.parent
@@ -157,17 +158,21 @@ class ChooseDataset(object):
             self.current_channel = input_object
         elif isinstance(input_object, h5py.Dataset):
             self.current_channel = input_object.parent
+        elif isinstance(input_object, dict):
+            self.datasets = input_object
         else:
             raise ValueError('Need hdf5 group or sidpy Dataset to determine image choices')
         self.dataset_names = []
         self.dataset_list = []
         self.dataset_type = None
         self.dataset = None
-        self.reader = SciFiReaders.NSIDReader(self.current_channel.file.filename)
-
+        if not isinstance(self.datasets, dict):
+            self.reader = SciFiReaders.NSIDReader(self.current_channel.file.filename)
+        else:
+            self.reader = None
         self.get_dataset_list()
-        self.select_image = widgets.Dropdown(options=self.dataset_names,
-                                             value=self.dataset_names[0],
+        self.select_image = widgets.Dropdown(options=self.dataset_list,
+                                             value=self.dataset_list[0],
                                              description='select dataset:',
                                              disabled=False,
                                              button_style='')
@@ -180,24 +185,30 @@ class ChooseDataset(object):
 
     def get_dataset_list(self):
         """ Get by Log number sorted list of datasets"""
-        datasets = self.reader.read()
+        if not isinstance(self.datasets, dict):
+            dataset_list = self.reader.read()
+            self.datasets = {}
+            for dataset in  dataset_list:
+                self.datasets[dataset.title] = dataset
         order = []
-        for dset in datasets:
-            if self.dataset_type is None or dset.data_type == self.data_type:
-                if 'Log' in dset.title:
-                    position = dset.title.find('Log_') + 4
-                    order.append(int(dset.title[position:position + 3])+1)
-                else:
-                    order.append(0)
+        keys =[]
+        for title, dset in self.datasets.items():
+            if isinstance(dset, sidpy.Dataset):
+                if self.dataset_type is None or dset.data_type == self.data_type:
+                    if 'Log' in title:
+                        position = dset.title.find('Log_') + 4
+                        order.append(int(dset.title[position:position + 3])+1)
+                    else:
+                        order.append(0)
+                    keys.append(title)
         for index in np.argsort(order):
-            dset = datasets[index]
-            self.dataset_names.append('/'.join(dset.title.replace('-', '_').split('/')[-1:]))
-            self.dataset_list.append(dset)
+            self.dataset_names.append(keys[index])
+            self.dataset_list.append(keys[index] + ': ' + self.datasets[keys[index]].title)
+
 
     def set_dataset(self, b):
         index = self.select_image.index
-        self.dataset = self.dataset_list[index]
-        # Fnd
+        self.dataset = self.datasets[self.dataset_names[index]]
         self.dataset.title = self.dataset.title.split('/')[-1]
 
 
@@ -351,7 +362,7 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     # determine file types by extension
     if file_types is None:
-        file_types = 'TEM files (*.dm3 *.emi *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
+        file_types = 'TEM files (*.dm3 *.emd *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
                      'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
     elif file_types == 'pyNSID':
         file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
@@ -522,7 +533,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             dataset.h5_dataset = h5_group['Raw_Data']
         """
 
-    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emi']:
+    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi']:
 
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
@@ -536,7 +547,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             except ImportError:
                 print('This file type needs hyperspy to be installed to be able to be read')
                 return
-
+        elif extension == '.emd':
+            reader = SciFiReaders.EMDReader(filename)
         else:   # extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
 
@@ -544,6 +556,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         basename, _ = os.path.splitext(file_name)
         if extension != '.emi':
             dset = reader.read()
+
 
         if extension in ['.dm3', '.dm4']:
             dset.title = (basename.strip().replace('-', '_')).split('/')[-1]
@@ -554,17 +567,26 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                     if 'ImageData' in dset.original_metadata['ImageList']['0']:
                         if 'Data' in dset.original_metadata['ImageList']['0']['ImageData']:
                             del dset.original_metadata['ImageList']['0']['ImageData']['Data']
+        ## dset.original_metadata['original_title'] = dset.title
 
-        dset.original_metadata['original_title'] = dset.title
-        dset.filename = basename.strip().replace('-', '_')
-        read_essential_metadata(dset)
 
-        datasets={'Channel_000': dset}
+        if isinstance(dset, list):
+            if len(dset) < 1:
+                print('no dataset found in file')
+                return {}
+            else:
+                dataset_dict = {}
+                for index, dataset in enumerate(dset):
+                    dataset_dict[f'Channel_{index:03}'] = dataset
+        else:
+            dset.filename = basename.strip().replace('-', '_')
+            read_essential_metadata(dset)
+            dataset_dict={'Channel_000': dset}
         if write_hdf_file:
-            h5_master_group = save_dataset(datasets, filename=filename)
+            h5_master_group = save_dataset(dataset_dict, filename=filename)
 
         save_path(path)
-        return datasets
+        return dataset_dict
     else:
         print('file type not handled yet.')
         return
@@ -581,7 +603,7 @@ def read_essential_metadata(dataset):
     """
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError("we need a sidpy.Dataset")
-
+    experiment_dictionary = {}
     if 'metadata' in dataset.original_metadata:
         if 'hardware_source' in dataset.original_metadata['metadata']:
             experiment_dictionary = read_nion_image_info(dataset.original_metadata)
@@ -589,6 +611,7 @@ def read_essential_metadata(dataset):
         experiment_dictionary = read_dm3_info(dataset.original_metadata)
     if 'experiment' not in dataset.metadata:
         dataset.metadata['experiment'] = {}
+
     dataset.metadata['experiment'].update(experiment_dictionary)
 
 

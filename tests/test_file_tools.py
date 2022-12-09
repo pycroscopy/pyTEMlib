@@ -48,7 +48,8 @@ class TestFileFunctions(unittest.TestCase):
         dataset = datasets['Channel_000']
 
         data_chooser = ft.ChooseDataset(dataset)
-        self.assertIsInstance(data_chooser.dataset_list[0], sidpy.Dataset)
+        for dset in data_chooser.datasets.values():
+            self.assertIsInstance(dset, sidpy.Dataset)
         
     def test_update_directory_list(self):
         file_path = os.path.dirname(os.path.abspath(__file__)) 
@@ -87,12 +88,9 @@ class TestFileFunctions(unittest.TestCase):
         file_name = os.path.join(file_path, '../example_data/GOLD-NP-DIFF-2.hf5')
         h5_group = ft.save_dataset(datasets, file_name)
 
-        print('Structure_' in dataset.h5_dataset.parent)
-        print('Structure_' in dataset.h5_dataset.parent.parent)
-        print('Structure_' in h5_group['Channel_000'])
-
+        self.assertTrue('Structure_000' in dataset.h5_dataset.parent)
         h5_group.file.close()
-        
+
     def test_add_dataset(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         #file_name = os.path.join(file_path, '../example_data/GOLD-NP-DIFF.dm3')
