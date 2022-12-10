@@ -2,8 +2,8 @@ language: python
 python:
   - '3.7'
   - '3.8'
-  - '3.6'
-  - '3.5'
+  - '3.9'
+  - '3.10'
 before_install:
   - sudo apt-get update -qq
   - pip  install coveralls pytest
@@ -13,7 +13,7 @@ install: pip install .
 script: coverage run --source pyTEMlib setup.py test
 stages:
   - name: after_success
-    if: env(python) = "3.7"
+    if: env(python) = "3.9"
 after_success:
   - pip list
   - pip install sphinx>=3.1.1 sphinx-gallery sphinx-rtd-theme>=0.5.0 sphinx-autodoc-typehints numpydoc wget pysptools cvxopt scipy nbsphinx
@@ -33,7 +33,7 @@ deploy:
     local_dir: docs/_build/html
     on:
       branch: master
-      python: 3.7
+      python: 3.9
 # Github releases deployment
   - provider: releases
     skip_cleanup: true
@@ -58,4 +58,4 @@ deploy:
     on:
       tags: true
       branch: master
-      python: 3.7
+      python: 3.9
