@@ -34,10 +34,16 @@ from pyTEMlib.config_dir import config_path
 from pyTEMlib.sidpy_tools import *
 
 from pyTEMlib.sidpy_tools import *
+
+if SciFiReaders.__version__ < '0.0.6':
+    EMDReader = pyTEMlib.sidpy_tools.EMDReader
+else:
+    EMDReader = SciFiReaders.EMDReader
+
 Qt_available = True
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
-except ModuleNotFoundError :
+except ModuleNotFoundError:
     print('Qt dialogs are not available')
     Qt_available = False
 
@@ -188,23 +194,21 @@ class ChooseDataset(object):
         if not isinstance(self.datasets, dict):
             dataset_list = self.reader.read()
             self.datasets = {}
-            for dataset in  dataset_list:
+            for dataset in dataset_list:
                 self.datasets[dataset.title] = dataset
         order = []
-        keys =[]
+        keys = []
         for title, dset in self.datasets.items():
             if isinstance(dset, sidpy.Dataset):
                 if self.dataset_type is None or dset.data_type == self.data_type:
                     if 'Log' in title:
-                        position = dset.title.find('Log_') + 4
-                        order.append(int(dset.title[position:position + 3])+1)
+                        order.append(2)
                     else:
                         order.append(0)
                     keys.append(title)
         for index in np.argsort(order):
             self.dataset_names.append(keys[index])
             self.dataset_list.append(keys[index] + ': ' + self.datasets[keys[index]].title)
-
 
     def set_dataset(self, b):
         index = self.select_image.index
@@ -381,8 +385,6 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
         return filename
 
 
-
-
 def save_dataset(dataset, filename=None,  h5_group=None):
     """ Saves a dataset to a file in pyNSID format
     Parameters
@@ -393,7 +395,6 @@ def save_dataset(dataset, filename=None,  h5_group=None):
         name of file to be opened, if filename is None, a QT file dialog will try to open
     h5_group: hd5py.Group
         not used yet
-
     """
     if filename is None:
         filename = open_file_dialog_qt()
@@ -411,6 +412,7 @@ def save_dataset(dataset, filename=None,  h5_group=None):
         return h5_dataset.parent
     else:
         raise TypeError('Only sidpy.datasets or dictionaries can be saved with pyTEMlib')
+
 
 def save_single_dataset(h5_file, dataset, h5_group=None):
     if h5_group is None:
@@ -434,6 +436,7 @@ def save_single_dataset(h5_file, dataset, h5_group=None):
     dataset.h5_dataset = h5_dataset
     h5_dataset.file.flush()
     return h5_dataset
+
 
 def save_dataset_dictionary(h5_file, datasets):
     h5_measurement_group = sidpy.hdf.prov_utils.create_indexed_group(h5_file, 'Measurement_')
@@ -462,6 +465,7 @@ def h5_group_to_dict(group, group_dict={}):
     for key in group.keys():
         h5_group_to_dict(group[key], group_dict[group.name.split('/')[-1]])
     return group_dict
+
 
 def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file=False,
     """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
@@ -512,8 +516,9 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             dataset_dict = {}
             for index, dataset in enumerate(datasets):
                 title = dataset.title.split('/')[2]
+                dataset.title = dataset.title.split('/')[-1]
                 dataset_dict[title] = dataset
-                if index ==0:
+                if index == 0:
                     file = datasets[0].h5_dataset.file
                     master_group = datasets[0].h5_dataset.parent.parent.parent
             for key in master_group.keys():
@@ -548,7 +553,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                 print('This file type needs hyperspy to be installed to be able to be read')
                 return
         elif extension == '.emd':
-            reader = SciFiReaders.EMDReader(filename)
+            reader = EMDReader(filename)   # SciFiReaders.EMDReader(filename)
+
         else:   # extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
 
@@ -556,7 +562,6 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         basename, _ = os.path.splitext(file_name)
         if extension != '.emi':
             dset = reader.read()
-
 
         if extension in ['.dm3', '.dm4']:
             dset.title = (basename.strip().replace('-', '_')).split('/')[-1]
@@ -567,8 +572,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                     if 'ImageData' in dset.original_metadata['ImageList']['0']:
                         if 'Data' in dset.original_metadata['ImageList']['0']['ImageData']:
                             del dset.original_metadata['ImageList']['0']['ImageData']['Data']
-        ## dset.original_metadata['original_title'] = dset.title
-
+            dset.original_metadata['original_title'] = dset.title
 
         if isinstance(dset, list):
             if len(dset) < 1:
@@ -577,11 +581,17 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             else:
                 dataset_dict = {}
                 for index, dataset in enumerate(dset):
+                    if extension == '.emd':
+                        if 'experiment' in dataset.metadata:
+                            if 'detector' in dataset.metadata['experiment']:
+                                dataset.title = dataset.metadata['experiment']['detector']
+                        dataset.filename = basename.strip()
+                        dataset.metadata['filename'] = filename
                     dataset_dict[f'Channel_{index:03}'] = dataset
         else:
             dset.filename = basename.strip().replace('-', '_')
             read_essential_metadata(dset)
-            dataset_dict={'Channel_000': dset}
+            dataset_dict = {'Channel_000': dset}
         if write_hdf_file:
             h5_master_group = save_dataset(dataset_dict, filename=filename)
 
@@ -686,9 +696,6 @@ def read_nion_image_info(original_metadata):
     # print(exp_dictionary)
     if 'autostem' in exp_dictionary:
         pass
-        #print('auto')
-
-    # print(exp_dictionary.keys())
 
 
 def get_h5_filename(fname):
@@ -837,7 +844,6 @@ def add_dataset(dataset, h5_group=None):
     if hasattr(dataset, 'meta_data'):
         if 'analysis' in dataset.meta_data:
             log_group['analysis'] = dataset.meta_data['analysis']
-
 
     dataset.h5_dataset = h5_dataset
     return h5_dataset
