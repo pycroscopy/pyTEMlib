@@ -78,7 +78,6 @@ def get_wavelength(e0):
     return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
 
 
-
 def fourier_transform(dset):
     """
         Reads information into dictionary 'tags', performs 'FFT', and provides a smoothed FT and reciprocal
@@ -178,7 +177,7 @@ def power_spectrum(dset, smoothing=3):
 
     """
 
-    fft_transform = dset.fft()
+    fft_transform = fourier_transform(dset)  # dset.fft()
     fft_mag = np.abs(fft_transform)
     fft_mag2 = ndimage.gaussian_filter(fft_mag, sigma=(smoothing, smoothing), order=0)
 
@@ -202,7 +201,6 @@ def power_spectrum(dset, smoothing=3):
     power_spec.title = 'power spectrum ' + power_spec.source
 
     return power_spec
-
 
 def diffractogram_spots(dset, spot_threshold):
     """Find spots in diffractogram and sort them by distance from center
@@ -272,7 +270,7 @@ def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
     fft_transform = fourier_transform(dset)
 
     # prepare mask
-    x, y = np.meshgrid(fft_transform.u.values, fft_transform.v.values)
+    x, y = np.meshgrid(fft_transform.v.values, fft_transform.u.values)
     mask = np.zeros(dset.shape)
 
     # mask reflections
@@ -500,10 +498,10 @@ def rigid_registration(dataset):
 
     crop_reg, input_crop = crop_image_stack(rig_reg, drift)
 
-    rigid_registered = sidpy.Dataset.from_array(data_array)
+    rigid_registered = sidpy.Dataset.from_array(crop_reg)
     rigid_registered.set_dimension(0, dataset._axes[frame_dim[0]])
-    rigid_registered.set_dimension(1, dataset._axes[image_dims[0]])
-    rigid_registered.set_dimension(2, dataset._axes[image_dims[1]])
+    rigid_registered.set_dimension(1, dataset._axes[image_dims[0]][input_crop[0]:input_crop[1]])
+    rigid_registered.set_dimension(2, dataset._axes[image_dims[1]][input_crop[2]:input_crop[3]])
     rigid_registered.data_type = 'Image_stack'
 
     rigid_registered.title = 'Rigid Registration'
