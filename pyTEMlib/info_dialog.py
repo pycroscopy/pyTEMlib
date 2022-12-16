@@ -235,7 +235,7 @@ if Qt_available:
 
             if exposure_time > 0:
                 dispersion = self.energy_scale[1] - self.energy_scale[0]
-                self.experiment['flux_ppm'] = np.sum(np.array(dset*1e-6))/exposure_time*self.experiment['exposure_time'] / dispersion
+                self.experiment['flux_ppm'] = np.sum(np.array(dset*1e-6))/exposure_time*self.experiment['exposure_time']
                 self.experiment['flux_units'] = 'counts'
                 self.experiment['flux_source'] = file_name
                 self.experiment['flux_metadata'] = dset.metadata
