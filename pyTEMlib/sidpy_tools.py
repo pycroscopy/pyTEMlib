@@ -174,14 +174,13 @@ class EMDReader(sidpy.Reader):
                                                                quantity='distance',
                                                                dimension_type='spatial'))
         else:
-            # Factor of 1000 faster than in one step, there is a problem with unordered chunking in hdf5.
-            # I could not reproduce the speed win in hyperspy.
-            data_array = np.empty([self.data_array.shape[2], self.data_array.shape[0], self.data_array.shape[1]])
-            for i in range(self.data_array.shape[2]):
-                data_array[i] = np.array(self.data_array[:, :, i])
-            self.data_array = data_array
+             # Speedup copied from hyperspy.ioplugins.EMDReader.FEEMDReader
 
-            # self.data_array = np.moveaxis(self.data_array, source=[0, 1, 2], destination=[2, 0, 1])
+            data_array = np.empty(self.data_array.shape)
+            self.data_array.read_direct(data_array)
+            self.data_array = np.moveaxis(data_array, source=[0, 1, 2], destination=[2, 0, 1])
+            
+            self.data_array = np.moveaxis(self.data_array, source=[0, 1, 2], destination=[2, 0, 1])
             self.datasets.append(sidpy.Dataset.from_array(self.data_array))
             self.datasets[-1].rechunk([1, self.data_array.shape[0], self.data_array.shape[1]])
             self.datasets[-1].data_type = 'image_stack'
