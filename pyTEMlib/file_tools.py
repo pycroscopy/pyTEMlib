@@ -35,11 +35,6 @@ from pyTEMlib.sidpy_tools import *
 
 from pyTEMlib.sidpy_tools import *
 
-if SciFiReaders.__version__ < '0.0.6':
-    EMDReader = pyTEMlib.sidpy_tools.EMDReader
-else:
-    EMDReader = SciFiReaders.EMDReader
-
 Qt_available = True
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
@@ -553,7 +548,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                 print('This file type needs hyperspy to be installed to be able to be read')
                 return
         elif extension == '.emd':
-            reader = EMDReader(filename)   # SciFiReaders.EMDReader(filename)
+            reader = SciFiReaders.EMDReader(filename)
 
         else:   # extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
