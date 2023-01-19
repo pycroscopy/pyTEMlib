@@ -207,7 +207,9 @@ class ChooseDataset(object):
 
     def set_dataset(self, b):
         index = self.select_image.index
-        self.dataset = self.datasets[self.dataset_names[index]]
+        self.key = self.dataset_names[index]
+        self.dataset = self.datasets[self.key]
+        self.dataset.title = self.dataset.title.split('/')[-1]
         self.dataset.title = self.dataset.title.split('/')[-1]
 
 
@@ -361,11 +363,11 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     # determine file types by extension
     if file_types is None:
-        file_types = 'TEM files (*.dm3 *.emd *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
+        file_types = 'TEM files (*.dm3 *.dm4 *.emd *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
                      'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
     elif file_types == 'pyNSID':
-        file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
-                     'DM files (*.dm3);;Nion files (*.ndata *.h5);;All files (*)'
+        file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.dm4 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
+                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
 
         # file_types = [("TEM files",["*.dm*","*.hf*","*.ndata" ]),("pyNSID files","*.hf5"),("DM files","*.dm*"),
         # ("Nion files",["*.h5","*.ndata"]),("all files","*.*")]
@@ -539,16 +541,30 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DM3Reader(filename)
 
-        elif extension == '.emi':
+        elif extension in ['.emi', '.emd']:
             try:
                 import hyperspy.api as hs
                 s = hs.load(filename)
-                dset = SciFiReaders.convert_hyperspy(s)
+                dataset_dict = {}
+                spectrum_number = 0
+                if not isinstance(s, list):
+                    s = [s]
+                for index, datum in enumerate(s):
+                    dset = SciFiReaders.convert_hyperspy(datum)
+                    if datum.data.ndim == 1:
+                        dset.title = dset.title + f'_{spectrum_number}_Spectrum'
+                        spectrum_number +=1
+                    elif datum.data.ndim == 3:
+                        dset.title = dset.title +'_SI'
+                    dset = dset.T
+                    dset.title = dset.title[11:]
+                    dataset_dict[f'Channel_{index:03d}']=dset
+                return dataset_dict
             except ImportError:
                 print('This file type needs hyperspy to be installed to be able to be read')
                 return
-        elif extension == '.emd':
-            reader = SciFiReaders.EMDReader(filename)
+        # elif extension == '.emd':
+        #     reader = SciFiReaders.EMDReader(filename)
 
         else:   # extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
@@ -559,15 +575,13 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             dset = reader.read()
 
         if extension in ['.dm3', '.dm4']:
-            dset.title = (basename.strip().replace('-', '_')).split('/')[-1]
-            if 'PageSetup' in dset.original_metadata:
-                del dset.original_metadata['PageSetup']
-            if 'ImageList' in dset.original_metadata:
-                if '0' in dset.original_metadata['ImageList']:
-                    if 'ImageData' in dset.original_metadata['ImageList']['0']:
-                        if 'Data' in dset.original_metadata['ImageList']['0']['ImageData']:
-                            del dset.original_metadata['ImageList']['0']['ImageData']['Data']
-            dset.original_metadata['original_title'] = dset.title
+            title = (basename.strip().replace('-', '_')).split('/')[-1]
+            if not isinstance(dset, list):
+                print('Please use new SciFiReaders Package for full functionality')
+                dset = [dset]
+            if 'PageSetup' in dset[0].original_metadata:
+                del dset[0].original_metadata['PageSetup']
+            dset[0].original_metadata['original_title'] = title
 
         if isinstance(dset, list):
             if len(dset) < 1:
@@ -580,13 +594,16 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                         if 'experiment' in dataset.metadata:
                             if 'detector' in dataset.metadata['experiment']:
                                 dataset.title = dataset.metadata['experiment']['detector']
-                        dataset.filename = basename.strip()
-                        dataset.metadata['filename'] = filename
+                    dataset.filename = basename.strip()
+                    read_essential_metadata(dataset)
+                    print(dataset.metadata)
+                    dataset.metadata['filename'] = filename
                     dataset_dict[f'Channel_{index:03}'] = dataset
         else:
             dset.filename = basename.strip().replace('-', '_')
             read_essential_metadata(dset)
             dataset_dict = {'Channel_000': dset}
+            dataset.metadata['filename'] = filename
         if write_hdf_file:
             h5_master_group = save_dataset(dataset_dict, filename=filename)
 
@@ -627,8 +644,7 @@ def read_dm3_info(original_metadata):
 
     if 'DM' not in original_metadata:
         return {}
-    main_image = original_metadata['DM']['chosen_image']
-    exp_dictionary = original_metadata['ImageList'][str(main_image)]['ImageTags']
+    exp_dictionary = original_metadata['ImageTags']
     experiment = {}
     if 'EELS' in exp_dictionary:
         if 'Acquisition' in exp_dictionary['EELS']:
@@ -804,44 +820,32 @@ def log_results(h5_group, dataset=None, attributes=None):
     return log_group
 
 
-def add_dataset(dataset, h5_group=None):
-    """Write data to hdf5 file
+def add_dataset_from_file(datasets, filename=None, keyname='Log'):
+    """Add dataset to datasets dictionary
 
     Parameters
     ----------
-    dataset: sidpy.Dataset
-        data to write to file
-    h5_group: None, sidpy.Dataset, h5py.Group, h5py.Dataset, h5py.File
-        identifier to which group the data are added (if None the dataset must have a valid h5_dataset)
+    dataset: dict 
+        dictionary to write to file
+    filename: str, default: None, 
+        name of file to open, if None, adialog will appear
+    keyname: str, default: 'Log'
+        name for key in dictionary with running number being added
+
 
     Returns
     -------
-    log_group: h5py.Dataset
-        reference the dataset has been written to. (is also stored in h5_dataset attribute of sidpy.Dataset)
+        nothing
     """
 
-    if h5_group is None:
-        if isinstance(dataset.h5_dataset, h5py.Dataset):
-            h5_group = dataset.h5_dataset.parent.parent.parent
-    if isinstance(h5_group, h5py.Dataset):
-        h5_group = h5_group.parent.parent.parent
-    elif isinstance(h5_group, sidpy.Dataset):
-        h5_group = h5_group.h5_dataset.parent.parent.parent
-    elif isinstance(h5_group, h5py.File):
-        h5_group = h5_group['Measurement_000']
-
-    if not isinstance(h5_group, h5py.Group):
-        raise TypeError('Need a valid identifier for a hdf5 group to store data in')
-
-    log_group = sidpy.hdf.prov_utils.create_indexed_group(h5_group, 'Channel_')
-    h5_dataset = pyNSID.hdf_io.write_nsid_dataset(dataset, log_group)
-
-    if hasattr(dataset, 'meta_data'):
-        if 'analysis' in dataset.meta_data:
-            log_group['analysis'] = dataset.meta_data['analysis']
-
-    dataset.h5_dataset = h5_dataset
-    return h5_dataset
+    datasets2 =  open_file(filename=filename)
+    index = 0
+    for key in datasets.keys():
+        if keyname in key:
+            if int(key[-3:]) >= index:
+                index = int(key[-3:])+1
+    for dataset in datasets2.values():
+        datasets[keyname+f'_{index:03}'] =  dataset
 
 
 # ##
