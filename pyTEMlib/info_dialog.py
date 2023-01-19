@@ -242,7 +242,7 @@ if Qt_available:
                 if isinstance(flux_dataset, sidpy.Dataset):
                     exposure_time = -1.0
                     flux_dataset = self.datasets[key]
-                    if flux_dataset.data_type.name == 'IMAGE' or 'SPECTRUM' in dset.data_type.name:
+                    if flux_dataset.data_type.name == 'IMAGE' or 'SPECTRUM' in flux_dataset.data_type.name:
                         if 'exposure_time' in flux_dataset.metadata['experiment']:
                             exposure_time = flux_dataset.metadata['experiment']['exposure_time']
                         else:
