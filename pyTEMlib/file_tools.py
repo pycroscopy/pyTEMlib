@@ -596,14 +596,14 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                                 dataset.title = dataset.metadata['experiment']['detector']
                     dataset.filename = basename.strip()
                     read_essential_metadata(dataset)
-                    print(dataset.metadata)
                     dataset.metadata['filename'] = filename
                     dataset_dict[f'Channel_{index:03}'] = dataset
         else:
             dset.filename = basename.strip().replace('-', '_')
             read_essential_metadata(dset)
+            dset.metadata['filename'] = filename
             dataset_dict = {'Channel_000': dset}
-            dataset.metadata['filename'] = filename
+            
         if write_hdf_file:
             h5_master_group = save_dataset(dataset_dict, filename=filename)
 
