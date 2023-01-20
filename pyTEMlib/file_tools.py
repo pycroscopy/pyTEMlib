@@ -644,6 +644,8 @@ def read_dm3_info(original_metadata):
 
     if 'DM' not in original_metadata:
         return {}
+    if 'ImageTags' not in original_metadata:
+        return {}
     exp_dictionary = original_metadata['ImageTags']
     experiment = {}
     if 'EELS' in exp_dictionary:

@@ -48,7 +48,7 @@ setuptools.setup(
     author_email="gduscher@utk.edu",
 
     install_requires=['scipy', 'numpy', 'pillow',  'ase', 'tqdm', 'plotly', 'pandas', 'requests', 'lxml',
-                      'spglib', 'scikit-image', 'scikit-learn', 'pyNSID>=0.0.6', 'sidpy>=0.11.1', 'SciFiReaders>=0.0.6'],  # 'PyQt5> 1.0'],#
+                      'spglib', 'scikit-image', 'scikit-learn', 'pyNSID>=0.0.7', 'sidpy>=0.11.2', 'SciFiReaders>=0.0.7'],  # 'PyQt5> 1.0'],#
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     platforms=['Linux', 'Mac OSX', 'Windows 11/10/8.1/8/7'],
