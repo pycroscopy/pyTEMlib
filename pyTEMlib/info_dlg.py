@@ -155,10 +155,23 @@ if Qt_available:
             self.layout.addWidget(self.binningLabel, row, 0)
             self.layout.addWidget(self.binningEdit, row, 1)
 
+            
+            
             row += 1
-            self.get_flux_button = QtWidgets.QPushButton('Get Flux', dialog)
-            self.layout.addWidget(self.get_flux_button, row, 1)
-
+            self.check_probability = QtWidgets.QCheckBox("Probab.")
+            self.check_probability.setObjectName('probability')
+            
+            self.probabilityLabel = QtWidgets.QLabel("Flux")
+            self.get_flux_button = QtWidgets.QPushButton('', )
+            self.flux_choice = ['None', 'Open File']
+            self.select_flux = QtWidgets.QComboBox()
+            self.select_flux.setEditable(False)
+            self.select_flux.addItems(self.flux_choice)
+            self.layout.addWidget(self.probabilityLabel, row, 0)
+            self.layout.addWidget(self.select_flux, row, 1)
+            self.layout.addWidget(self.check_probability, row, 2)
+            self.select_flux.setObjectName('select_flux_list')
+            
             row += 1
             self.conversionLabel = QtWidgets.QLabel("Conversion")
             self.conversionEdit = QtWidgets.QLineEdit(" 25.0")

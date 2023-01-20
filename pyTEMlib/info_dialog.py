@@ -33,29 +33,36 @@ if Qt_available:
         The dialog operates on a sidpy dataset
         """
 
-        def __init__(self, dataset=None):
+        def __init__(self, datasets=None, key=None):
             super().__init__(None, QtCore.Qt.WindowStaysOnTopHint)
             # Create an instance of the GUI
             self.ui = info_dlg.UiDialog(self)
             self.set_action()
+            self.datasets = datasets
 
-            self.dataset = dataset
+            
             self.spec_dim = []
             self.energy_scale = np.array([])
             self.experiment = {}
             self.energy_dlg = None
             self.axis = None
+            
+            self.y_scale = 1.0
+            self.change_y_scale = 1.0
             self.show()
 
-            if dataset is None:
+            if self.datasets is None:
                 # make a dummy dataset for testing
-                dataset = ft.make_dummy_dataset(sidpy.DataType.SPECTRUM)
-            if not isinstance(dataset, sidpy.Dataset):
+                key = 'Channel_000'
+                self.datasets={key: ft.make_dummy_dataset(sidpy.DataType.SPECTRUM)}
+            self.dataset = self.datasets[key]
+            self.key = key
+            if not isinstance(self.dataset, sidpy.Dataset):
                 raise TypeError('dataset has to be a sidpy dataset')
 
-            self.set_dataset(dataset)
+            self.set_dataset(self.dataset)
 
-            self.dataset.plot()
+            view = self.dataset.plot()
             if hasattr(self.dataset.view, 'axes'):
                 self.axis = self.dataset.view.axes[-1]
             elif hasattr(self.dataset.view, 'axis'):
@@ -90,6 +97,7 @@ if Qt_available:
             for key, item in minimum_info.items():
                 if key not in self.experiment:
                     self.experiment[key] = item
+            self.set_flux_list()
 
         def set_dimension(self):
             spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
@@ -178,17 +186,23 @@ if Qt_available:
                 spectrum = np.array(self.dataset)
                 self.axis = self.dataset.view.axis
 
+            spectrum *= self.y_scale
+
             x_limit = self.axis.get_xlim()
-            y_limit = self.axis.get_ylim()
+            y_limit = np.array(self.axis.get_ylim())
             self.axis.clear()
-            if self.experiment['flux_ppm'] > 0:
-                spectrum /= self.experiment['flux_ppm']
+            
 
             self.axis.plot(self.energy_scale, spectrum, label='spectrum')
             self.axis.set_xlim(x_limit)
+            if self.change_y_scale !=1.0:
+                y_limit *= self.change_y_scale
+                self.change_y_scale = 1.0
             self.axis.set_ylim(y_limit)
-            if self.experiment['flux_ppm'] > 0:
+            
+            if self.y_scale != 1.:
                 self.axis.set_ylabel('scattering intensity (ppm)')
+                
             self.axis.set_xlabel('energy_loss (eV)')
 
             self.figure.canvas.draw_idle()
@@ -218,38 +232,76 @@ if Qt_available:
             self.experiment['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
             self.update()
 
-        def set_flux(self, file_name=None):
-            dset = ft.open_file()
-            if dset is None:
-                return
-
-            exposure_time = -1.0
-
-            if dset.data_type.name == 'IMAGE' or 'SPECTRUM' in dset.data_type.name:
-                if 'exposure_time' in dset.metadata['experiment']:
-                    exposure_time = dset.metadata['experiment']['exposure_time']
-                else:
-                    exposure_time = 1.0
-                    dset.metadata['experiment']['exposure_time'] = -1
-                    print('Did not find exposure time assume 1s')
-
-            if exposure_time > 0:
-                dispersion = self.energy_scale[1] - self.energy_scale[0]
-                self.experiment['flux_ppm'] = np.sum(np.array(dset*1e-6))/exposure_time*self.experiment['exposure_time']
-                self.experiment['flux_units'] = 'counts'
-                self.experiment['flux_source'] = file_name
-                self.experiment['flux_metadata'] = dset.metadata
-                y_limit = self.axis.get_ylim()
-                self.axis.set_ylim(y_limit / self.experiment['flux_ppm'])
-
+        def set_flux(self, key):
+            self.ui.statusBar.showMessage('on_set_flux')
+            new_flux = 1.0
+            title = key
+            metadata = {}
+            if key in self.datasets.keys():
+                flux_dataset = self.datasets[key]
+                if isinstance(flux_dataset, sidpy.Dataset):
+                    exposure_time = -1.0
+                    flux_dataset = self.datasets[key]
+                    if flux_dataset.data_type.name == 'IMAGE' or 'SPECTRUM' in flux_dataset.data_type.name:
+                        if 'exposure_time' in flux_dataset.metadata['experiment']:
+                            exposure_time = flux_dataset.metadata['experiment']['exposure_time']
+                        else:
+                            exposure_time = 1.0
+                            flux_dataset.metadata['experiment']['exposure_time'] = -1
+                            print('Did not find exposure time assume 1s')
+                        if exposure_time > 0:
+                            new_flux  = np.sum(np.array(flux_dataset*1e-6))/exposure_time*exposure_time
+                            title = flux_dataset.title
+                            metadata = flux_dataset.metadata
+            self.experiment['flux_ppm'] = new_flux
+            self.experiment['flux_units'] = 'counts'
+            self.experiment['flux_source'] = title
+            self.experiment['flux_metadata'] = metadata
+    
             self.update()
 
-            self.plot()
-
         def on_check(self):
-            pass
+            sender = self.sender()
+        
+            if sender.objectName() == 'probability':
+                dispersion = self.energy_scale[1]-self.energy_scale[0]
+                if sender.isChecked():
+                    self.y_scale = 1/self.experiment['flux_ppm']*dispersion
+                    self.change_y_scale = 1/self.experiment['flux_ppm']*dispersion
+                else:
+                    self.y_scale = 1.
+                    self.change_y_scale = self.experiment['flux_ppm']/dispersion
+                self.plot()
+
+        def set_flux_list(self):
+            length_list = self.ui.select_flux.count()+1
+            for i in range(2, length_list):
+                self.ui.select_flux.removeItem(i)
+            for key in self.datasets.keys():
+                if isinstance(self.datasets[key], sidpy.Dataset):
+                    if self.datasets[key].title != self.dataset.title:
+                        self.ui.select_flux.addItem(key+': '+self.datasets[key].title)
+
+        def on_list_enter(self):
+            self.ui.statusBar.showMessage('on_list')
+            sender = self.sender()
+            if sender.objectName() == 'select_flux_list':
+                self.ui.statusBar.showMessage('list')
+                index = self.ui.select_flux.currentIndex()
+                self.ui.statusBar.showMessage('list'+str(index))
+                if index == 1:
+                    ft.add_dataset_from_file(self.datasets, keyname='Reference')
+                    self.set_flux_list()
+                else:
+                    key = str(self.ui.select_flux.currentText()).split(':')[0]
+                    self.set_flux(key)
+                    
+                self.update()
+        
+                
 
         def set_action(self):
+            self.ui.statusBar.showMessage('action')
             self.ui.offsetEdit.editingFinished.connect(self.on_enter)
             self.ui.dispersionEdit.editingFinished.connect(self.on_enter)
             self.ui.timeEdit.editingFinished.connect(self.on_enter)
@@ -264,6 +316,9 @@ if Qt_available:
             self.ui.fluxEdit.editingFinished.connect(self.on_enter)
             self.ui.VOAEdit.editingFinished.connect(self.on_enter)
             self.ui.energy_button.clicked.connect(self.set_energy_scale)
-            self.ui.get_flux_button.clicked.connect(self.set_flux)
+            self.ui.select_flux.activated[str].connect(self.on_list_enter)
+
+            self.ui.check_probability.clicked.connect(self.on_check)
+            
             self.ui.binXEdit.editingFinished.connect(self.on_enter)
             self.ui.binYEdit.editingFinished.connect(self.on_enter)

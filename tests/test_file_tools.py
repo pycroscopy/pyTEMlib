@@ -10,13 +10,10 @@ import h5py
 import sys
 import os
 import ase.build
-sys.path.insert(0, '../../pyNSID/')
-sys.path.insert(1, "../")
+sys.path.insert(0, "../")
 
 import sidpy
 import pyNSID
-print(sidpy.__version__)
-print('pyNSID', pyNSID.__version__)
 import pyTEMlib.file_tools as ft
 
 class TestFileFunctions(unittest.TestCase):

@@ -54,6 +54,9 @@ if Qt_available:
             self.dataset = dataset
             self.energy_scale = np.array([])
             self.model = np.array([])
+            self.y_scale = 1.0
+            self.change_y_scale = 1.0
+            
             self.edges = {}
 
             self.show_regions = False
@@ -138,7 +141,13 @@ if Qt_available:
                 self.ui.edit6.setText(f"{edge['onset']:.2f}")
                 self.ui.edit7.setText(f"{edge['start_exclude']:.2f}")
                 self.ui.edit8.setText(f"{edge['end_exclude']:.2f}")
-                self.ui.edit9.setText(f"{edge['areal_density']:.2e}")
+                if self.y_scale == 1.0:
+                    self.ui.edit9.setText(f"{edge['areal_density']:.2e}")
+                    self.ui.unit9.setText('a.u.')
+                else:
+                    dispersion = self.energy_scale[1]-self.energy_scale[0]
+                    self.ui.edit9.setText(f"{edge['areal_density']*self.y_scale*1e-6/dispersion:.2f}")
+                    self.ui.unit9.setText(r'atoms/nm$^2$')
             else:
                 self.ui.list3.setCurrentIndex(0)
                 self.ui.edit4.setText(str(0))
@@ -322,10 +331,12 @@ if Qt_available:
                     self.update()
 
             x_limit = self.axis.get_xlim()
-            y_limit = self.axis.get_ylim()
+            y_limit = np.array(self.axis.get_ylim())*self.change_y_scale
+            self.change_y_scale = 1.0
+            
             self.axis.clear()
 
-            line1, = self.axis.plot(self.energy_scale, spectrum, label='spectrum')
+            line1, = self.axis.plot(self.energy_scale, spectrum*self.y_scale, label='spectrum')
             lines = [line1]
 
             def onpick(event):
@@ -344,9 +355,9 @@ if Qt_available:
                 self.figure.canvas.draw()
 
             if len(self.model) > 1:
-                line2, = self.axis.plot(self.energy_scale, self.model, label='model')
-                line3, = self.axis.plot(self.energy_scale, spectrum - self.model, label='difference')
-                line4, = self.axis.plot(self.energy_scale, (spectrum - self.model) / np.sqrt(spectrum), label='Poisson')
+                line2, = self.axis.plot(self.energy_scale, self.model*self.y_scale, label='model')
+                line3, = self.axis.plot(self.energy_scale, (spectrum - self.model)*self.y_scale, label='difference')
+                line4, = self.axis.plot(self.energy_scale, (spectrum - self.model) / np.sqrt(spectrum)*self.y_scale, label='Poisson')
                 lines = [line1, line2, line3, line4]
                 lined = dict()
 
@@ -359,6 +370,13 @@ if Qt_available:
                 self.figure.canvas.mpl_connect('pick_event', onpick)
             self.axis.set_xlim(x_limit)
             self.axis.set_ylim(y_limit)
+            
+            if self.y_scale != 1.:
+                self.axis.set_ylabel('scattering intensity (ppm)')
+            else:
+                self.axis.set_ylabel('intensity (counts)')
+            self.axis.set_xlabel('energy_loss (eV)')
+                
 
             if self.ui.show_edges.isChecked():
                 self.show_edges()
@@ -475,10 +493,19 @@ if Qt_available:
 
             if sender.objectName() == 'edge_check':
                 self.show_regions = sender.isChecked()
-            if sender.objectName() == 'conv_ll':
+            elif sender.objectName() == 'conv_ll':
                 self.edges['use_low_loss'] = self.ui.check10.isChecked()
                 if self.ui.check10.isChecked():
                     self.low_loss()
+            elif sender.objectName() == 'probability':
+                dispersion = self.energy_scale[1]-self.energy_scale[0]
+                if sender.isChecked():
+                    self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm']*dispersion
+                    self.change_y_scale = 1/self.dataset.metadata['experiment']['flux_ppm']*dispersion
+                else:
+                    self.y_scale = 1.0
+                    self.change_y_scale = self.dataset.metadata['experiment']['flux_ppm']/dispersion
+                self.update()
             self.plot()
 
         def low_loss(self):
@@ -611,7 +638,8 @@ if Qt_available:
             self.ui.check10.clicked.connect(self.on_check)
             self.ui.select10.clicked.connect(self.on_check)
             self.ui.show_edges.clicked.connect(self.on_check)
-
+            self.ui.check_probability.clicked.connect(self.on_check)
+            
             self.ui.do_all_button.clicked.connect(self.do_all_button_click)
             self.ui.do_fit_button.clicked.connect(self.do_fit_button_click)
 

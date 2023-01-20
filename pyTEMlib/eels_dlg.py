@@ -217,6 +217,11 @@ if Qt_available:
             self.select10.setObjectName('fit_comp')
 
             row += 1
+            self.check_probability = QtWidgets.QCheckBox("Probab.")
+            self.check_probability.setObjectName('probability')
+            self.layout.addWidget(self.check_probability, row, 0)
+
+            row += 1
             self.progress = QtWidgets.QProgressBar()
             self.progress.setGeometry(0, 0, 300, 25)
             self.progress.setMaximum(100)
