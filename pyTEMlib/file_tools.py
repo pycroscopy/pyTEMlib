@@ -377,7 +377,7 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     if Qt_available:
         _ = get_qt_app()
-        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
+        filename = sidpy.io.interface_utils.savefile_dialog(file_types=file_types, file_path=path)
         save_path(filename)
         return filename
 
