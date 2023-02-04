@@ -377,6 +377,56 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
 
     if Qt_available:
         _ = get_qt_app()
+        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
+        save_path(filename)
+        return filename
+
+def save_file_dialog_qt(file_types=None):  # , multiple_files=False):
+    """Opens a File dialog which is used in open_file() function
+
+    This function uses pyQt5.
+    The app of the Gui has to be running for QT. Tkinter does not run on Macs at this point in time.
+    In jupyter notebooks use %gui Qt early in the notebook.
+
+    The file looks first for a path.txt file for the last directory you used.
+
+    Parameters
+    ----------
+    file_types : string
+        file type filter in the form of '*.hf5'
+
+
+    Returns
+    -------
+    filename : string
+        full filename with absolute path and extension as a string
+
+    Example
+    -------
+    >> import file_tools as ft
+    >> filename = ft.openfile_dialog()
+    >> print(filename)
+
+    """
+    """will start QT Application if not running yet and returns QApplication """
+
+    # determine file types by extension
+    if file_types is None:
+        file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.dm4 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
+                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
+    elif file_types == 'TEM':
+        file_types = 'TEM files (*.dm3 *.dm4 *.emd *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
+                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
+
+        
+        # file_types = [("TEM files",["*.dm*","*.hf*","*.ndata" ]),("pyNSID files","*.hf5"),("DM files","*.dm*"),
+        # ("Nion files",["*.h5","*.ndata"]),("all files","*.*")]
+
+    # Determine last path used
+    path = get_last_path()
+
+    if Qt_available:
+        _ = get_qt_app()
         filename = sidpy.io.interface_utils.savefile_dialog(file_types=file_types, file_path=path)
         save_path(filename)
         return filename
@@ -394,7 +444,7 @@ def save_dataset(dataset, filename=None,  h5_group=None):
         not used yet
     """
     if filename is None:
-        filename = open_file_dialog_qt()
+        filename = save_file_dialog_qt()
     h5_filename = get_h5_filename(filename)
     h5_file = h5py.File(h5_filename, mode='a')
     path, file_name = os.path.split(filename)
@@ -541,7 +591,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DM3Reader(filename)
 
-        elif extension in ['.emi', '.emd']:
+        elif extension in ['.emi']:
             try:
                 import hyperspy.api as hs
                 s = hs.load(filename)
@@ -563,11 +613,14 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             except ImportError:
                 print('This file type needs hyperspy to be installed to be able to be read')
                 return
-        # elif extension == '.emd':
-        #     reader = SciFiReaders.EMDReader(filename)
+        elif extension == '.emd':
+            reader = SciFiReaders.EMDReader(filename)
 
-        else:   # extension in ['.ndata', '.h5']:
+        elif extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
+
+        else:
+            raise NotImplementedError('extension not supported')
 
         path, file_name = os.path.split(filename)
         basename, _ = os.path.splitext(file_name)
@@ -590,12 +643,12 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             else:
                 dataset_dict = {}
                 for index, dataset in enumerate(dset):
-                    if extension == '.emd':
+                    if extension == '.emi':
                         if 'experiment' in dataset.metadata:
                             if 'detector' in dataset.metadata['experiment']:
                                 dataset.title = dataset.metadata['experiment']['detector']
                     dataset.filename = basename.strip()
-                    read_essential_metadata(dataset)
+                    # read_essential_metadata(dataset)
                     dataset.metadata['filename'] = filename
                     dataset_dict[f'Channel_{index:03}'] = dataset
         else:
@@ -607,7 +660,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         if write_hdf_file:
             h5_master_group = save_dataset(dataset_dict, filename=filename)
 
-        save_path(path)
+        save_path(filename)
         return dataset_dict
     else:
         print('file type not handled yet.')

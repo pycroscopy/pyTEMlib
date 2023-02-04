@@ -5,6 +5,8 @@ See xsec_xrpa function in eels_tools for usage.
 for pyTEMLib by Gerd
 
 copyright 2022, Gerd Duscher
+
+extended to larger energy scales 01/20/2023
 """
 
 import numpy as np
