@@ -7,7 +7,7 @@ The University of Tennessee, Knoxville
 Department of Materials Science & Engineering
 
 Sources:
-   \
+   
 Units:
     everything is in SI units, except length is given in nm and angles in mrad.
 
@@ -39,7 +39,8 @@ import requests
 
 from scipy.optimize import leastsq  # least square fitting routine fo scipy
 
-import pickle  # pkg_resources,
+import pickle  # pkg_resources
+import pyTEMlib.eels_tools as eels
 
 shell_occupancy={'K1':2, 'L1':2, 'L2':2, 'L3':4, 'M1':2, 'M2':2, 'M3':4,'M4':4,'M5':6, 
                  'N1':2, 'N2':2,' N3':4,'N4':4,'N5':6, 'N6':6,'N7':8,
@@ -83,11 +84,13 @@ def detector_response(detector_definition, energy_scale):
     detector_response(tags, energy_scale)
     """
     response = np.ones(len(energy_scale))
+    x_sections = eels.get_x_sections()
+    
     for key in detector_definition['layers']:
         Z = detector_definition['layers'][key]['Z']
         t = detector_definition['layers'][key]['thickness']
         photoabsorption = x_sections[str(Z)]['dat']/1e10/x_sections[str(Z)]['photoabs_to_sigma']
-        lin = interp1d(x_sections[str(Z)]['ene']., photoabsorption,kind='linear') 
+        lin = interp1d(x_sections[str(Z)]['ene'], photoabsorption,kind='linear') 
         mu = lin(energy_scale) * x_sections[str(Z)]['nominal_density']*100. #1/cm -> 1/m
 
         absorption = np.exp(-mu * t)
