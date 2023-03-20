@@ -85,8 +85,8 @@ if Qt_available:
             self.separator2.setText("Elements")
             self.layout.addWidget(self.separator2, row, 0, 1, 4)
             ######################################################################
-            # row += 1
-            self.auto_id_button = QtWidgets.QPushButton('Auto ID', dialog)
+            row += 1
+            self.auto_id_button = QtWidgets.QPushButton('AUto ID', dialog)
             self.select_button = QtWidgets.QPushButton('Select', dialog)
 
             self.layout.addWidget(self.auto_id_button, row, 0)

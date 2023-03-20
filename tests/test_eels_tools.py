@@ -54,7 +54,7 @@ class TestFileFunctions(unittest.TestCase):
         self.assertEqual(x['name'], 'Si')
 
     def test_list_all_edges(self):
-        z = eels.list_all_edges(14)
+        z, _ = eels.list_all_edges(14)
         self.assertEqual(z[:6], ' Si-K1')
 
     def test_find_major_edge(self):
