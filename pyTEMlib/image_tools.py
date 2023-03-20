@@ -19,7 +19,6 @@ import pyTEMlib.sidpy_tools
 
 from tqdm.auto import trange, tqdm
 
-
 # import itertools
 from itertools import product
 
@@ -201,6 +200,7 @@ def power_spectrum(dset, smoothing=3):
     power_spec.title = 'power spectrum ' + power_spec.source
 
     return power_spec
+
 
 def diffractogram_spots(dset, spot_threshold):
     """Find spots in diffractogram and sort them by distance from center
@@ -448,7 +448,7 @@ def rigid_registration(dataset):
     """
     Rigid registration of image stack with sub-pixel accuracy
 
-    Uses phase_cross_correlation from skimage.registration
+    Uses phase_cross_correlation from 'skimage.registration'
     (we determine drift from one image to next)
 
     Parameters
@@ -533,7 +533,25 @@ def rig_reg_drift(dset, rel_drift):
     drift: list of drift in pixel
     """
 
-    rig_reg = np.zeros(dset.shape)
+    frame_dim = []
+    spatial_dim = []
+    selection = []
+
+    for i, axis in dset._axes.items():
+        if axis.dimension_type.name == 'SPATIAL':
+            spatial_dim.append(i)
+            selection.append(slice(None))
+        else:
+            frame_dim.append(i)
+            selection.append(slice(0, 1))
+
+    if len(spatial_dim) != 2:
+        print('need two spatial dimensions')
+    if len(frame_dim) != 1:
+        print('need one frame dimensions')
+
+    rig_reg = np.zeros([dset.shape[frame_dim[0]], dset.shape[spatial_dim[0]], dset.shape[spatial_dim[1]]])
+
     # absolute drift
     drift = np.array(rel_drift).copy()
 
@@ -544,8 +562,9 @@ def rig_reg_drift(dset, rel_drift):
     drift = drift - center_drift
     # Shift images
     for i in range(rig_reg.shape[0]):
+        selection[frame_dim[0]] = slice(i, i+1)
         # Now we shift
-        rig_reg[i, :, :] = ndimage.shift(dset[i], [drift[i, 0], drift[i, 1]], order=3)
+        rig_reg[i, :, :] = ndimage.shift(dset[tuple(selection)].squeeze(), [drift[i, 0], drift[i, 1]], order=3)
     return rig_reg, drift
 
 

@@ -65,6 +65,7 @@ if Qt_available:
 
             if initial_elements is None:
                 initial_elements = [' ']
+            self.initial_elements = initial_elements
             if energy_scale is None:
                 energy_scale = [100., 150., 200.]
             self.parent = parent

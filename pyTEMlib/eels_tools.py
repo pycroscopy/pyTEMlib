@@ -254,7 +254,7 @@ def get_z(z):
     return z_out
 
 
-def list_all_edges(z):
+def list_all_edges(z, verbose=False):
     """List all ionization edges of an element with atomic number z
 
     Parameters
@@ -271,14 +271,19 @@ def list_all_edges(z):
     element = str(z)
     x_sections = get_x_sections()
     out_string = ''
-    print('Major edges')
+    if verbose:
+        print('Major edges')
+    edge_list = {x_sections[element]['name']: {}}
+    
     for key in all_edges:
         if key in x_sections[element]:
             if 'onset' in x_sections[element][key]:
-                print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
+                if verbose:
+                    print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
                 out_string = out_string + f" {x_sections[element]['name']}-{key}: " \
                                           f"{x_sections[element][key]['onset']:8.1f} eV /n"
-    return out_string
+                edge_list[x_sections[element]['name']][key] =  x_sections[element][key]['onset']
+    return out_string, edge_list
 
 
 def find_major_edges(edge_onset, maximal_chemical_shift=5.):
@@ -432,6 +437,135 @@ def find_edges(dataset, sensitivity=2.5):
     return selected_edges
 
 
+def assign_likely_edges(edge_channels, energy_scale): 
+    edges_in_list = []
+    result = {}
+    for channel in edge_channels: 
+        if channel not in edge_channels[edges_in_list]:
+            shift = 5
+            element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift)
+            while len(element_list) < 1:
+                shift+=1
+                element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift)
+
+            if len(element_list) > 1:
+                while len(element_list) > 0:
+                    shift-=1
+                    element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift)
+                element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift+1)
+            element = (element_list[:4]).strip()
+            z = get_z(element)
+            result[element] =[]
+            _, edge_list = list_all_edges(z)
+
+            for peak in edge_list:
+                for edge in edge_list[peak]:
+                    possible_minor_edge = np.argmin(np.abs(energy_scale[edge_channels]-edge_list[peak][edge]))
+                    if np.abs(energy_scale[edge_channels[possible_minor_edge]]-edge_list[peak][edge]) < 3:
+                        #print('nex', next_e)
+                        edges_in_list.append(possible_minor_edge)
+                        
+                        result[element].append(edge)
+                    
+    return result
+
+
+def auto_id_edges(dataset):
+    edge_channels = identify_edges(dataset)
+    dim = dataset.get_spectrum_dims()
+    energy_scale = np.array(dataset._axes[dim[0]])
+    found_edges = assign_likely_edges(edge_channels, energy_scale)
+    return found_edges
+
+
+def identify_edges(dataset, noise_level=2.0):
+    """
+    Using first derivative to determine edge onsets
+    Any peak in first derivative higher than noise_level times standard deviation will be considered
+    
+    Parameters
+    ----------
+    dataset: sidpy.Dataset
+        the spectrum
+    noise_level: float
+        ths number times standard deviation in first derivative decides on whether an edge onset is significant
+        
+    Return
+    ------
+    edge_channel: numpy.ndarray
+    
+    """
+    dim = dataset.get_spectrum_dims()
+    energy_scale = np.array(dataset._axes[dim[0]])
+    dispersion = get_slope(energy_scale)
+    spec = scipy.ndimage.gaussian_filter(dataset, 3/dispersion)  # smooth with 3eV wideGaussian
+
+    first_derivative = spec - np.roll(spec, +2) 
+    first_derivative[:3] = 0
+    first_derivative[-3:] = 0
+
+    # find if there is a strong edge at high energy_scale
+    noise_level = noise_level*np.std(first_derivative[3:50])
+    [edge_channels, _] = scipy.signal.find_peaks(first_derivative, noise_level)
+    
+    return edge_channels
+
+
+def add_element_to_dataset(dataset, z):
+    """
+    """
+    # We check whether this element is already in the
+    energy_scale = dataset.energy_loss
+    zz = get_z(z)
+    if 'edges' not in dataset.metadata:
+         dataset.metadata['edges'] = {'model': {}, 'use_low_loss': False}
+    index = 0
+    for key, edge in dataset.metadata['edges'].items():
+        if key.isdigit():
+            index += 1
+            if 'z' in edge:
+                if zz == edge['z']:
+                    index = int(key)
+                    break
+
+    major_edge = ''
+    minor_edge = ''
+    all_edges = {}
+    x_section = get_x_sections(zz)
+    edge_start = 10  # int(15./ft.get_slope(self.energy_scale)+0.5)
+    for key in x_section:
+        if len(key) == 2 and key[0] in ['K', 'L', 'M', 'N', 'O'] and key[1].isdigit():
+            if energy_scale[edge_start] < x_section[key]['onset'] < energy_scale[-edge_start]:
+                if key in ['K1', 'L3', 'M5', 'M3']:
+                    major_edge = key
+                
+                all_edges[key] = {'onset': x_section[key]['onset']}
+
+    if major_edge != '':
+        key = major_edge
+    elif minor_edge != '':
+        key = minor_edge
+    else:
+        print(f'Could not find no edge of {zz} in spectrum')
+        return False
+
+    
+    if str(index) not in dataset.metadata['edges']:
+        dataset.metadata['edges'][str(index)] = {}
+
+    start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
+    end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
+
+    dataset.metadata['edges'][str(index)] = {'z': zz, 'symmetry': key, 'element': elements[zz],
+                              'onset': x_section[key]['onset'], 'end_exclude': end_exclude,
+                              'start_exclude': start_exclude}
+    dataset.metadata['edges'][str(index)]['all_edges'] = all_edges
+    dataset.metadata['edges'][str(index)]['chemical_shift'] = 0.0
+    dataset.metadata['edges'][str(index)]['areal_density'] = 0.0
+    dataset.metadata['edges'][str(index)]['original_onset'] = dataset.metadata['edges'][str(index)]['onset']
+    return True
+
+
 def make_edges(edges_present, energy_scale, e_0, coll_angle, low_loss=None):
     """Makes the edges dictionary for quantification
 
@@ -489,6 +623,48 @@ def make_edges(edges_present, energy_scale, e_0, coll_angle, low_loss=None):
     edges = make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss)
 
     return edges
+
+def fit_dataset(dataset):
+    energy_scale = dataset.energy_loss
+    if 'fit_area' not in dataset.metadata['edges']:
+        dataset.metadata['edges']['fit_area'] = {}
+    if 'fit_start' not in dataset.metadata['edges']['fit_area']:
+        dataset.metadata['edges']['fit_area']['fit_start'] = energy_scale[50]
+    if 'fit_end' not in dataset.metadata['edges']['fit_area']:
+        dataset.metadata['edges']['fit_area']['fit_end'] = energy_scale[-2]
+    dataset.metadata['edges']['use_low_loss'] = False
+        
+    if 'experiment' in dataset.metadata:
+        exp = dataset.metadata['experiment']
+        if 'convergence_angle' not in exp:
+            raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
+        alpha = exp['convergence_angle']
+        beta = exp['collection_angle']
+        beam_kv = exp['acceleration_voltage']
+        energy_scale = dataset.energy_loss
+        eff_beta = effective_collection_angle(energy_scale, alpha, beta, beam_kv)
+        edges = make_cross_sections(dataset.metadata['edges'], np.array(energy_scale), beam_kv, eff_beta)
+        dataset.metadata['edges'] = fit_edges2(dataset, energy_scale, edges)
+        areal_density = []
+        elements = []
+        for key in edges:
+            if key.isdigit():  # only edges have numbers in that dictionary
+                elements.append(edges[key]['element'])
+                areal_density.append(edges[key]['areal_density'])
+        areal_density = np.array(areal_density)
+        out_string = '\nRelative composition: \n'
+        for i, element in enumerate(elements):
+            out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.1f}%  '
+
+        print(out_string)
+
+
+def auto_chemical_composition(dataset):
+
+    found_edges = auto_id_edges(dataset)
+    for key in found_edges:
+        add_element_to_dataset(dataset, key)
+    fit_dataset(dataset)
 
 
 def make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss=None):
