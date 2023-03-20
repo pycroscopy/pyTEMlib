@@ -59,20 +59,18 @@ if Qt_available:
             
             self.edges = {}
 
+            
             self.show_regions = False
             self.show()
 
             self.set_dataset(dataset)
-            # TODO: set elements does not work correctly for periodic table
-            # selected_edges = eels.find_edges(dataset, sensitivity=3)
-            selected_edges = []
             initial_elements = []
 
-            for edge in selected_edges:
-                initial_elements.append(edge.split('-')[0])
-            if len(initial_elements) > 0:
-                self.set_elements(initial_elements)
-
+            for key in self.edges:
+                if key.isdigit():
+                    if 'element' in self.edges[key]:
+                        initial_elements.append(self.edges[key]['element'])
+           
             self.pt_dialog = eels_dialog_utilities.PeriodicTableDialog(energy_scale=self.energy_scale,
                                                                        initial_elements=initial_elements)
             self.pt_dialog.signal_selected[list].connect(self.set_elements)
@@ -233,8 +231,8 @@ if Qt_available:
             elif sender.objectName() == 'element_edit':
                 if str(sender.displayText()).strip() == '0':
                     sender.setText('PT')
-                    self.pt_dialog.energy_scale = self.energy_scale
-                    self.pt_dialog.show()
+                    #self.pt_dialog.energy_scale = self.energy_scale
+                    #self.pt_dialog.show()
                 else:
                     self.update_element(str(sender.displayText()).strip())
                 self.update()
@@ -621,6 +619,22 @@ if Qt_available:
             self.update()
             self.plot()
 
+        def do_auto_id_button_click(self):
+            found_edges = eels.auto_id_edges(self.dataset)
+            selected_elements = []
+            for key in found_edges:
+                self.set_elements([key])
+                selected_elements.append(key)
+            for button in self.pt_dialog.button:
+                if button.text() in selected_elements:
+                    button.setChecked(True)
+            self.update()
+
+        def do_select_button_click(self):
+            self.pt_dialog.energy_scale = self.energy_scale
+            self.pt_dialog.show()
+            self.update()
+
         def set_action(self):
             self.ui.edit1.editingFinished.connect(self.on_enter)
             self.ui.edit2.editingFinished.connect(self.on_enter)
@@ -642,6 +656,8 @@ if Qt_available:
             
             self.ui.do_all_button.clicked.connect(self.do_all_button_click)
             self.ui.do_fit_button.clicked.connect(self.do_fit_button_click)
+            self.ui.auto_id_button.clicked.connect(self.do_auto_id_button_click)
+            self.ui.select_button.clicked.connect(self.do_select_button_click)
 
 
     class CurveVisualizer(object):
