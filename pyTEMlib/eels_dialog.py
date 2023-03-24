@@ -620,14 +620,30 @@ if Qt_available:
             self.plot()
 
         def do_auto_id_button_click(self):
+            if '0' not in self.edges:
+                self.edges['0'] ={}
             found_edges = eels.auto_id_edges(self.dataset)
+        
+            to_delete = []
+            if len(found_edges) >0:
+                for key in self.edges:
+                    if key.isdigit():
+                        to_delete.append(key)
+            for key in to_delete:
+                del self.edges[key]
+            if len(to_delete) == 0:
+                self.edges['0'] = {}
+            
             selected_elements = []
             for key in found_edges:
-                self.set_elements([key])
                 selected_elements.append(key)
+            self.set_elements(selected_elements)
+                
             for button in self.pt_dialog.button:
                 if button.text() in selected_elements:
                     button.setChecked(True)
+                else:
+                    button.setChecked(False)
             self.update()
 
         def do_select_button_click(self):
