@@ -302,85 +302,86 @@ if Qt_available:
                             onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift'])
                             # if 'sym' == edge['symmetry']:
                             edges.append([key, f"{element}-{sym}", onsets[-1]])
-            for key, peak in self.peaks['peaks'].items():
-                if key.isdigit():
-                    distance = self.energy_scale[-1]
-                    index = -1
-                    for ii, onset in enumerate(onsets):
-                        if onset < peak['position'] < onset+50:
-                            if distance > np.abs(peak['position'] - onset):
-                                distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
-                                distance_onset = peak['position'] - onset
-                                index = ii
-                    if index >= 0:
-                        peak['associated_edge'] = edges[index][1]  # check if more info is necessary
-                        peak['distance_to_onset'] = distance_onset
+                for key, peak in self.peaks['peaks'].items():
+                    if key.isdigit():
+                        distance = self.energy_scale[-1]
+                        index = -1
+                        for ii, onset in enumerate(onsets):
+                            if onset < peak['position'] < onset+50:
+                                if distance > np.abs(peak['position'] - onset):
+                                    distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
+                                    distance_onset = peak['position'] - onset
+                                    index = ii
+                        if index >= 0:
+                            peak['associated_edge'] = edges[index][1]  # check if more info is necessary
+                            peak['distance_to_onset'] = distance_onset
 
         def find_white_lines(self):
-            white_lines = {}
-            for index, peak in self.peaks['peaks'].items():
-                if index.isdigit():
-                    if 'associated_edge' in peak:
-                        if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
-                            if peak['distance_to_onset'] < 10:
-                                area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
-                                if peak['associated_edge'] not in white_lines:
-                                    white_lines[peak['associated_edge']] = 0.
-                                if area > 0:
-                                    white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
-            white_line_ratios = {}
-            white_line_sum = {}
-            for sym, area in white_lines.items():
-                if sym[-2:] in ['L2', 'M4', 'M2']:
-                    if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
-                        if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
-                            white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
-                                f"{sym[:-1]}{int(sym[-1]) + 1}"]
-                            white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
-                                        area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
+            if 'edges' in self.dataset.metadata:
+                white_lines = {}
+                for index, peak in self.peaks['peaks'].items():
+                    if index.isdigit():
+                        if 'associated_edge' in peak:
+                            if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
+                                if peak['distance_to_onset'] < 10:
+                                    area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
+                                    if peak['associated_edge'] not in white_lines:
+                                        white_lines[peak['associated_edge']] = 0.
+                                    if area > 0:
+                                        white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
+                white_line_ratios = {}
+                white_line_sum = {}
+                for sym, area in white_lines.items():
+                    if sym[-2:] in ['L2', 'M4', 'M2']:
+                        if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
+                            if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
+                                white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
+                                    f"{sym[:-1]}{int(sym[-1]) + 1}"]
+                                white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
+                                            area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
 
-                            areal_density = 1.
-                            if 'edges' in self.dataset.metadata:
-                                for key, edge in self.dataset.metadata['edges'].items():
-                                    if key.isdigit():
-                                        if edge['element'] == sym.split('-')[0]:
-                                            areal_density = edge['areal_density']
-                                            break
-                            white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
+                                areal_density = 1.
+                                if 'edges' in self.dataset.metadata:
+                                    for key, edge in self.dataset.metadata['edges'].items():
+                                        if key.isdigit():
+                                            if edge['element'] == sym.split('-')[0]:
+                                                areal_density = edge['areal_density']
+                                                break
+                                white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
 
-            self.peaks['white_lines'] = white_lines
-            self.peaks['white_line_ratios'] = white_line_ratios
-            self.peaks['white_line_sums'] = white_line_sum
-            self.ui.wl_list = []
-            self.ui.wls_list = []
-            if len(self.peaks['white_line_ratios']) > 0:
-                for key in self.peaks['white_line_ratios']:
-                    self.ui.wl_list.append(key)
-                for key in self.peaks['white_line_sums']:
-                    self.ui.wls_list.append(key)
+                self.peaks['white_lines'] = white_lines
+                self.peaks['white_line_ratios'] = white_line_ratios
+                self.peaks['white_line_sums'] = white_line_sum
+                self.ui.wl_list = []
+                self.ui.wls_list = []
+                if len(self.peaks['white_line_ratios']) > 0:
+                    for key in self.peaks['white_line_ratios']:
+                        self.ui.wl_list.append(key)
+                    for key in self.peaks['white_line_sums']:
+                        self.ui.wls_list.append(key)
 
-                self.ui.listwl.clear()
-                self.ui.listwl.addItems(self.ui.wl_list)
-                self.ui.listwl.setCurrentIndex(0)
-                self.ui.unitswl.setText(f"{self.peaks['white_line_ratios'][self.ui.wl_list[0]]:.2f}")
+                    self.ui.listwl.clear()
+                    self.ui.listwl.addItems(self.ui.wl_list)
+                    self.ui.listwl.setCurrentIndex(0)
+                    self.ui.unitswl.setText(f"{self.peaks['white_line_ratios'][self.ui.wl_list[0]]:.2f}")
 
-                self.ui.listwls.clear()
-                self.ui.listwls.addItems(self.ui.wls_list)
-                self.ui.listwls.setCurrentIndex(0)
-                self.ui.unitswls.setText(f"{self.peaks['white_line_sums'][self.ui.wls_list[0]]*1e6:.4f} ppm")
-            else:
-                self.ui.wl_list.append('Ratio')
-                self.ui.wls_list.append('Sum')
+                    self.ui.listwls.clear()
+                    self.ui.listwls.addItems(self.ui.wls_list)
+                    self.ui.listwls.setCurrentIndex(0)
+                    self.ui.unitswls.setText(f"{self.peaks['white_line_sums'][self.ui.wls_list[0]]*1e6:.4f} ppm")
+                else:
+                    self.ui.wl_list.append('Ratio')
+                    self.ui.wls_list.append('Sum')
 
-                self.ui.listwl.clear()
-                self.ui.listwl.addItems(self.ui.wl_list)
-                self.ui.listwl.setCurrentIndex(0)
-                self.ui.unitswl.setText('')
+                    self.ui.listwl.clear()
+                    self.ui.listwl.addItems(self.ui.wl_list)
+                    self.ui.listwl.setCurrentIndex(0)
+                    self.ui.unitswl.setText('')
 
-                self.ui.listwls.clear()
-                self.ui.listwls.addItems(self.ui.wls_list)
-                self.ui.listwls.setCurrentIndex(0)
-                self.ui.unitswls.setText('')
+                    self.ui.listwls.clear()
+                    self.ui.listwls.addItems(self.ui.wls_list)
+                    self.ui.listwls.setCurrentIndex(0)
+                    self.ui.unitswls.setText('')
 
         def find_peaks(self):
             number_of_peaks = int(str(self.ui.find_edit.displayText()).strip())
