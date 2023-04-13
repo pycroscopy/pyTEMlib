@@ -1133,7 +1133,7 @@ def fix_energy_scale(spec, energy):
 
     return fwhm, fit_mu
 
-def resolution_function2(dataset):
+def resolution_function2(dataset, width =0.3):
     guess = [0.2, 1000, 0.02, 0.2, 1000, 0.2]
     p0 = np.array(guess)
 
