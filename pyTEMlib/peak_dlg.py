@@ -21,7 +21,7 @@ if Qt_available:
     class UiDialog(object):
         """GUI definitions for peak_fit_dialog"""
 
-        def __init__(self, dialog):
+        def __init__(self, dialog, mode=None):
             dialog.setObjectName('Fit Peaks')
             dialog.resize(371, 184)
 
@@ -224,30 +224,59 @@ if Qt_available:
             self.separator3.setText("Analysis")
             self.layout.addWidget(self.separator3, row, 0, 1, 4)
             ######################################################################
+            if mode == 'low_loss':
+                row += 1
+                self.zl_button = QtWidgets.QPushButton('Zero_Loss', dialog)
+                self.zl_button.setCheckable(False)
+                self.drude_button = QtWidgets.QPushButton('Plasmon', dialog)
+                self.drude_button.setCheckable(False)
+
+
+                self.layout.addWidget(self.zl_button, row, 0)
+                self.layout.addWidget(self.drude_button, row, 1)
+
+                self.model_list = ['None', 'Zero Loss', 'Plasmon', 'Both']
+                self.list_model = QtWidgets.QComboBox()
+                self.list_model.setEditable(False)
+                self.list_model.addItems(self.model_list)
+                
+
+                self.layout.addWidget(self.list_model, row, 2)
+                
+            else:
+                row += 1
+                self.labelwl = QtWidgets.QLabel('White-Line Ratio:')
+                self.wl_list = ['Ratio']
+                self.listwl = QtWidgets.QComboBox()
+                self.listwl.setEditable(False)
+                self.listwl.addItems(self.wl_list)
+                self.unitswl = QtWidgets.QLabel('')
+
+                self.layout.addWidget(self.labelwl, row, 0)
+                self.layout.addWidget(self.listwl, row, 1)
+                self.layout.addWidget(self.unitswl, row, 2)
+
+                row += 1
+                self.labelwls = QtWidgets.QLabel('White-Line Sum:')
+                self.wls_list = ['Sum']
+                self.listwls = QtWidgets.QComboBox()
+                self.listwls.setEditable(False)
+                self.listwls.addItems(self.wls_list)
+                self.unitswls = QtWidgets.QLabel('')
+
+                self.layout.addWidget(self.labelwls, row, 0)
+                self.layout.addWidget(self.listwls, row, 1)
+                self.layout.addWidget(self.unitswls, row, 2)
 
             row += 1
-            self.labelwl = QtWidgets.QLabel('White-Line Ratio:')
-            self.wl_list = ['Ratio']
-            self.listwl = QtWidgets.QComboBox()
-            self.listwl.setEditable(False)
-            self.listwl.addItems(self.wl_list)
-            self.unitswl = QtWidgets.QLabel('')
+            self.progress = QtWidgets.QProgressBar()
+            self.progress.setGeometry(0, 0, 300, 25)
+            self.progress.setMaximum(100)
+            self.do_all_button = QtWidgets.QPushButton('Do All', dialog)
 
-            self.layout.addWidget(self.labelwl, row, 0)
-            self.layout.addWidget(self.listwl, row, 1)
-            self.layout.addWidget(self.unitswl, row, 2)
-
-            row += 1
-            self.labelwls = QtWidgets.QLabel('White-Line Sum:')
-            self.wls_list = ['Sum']
-            self.listwls = QtWidgets.QComboBox()
-            self.listwls.setEditable(False)
-            self.listwls.addItems(self.wls_list)
-            self.unitswls = QtWidgets.QLabel('')
-
-            self.layout.addWidget(self.labelwls, row, 0)
-            self.layout.addWidget(self.listwls, row, 1)
-            self.layout.addWidget(self.unitswls, row, 2)
+            self.layout.addWidget(self.do_all_button, row, 0)
+            self.layout.addWidget(self.progress, row, 1)
+    
 
             dialog.setLayout(self.layout)
             dialog.setWindowTitle('Peak Fit Input')

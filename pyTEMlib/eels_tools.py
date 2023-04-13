@@ -922,7 +922,10 @@ def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
         if start_channel < index < end_channel:
             peaks.append(index - start_channel)
 
-    if energy_scale[0] > 0:
+    if 'model' in dataset.metadata:
+        model = dataset.metadata['model'][start_channel:end_channel]
+
+    elif energy_scale[0] > 0:
         if 'edges' not in dataset.metadata:
             return
         if 'model' not in dataset.metadata['edges']:
@@ -1129,6 +1132,27 @@ def fix_energy_scale(spec, energy):
     fit_mu, area, fwhm = p1
 
     return fwhm, fit_mu
+
+def resolution_function2(dataset, width =0.3):
+    guess = [0.2, 1000, 0.02, 0.2, 1000, 0.2]
+    p0 = np.array(guess)
+
+    start = np.searchsorted(dataset.energy_loss, -width / 2.)
+    end = np.searchsorted(dataset.energy_loss, width / 2.)
+    x = dataset.energy_loss[start:end]
+    y = np.array(dataset)[start:end]
+    def zl2(pp, yy, xx):
+        eerr = (yy - zl_func(pp, xx))  # /np.sqrt(y)
+        return eerr
+    
+    [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
+
+    z_loss = zl_func(p_zl, dataset.energy_loss)
+    z_loss = dataset.like_array(z_loss)
+    z_loss.title = 'resolution_function'
+    z_loss.metadata['zero_loss_parameter']=p_zl
+    return z_loss, p_zl
+
 
 
 def resolution_function(energy_scale, spectrum, width, verbose=False):
