@@ -120,9 +120,9 @@ if Qt_available:
                 self.dataset.view.set_bin([bin_x, bin_y])
 
             if hasattr(self.dataset.view, 'axes'):
-                self.axis = self.dataset.view.axes[-1]
-            elif hasattr(self.dataset.view, 'axis'):
-                self.axis = self.dataset.view.axis
+                self.axis = self.view.axes[-1]
+            elif hasattr(self.view, 'axis'):
+                self.axis = self.view.axis
             self.figure = self.axis.figure
 
             if not advanced_present:
