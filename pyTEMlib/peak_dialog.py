@@ -237,7 +237,7 @@ if Qt_available:
             difference = np.array(spectrum[start_channel:end_channel] - model)
 
             # find the optimum fitting parameters
-            [self.p_out, _] = scipy.optimize.leastsq(eels.residuals_smooth, np.array(p_in), ftol=1e-3,
+            [self.p_out, _] = scipy.optimize.leastsq(eels_tools.residuals_smooth, np.array(p_in), ftol=1e-3,
                                                      args=(energy_scale, difference, False))
 
             # construct the fit data from the optimized parameters
