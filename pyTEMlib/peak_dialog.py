@@ -16,8 +16,8 @@ import scipy.signal
 
 import sidpy
 import pyTEMlib.file_tools as ft
-import pyTEMlib.eels_tools as eels
-import pyTEMlib.peak_dlg as peak_dlg
+from pyTEMlib import  eels_tools
+from pyTEMlib import peak_dlg
 
 advanced_present = True
 try:
@@ -34,14 +34,27 @@ if Qt_available:
         EELS Input Dialog for ELNES Analysis
         """
 
-        def __init__(self, dataset=None):
+        def __init__(self, datasets=None):
             super().__init__(None, QtCore.Qt.WindowStaysOnTopHint)
+            
+            if datasets is None:
+                # make a dummy dataset
+                datasets = ft.make_dummy_dataset('spectrum')
+            if not isinstance(datasets, dict):
+                datasets= {'Channel_000': datasets}
+
+            self.dataset = datasets[list(datasets.keys())[0]]
+            self.datasets = datasets
             # Create an instance of the GUI
-            self.ui = peak_dlg.UiDialog(self)
+            if 'low_loss' in self.dataset.metadata:
+                mode = 'low_loss'
+            else:
+                mode = 'core_loss'
+
+            self.ui = peak_dlg.UiDialog(self, mode=mode)
 
             self.set_action()
 
-            self.dataset = dataset
             self.energy_scale = np.array([])
             self.peak_out_list = []
             self.p_out = []
@@ -49,14 +62,11 @@ if Qt_available:
             self.show_regions = False
             self.show()
 
-            if dataset is None:
-                # make a dummy dataset
-                dataset = ft.make_dummy_dataset('spectrum')
+            
 
-            if not isinstance(dataset, sidpy.Dataset):
+            if not isinstance(self.dataset, sidpy.Dataset):
                 raise TypeError('dataset has to be a sidpy dataset')
-            self.dataset = dataset
-            self.spec_dim = ft.get_dimensions_by_type('spectral', dataset)
+            self.spec_dim = ft.get_dimensions_by_type('spectral', self.dataset)
             if len(self.spec_dim) != 1:
                 raise TypeError('We need exactly one SPECTRAL dimension')
             self.spec_dim = self.spec_dim[0]
@@ -72,6 +82,7 @@ if Qt_available:
                     self.dataset.metadata['peak_fit']['peaks'] = {'0': {'position': self.energy_scale[1],
                                                                         'amplitude': 1000.0, 'width': 1.0,
                                                                         'type': 'Gauss', 'asymmetry': 0}}
+                    
 
             self.peaks = self.dataset.metadata['peak_fit']
             if 'fit_start' not in self.peaks:
@@ -97,7 +108,7 @@ if Qt_available:
                 self.core_loss = False
 
             self.update()
-            self.dataset.plot()
+            self.view = self.dataset.plot()
 
             if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
                 if 'SI_bin_x' not in self.dataset.metadata['experiment']:
@@ -120,7 +131,13 @@ if Qt_available:
                 self.ui.smooth_list.addItems(self.ui.iteration_list)
                 self.ui.smooth_list.setCurrentIndex(0)
 
+            if 'low_loss' in self.dataset.metadata:
+                self.ui.iteration_list = ['0']
+
+            
             self.figure.canvas.mpl_connect('button_press_event', self.plot)
+
+            
             self.plot()
 
         def update(self):
@@ -145,12 +162,20 @@ if Qt_available:
             self.ui.edit8.setText(f"{self.peaks['peaks'][str(peak_index)]['asymmetry']:.2f}")
 
         def plot(self):
+            
             spec_dim = ft.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL, self.dataset)
             spec_dim = spec_dim[0]
             self.energy_scale = spec_dim[1].values
             if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
                 spectrum = self.dataset.view.get_spectrum()
                 self.axis = self.dataset.view.axes[1]
+                name = 's'
+                if 'zero_loss' in self.dataset.metadata:
+                    x = self.dataset.view.x
+                    y = self.dataset.view.y
+                    self.energy_scale -= self.dataset.metadata['zero_loss']['shifts'][x, y]
+                    name = f"shift { self.dataset.metadata['zero_loss']['shifts'][x, y]:.3f}"
+                    self.setWindowTitle(f'plot {x}')
             else:
                 spectrum = np.array(self.dataset)
                 self.axis = self.dataset.view.axis
@@ -160,10 +185,13 @@ if Qt_available:
             self.axis.clear()
 
             self.axis.plot(self.energy_scale, spectrum, label='spectrum')
+            if 'zero_loss' in self.dataset.metadata:
+                self.axis.plot(self.energy_scale, spectrum, label=name)
+
             if len(self.model) > 1:
                 self.axis.plot(self.energy_scale, self.model, label='model')
                 self.axis.plot(self.energy_scale, spectrum - self.model, label='difference')
-                self.axis.plot(self.energy_scale, (spectrum - self.model) / np.sqrt(spectrum), label='Poisson')
+                #self.axis.plot(self.energy_scale, (spectrum - self.model) / np.sqrt(spectrum), label='Poisson')
                 self.axis.legend()
             self.axis.set_xlim(x_limit)
             self.axis.set_ylim(y_limit)
@@ -171,7 +199,7 @@ if Qt_available:
 
             for index, peak in self.peaks['peaks'].items():
                 p = [peak['position'], peak['amplitude'], peak['width']]
-                self.axis.plot(self.energy_scale, eels.gauss(self.energy_scale, p))
+                self.axis.plot(self.energy_scale, eels_tools.gauss(self.energy_scale, p))
 
         def fit_peaks(self):
             """Fit spectrum with peaks given in peaks dictionary"""
@@ -196,7 +224,9 @@ if Qt_available:
 
             energy_scale = self.energy_scale[start_channel:end_channel]
             # select the core loss model if it exists. Otherwise, we will fit to the full spectrum.
-            if self.core_loss:
+            if 'model' in self.dataset.metadata:
+                model = self.dataset.metadata['model'][start_channel:end_channel]
+            elif self.core_loss:
                 print('Core loss model found. Fitting on top of the model.')
                 model = self.dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
             else:
@@ -214,7 +244,7 @@ if Qt_available:
             self.peak_model = np.zeros(len(self.energy_scale))
             self.model = np.zeros(len(self.energy_scale))
             self.model[start_channel:end_channel] = model
-            fit = eels.model_smooth(energy_scale, self.p_out, False)
+            fit = eels_tools.model_smooth(energy_scale, self.p_out, False)
             self.peak_model[start_channel:end_channel] = fit
             self.dataset.metadata['peak_fit']['edge_model'] = self.model
             self.model = self.model + self.peak_model
@@ -246,6 +276,8 @@ if Qt_available:
             spec_dim = ft.get_dimensions_by_type('SPECTRAL', self.dataset)[0]
             if spec_dim[1][0] > 0:
                 self.model = self.dataset.metadata['edges']['model']['spectrum']
+            elif 'model' in self.dataset.metadata:
+                self.model = self.dataset.metadata['model']
             else:
                 self.model = np.zeros(len(spec_dim[1]))
 
@@ -421,7 +453,7 @@ if Qt_available:
                 self.peaks['peaks'][str(peak_index)]['width'] = value
 
         def on_list_enter(self):
-            # self.setWindowTitle('list')
+            self.setWindowTitle(f'list {self.sender}, {self.ui.list_model}')
             if self.sender() == self.ui.list3:
                 if self.ui.list3.currentText().lower() == 'add peak':
                     peak_index = self.ui.list3.currentIndex()
@@ -439,7 +471,16 @@ if Qt_available:
                 self.ui.unitswl.setText(f"{self.peaks['white_line_ratios'][self.ui.wl_list[wl_index]]:.2f}")
                 self.ui.listwls.setCurrentIndex(wl_index)
                 self.ui.unitswls.setText(f"{self.peaks['white_line_sums'][self.ui.wls_list[wl_index]] * 1e6:.4f} ppm")
-
+            elif self.sender() == self.ui.list_model:
+                self.setWindowTitle('list 1')
+                if self.sender().currentIndex() == 1:
+                    if 'resolution_function' in self.datasets:
+                        self.setWindowTitle('list 2')
+                        self.dataset.metadata['model'] = np.array(self.datasets['resolution_function'])
+                    else:
+                        self.ui.list_model.setCurrentIndex(0)
+                else:
+                    self.ui.list_model.setCurrentIndex(0)
         def set_action(self):
             pass
             self.ui.edit1.editingFinished.connect(self.on_enter)
@@ -452,9 +493,55 @@ if Qt_available:
             self.ui.find_button.clicked.connect(self.find_peaks)
             self.ui.smooth_button.clicked.connect(self.smooth)
             self.ui.fit_button.clicked.connect(self.fit_peaks)
-            self.ui.listwls.activated[str].connect(self.on_list_enter)
-            self.ui.listwl.activated[str].connect(self.on_list_enter)
+            if hasattr(self.ui, 'listwls'):
+                self.ui.listwls.activated[str].connect(self.on_list_enter)
+                self.ui.listwl.activated[str].connect(self.on_list_enter)
+            else:
+                self.ui.zl_button.clicked.connect(self.fit_zero_loss)
+                self.ui.drude_button.clicked.connect(self.smooth)
+                self.ui.list_model.activated[str].connect(self.on_list_enter)
 
+        def fit_zero_loss(self):
+            """get shift of spectrum form zero-loss peak position"""
+            zero_loss_fit_width=0.3
+
+            energy_scale = self.dataset.energy_loss
+            zl_dataset = self.dataset.copy()
+            zl_dataset.title = 'resolution_function'
+            shifts = np.zeros(self.dataset.shape[0:2])
+            zero_p = np.zeros([self.dataset.shape[0],self.dataset.shape[1],6])
+            fwhm_p = np.zeros(self.dataset.shape[0:2])
+            bin_x = bin_y = 1
+            total_spec = int(self.dataset.shape[0]/bin_x)*int(self.dataset.shape[1]/bin_y)
+            self.ui.progress.setMaximum(total_spec)
+            self.ui.progress.setValue(0)
+            zero_loss_fit_width=0.3
+            ind = 0
+            for x in range(self.dataset.shape[0]):
+                for y in range(self.dataset.shape[1]):
+                    ind += 1
+                    self.ui.progress.setValue(ind)
+                    spectrum = self.dataset[x, y, :]
+                    fwhm, delta_e = eels_tools.fix_energy_scale(spectrum, energy_scale)
+                    z_loss, p_zl = eels_tools.resolution_function(energy_scale - delta_e, spectrum, zero_loss_fit_width)
+                    fwhm2, delta_e2 = eels_tools.fix_energy_scale(z_loss, energy_scale - delta_e)
+                    shifts[x, y] = delta_e + delta_e2
+                    zero_p[x,y,:] = p_zl
+                    zl_dataset[x,y] = z_loss
+                    fwhm_p[x,y] = fwhm2
+            
+            zl_dataset.metadata['zero_loss'] = {'parameter': zero_p,
+                                                'shifts': shifts,
+                                                'fwhm': fwhm_p}
+            self.dataset.metadata['zero_loss'] = {'parameter': zero_p,
+                                                'shifts': shifts,
+                                                'fwhm': fwhm_p}
+            
+            self.datasets['resolution_function'] = zl_dataset
+            self.update()
+            self.plot()
+                    
+            
 
     def smooth(dataset, iterations, advanced_present):
         """Gaussian mixture model (non-Bayesian)
@@ -471,7 +558,7 @@ if Qt_available:
             peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
                                                                    peaks['fit_end'], iterations=iterations)
         else:
-            peak_model, peak_out_list = eels.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
+            peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
             peak_out_list = [peak_out_list]
 
         flat_list = [item for sublist in peak_out_list for item in sublist]
