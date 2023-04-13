@@ -108,7 +108,7 @@ if Qt_available:
                 self.core_loss = False
 
             self.update()
-            self.view = self.dataset.plot()
+            self.dataset.plot()
 
             if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
                 if 'SI_bin_x' not in self.dataset.metadata['experiment']:
@@ -120,9 +120,9 @@ if Qt_available:
                 self.dataset.view.set_bin([bin_x, bin_y])
 
             if hasattr(self.dataset.view, 'axes'):
-                self.axis = self.view.axes[-1]
-            elif hasattr(self.view, 'axis'):
-                self.axis = self.view.axis
+                self.axis = self.dataset.view.axes[-1]
+            elif hasattr(self.dataset.view, 'axis'):
+                self.axis = self.dataset.view.axis
             self.figure = self.axis.figure
 
             if not advanced_present:
