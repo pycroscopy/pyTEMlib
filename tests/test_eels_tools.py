@@ -53,6 +53,12 @@ class TestFileFunctions(unittest.TestCase):
         self.assertIsInstance(x, dict)
         self.assertEqual(x['name'], 'Si')
 
+        for i in range(1,83):
+            x = eels.get_x_sections(i)
+             self.assertEqual(len(x['ene']), len(x['dat'])
+
+
+
     def test_list_all_edges(self):
         z, _ = eels.list_all_edges(14)
         self.assertEqual(z[:6], ' Si-K1')
@@ -68,6 +74,7 @@ class TestFileFunctions(unittest.TestCase):
         self.assertIsInstance(z, str)
         self.assertEqual(z[1:7], ' O -K1')
 
+    
     def test_second_derivative(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')

@@ -1376,6 +1376,8 @@ def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
     enexs = x_sections['ene']
     datxs = x_sections['dat']
 
+    # enexs = enexs[:len(datxs)]
+
     #####
     # Cross Section according to Egerton Ultramicroscopy 50 (1993) 13-28 equation (4)
     #####
