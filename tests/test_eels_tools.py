@@ -55,7 +55,7 @@ class TestFileFunctions(unittest.TestCase):
 
         for i in range(1,83):
             x = eels.get_x_sections(i)
-            self.assertEqual(len(x['ene']), len(x['dat'])
+            self.assertEqual(len(x['ene']), len(x['dat']))
 
 
 
