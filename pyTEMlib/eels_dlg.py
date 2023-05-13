@@ -23,7 +23,7 @@ if Qt_available:
         def __init__(self, dialog):
             dialog.setObjectName('Fit Composition Input')
             dialog.resize(371, 184)
-
+            self.dialog = dialog
             valid_float = QtGui.QDoubleValidator()
             valid_int = QtGui.QIntValidator()
             valid_int.setBottom(0)
@@ -85,7 +85,7 @@ if Qt_available:
             self.separator2.setText("Elements")
             self.layout.addWidget(self.separator2, row, 0, 1, 4)
             ######################################################################
-            # row += 1
+            
             self.auto_id_button = QtWidgets.QPushButton('Auto ID', dialog)
             self.select_button = QtWidgets.QPushButton('Manual ID', dialog)
 
@@ -238,6 +238,7 @@ if Qt_available:
 
             self.do_fit_button = QtWidgets.QPushButton('Fit Composition', dialog)
             self.do_fit_button.setCheckable(True)
+            self.do_fit_button.setDefault(True)
 
             self.layout.addWidget(self.do_all_button, row, 0)
             self.layout.addWidget(self.progress, row, 1)

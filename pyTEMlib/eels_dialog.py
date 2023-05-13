@@ -9,22 +9,24 @@ try:
 except:
     Qt_available = False
     print('Qt dialogs are not available')
-from pyTEMlib import eels_dlg
+
 
 import numpy as np
 
-from pyTEMlib import eels_tools as eels
-
+import ipywidgets
+import matplotlib
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
 
 from pyTEMlib import file_tools as ft
+from pyTEMlib import eels_tools as eels
 
 import sidpy
 
 _version = 000
 
 if Qt_available:
+    from pyTEMlib import eels_dlg
     from pyTEMlib import eels_dialog_utilities
 
     class EELSDialog(QtWidgets.QDialog):
@@ -32,38 +34,48 @@ if Qt_available:
         EELS Input Dialog for Chemical Analysis
         """
 
-        def __init__(self, dataset=None):
+        def __init__(self, datasets=None):
             super().__init__(None, QtCore.Qt.WindowStaysOnTopHint)
             # Create an instance of the GUI
-            if dataset is None:
+            if datasets is None:
                 # make a dummy dataset
-                dataset = ft.make_dummy_dataset(sidpy.DataType.SPECTRUM)
-            if not isinstance(dataset, sidpy.Dataset):
-                raise TypeError('dataset has to be a sidpy dataset')
-            self.spec_dim = ft.get_dimensions_by_type('spectral', dataset)
+                datasets = {'Channel_000':ft.make_dummy_dataset(sidpy.DataType.SPECTRUM)}
+            elif isinstance(datasets, sidpy.Dataset):
+                datasets = {'Channel_000': datasets}    
+            elif isinstance(datasets, dict):
+                pass
+            else: 
+                raise TypeError('dataset or first item inhas to be a sidpy dataset')
+            self.datasets = datasets
+            self.dataset = datasets[list(datasets)[0]]
+            
+            if not isinstance(self.dataset, sidpy.Dataset):
+                raise TypeError('dataset or first item inhas to be a sidpy dataset')
+            
+            self.spec_dim = ft.get_dimensions_by_type('spectral', self.dataset)
             if len(self.spec_dim) != 1:
                 raise TypeError('We need exactly one SPECTRAL dimension')
             self.spec_dim = self.spec_dim[0]
-
+            
             self.ui = eels_dlg.UiDialog(self)
             # Run the .setup_ui() method to show the GUI
             # self.ui.setup_ui(self)
 
             self.set_action()
 
-            self.dataset = dataset
             self.energy_scale = np.array([])
             self.model = np.array([])
             self.y_scale = 1.0
             self.change_y_scale = 1.0
+            self.spectrum_ll = None
+            self.low_loss_key = None
             
             self.edges = {}
 
-            
             self.show_regions = False
             self.show()
 
-            self.set_dataset(dataset)
+            self.set_dataset(self.dataset)
             initial_elements = []
 
             for key in self.edges:
@@ -86,8 +98,9 @@ if Qt_available:
             self.updY = 0
             self.figure.canvas.mpl_connect('button_press_event', self.plot)
 
+            self.ui.do_fit_button.setFocus()
             self.plot()
-            self.ui.edit4.setFocus()
+            self.ui.do_fit_button.setFocus()
 
         def set_dataset(self, dataset):
 
@@ -145,7 +158,7 @@ if Qt_available:
                 else:
                     dispersion = self.energy_scale[1]-self.energy_scale[0]
                     self.ui.edit9.setText(f"{edge['areal_density']*self.y_scale*1e-6/dispersion:.2f}")
-                    self.ui.unit9.setText(r'atoms/nm$^2$')
+                    self.ui.unit9.setText('atoms/nm²')
             else:
                 self.ui.list3.setCurrentIndex(0)
                 self.ui.edit4.setText(str(0))
@@ -192,6 +205,7 @@ if Qt_available:
                 return False
 
             index = self.ui.list3.currentIndex()
+            # self.ui.dialog.setWindowTitle(f'{index}, {zz}')
 
             if str(index) not in self.edges:
                 self.edges[str(index)] = {}
@@ -211,7 +225,9 @@ if Qt_available:
         def on_enter(self):
             sender = self.sender()
             edge_list = self.ui.list3
+            # self.ui.dialog.setWindowTitle(f"{sender.objectName()}")
 
+            
             if sender.objectName() == 'fit_start_edit':
                 value = float(str(sender.displayText()).strip())
                 if value < self.energy_scale[0]:
@@ -230,9 +246,10 @@ if Qt_available:
                 sender.setText(str(self.edges['fit_area']['fit_end']))
             elif sender.objectName() == 'element_edit':
                 if str(sender.displayText()).strip() == '0':
-                    sender.setText('PT')
-                    #self.pt_dialog.energy_scale = self.energy_scale
-                    #self.pt_dialog.show()
+                    # sender.setText('PT')
+                    self.pt_dialog.energy_scale = self.energy_scale
+                    self.pt_dialog.show()
+                    pass
                 else:
                     self.update_element(str(sender.displayText()).strip())
                 self.update()
@@ -242,6 +259,9 @@ if Qt_available:
             elif sender.objectName() == 'multiplier_edit':
                 index = edge_list.currentIndex()
                 self.edges[str(index)]['areal_density'] = float(self.ui.edit9.displayText())
+                if self.y_scale != 1.0:
+                    dispersion = self.energy_scale[1]-self.energy_scale[0]
+                    self.edges[str(index)]['areal_density'] /= self.y_scale * 1e-6 *dispersion
                 if 'background' not in self.edges['model']:
                     print(' no background')
                     return
@@ -254,6 +274,8 @@ if Qt_available:
                 return
             if self.show_regions:
                 self.plot()
+
+            
 
         def sort_elements(self):
             onsets = []
@@ -281,16 +303,13 @@ if Qt_available:
                 edge['end_exclude'] = self.energy_scale[-3]
 
         def set_elements(self, selected_elements):
-
             edge_list = self.ui.list3
-            index = 0  # edge_list.currentIndex()
-
-            for elem in selected_elements:
-                if self.update_element(elem):
-                    index = edge_list.currentIndex()
-                    edge_list.setCurrentIndex(index + 1)
+           
+            for index, elem in enumerate(selected_elements):
+                edge_list.setCurrentIndex(index)
+                self.update_element(elem)
+                    
             self.sort_elements()
-            edge_list.setCurrentIndex(index)
             self.update()
 
         def plot(self, event=None):
@@ -450,6 +469,7 @@ if Qt_available:
 
         def on_list_enter(self):
             sender = self.sender()
+            # self.ui.dialog.setWindowTitle(f"on list eneter {sender.objectName()}")
 
             if sender.objectName() == 'edge_list':
                 index = self.ui.list3.currentIndex()
@@ -488,6 +508,8 @@ if Qt_available:
 
         def on_check(self):
             sender = self.sender()
+            # self.ui.dialog.setWindowTitle(f"on_check {sender.objectName()}")
+
 
             if sender.objectName() == 'edge_check':
                 self.show_regions = sender.isChecked()
@@ -497,25 +519,62 @@ if Qt_available:
                     self.low_loss()
             elif sender.objectName() == 'probability':
                 dispersion = self.energy_scale[1]-self.energy_scale[0]
+                old_y_scale = self.y_scale *1.
                 if sender.isChecked():
-                    self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm']*dispersion
-                    self.change_y_scale = 1/self.dataset.metadata['experiment']['flux_ppm']*dispersion
+                    flux_key = None
+                    spectrum_key = None
+            
+                    for key in  self.datasets.keys():
+                        if 'Reference' in key:
+                            if self.datasets[key].data_type.name == 'IMAGE': # Prefer Ronchigrams
+                                flux_key = key
+                                self.dataset.metadata['experiment']['flux_reference_key'] = flux_key
+                            elif self.datasets[key].data_type.name == 'SPECTRUM':
+                                spectrum_key = key
+                                self.dataset.metadata['experiment']['low_loss_key'] = spectrum_key
+                    if flux_key is None:
+                        flux_key = spectrum_key  
+
+                    # self.ui.dialog.setWindowTitle(f"2nd {self.dataset.metadata['experiment']['flux_ppm']:.2f}")
+                    if self.dataset.metadata['experiment']['flux_ppm'] > 0:
+                        # self.ui.dialog.setWindowTitle(f"3rD {self.dataset.metadata['experiment']['flux_ppm']:.2f}")
+                        self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm']*dispersion
+                    elif flux_key is not None:
+                        self.dataset.metadata['experiment']['flux_ppm'] = (np.array(self.datasets[flux_key])/1e6).sum() 
+                        self.dataset.metadata['experiment']['flux_ppm'] /= self.datasets[flux_key].metadata['experiment']['exposure_time']
+                        self.dataset.metadata['experiment']['flux_ppm'] *= self.dataset.metadata['experiment']['exposure_time'] 
+                        self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm']*dispersion
+                    else:
+                        self.y_scale = 1.0
                 else:
                     self.y_scale = 1.0
-                    self.change_y_scale = self.dataset.metadata['experiment']['flux_ppm']/dispersion
+                    
+                self.change_y_scale = self.y_scale/old_y_scale
                 self.update()
             self.plot()
 
         def low_loss(self):
             self.edges['use_low_loss'] = self.ui.check10.isChecked()
+            if self.low_loss_key is None:
+                for key in  self.datasets.keys():
+                    if 'Reference' in key:
+                        if self.datasets[key].data_type.name == 'SPECTRUM':
+                            self.low_loss_key = key
+                            self.dataset.metadata['experiment']['low_loss_key'] = self.low_loss_key
+            
+            if self.low_loss_key is None:
+                self.low_loss_key = ft.add_dataset_from_file(self.datasets, key_name='Reference')
+                self.spectrum_ll = self.datasets[self.low_loss_key]
+                if self.spectrum_ll.data_type.name != 'SPECTRUM':
+                    self.spectrum_ll = None
+                    self.low_loss_key = None
 
-            if 'low_loss' not in self.edges:
-                self.edges['low_loss'] = {}
-            if 'spectrum' not in self.edges['low_loss']:
-                spectrum_ll = ft.open_file(write_hdf_file=False)
-
-                self.edges['low_loss']['spectrum'] = np.array(spectrum_ll)
-            self.spectrum_ll = self.edges['low_loss']['spectrum']
+            if self.low_loss_key is not None:
+                self.spectrum_ll = self.datasets[self.low_loss_key]
+                if 'number_of_frames' in self.spectrum_ll.metadata['experiment']:
+                    self.spectrum_ll.metadata['experiment']['exposure_time'] = \
+                        self.spectrum_ll.metadata['experiment']['single_exposure_time'] * \
+                        self.spectrum_ll.metadata['experiment']['number_of_frames'] 
 
         def do_all_button_click(self):
 
@@ -536,7 +595,7 @@ if Qt_available:
             self.energy_scale = self.dataset._axes[self.spec_dim].values
             eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
             if self.edges['use_low_loss']:
-                low_loss = self.spectrum_ll/self.spectrum_ll.sum()
+                low_loss = np.array(self.spectrum_ll)/self.spectrum_ll.sum()
             else:
                 low_loss = None
 
@@ -620,6 +679,9 @@ if Qt_available:
             self.plot()
 
         def do_auto_id_button_click(self):
+            # self.ui.dialog.setWindowTitle(f"auto id ")
+            self.ui.do_fit_button.setFocus()
+
             if '0' not in self.edges:
                 self.edges['0'] ={}
             found_edges = eels.auto_id_edges(self.dataset)
@@ -746,3 +808,521 @@ if Qt_available:
             else:
                 legline.set_alpha(0.2)
             self.fig.canvas.draw()
+
+def get_sidebar():
+    side_bar = ipywidgets.GridspecLayout(13, 3,width='auto', grid_gap="0px")
+
+    
+    row = 0
+    side_bar[row, :3] = ipywidgets.Button(description='Fit Area',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Fit Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Fit End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    
+    row += 1
+    
+    side_bar[row, :3] = ipywidgets.Button(description='Elements',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=[('Edge 1', 0), ('Edge 2', 1), ('Edge 3', 2), ('Edge 4', 3),('Add Edge', -1)],
+            value=0,
+            description='Edges:',
+            disabled=False,
+            layout=ipywidgets.Layout(width='200px'))
+    side_bar[row,2] = ipywidgets.ToggleButton(
+            description='Regions',
+            disabled=False,
+            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+            tooltip='Shows fit regions and regions excluded from fit', 
+            layout=ipywidgets.Layout(width='100px')
+        )
+    
+    row += 1
+    side_bar[row, :2] = ipywidgets.IntText(value=7.5,description='Z:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=['K1','L3', 'M5', 'M3', 'M1', 'N7', 'N5', 'N3', 'N1'],
+            value='K1',
+            description='Symmetry:',
+            disabled=False,
+            layout=ipywidgets.Layout(width='200px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Onset:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Excl.Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Excl.End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Mutliplier:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="a.u.", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    
+    side_bar[row, :3] = ipywidgets.Button(description='Quantification',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    
+    row += 1
+    side_bar[row,0] = ipywidgets.ToggleButton(
+            description='Probabiity',
+            disabled=False,
+            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+            tooltip='Changes y-axis to probability of flux is given', 
+            layout=ipywidgets.Layout(width='100px')
+        )
+    side_bar[row,1] = ipywidgets.ToggleButton(
+            description='Conv.LL',
+            disabled=False,
+            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+            tooltip='Changes y-axis to probability of flux is given', 
+            layout=ipywidgets.Layout(width='100px')
+        )
+    side_bar[row,2] = ipywidgets.ToggleButton(
+            description='Show Edges',
+            disabled=False,
+            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+            tooltip='Changes y-axis to probability of flux is given', 
+            layout=ipywidgets.Layout(width='100px')
+        )
+    return side_bar
+
+
+class CompositionWidget(object):
+    def __init__(self, datasets=None):
+        self.datasets = datasets
+        if not isinstance(datasets, dict):
+            raise TypeError('dataset or first item inhas to be a sidpy dataset')
+            
+        self.sidebar = get_sidebar()
+        self.dataset = datasets[list(datasets)[0]]
+        if not isinstance(self.dataset, sidpy.Dataset):
+            raise TypeError('dataset or first item inhas to be a sidpy dataset')
+        self.spec_dim = ft.get_dimensions_by_type('spectral', self.dataset)
+        if len(self.spec_dim) != 1:
+            raise TypeError('We need exactly one SPECTRAL dimension')
+        self.spec_dim = self.spec_dim[0]
+        #self.energy_scale = self.dataset._axes[self.spec_dim]
+        
+        self.energy_scale = self.spec_dim[1]
+        self.model = np.array([])
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        self.spectrum_ll = None
+        self.low_loss_key = None
+
+        self.edges = {}
+
+        self.show_regions = False
+            
+        with plt.ioff():
+            self.fig = plt.figure()
+        self.fig.canvas.toolbar_position = 'right'
+        self.fig.canvas.toolbar_visible = True
+        self.set_dataset()
+        self.set_action()
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        self.plot(scale=False)
+        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
+                                                       self.start_cursor,ipywidgets.Label('eV'), 
+                                                       self.end_cursor, ipywidgets.Label('eV')]),
+                                      self.fig.canvas])
+                                      
+        self.app_layout = ipywidgets.AppLayout(
+            left_sidebar=self.sidebar,
+            center=self.panel,
+            footer=None,#message_bar,
+            pane_heights=[0, 10, 0],
+            pane_widths=[4, 10, 0],
+        )
+        display(self.app_layout)
+        
+    def line_select_callback(self, x_min, x_max):
+            self.start_cursor.value = np.round(x_min,3)
+            self.end_cursor.value = np.round(x_max, 3)
+            self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
+            self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+            
+    def plot(self, scale=True):
+        
+        ylim = self.fig.gca().get_ylim()
+        
+        ax = self.fig.gca()
+        ax.clear()
+        for index, key in enumerate(self.datasets.keys()):
+            if 'Reference' not in key:
+                if self.datasets[key].data_type.name == 'SPECTRUM':
+                    self.key = key
+                    ax.plot(self.energy_scale, self.datasets[key]*self.y_scale, label=self.datasets[key].title)
+                if index == 0:
+
+                    ax.set_xlabel(self.datasets[key].labels[0])
+                    ax.set_ylabel(self.datasets[key].data_descriptor)
+        ax.ticklabel_format(style='sci', scilimits=(-2, 3))
+        if scale:
+            ax.set_ylim(np.array(ylim)*self.change_y_scale)
+        self.change_y_scale = 1.0
+        if self.y_scale != 1.:
+                ax.set_ylabel('scattering probability (ppm/eV)')
+        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+       
+        if len(self.model) > 1:
+            ax.plot(self.energy_scale, self.model*self.y_scale, label='model')
+            difference_spec  = self.datasets[self.key] - self.model
+            ax.plot(self.energy_scale, difference_spec*self.y_scale, label='difference')
+            # axis.plot(self.energy_scale, (self.datasets[key] - self.model) / np.sqrt(self.datasets[key])*self.y_scale, label='Poisson')
+                
+                
+        ax.legend()
+        
+        if self.sidebar[12,2].value:
+                self.show_edges()
+        if self.sidebar[4,2].value:
+            self.plot_regions()
+        self.fig.canvas.draw_idle()
+        
+        
+    def plot_regions(self):
+        axis = self.fig.gca()
+        y_min, y_max = axis.get_ylim()
+        height = y_max - y_min
+
+        rect = []
+        if 'fit_area' in self.edges:
+            color = 'blue'
+            alpha = 0.2
+            x_min = self.edges['fit_area']['fit_start']
+            width = self.edges['fit_area']['fit_end'] - x_min
+            rect.append(patches.Rectangle((x_min, y_min), width, height,
+                                          edgecolor=color, alpha=alpha, facecolor=color))
+            axis.add_patch(rect[0])
+            axis.text(x_min, y_max, 'fit region', verticalalignment='top')
+        color = 'red'
+        alpha = 0.5
+        
+        for key in self.edges:
+            if key.isdigit():
+                x_min = self.edges[key]['start_exclude']
+                width = self.edges[key]['end_exclude']-x_min
+                rect.append(patches.Rectangle((x_min, y_min), width, height,
+                                              edgecolor=color, alpha=alpha, facecolor=color))
+                axis.add_patch(rect[-1])
+                axis.text(x_min, y_max, f"exclude\n edge {int(key)+1}", verticalalignment='top')
+
+    def show_edges(self):
+        axis = self.fig.gca()
+        x_min, x_max = axis.get_xlim()
+        y_min, y_max = axis.get_ylim()
+        
+        for key, edge in self.edges.items():
+            i = 0
+            if key.isdigit():
+                element = edge['element']
+                for sym in edge['all_edges']:
+                    x = edge['all_edges'][sym]['onset'] + edge['chemical_shift']
+                    if x_min < x < x_max:
+                        axis.text(x, y_max, '\n' * i + f"{element}-{sym}",
+                                       verticalalignment='top', color='black')
+                        axis.axvline(x, ymin=0, ymax=1, color='gray')
+                        i += 1
+
+        
+    
+        
+    def set_dataset(self, index=0):    
+        if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
+            self.dataset.metadata['edges'] = {'0': {}, 'model': {}, 'use_low_loss': False}
+       
+        self.edges = self.dataset.metadata['edges']
+        if '0' not in self.edges:
+            self.edges['0'] = {}
+        
+        if 'fit_area' not in self.edges:
+            self.edges['fit_area'] = {}
+        if 'fit_start' not in self.edges['fit_area']:
+            self.sidebar[1,0].value = np.round(self.energy_scale[50], 3)
+            self.edges['fit_area']['fit_start'] = self.sidebar[1,0].value 
+        else:
+            self.sidebar[1,0].value = np.round(self.edges['fit_area']['fit_start'],3)
+        if 'fit_end' not in self.edges['fit_area']:
+            self.sidebar[2,0].value = np.round(self.energy_scale[-2], 3)
+            self.edges['fit_area']['fit_end'] = self.sidebar[2,0].value 
+        else:
+            self.sidebar[2,0].value = np.round(self.edges['fit_area']['fit_end'],3)
+        
+        if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
+            if 'SI_bin_x' not in self.dataset.metadata['experiment']:
+                self.dataset.metadata['experiment']['SI_bin_x'] = 1
+                self.dataset.metadata['experiment']['SI_bin_y'] = 1
+
+            bin_x = self.dataset.metadata['experiment']['SI_bin_x']
+            bin_y = self.dataset.metadata['experiment']['SI_bin_y']
+            # self.dataset.view.set_bin([bin_x, bin_y])
+        self.update()
+        
+    def update_element(self, z=0, index=-1):
+        # We check whether this element is already in the
+        if z == 0:
+            z = self.sidebar[5,0].value
+    
+        zz = eels.get_z(z)
+        for key, edge in self.edges.items():
+            if key.isdigit():
+                if 'z' in edge:
+                    if zz == edge['z']:
+                        return False
+
+        major_edge = ''
+        minor_edge = ''
+        all_edges = {}
+        x_section = eels.get_x_sections(zz)
+        edge_start = 10  # int(15./ft.get_slope(self.energy_scale)+0.5)
+        for key in x_section:
+            if len(key) == 2 and key[0] in ['K', 'L', 'M', 'N', 'O'] and key[1].isdigit():
+                if self.energy_scale[edge_start] < x_section[key]['onset'] < self.energy_scale[-edge_start]:
+                    if key in ['K1', 'L3', 'M5']:
+                        major_edge = key
+                    elif key in self.sidebar[6,0].options:
+                        if minor_edge == '':
+                            minor_edge = key
+                        if int(key[-1]) % 2 > 0:
+                            if int(minor_edge[-1]) % 2 == 0 or key[-1] > minor_edge[-1]:
+                                minor_edge = key
+
+                    all_edges[key] = {'onset': x_section[key]['onset']}
+
+        if major_edge != '':
+            key = major_edge
+        elif minor_edge != '':
+            key = minor_edge
+        else:
+            print(f'Could not find no edge of {zz} in spectrum')
+            return False
+        if index == -1:
+            index = self.sidebar[4, 0].value
+        # self.ui.dialog.setWindowTitle(f'{index}, {zz}')
+
+        if str(index) not in self.edges:
+            self.edges[str(index)] = {}
+
+        start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
+        end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
+
+        self.edges[str(index)] = {'z': zz, 'symmetry': key, 'element': eels.elements[zz],
+                                  'onset': x_section[key]['onset'], 'end_exclude': end_exclude,
+                                  'start_exclude': start_exclude}
+        self.edges[str(index)]['all_edges'] = all_edges
+        self.edges[str(index)]['chemical_shift'] = 0.0
+        self.edges[str(index)]['areal_density'] = 0.0
+        self.edges[str(index)]['original_onset'] = self.edges[str(index)]['onset']
+        return True
+        
+
+    
+    def sort_elements(self):
+        onsets = []
+        for index, edge in self.edges.items():
+            if index.isdigit():
+                onsets.append(float(edge['onset']))
+
+        arg_sorted = np.argsort(onsets)
+        edges = self.edges.copy()
+        for index, i_sorted in enumerate(arg_sorted):
+            self.edges[str(index)] = edges[str(i_sorted)].copy()
+
+        index = 0
+        edge = self.edges['0']
+        dispersion = self.energy_scale[1]-self.energy_scale[0]
+
+        while str(index + 1) in self.edges:
+            next_edge = self.edges[str(index + 1)]
+            if edge['end_exclude'] > next_edge['start_exclude'] - 5 * dispersion:
+                edge['end_exclude'] = next_edge['start_exclude'] - 5 * dispersion
+            edge = next_edge
+            index += 1
+
+        if edge['end_exclude'] > self.energy_scale[-3]:
+            edge['end_exclude'] = self.energy_scale[-3]
+
+    def set_elements(self, selected_elements):
+
+        for index, elem in enumerate(selected_elements):
+            self.sidebar[4, 0].value =index
+            self.update_element(elem)
+
+        # self.sort_elements()
+        self.update()
+    
+
+        
+    def set_element(self, elem):
+        self.update_element(self.sidebar[5, 0].value)
+        # self.sort_elements()
+        self.update()
+       
+    def cursor2energy_scale(self, value):
+       
+        dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
+        self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
+        self.sidebar[3, 0].value = dispersion
+        offset = self.start_cursor.value - self.start_channel * dispersion
+        self.datasets[self.key].energy_loss += (self.sidebar[2, 0].value-self.datasets[self.key].energy_loss[0])
+        self.sidebar[2, 0].value = offset
+        self.plot()
+        
+    def set_fit_area(self, value):
+        if self.sidebar[1,0].value > self.sidebar[2,0].value:
+            self.sidebar[1,0].value = self.sidebar[2,0].value -1
+        if self.sidebar[1,0].value < self.energy_scale[0]:
+            self.sidebar[1,0].value = self.energy_scale[0]
+        if self.sidebar[2,0].value > self.energy_scale[-1]:
+            self.sidebar[2,0].value = self.energy_scale[-1]
+        self.edges['fit_area']['fit_start'] = self.sidebar[1,0].value 
+        self.edges['fit_area']['fit_end'] = self.sidebar[2,0].value 
+        
+        self.plot()
+        
+    def set_y_scale(self, value):  
+        self.change_y_scale = 1/self.y_scale
+        if self.sidebar[12, 0].value:
+            dispersion = self.energy_scale[1] - self.energy_scale[0]
+            self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm'] * dispersion
+        else:
+            self.y_scale = 1.0
+            
+        self.change_y_scale *= self.y_scale
+        self.update()
+        self.plot()
+        
+    def find_elements(self, value=0):
+        
+        if '0' not in self.edges:
+            self.edges['0'] ={}
+        found_edges = eels.auto_id_edges(self.dataset)
+
+        to_delete = []
+        if len(found_edges) >0:
+            for key in self.edges:
+                if key.isdigit():
+                    to_delete.append(key)
+        for key in to_delete:
+            del self.edges[key]
+        if len(to_delete) > 0:
+            self.edges['0'] = {}
+
+        selected_elements = []
+        for key in found_edges:
+            selected_elements.append(key)
+        self.set_elements(selected_elements)
+
+        self.update()
+    
+    def update(self, index=0):
+        
+        index = self.sidebar[4,0].value  # which edge
+        if index < 0:
+            options  = list(self.sidebar[4,0].options)
+            options.insert(-1, (f'Edge {len(self.sidebar[4,0].options)}', len(self.sidebar[4,0].options)-1))
+            self.sidebar[4,0].options= options
+            self.sidebar[4,0].value = len(self.sidebar[4,0].options)-2
+        if str(index) not in self.edges:
+            self.edges[str(index)] = {'z': 0,  'element': 'x', 'symmetry': 'K1', 'onset': 0, 'start_exclude': 0, 'end_exclude':0,
+                                     'areal_density': 0}
+        if 'z' not in self.edges[str(index)]:
+             self.edges[str(index)] = {'z': 0,  'element': 'x', 'symmetry': 'K1', 'onset': 0, 'start_exclude': 0, 'end_exclude':0,
+                                      'areal_density': 0}
+        edge = self.edges[str(index)]
+            
+        self.sidebar[5,0].value = edge['z']
+        self.sidebar[5,2].value = edge['element']
+        self.sidebar[6,0].value = edge['symmetry']
+        self.sidebar[7,0].value = edge['onset']
+        self.sidebar[8,0].value = edge['start_exclude']
+        self.sidebar[9,0].value = edge['end_exclude']
+        if self.y_scale == 1.0:
+            self.sidebar[10, 0].value = edge['areal_density']
+            self.sidebar[10, 2].value =  'a.u.'
+        else:
+            dispersion = self.energy_scale[1]-self.energy_scale[0]
+            self.sidebar[10, 0].value = np.round(edge['areal_density']/self.dataset.metadata['experiment']['flux_ppm']*1e-6, 2)
+            self.sidebar[10, 2].value = 'atoms/nm²'
+        
+    
+    def do_fit(self, value=0):
+        if 'experiment' in self.dataset.metadata:
+            exp = self.dataset.metadata['experiment']
+            if 'convergence_angle' not in exp:
+                raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
+            alpha = exp['convergence_angle']
+            beta = exp['collection_angle']
+            beam_kv = exp['acceleration_voltage']
+
+        else:
+            raise ValueError('need a experiment parameter in metadata dictionary')
+        
+        eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
+
+        self.low_loss = None
+        if self.sidebar[12, 1].value:
+            for key in self.datasets.keys():
+                if key != self.key:
+                    if isinstance(self.datasets[key], sidpy.Dataset):
+                        if self.datasets[key].data_type.name == 'SPECTRUM':
+                            if self.datasets[key].energy_loss[0] < 0:
+                                self.low_loss = self.datasets[key]/self.datasets[key].sum()
+
+        edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, self.low_loss)
+
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
+            spectrum = self.dataset.view.get_spectrum()
+        else:
+            spectrum = self.dataset
+        self.edges = eels.fit_edges2(spectrum, self.energy_scale, edges)
+        areal_density = []
+        elements = []
+        for key in edges:
+            if key.isdigit():  # only edges have numbers in that dictionary
+                elements.append(edges[key]['element'])
+                areal_density.append(edges[key]['areal_density'])
+        areal_density = np.array(areal_density)
+        out_string = '\nRelative composition: \n'
+        for i, element in enumerate(elements):
+            out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.1f}%  '
+
+        self.model = self.edges['model']['spectrum']
+        self.update()
+        self.plot()
+        
+        
+    def set_action(self):
+        self.sidebar[1,0].observe(self.set_fit_area, names='value')
+        self.sidebar[2,0].observe(self.set_fit_area, names='value')
+        
+        self.sidebar[3,0].on_click(self.find_elements)
+        self.sidebar[4,0].observe(self.update)
+        self.sidebar[5,0].observe(self.set_element, names='value')
+        
+        self.sidebar[11,0].on_click(self.do_fit)
+        self.sidebar[12,2].observe(self.plot)
+        self.sidebar[4,2].observe(self.plot)
+
+        self.sidebar[12,0].observe(self.set_y_scale)

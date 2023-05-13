@@ -2,6 +2,16 @@
 
 import numpy as np
 import sidpy
+from sidpy.hdf.dtype_utils import is_complex_dtype
+
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from ipywidgets import widgets
+
+
+import pyTEMlib.eels_tools as eels
+import pyTEMlib.file_tools as ft
+
 
 from bokeh.layouts import column
 from bokeh.plotting import figure  # , show, output_notebook
@@ -262,3 +272,210 @@ class CurveVisualizer(object):
         else:
             legline.set_alpha(0.2)
         self.fig.canvas.draw()
+
+        
+def verify_spectrum_dataset(datasets):
+    if isinstance(datasets, sidpy.Dataset):
+        datasets = {'Channel_000': datasets}
+    
+    first_dataset = datasets[list(datasets)[0]]
+    has_complex_dataset = False
+    for dat in datasets.values():
+         if is_complex_dtype(dat.dtype):
+             has_complex_dataset = True
+    
+             
+    if first_dataset.data_type.name != 'SPECTRUM':
+        raise TypeError('We need a spectrum dataset here')
+    if first_dataset.ndim >1:
+        if first_dataset.shape[1] >1:
+            raise TypeError('Wrong dimensions for spectrum datasset')
+    
+    energy_dim = first_dataset.get_spectrum_dims()
+    energy_dim = first_dataset.get_dimension_by_number(energy_dim[0])[0]
+    energy_dim.label = f'{energy_dim.quantity} ({energy_dim.units})'
+    
+    default_plot_dictionary = {'title': '',
+                                'theme': "plotly_white",
+                                'y_scale': 1.0,
+                                'y_axis_label': first_dataset.data_descriptor,
+                                'x_axis_label': energy_dim.label,
+                                'show_legend': True,
+                                'height': 500,
+                                'figure_size': None,
+                                'scale_bar': False,
+                                'colorbar': True,
+                                'set_title': True,
+                                'has_complex_dataset': has_complex_dataset}
+        
+    
+    default_plot_dictionary.update(first_dataset.metadata['plot_parameter'])
+    first_dataset.metadata['plot_parameter'] = default_plot_dictionary
+            
+    return datasets
+
+def spectrum_view_plotly(datasets, figure=None, show=False):
+   
+    datasets =  verify_spectrum_dataset(datasets)
+    first_dataset = datasets[list(datasets)[0]]
+    plot_dic = first_dataset.metadata['plot_parameter']
+    
+    if figure is None:
+        if plot_dic['has_complex_dataset']:
+            fig = make_subplots(rows=1, cols=2, subplot_titles=("Magnitude", "Phase"))
+        else:
+            fig = go.Figure()
+
+    else:
+        fig = figure
+
+    for key, dat in datasets.items():
+        if dat.data_type == first_dataset.data_type:
+            energy_dim = dat.get_spectrum_dims()
+            energy_dim = dat.get_dimension_by_number(energy_dim[0])[0]
+            if is_complex_dtype(dat.dtype):
+               fig.add_trace(go.Scatter(x=energy_dim.values, y=np.abs(dat).squeeze()*plot_dic['y_scale'], name=f'{dat.title}-Magnitude', mode="lines+markers", marker=dict(size=2)), row=1, col=1)
+               fig.add_trace(go.Scatter(x=energy_dim.values, y=np.angle(dat).squeeze()*plot_dic['y_scale'], name=f'{dat.title}-Phase', mode="lines+markers", marker=dict(size=2)), row=1, col=2)
+            else:
+                fig.add_trace(go.Scatter(x=energy_dim.values, y=np.array(dat).squeeze()*plot_dic['y_scale'], name=dat.title, mode="lines+markers", marker=dict(size=2)))
+           
+
+    fig.update_layout(
+        selectdirection='h',
+        showlegend = plot_dic['show_legend'],
+        dragmode='select',
+        title_text=plot_dic['title'],
+        yaxis_title_text=plot_dic['y_axis_label'],
+        xaxis_title_text=plot_dic['x_axis_label'],
+        height=plot_dic['height'],
+        template=plot_dic['theme']
+    )
+    fig.update_layout(hovermode='x unified')
+    
+    if plot_dic['has_complex_dataset']:
+        fig.update_yaxes(title_text='angle (rad)', row = 1, col = 2)
+        fig.update_xaxes(title_text=plot_dic['x_axis_label'], row = 1, col = 2)
+
+    config = {'displayModeBar': True}
+    if show:
+        fig.show(config=config)
+    return fig
+
+
+class SpectrumView(object):
+    def __init__(self, datasets, figure=None, **kwargs):
+        first_dataset = datasets[list(datasets)[0]]
+        if first_dataset.data_type.name != 'SPECTRUM':
+            raise TypeError('We need a spectrum dataset here')
+        if first_dataset.ndim >1:
+            if first_dataset.shape[1] >1:
+                raise TypeError('Wrong dimensions for spectrum datasset')
+        
+        energy_dim = first_dataset.get_spectrum_dims()
+        energy_dim = first_dataset.get_dimension_by_number(energy_dim[0])[0]
+
+        if 'plot_parameter' not in first_dataset.metadata:
+            first_dataset.metadata['plot_parameter'] = {}
+        plot_dic = first_dataset.metadata['plot_parameter']
+        energy_dim.label = f'{energy_dim.quantity} ({energy_dim.units})'
+
+        plot_dic['title'] = kwargs.pop('title', '')
+        plot_dic['theme'] = kwargs.pop('theme', "plotly_white")
+        plot_dic['y_scale'] = kwargs.pop('y_scale', 1.0)
+        plot_dic['y_axis_label'] = kwargs.pop('y_axis_label', first_dataset.data_descriptor)
+        plot_dic['x_axis_label'] = kwargs.pop('x_axis_label', energy_dim.label)
+        plot_dic['height'] = kwargs.pop('height', 500)
+    
+
+        if 'incident_beam_current_counts' in first_dataset.metadata['experiment']:
+            plot_dic['y_scale'] = 1e6/first_dataset.metadata['experiment']['incident_beam_current_counts']
+            plot_dic['y_axis_label'] = ' probability (ppm)'
+        # plot_dic['y_scale'] = 1e6/first_dataset.sum()
+
+        def selection_fn(trace,points,selector):
+            self.energy_selection = [points.point_inds[0], points.point_inds[-1]]
+
+        self.fig = spectrum_view_plotly(datasets)
+
+        self.spectrum_widget = go.FigureWidget(self.fig)
+
+        self.spectrum_widget.data[0].on_selection(selection_fn)
+        self.spectrum_widget.data[0].on_click(self.identify_edges)
+
+        self.edge_annotation = 0
+        self.edge_line = 0
+        self.regions = {}
+        self.initialize_edge()
+
+        self.plot = display(self.spectrum_widget)
+
+    def initialize_edge(self):
+        """ Intitalizes edge cursor
+            Should be run first so that edge cursor is first
+        """
+        self.edge_annotation = len(self.spectrum_widget.layout.annotations)
+        self.edge_line = len(self.spectrum_widget.layout.shapes)
+        self.spectrum_widget.add_vline(x=200, line_dash="dot", line_color='blue',
+                    annotation_text= " ", 
+                    annotation_position="top right",
+                    visible = False)
+
+    def identify_edges(self, trace, points, selector):
+        energy = points.xs[0]
+        edge_names = find_edge_names(points.xs[0])
+        self.spectrum_widget.layout['annotations'][self.edge_annotation].x=energy
+        
+        self.spectrum_widget.layout['annotations'][self.edge_annotation].text = f"{edge_names}"
+        self.spectrum_widget.layout['annotations'][self.edge_annotation].visible = True
+        self.spectrum_widget.layout['shapes'][self.edge_line].x0 = energy
+        self.spectrum_widget.layout['shapes'][self.edge_line].x1 = energy
+        self.spectrum_widget.layout['shapes'][self.edge_line].visible = True
+        self.spectrum_widget.layout.update()
+
+    def add_region(self,  text, start, end, color='blue'): 
+        if text not in self.regions:
+            self.regions[text] = {'annotation': len(self.spectrum_widget.layout.annotations),
+                                'shape': len(self.spectrum_widget.layout.shapes),
+                                'start': start,
+                                'end': end,
+                                'color': color}
+            self.spectrum_widget.add_vrect(x0=start, x1=end, 
+                annotation_text=text, annotation_position="top left",
+                fillcolor=color, opacity=0.15, line_width=0)
+            self.spectrum_widget.layout.update()
+        else:
+            self.update_region(text, start, end)
+
+
+    def update_region(self, text, start, end): 
+        if text in self.regions:
+            region =  self.regions[text]
+            self.spectrum_widget.layout.annotations[region['annotation']].x =start
+            self.spectrum_widget.layout['shapes'][region['shape']].x0 = start
+            self.spectrum_widget.layout['shapes'][region['shape']].x1 = end
+            self.spectrum_widget.layout.update()
+
+    def regions_visibility(self, visibility=True):
+
+        for region in self.regions.values():
+            self.spectrum_widget.layout.annotations[region['annotation']].visible = visibility
+            self.spectrum_widget.layout.shapes[region['shape']].visible = visibility
+
+
+def find_edge_names(energy_value):
+
+    selected_edges = []
+    for shift in [1,2,5,10,20]:
+        selected_edge = ''
+        edges = eels.find_major_edges(energy_value, shift)
+        edges = edges.split('\n')
+        for edge in edges[1:]:
+            edge = edge[:-3].split(':')
+            name = edge[0].strip()
+            energy = float(edge[1].strip())
+            selected_edge = name
+
+            if selected_edge != '':
+                selected_edges.append(selected_edge)
+        if len(selected_edges)>0:
+            return selected_edges

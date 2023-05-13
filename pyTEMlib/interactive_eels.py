@@ -25,3 +25,9 @@ if Qt_available:
     CurveVisualizer = eels_dialog.CurveVisualizer
     InfoDialog = info_dialog.InfoDialog
     PeakFitDialog = peak_dialog.PeakFitDialog
+else:
+    CompositionDialog = eels_dialog.CompositionWidget
+    InfoDialog = info_dialog.InfoWidget
+    
+InfoWidget = info_dialog.InfoWidget
+CompositionWidget = eels_dialog.CompositionWidget
