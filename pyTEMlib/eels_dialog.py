@@ -14,6 +14,7 @@ except:
 import numpy as np
 
 import ipywidgets
+import IPython.display
 import matplotlib
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
@@ -950,7 +951,7 @@ class CompositionWidget(object):
             pane_heights=[0, 10, 0],
             pane_widths=[4, 10, 0],
         )
-        display(self.app_layout)
+        IPython.display.display(self.app_layout)
         
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
