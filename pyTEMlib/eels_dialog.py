@@ -23,8 +23,6 @@ from pyTEMlib import eels_tools as eels
 
 import sidpy
 
-_version = 000
-
 if Qt_available:
     from pyTEMlib import eels_dlg
     from pyTEMlib import eels_dialog_utilities
@@ -928,6 +926,7 @@ class CompositionWidget(object):
             self.fig = plt.figure()
         self.fig.canvas.toolbar_position = 'right'
         self.fig.canvas.toolbar_visible = True
+        self.key = list(self.datasets.keys())[0]
         self.set_dataset()
         self.set_action()
         self.y_scale = 1.0
@@ -965,15 +964,10 @@ class CompositionWidget(object):
         
         ax = self.fig.gca()
         ax.clear()
-        for index, key in enumerate(self.datasets.keys()):
-            if 'Reference' not in key:
-                if self.datasets[key].data_type.name == 'SPECTRUM':
-                    self.key = key
-                    ax.plot(self.energy_scale, self.datasets[key]*self.y_scale, label=self.datasets[key].title)
-                if index == 0:
+        ax.plot(self.energy_scale, self.datasets[self.key]*self.y_scale, label=self.datasets[self.key].title)
 
-                    ax.set_xlabel(self.datasets[key].labels[0])
-                    ax.set_ylabel(self.datasets[key].data_descriptor)
+        ax.set_xlabel(self.datasets[self.key].labels[0])
+        ax.set_ylabel(self.datasets[self.key].data_descriptor)
         ax.ticklabel_format(style='sci', scilimits=(-2, 3))
         if scale:
             ax.set_ylim(np.array(ylim)*self.change_y_scale)
