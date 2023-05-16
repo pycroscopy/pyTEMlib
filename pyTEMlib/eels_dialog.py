@@ -813,9 +813,10 @@ def get_sidebar():
 
     
     row = 0
-    side_bar[row, :3] = ipywidgets.Button(description='Fit Area',
+    side_bar[row, :3] = ipywidgets.ToggleButton(description='Fit Area',
                      layout=ipywidgets.Layout(width='auto', grid_area='header'),
-                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+                     tooltip='Shows fit regions and regions excluded from fit', 
+                     button_style='info') #ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Fit Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
@@ -835,14 +836,14 @@ def get_sidebar():
             description='Edges:',
             disabled=False,
             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row,2] = ipywidgets.ToggleButton(
+    """side_bar[row,2] = ipywidgets.ToggleButton(
             description='Regions',
             disabled=False,
             button_style='', # 'success', 'info', 'warning', 'danger' or ''
             tooltip='Shows fit regions and regions excluded from fit', 
             layout=ipywidgets.Layout(width='100px')
         )
-    
+    """
     row += 1
     side_bar[row, :2] = ipywidgets.IntText(value=7.5,description='Z:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="", layout=ipywidgets.Layout(width='100px'))
@@ -989,9 +990,9 @@ class CompositionWidget(object):
                 
         ax.legend()
         
-        if self.sidebar[12,2].value:
+        if self.sidebar[12, 2].value:
                 self.show_edges()
-        if self.sidebar[4,2].value:
+        if self.sidebar[0, 0].value:
             self.plot_regions()
         self.fig.canvas.draw_idle()
         
@@ -1318,6 +1319,6 @@ class CompositionWidget(object):
         
         self.sidebar[11,0].on_click(self.do_fit)
         self.sidebar[12,2].observe(self.plot)
-        self.sidebar[4,2].observe(self.plot)
+        self.sidebar[0,0].observe(self.plot)
 
         self.sidebar[12,0].observe(self.set_y_scale)
