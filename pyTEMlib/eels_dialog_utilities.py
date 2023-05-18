@@ -233,7 +233,7 @@ if Qt_available:
 
             self.selector = SpanSelector(self.axis, self.line_select_callback,
                                          direction="horizontal",
-                                         span_stays=True,
+                                         interactive=True,
                                          props=dict(facecolor='blue', alpha=0.2))
             self.edit1.setText(f'{self.x_min:.3f}')
             self.edit2.setText(f'{self.x_max:.3f}')
@@ -364,8 +364,10 @@ class RegionSelector(object):
         self.xmin = 0
         self.width = 0
 
-        self.span = SpanSelector(ax, self.on_select1, 'horizontal', useblit=True,
-                                 rectprops=dict(alpha=0.5, facecolor='red'), span_stays=True)
+        self.span = SpanSelector(ax, self.on_select1, 
+                                 direction="horizontal",
+                                 interactive=True,
+                                 props=dict(facecolor='blue', alpha=0.2))
         self.cid = ax.figure.canvas.mpl_connect('key_press_event', self.click)
         self.draw = ax.figure.canvas.mpl_connect('draw_event', self.onresize)
 

@@ -14,15 +14,19 @@ except:
     Qt_available = False
     print('Qt dialogs are not available')
 
-from pyTEMlib import info_dlg
+
 import pyTEMlib.eels_dialog_utilities as ieels
 from pyTEMlib.microscope import microscope
-
+import ipywidgets
+import matplotlib.pylab as plt
+import matplotlib
+from IPython.display import display
 from pyTEMlib import file_tools as ft
 _version = 000
 
 
 if Qt_available:
+    from pyTEMlib import info_dlg
     class InfoDialog(QtWidgets.QDialog):
         """
         Input Dialog for EELS Analysis
@@ -55,6 +59,8 @@ if Qt_available:
                 # make a dummy dataset for testing
                 key = 'Channel_000'
                 self.datasets={key: ft.make_dummy_dataset(sidpy.DataType.SPECTRUM)}
+            if key is None:
+                key = list(self.datasets.keys())[0]
             self.dataset = self.datasets[key]
             self.key = key
             if not isinstance(self.dataset, sidpy.Dataset):
@@ -244,21 +250,24 @@ if Qt_available:
                     flux_dataset = self.datasets[key]
                     if flux_dataset.data_type.name == 'IMAGE' or 'SPECTRUM' in flux_dataset.data_type.name:
                         if 'exposure_time' in flux_dataset.metadata['experiment']:
-                            exposure_time = flux_dataset.metadata['experiment']['exposure_time']
+                            if 'number_of_frames' in flux_dataset.metadata['experiment']:
+                                exposure_time = flux_dataset.metadata['experiment']['single_exposure_time'] * flux_dataset.metadata['experiment']['number_of_frames'] 
+                            else:
+                                exposure_time = flux_dataset.metadata['experiment']['exposure_time']
                         else:
-                            exposure_time = 1.0
+                            exposure_time = -1.0
                             flux_dataset.metadata['experiment']['exposure_time'] = -1
                             print('Did not find exposure time assume 1s')
                         if exposure_time > 0:
-                            new_flux  = np.sum(np.array(flux_dataset*1e-6))/exposure_time*exposure_time
+                            new_flux  = np.sum(np.array(flux_dataset*1e-6))/exposure_time*self.dataset.metadata['experiment']['exposure_time']
                             title = flux_dataset.title
                             metadata = flux_dataset.metadata
-            self.experiment['flux_ppm'] = new_flux
-            self.experiment['flux_units'] = 'counts'
-            self.experiment['flux_source'] = title
-            self.experiment['flux_metadata'] = metadata
+                            self.experiment['flux_ppm'] = new_flux
+                            self.experiment['flux_units'] = 'Mcounts '
+                            self.experiment['flux_source'] = title
+                            self.experiment['flux_metadata'] = metadata
     
-            self.update()
+                            self.update()
 
         def on_check(self):
             sender = self.sender()
@@ -290,7 +299,7 @@ if Qt_available:
                 index = self.ui.select_flux.currentIndex()
                 self.ui.statusBar.showMessage('list'+str(index))
                 if index == 1:
-                    ft.add_dataset_from_file(self.datasets, keyname='Reference')
+                    ft.add_dataset_from_file(self.datasets, key_name='Reference')
                     self.set_flux_list()
                 else:
                     key = str(self.ui.select_flux.currentText()).split(':')[0]
@@ -322,3 +331,220 @@ if Qt_available:
             
             self.ui.binXEdit.editingFinished.connect(self.on_enter)
             self.ui.binYEdit.editingFinished.connect(self.on_enter)
+
+
+def get_sidebar():
+    side_bar = ipywidgets.GridspecLayout(14, 3,width='auto', grid_gap="0px")
+
+    side_bar[0, :2] = ipywidgets.Dropdown(
+            options=[('None', 0)],
+            value=0,
+            description='Main Dataset:',
+            disabled=False)
+    side_bar[0, 2] = ipywidgets.Button(description='Add Spectrum',
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'),
+                     layout=ipywidgets.Layout(width='100px'))
+    row = 1
+    side_bar[row, :3] = ipywidgets.Button(description='Energy Scale',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Offset:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Dispersion:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    
+    row += 1
+    side_bar[row, :3] = ipywidgets.Button(description='Microscope',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Conv.Angle:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Coll.Angle:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Acc Voltage:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="keV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+
+    side_bar[row, :3] = ipywidgets.Button(description='Quantification',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row+=1
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=[('None', 0)],
+            value=0,
+            description='Reference:',
+            disabled=False)
+    side_bar[row,2] = ipywidgets.ToggleButton(
+            description='Probability',
+            disabled=False,
+            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+            tooltip='Changes y-axis to probability if flux is given',
+                     layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Exp_Time:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="s", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Flux:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="Mcounts", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Conversion:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value=r"e$^-$/counts", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Current:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="pA", layout=ipywidgets.Layout(width='100px') )
+    
+    return side_bar
+
+
+class InfoWidget(object):
+    def __init__(self, datasets=None):
+        self.datasets = datasets
+        self.sidebar = get_sidebar()
+        with plt.ioff():
+            self.fig = plt.figure()
+        self.fig.canvas.toolbar_position = 'right'
+        self.fig.canvas.toolbar_visible = True
+        self.set_dataset()
+        self.set_action()
+        
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        self.plot(scale=False)
+    
+        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
+                                                       self.start_cursor,ipywidgets.Label('eV'), 
+                                                       self.end_cursor, ipywidgets.Label('eV')]),
+                                      self.fig.canvas])
+                                      
+        self.app_layout = ipywidgets.AppLayout(
+            left_sidebar=self.sidebar,
+            center=self.panel,
+            footer=None,#message_bar,
+            pane_heights=[0, 10, 0],
+            pane_widths=[4, 10, 0],
+        )
+        display(self.app_layout)
+        
+    def line_select_callback(self, x_min, x_max):
+            self.start_cursor.value = np.round(x_min, 3)
+            self.end_cursor.value = np.round(x_max, 3)
+            self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
+            self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+            
+    def plot(self, scale=True):
+        
+        ylim = self.fig.gca().get_ylim()
+        
+        ax = self.fig.gca()
+        ax.clear()
+        ax.plot(self.datasets[self.key].energy_loss, self.datasets[self.key]*self.y_scale, label=self.datasets[self.key].title)
+
+        ax.set_xlabel(self.datasets[self.key].labels[0])
+        ax.set_ylabel(self.datasets[self.key].data_descriptor)
+        ax.ticklabel_format(style='sci', scilimits=(-2, 3))
+        if scale:
+            ax.set_ylim(np.array(ylim)*self.change_y_scale)
+        self.change_y_scale = 1.0
+        if self.y_scale != 1.:
+                ax.set_ylabel('scattering probability (ppm/eV)')
+        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        ax.legend()
+        
+    def set_dataset(self, index=0):
+       
+        spectrum_list = []
+        reference_list =[('None', -1)]
+        dataset_index = self.sidebar[0, 0].value
+        for index, key in enumerate(self.datasets.keys()):
+            if 'Reference' not in key:
+                if self.datasets[key].data_type.name == 'SPECTRUM':
+                    spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
+            reference_list.append((f'{key}: {self.datasets[key].title}', index))
+       
+        
+        self.sidebar[0,0].options = spectrum_list
+        self.sidebar[9,0].options = reference_list
+        self.key = list(self.datasets)[dataset_index]
+        #self.sidebar[0,0].value = dataset_index #f'{self.key}: {self.datasets[self.key].title}'
+        self.sidebar[2,0].value = np.round(self.datasets[self.key].energy_loss[0], 3)  
+        self.sidebar[3,0].value = np.round(self.datasets[self.key].energy_loss[1] - self.datasets[self.key].energy_loss[0], 4)  
+        self.sidebar[5,0].value = np.round(self.datasets[self.key].metadata['experiment']['convergence_angle'], 1)  
+        self.sidebar[6,0].value = np.round(self.datasets[self.key].metadata['experiment']['collection_angle'], 1)
+        self.sidebar[7,0].value = np.round(self.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
+        self.sidebar[10,0].value = np.round(self.datasets[self.key].metadata['experiment']['exposure_time'], 4)
+        if 'flux_ppm' not in self.datasets[self.key].metadata['experiment']:
+            self.datasets[self.key].metadata['experiment']['flux_ppm'] = 0
+        self.sidebar[11,0].value = self.datasets[self.key].metadata['experiment']['flux_ppm']
+        if 'count_conversion' not in self.datasets[self.key].metadata['experiment']:
+            self.datasets[self.key].metadata['experiment']['count_conversion'] = 1
+        self.sidebar[12,0].value = self.datasets[self.key].metadata['experiment']['count_conversion']
+        if 'beam_current' not in self.datasets[self.key].metadata['experiment']:
+            self.datasets[self.key].metadata['experiment']['beam_current'] = 0
+        self.sidebar[13,0].value = self.datasets[self.key].metadata['experiment']['beam_current']
+    
+    def cursor2energy_scale(self, value):
+       
+        dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
+        self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
+        self.sidebar[3, 0].value = dispersion
+        offset = self.start_cursor.value - self.start_channel * dispersion
+        self.datasets[self.key].energy_loss += (self.sidebar[2, 0].value-self.datasets[self.key].energy_loss[0])
+        self.sidebar[2, 0].value = offset
+        self.plot()
+        
+    def set_energy_scale(self, value):
+        dispersion = self.datasets[self.key].energy_loss[1] - self.datasets[self.key].energy_loss[0]
+        self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
+        self.datasets[self.key].energy_loss += (self.sidebar[2, 0].value-self.datasets[self.key].energy_loss[0])
+        self.plot()
+        
+    def set_y_scale(self, value):  
+        self.change_y_scale = 1/self.y_scale
+        if self.sidebar[9,2].value:
+            dispersion = self.datasets[self.key].energy_loss[1] - self.datasets[self.key].energy_loss[0]
+            self.y_scale = 1/self.datasets[self.key].metadata['experiment']['flux_ppm'] * dispersion
+        else:
+            self.y_scale = 1.0
+            
+        self.change_y_scale *= self.y_scale
+        self.plot()
+        
+    
+    def set_flux(self, value):  
+        self.datasets[self.key].metadata['experiment']['exposure_time'] = self.sidebar[10,0].value
+        if self.sidebar[9,0].value < 0:
+            self.datasets[self.key].metadata['experiment']['flux_ppm'] = 0.
+        else:
+            key = list(self.datasets.keys())[self.sidebar[9,0].value]
+            self.datasets[self.key].metadata['experiment']['flux_ppm'] = (np.array(self.datasets[key])*1e-6).sum() / self.datasets[key].metadata['experiment']['exposure_time']
+            self.datasets[self.key].metadata['experiment']['flux_ppm'] *= self.datasets[self.key].metadata['experiment']['exposure_time']
+        self.sidebar[11,0].value = np.round(self.datasets[self.key].metadata['experiment']['flux_ppm'], 2)
+        
+    def set_microscope_parameter(self, value):
+        self.datasets[self.key].metadata['experiment']['convergence_angle'] = self.sidebar[5,0].value
+        self.datasets[self.key].metadata['experiment']['collection_angle'] = self.sidebar[6,0].value
+        self.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.sidebar[7,0].value*1000
+        
+    def set_action(self):
+        self.sidebar[1,0].on_click(self.cursor2energy_scale)
+        self.sidebar[2,0].observe(self.set_energy_scale, names='value')
+        self.sidebar[3,0].observe(self.set_energy_scale, names='value')
+        self.sidebar[0,0].observe(self.set_dataset)
+        self.sidebar[9,0].observe(self.set_flux)
+        self.sidebar[10,0].observe(self.set_flux)
+        self.sidebar[9,2].observe(self.set_y_scale)
+        self.sidebar[9,2].observe(self.set_y_scale)
+        self.sidebar[5,0].observe(self.set_microscope_parameter)
+        self.sidebar[6,0].observe(self.set_microscope_parameter)
+        self.sidebar[7,0].observe(self.set_microscope_parameter)
+        

@@ -14,14 +14,20 @@ except:
     Qt_available = False
     print('Qt dialogs are not available')
 
+from pyTEMlib import eels_dialog
+from pyTEMlib import info_dialog
+from pyTEMlib import peak_dialog
+    
 if Qt_available:
-    from pyTEMlib import eels_dialog
-
-    from pyTEMlib import info_dialog
-    from pyTEMlib import peak_dialog
     from pyTEMlib.eels_dialog_utilities import *
 
     CompositionDialog = eels_dialog.EELSDialog
     CurveVisualizer = eels_dialog.CurveVisualizer
     InfoDialog = info_dialog.InfoDialog
     PeakFitDialog = peak_dialog.PeakFitDialog
+else:
+    CompositionDialog = eels_dialog.CompositionWidget
+    InfoDialog = info_dialog.InfoWidget
+
+InfoWidget = info_dialog.InfoWidget
+CompositionWidget = eels_dialog.CompositionWidget

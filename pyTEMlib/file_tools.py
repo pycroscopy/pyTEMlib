@@ -95,6 +95,7 @@ class FileWidget(object):
         self.dir_list = ['.']
         self.extensions = extension
         self.file_name = ''
+        self.datasets ={}
 
         self.select_files = widgets.Select(
             options=self.dir_list,
@@ -104,15 +105,63 @@ class FileWidget(object):
             rows=10,
             layout=widgets.Layout(width='70%')
         )
-        display(self.select_files)
+        
+        select_button = widgets.Button(description='Select Main',
+                     layout=widgets.Layout(width='auto', grid_area='header'),
+                     style=widgets.ButtonStyle(button_color='lightblue'))
+        
+        add_button = widgets.Button(description='Add',
+                     layout=widgets.Layout(width='auto', grid_area='header'),
+                     style=widgets.ButtonStyle(button_color='lightblue'))
+        
+        self.path_choice = widgets.Dropdown(options=['None'],
+                                             value='None',
+                                             description='directory:',
+                                             disabled=False,
+                                             button_style='',
+                                             layout=widgets.Layout(width='90%'))
+        self.dataset_list = ['None']
+        self.loaded_datasets = widgets.Dropdown(options=self.dataset_list,
+                                             value=self.dataset_list[0],
+                                             description='loaded datasets:',
+                                             disabled=False,
+                                             button_style='')
         self.set_options()
+        ui = widgets.VBox([self.path_choice, self.select_files, widgets.HBox([select_button, add_button, self.loaded_datasets])])
+        display(ui)
+        
         self.select_files.observe(self.get_file_name, names='value')
+        self.path_choice.observe(self.set_dir, names='value')
+
+        select_button.on_click(self.select_main)
+        add_button.on_click(self.add_dataset)
+
+    def select_main(self, value=0):
+        self.datasets = {}
+        self.datasets = open_file(self.file_name)
+        self.dataset_list = []
+        for key in self.datasets.keys():
+            self.dataset_list.append(f'{key}: {self.datasets[key].title}')
+            self.loaded_datasets.options = self.dataset_list
+            self.loaded_datasets.value = self.dataset_list[0]
+
+    def add_dataset(self, value=0):
+        key = add_dataset_from_file(self.datasets, self.file_name, 'Channel')
+        self.dataset_list.append(f'{key}: {self.datasets[key].title}')
+        self.loaded_datasets.options = self.dataset_list
+        self.loaded_datasets.value = self.dataset_list[-1]
+
 
     def get_directory(self, directory=None):
         self.dir_name = directory
         self.dir_dictionary = {}
         self.dir_list = []
         self.dir_list = ['.', '..'] + os.listdir(directory)
+
+    def set_dir(self, value=0):
+        self.dir_name = self.path_choice.value
+        self.select_files.index = 0
+        self.set_options()
 
     def set_options(self):
         self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
@@ -137,6 +186,12 @@ class FileWidget(object):
 
         self.dir_label = os.path.split(self.dir_name)[-1] + ':'
         self.select_files.options = self.display_list
+        self.path_list = [self.dir_name]
+        paths = self.path_list[0].split('\\')
+        for i in range(1, len(paths)):
+            self.path_list.append('\\'.join(paths[:-i]))
+        self.path_choice.options = self.path_list
+        self.path_choice.value = self.path_list[0]
 
     def get_file_name(self, b):
 
@@ -875,7 +930,7 @@ def log_results(h5_group, dataset=None, attributes=None):
     return log_group
 
 
-def add_dataset_from_file(datasets, filename=None, keyname='Log'):
+def add_dataset_from_file(datasets, filename=None, key_name='Log', single_dataset=True):
     """Add dataset to datasets dictionary
 
     Parameters
@@ -884,23 +939,35 @@ def add_dataset_from_file(datasets, filename=None, keyname='Log'):
         dictionary to write to file
     filename: str, default: None, 
         name of file to open, if None, adialog will appear
-    keyname: str, default: 'Log'
+    key_name: str, default: 'Log'
         name for key in dictionary with running number being added
-
 
     Returns
     -------
-        nothing
+    key_name: str
+        actual last used name of dictionary key
     """
 
     datasets2 =  open_file(filename=filename)
-    index = 0
-    for key in datasets.keys():
-        if keyname in key:
-            if int(key[-3:]) >= index:
-                index = int(key[-3:])+1
-    for dataset in datasets2.values():
-        datasets[keyname+f'_{index:03}'] =  dataset
+    first_dataset = datasets2[list(datasets2)[0]]
+    if isinstance(first_dataset, sidpy.Dataset):
+            
+        index = 0
+        for key in datasets.keys():
+            if key_name in key:
+                if int(key[-3:]) >= index:
+                    index = int(key[-3:])+1
+        if single_dataset:
+            datasets[key_name+f'_{index:03}'] =  first_dataset
+        else:
+            for dataset in datasets2.values():
+                datasets[key_name+f'_{index:03}'] =  dataset
+                index += 1
+            index -= 1
+    else:
+        return None       
+
+    return f'{key_name}_{index:03}'
 
 
 # ##
