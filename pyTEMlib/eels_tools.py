@@ -939,6 +939,7 @@ def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
 
     difference = np.array(spectrum)[start_channel:end_channel] - model
     fit = np.zeros(len(energy_scale))
+    p_out = []
     if len(peaks) > 0:
         p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
         [p_out, _] = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
