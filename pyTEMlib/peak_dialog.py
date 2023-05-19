@@ -15,6 +15,7 @@ import scipy.optimize
 import scipy.signal
 
 import ipywidgets
+from IPython.display import display
 import matplotlib
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
