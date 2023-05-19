@@ -28,6 +28,8 @@ if Qt_available:
 else:
     CompositionDialog = eels_dialog.CompositionWidget
     InfoDialog = info_dialog.InfoWidget
+    PeakFitDialog = peak_dialog.PeakFitWidget
 
 InfoWidget = info_dialog.InfoWidget
 CompositionWidget = eels_dialog.CompositionWidget
+PeakFitWidget = peak_dialog.PeakFitWidget

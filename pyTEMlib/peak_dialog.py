@@ -14,6 +14,12 @@ import scipy
 import scipy.optimize
 import scipy.signal
 
+import ipywidgets
+from IPython.display import display
+import matplotlib
+import matplotlib.pylab as plt
+import matplotlib.patches as patches
+
 import sidpy
 import pyTEMlib.file_tools as ft
 from pyTEMlib import  eels_tools
@@ -27,6 +33,560 @@ except ModuleNotFoundError:
     advanced_present = False
 
 _version = .001
+
+def get_sidebar():
+    side_bar = ipywidgets.GridspecLayout(16, 3, width='auto', grid_gap="0px")
+    row = 0
+    side_bar[row, :3] = ipywidgets.Button(description='Fit Area',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Fit Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Fit End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    
+    row += 1
+    side_bar[row, :3] = ipywidgets.Button(description='Peak Finding',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+
+    row += 1
+    
+    
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=[('0', 0), ('1', 1), ('2', 2), ('3', 3), ('4', 4)],
+            value=0,
+            description='Peaks:',
+            disabled=False,
+            layout=ipywidgets.Layout(width='200px'))
+    
+    side_bar[row, 2] = ipywidgets.Button(
+                                    description='Smooth',
+                                    disabled=False,
+                                    button_style='', # 'success', 'info', 'warning', 'danger' or ''
+                                    tooltip='Do Gaussian Mixing',
+                                    layout=ipywidgets.Layout(width='100px'))
+ 
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Number:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.Button(
+                                    description='Find',
+                                    disabled=False,
+                                    button_style='', # 'success', 'info', 'warning', 'danger' or ''
+                                    tooltip='Find first peaks from Gaussian mixture',
+                                    layout=ipywidgets.Layout(width='100px'))
+    
+    row += 1
+    
+    side_bar[row, :3] = ipywidgets.Button(description='Peaks',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=[('Peak 1', 0), ('Add Peak', -1)],
+            value=0,
+            description='Peaks:',
+            disabled=False,
+            layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=[ 'Gauss', 'Lorentzian', 'Drude', 'Zero-Loss'],
+            value='Gauss',
+            description='Symmetry:',
+            disabled=False,
+            layout=ipywidgets.Layout(width='200px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Position:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Amplitude:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Width FWHM:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Asymmetry:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="a.u.", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    
+    side_bar[row, :3] = ipywidgets.Button(description='White-Line',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    
+    row += 1
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=[('None', 0)],
+            value=0,
+            description='Ratio:',
+            disabled=False,
+            layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value=" ", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.Dropdown(
+            options=[('None', 0)],
+            value=0,
+            description= 'Sum:',
+            disabled=False,
+            layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value=" ", layout=ipywidgets.Layout(width='100px'))
+    return side_bar
+
+class PeakFitWidget(object):
+    def __init__(self, datasets=None):
+        self.datasets = datasets
+        if not isinstance(datasets, dict):
+            raise TypeError('dataset or first item inhas to be a sidpy dataset')
+            
+        self.sidebar = get_sidebar()
+        self.key = list(self.datasets)[0]
+        self.dataset = datasets[self.key]
+        if not isinstance(self.dataset, sidpy.Dataset):
+            raise TypeError('dataset or first item inhas to be a sidpy dataset')
+        self.spec_dim = ft.get_dimensions_by_type('spectral', self.dataset)
+        if len(self.spec_dim) != 1:
+            raise TypeError('We need exactly one SPECTRAL dimension')
+        self.spec_dim = self.spec_dim[0]
+        #self.energy_scale = self.dataset._axes[self.spec_dim]
+        
+        self.energy_scale = self.spec_dim[1]
+        
+
+        self.model = np.array([])
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        self.spectrum_ll = None
+        self.low_loss_key = None
+
+        self.peaks = {}
+
+        self.show_regions = False
+            
+        with plt.ioff():
+            self.fig = plt.figure()
+        self.fig.canvas.toolbar_position = 'right'
+        self.fig.canvas.toolbar_visible = True
+        #self.set_dataset()
+        self.set_action()
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        self.plot(scale=False)
+        
+        if 'peak_fit' not in self.dataset.metadata:
+            self.dataset.metadata['peak_fit'] = {}
+            if 'edges' in self.dataset.metadata:
+                if 'fit_area' in self.dataset.metadata['edges']:
+                    self.dataset.metadata['peak_fit']['fit_start'] = \
+                        self.dataset.metadata['edges']['fit_area']['fit_start']
+                    self.dataset.metadata['peak_fit']['fit_end'] = self.dataset.metadata['edges']['fit_area']['fit_end']
+                self.dataset.metadata['peak_fit']['peaks'] = {'0': {'position': self.energy_scale[1],
+                                                                    'amplitude': 1000.0, 'width': 1.0,
+                                                                    'type': 'Gauss', 'asymmetry': 0}}
+
+
+        self.peaks = self.dataset.metadata['peak_fit']
+        if 'fit_start' not in self.peaks:
+            self.peaks['fit_start'].value = self.energy_scale[1]
+            self.peaks['fit_end'].value = self.energy_scale[-2]
+
+        if 'peak_model' in self.peaks:
+            self.peak_model = self.peaks['peak_model']
+            self.model = self.peak_model
+            if 'edge_model' in self.peaks:
+                self.model = self.model + self.peaks['edge_model']
+        else:
+            self.model = np.array([])
+            self.peak_model = np.array([])
+        if 'peak_out_list' in self.peaks:
+            self.peak_out_list = self.peaks['peak_out_list']
+        self.set_peak_list()
+
+        # check whether a core loss analysis has been done previously
+        if not hasattr(self, 'core_loss') and 'edges' in self.dataset.metadata:
+            self.core_loss = True
+        else:
+            self.core_loss = False
+
+        self.update()
+
+        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
+                                                       self.start_cursor,ipywidgets.Label('eV'), 
+                                                       self.end_cursor, ipywidgets.Label('eV')]),
+                                      self.fig.canvas])
+                                      
+        self.app_layout = ipywidgets.AppLayout(
+            left_sidebar=self.sidebar,
+            center=self.panel,
+            footer=None,#message_bar,
+            pane_heights=[0, 10, 0],
+            pane_widths=[4, 10, 0],
+        )
+        display(self.app_layout)
+        
+    def line_select_callback(self, x_min, x_max):
+            self.start_cursor.value = np.round(x_min,3)
+            self.end_cursor.value = np.round(x_max, 3)
+            self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
+            self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+            
+            
+    def set_peak_list(self):
+        self.peak_list = []
+        if 'peaks' not in self.peaks:
+            self.peaks['peaks'] = {}
+        key = 0
+        for key in self.peaks['peaks']:
+            if key.isdigit():
+                self.peak_list.append((f'Peak {int(key) + 1}', int(key)))
+        self.peak_list.append((f'add peak', -1))
+        self.sidebar[7, 0].options = self.peak_list
+        self.sidebar[7, 0].value = 0
+
+
+    def plot(self, scale=True):
+        
+        ylim = self.fig.gca().get_ylim()
+        
+        ax = self.fig.gca()
+        ax.clear()
+        ax.plot(self.energy_scale, self.datasets[self.key]*self.y_scale, label=self.datasets[self.key].title)
+        ax.set_xlabel(self.datasets[self.key].labels[0])
+        ax.set_ylabel(self.datasets[self.key].data_descriptor)
+        ax.ticklabel_format(style='sci', scilimits=(-2, 3))
+        if scale:
+            ax.set_ylim(np.array(ylim)*self.change_y_scale)
+        self.change_y_scale = 1.0
+        if self.y_scale != 1.:
+                ax.set_ylabel('scattering probability (ppm/eV)')
+        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+       
+        if len(self.model) > 1:
+            ax.plot(self.energy_scale, self.model*self.y_scale, label='model')
+            difference_spec  = self.datasets[self.key] - self.model
+            ax.plot(self.energy_scale, difference_spec*self.y_scale, label='difference')
+            # axis.plot(self.energy_scale, (self.datasets[key] - self.model) / np.sqrt(self.datasets[key])*self.y_scale, label='Poisson')
+                
+        if 'peaks' in self.peaks:
+            for index, peak in self.peaks['peaks'].items():
+                p = [peak['position'], peak['amplitude'], peak['width']]
+                ax.plot(self.energy_scale, eels_tools.gauss(self.energy_scale, p))
+                
+        ax.legend()
+        
+      
+        
+    def set_dataset(self, index=0):    
+        if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
+            self.dataset.metadata['edges'] = {'0': {}, 'model': {}, 'use_low_loss': False}
+       
+        self.edges = self.dataset.metadata['edges']
+        if '0' not in self.edges:
+            self.edges['0'] = {}
+        
+        if 'fit_area' not in self.edges:
+            self.edges['fit_area'] = {}
+        if 'fit_start' not in self.edges['fit_area']:
+            self.sidebar[1,0].value = np.round(self.energy_scale[50], 3)
+            self.edges['fit_area']['fit_start'] = self.sidebar[1,0].value 
+        else:
+            self.sidebar[1,0].value = np.round(self.edges['fit_area']['fit_start'],3)
+        if 'fit_end' not in self.edges['fit_area']:
+            self.sidebar[2,0].value = np.round(self.energy_scale[-2], 3)
+            self.edges['fit_area']['fit_end'] = self.sidebar[2,0].value 
+        else:
+            self.sidebar[2,0].value = np.round(self.edges['fit_area']['fit_end'],3)
+        
+        if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
+            if 'SI_bin_x' not in self.dataset.metadata['experiment']:
+                self.dataset.metadata['experiment']['SI_bin_x'] = 1
+                self.dataset.metadata['experiment']['SI_bin_y'] = 1
+
+            bin_x = self.dataset.metadata['experiment']['SI_bin_x']
+            bin_y = self.dataset.metadata['experiment']['SI_bin_y']
+            # self.dataset.view.set_bin([bin_x, bin_y])
+        self.update()
+                
+    def set_fit_area(self, value):
+        """
+        if self.sidebar[1,0].value > self.sidebar[2,0].value:
+            self.sidebar[1,0].value = self.sidebar[2,0].value - 1.0
+        if float(self.sidebar[1,0].value) < self.energy_scale[0]:
+            self.sidebar[1,0].value = self.energy_scale[0]
+        if self.sidebar[2,0].value > self.energy_scale[-1]:
+            self.sidebar[2,0].value = self.energy_scale[-1]
+        """
+        self.peaks['fit_start'] = self.sidebar[1, 0].value 
+        self.peaks['fit_end'] = self.sidebar[2, 0].value 
+        
+        self.plot()
+        
+    def set_y_scale(self, value):  
+        self.change_y_scale = 1/self.y_scale
+        if self.sidebar[12, 0].value:
+            dispersion = self.energy_scale[1] - self.energy_scale[0]
+            self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm'] * dispersion
+        else:
+            self.y_scale = 1.0
+            
+        self.change_y_scale *= self.y_scale
+        self.update()
+        self.plot()
+        
+    def update(self, index=0):
+       
+        # self.setWindowTitle('update')
+        self.sidebar[1, 0].value = self.peaks['fit_start']
+        self.sidebar[2, 0].value = self.peaks['fit_end']
+
+        peak_index = self.sidebar[7, 0].value
+        self.peak_index = self.sidebar[7, 0].value
+        if str(peak_index) not in self.peaks['peaks']:
+            self.peaks['peaks'][str(peak_index)] = {'position': self.energy_scale[1], 'amplitude': 1000.0,
+                                                    'width': 1.0, 'type': 'Gauss', 'asymmetry': 0}
+        self.sidebar[8, 0].value = self.peaks['peaks'][str(peak_index)]['type']
+        if 'associated_edge' in self.peaks['peaks'][str(peak_index)]:
+            self.sidebar[7, 2].value = (self.peaks['peaks'][str(peak_index)]['associated_edge'])
+        else:
+            self.sidebar[7, 2].value = ''
+        self.sidebar[9, 0].value = self.peaks['peaks'][str(peak_index)]['position']
+        self.sidebar[10, 0].value = self.peaks['peaks'][str(peak_index)]['amplitude']
+        self.sidebar[11, 0].value = self.peaks['peaks'][str(peak_index)]['width']
+        if 'asymmetry' not in self.peaks['peaks'][str(peak_index)]:
+            self.peaks['peaks'][str(peak_index)]['asymmetry'] = 0.
+        self.sidebar[12, 0].value = self.peaks['peaks'][str(peak_index)]['asymmetry']
+
+       
+    def fit_peaks(self, value = 0):
+        """Fit spectrum with peaks given in peaks dictionary"""
+        print('Fitting peaks...')
+        p_in = []
+        for key, peak in self.peaks['peaks'].items():
+            if key.isdigit():
+                p_in.append(peak['position'])
+                p_in.append(peak['amplitude'])
+                p_in.append(peak['width'])
+
+        spectrum = np.array(self.dataset)
+
+        # set the energy scale and fit start and end points
+        energy_scale = np.array(self.energy_scale)
+        start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
+        end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
+
+        energy_scale = self.energy_scale[start_channel:end_channel]
+        # select the core loss model if it exists. Otherwise, we will fit to the full spectrum.
+        if 'model' in self.dataset.metadata:
+            model = self.dataset.metadata['model'][start_channel:end_channel]
+        elif self.core_loss:
+            print('Core loss model found. Fitting on top of the model.')
+            model = self.dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
+        else:
+            print('No core loss model found. Fitting to the full spectrum.')
+            model = np.zeros(end_channel - start_channel)
+
+        # if we have a core loss model we will only fit the difference between the model and the data.
+        difference = np.array(spectrum[start_channel:end_channel] - model)
+
+        # find the optimum fitting parameters
+        [self.p_out, _] = scipy.optimize.leastsq(eels_tools.residuals_smooth, np.array(p_in), ftol=1e-3,
+                                                    args=(energy_scale, difference, False))
+
+        # construct the fit data from the optimized parameters
+        self.peak_model = np.zeros(len(self.energy_scale))
+        self.model = np.zeros(len(self.energy_scale))
+        self.model[start_channel:end_channel] = model
+        fit = eels_tools.model_smooth(energy_scale, self.p_out, False)
+        self.peak_model[start_channel:end_channel] = fit
+        self.dataset.metadata['peak_fit']['edge_model'] = self.model
+        self.model = self.model + self.peak_model
+        self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
+
+        for key, peak in self.peaks['peaks'].items():
+            if key.isdigit():
+                p_index = int(key)*3
+                self.peaks['peaks'][key] = {'position': self.p_out[p_index],
+                                            'amplitude': self.p_out[p_index+1],
+                                            'width': self.p_out[p_index+2],
+                                            'type': 'Gauss',
+                                            'associated_edge': ''}
+
+        self.find_associated_edges()
+        self.find_white_lines()
+        self.update()
+        self.plot()
+    
+    def find_associated_edges(self):
+        onsets = []
+        edges = []
+        if 'edges' in self.dataset.metadata:
+            for key, edge in self.dataset.metadata['edges'].items():
+                if key.isdigit():
+                    element = edge['element']
+                    for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
+                        onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift'])
+                        # if 'sym' == edge['symmetry']:
+                        edges.append([key, f"{element}-{sym}", onsets[-1]])
+            for key, peak in self.peaks['peaks'].items():
+                if key.isdigit():
+                    distance = self.energy_scale[-1]
+                    index = -1
+                    for ii, onset in enumerate(onsets):
+                        if onset < peak['position'] < onset+50:
+                            if distance > np.abs(peak['position'] - onset):
+                                distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
+                                distance_onset = peak['position'] - onset
+                                index = ii
+                    if index >= 0:
+                        peak['associated_edge'] = edges[index][1]  # check if more info is necessary
+                        peak['distance_to_onset'] = distance_onset
+
+    def find_white_lines(self):
+        if 'edges' in self.dataset.metadata:
+            white_lines = {}
+            for index, peak in self.peaks['peaks'].items():
+                if index.isdigit():
+                    if 'associated_edge' in peak:
+                        if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
+                            if peak['distance_to_onset'] < 10:
+                                area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
+                                if peak['associated_edge'] not in white_lines:
+                                    white_lines[peak['associated_edge']] = 0.
+                                if area > 0:
+                                    white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
+            white_line_ratios = {}
+            white_line_sum = {}
+            for sym, area in white_lines.items():
+                if sym[-2:] in ['L2', 'M4', 'M2']:
+                    if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
+                        if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
+                            white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
+                                f"{sym[:-1]}{int(sym[-1]) + 1}"]
+                            white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
+                                        area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
+
+                            areal_density = 1.
+                            if 'edges' in self.dataset.metadata:
+                                for key, edge in self.dataset.metadata['edges'].items():
+                                    if key.isdigit():
+                                        if edge['element'] == sym.split('-')[0]:
+                                            areal_density = edge['areal_density']
+                                            break
+                            white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
+
+            self.peaks['white_lines'] = white_lines
+            self.peaks['white_line_ratios'] = white_line_ratios
+            self.peaks['white_line_sums'] = white_line_sum
+            self.wl_list = []
+            self.wls_list = []
+            if len(self.peaks['white_line_ratios']) > 0:
+                for key in self.peaks['white_line_ratios']:
+                    self.wl_list.append(key)
+                for key in self.peaks['white_line_sums']:
+                    self.wls_list.append(key)
+
+                self.sidebar[14, 0].options = self.wl_list
+                self.sidebar[14, 0].value = self.wl_list[0]
+                self.sidebar[14, 2].value = f"{self.peaks['white_line_ratios'][self.wl_list[0]]:.2f}"
+                
+                self.sidebar[15, 0].options = self.wls_list
+                self.sidebar[15, 0].value = self.wls_list[0]
+                self.sidebar[15, 2].value = f"{self.peaks['white_line_sums'][self.wls_list[0]]*1e6:.4f} ppm"
+
+            else:
+                self.wl_list.append('Ratio')
+                self.wls_list.append('Sum')
+
+                self.sidebar[14, 0].options = ['None']
+                self.sidebar[14, 0].value = 'None'
+                self.sidebar[14, 2].value = ' '
+                
+                self.sidebar[15, 0].options = ['None']
+                self.sidebar[15, 0].value = 'None'
+                self.sidebar[15, 2].value = ' '
+    def find_peaks(self, value=0):
+        number_of_peaks = int(self.sidebar[5, 0].value)
+
+        # is now sorted in smooth function
+        # flat_list = [item for sublist in self.peak_out_list for item in sublist]
+        # new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
+        # arg_list = np.argsort(np.abs(new_list[:, 1]))
+
+        self.peak_list = []
+        self.peaks['peaks'] = {}
+        for i in range(number_of_peaks):
+            self.peak_list.append((f'Peak {i+1}', i))
+            p = self.peak_out_list[i]
+            self.peaks['peaks'][str(i)] = {'position': p[0], 'amplitude': p[1], 'width': p[2], 'type': 'Gauss',
+                                           'asymmetry': 0}
+
+        self.peak_list.append((f'add peak', -1))
+        
+        self.sidebar[7, 0].options = self.peak_list
+        self.sidebar[7, 0].value = 0
+        self.find_associated_edges()
+        self.find_white_lines()
+
+        self.update()
+        self.plot()
+
+    def smooth(self, value=0):
+        """Fit lots of Gaussian to spectrum and let the program sort it out
+
+        We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
+
+        """
+        iterations = self.sidebar[4, 0].value
+        self.sidebar[5, 0].value =  0
+        advanced_present=False
+
+        self.peak_model, self.peak_out_list, number_of_peaks = smooth(self.dataset, iterations, advanced_present)
+
+        spec_dim = ft.get_dimensions_by_type('SPECTRAL', self.dataset)[0]
+        if spec_dim[1][0] > 0:
+            self.model = self.dataset.metadata['edges']['model']['spectrum']
+        elif 'model' in self.dataset.metadata:
+            self.model = self.dataset.metadata['model']
+        else:
+            self.model = np.zeros(len(spec_dim[1]))
+
+        self.sidebar[5, 0].value =  number_of_peaks
+
+        self.dataset.metadata['peak_fit']['edge_model'] = self.model
+        self.model = self.model + self.peak_model
+        self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
+        self.dataset.metadata['peak_fit']['peak_out_list'] = self.peak_out_list
+
+        self.update()
+        self.plot()
+        
+        
+    def set_action(self):
+        self.sidebar[1, 0].observe(self.set_fit_area, names='value')
+        self.sidebar[2, 0].observe(self.set_fit_area, names='value')
+        
+        self.sidebar[4, 2].on_click(self.smooth)
+        self.sidebar[7,0].observe(self.update)
+        self.sidebar[5,2].on_click(self.find_peaks)
+        
+        self.sidebar[6,0].on_click(self.fit_peaks)
+        #self.sidebar[12,2].observe(self.plot)
+        #self.sidebar[4,2].observe(self.plot)
+
+        #self.sidebar[12,0].observe(self.set_y_scale)
+        
+
+
 
 if Qt_available:
     class PeakFitDialog(QtWidgets.QDialog):
