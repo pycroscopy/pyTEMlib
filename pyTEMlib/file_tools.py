@@ -96,6 +96,7 @@ class FileWidget(object):
         self.extensions = extension
         self.file_name = ''
         self.datasets ={}
+        self.dataset = None
 
         self.select_files = widgets.Select(
             options=self.dir_list,
@@ -126,6 +127,7 @@ class FileWidget(object):
                                              description='loaded datasets:',
                                              disabled=False,
                                              button_style='')
+        
         self.set_options()
         ui = widgets.VBox([self.path_choice, self.select_files, widgets.HBox([select_button, add_button, self.loaded_datasets])])
         display(ui)
@@ -135,6 +137,7 @@ class FileWidget(object):
 
         select_button.on_click(self.select_main)
         add_button.on_click(self.add_dataset)
+        self.loaded_datasets.observe(self.selected_dataset)
 
     def select_main(self, value=0):
         self.datasets = {}
@@ -164,6 +167,12 @@ class FileWidget(object):
         self.select_files.index = 0
         self.set_options()
 
+    def selected_dataset(self, value=0):
+        
+        key = self.loaded_datasets.value.split(':')[0]
+        if key != 'None':
+            self.selected_dataset = self.datasets[key]
+
     def set_options(self):
         self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
         dir_list = os.listdir(self.dir_name)
@@ -188,7 +197,7 @@ class FileWidget(object):
         self.dir_label = os.path.split(self.dir_name)[-1] + ':'
         self.select_files.options = self.display_list
         self.path_list = [self.dir_name]
-        paths = self.path_list[0].split('\\')
+        paths = os.path.abspath(self.path_list[0]).split('\\')
         for i in range(1, len(paths)):
             self.path_list.append('\\'.join(paths[:-i]))
         self.path_choice.options = self.path_list
