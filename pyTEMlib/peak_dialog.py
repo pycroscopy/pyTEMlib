@@ -1104,31 +1104,31 @@ if Qt_available:
                     
             
 
-    def smooth(dataset, iterations, advanced_present):
-        """Gaussian mixture model (non-Bayesian)
+def smooth(dataset, iterations, advanced_present):
+    """Gaussian mixture model (non-Bayesian)
 
-        Fit lots of Gaussian to spectrum and let the program sort it out
-        We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
+    Fit lots of Gaussian to spectrum and let the program sort it out
+    We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
 
-        """
+    """
 
-        # TODO: add sensitivity to dialog and the two functions below
-        peaks = dataset.metadata['peak_fit']
+    # TODO: add sensitivity to dialog and the two functions below
+    peaks = dataset.metadata['peak_fit']
 
-        if advanced_present and iterations > 1:
-            peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
-                                                                   peaks['fit_end'], iterations=iterations)
-        else:
-            peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
-            peak_out_list = [peak_out_list]
+    if advanced_present and iterations > 1:
+        peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
+                                                                peaks['fit_end'], iterations=iterations)
+    else:
+        peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
+        peak_out_list = [peak_out_list]
 
-        flat_list = [item for sublist in peak_out_list for item in sublist]
-        new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
-        area = np.sqrt(2 * np.pi) * np.abs(new_list[:, 1]) * np.abs(new_list[:, 2] / np.sqrt(2 * np.log(2)))
-        arg_list = np.argsort(area)[::-1]
-        area = area[arg_list]
-        peak_out_list = new_list[arg_list]
+    flat_list = [item for sublist in peak_out_list for item in sublist]
+    new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
+    area = np.sqrt(2 * np.pi) * np.abs(new_list[:, 1]) * np.abs(new_list[:, 2] / np.sqrt(2 * np.log(2)))
+    arg_list = np.argsort(area)[::-1]
+    area = area[arg_list]
+    peak_out_list = new_list[arg_list]
 
-        number_of_peaks = np.searchsorted(area * -1, -np.average(area))
+    number_of_peaks = np.searchsorted(area * -1, -np.average(area))
 
-        return peak_model, peak_out_list, number_of_peaks
+    return peak_model, peak_out_list, number_of_peaks
