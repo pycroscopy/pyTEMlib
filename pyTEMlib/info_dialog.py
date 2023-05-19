@@ -404,6 +404,8 @@ def get_sidebar():
 class InfoWidget(object):
     def __init__(self, datasets=None):
         self.datasets = datasets
+        self.dataset = None
+
         self.sidebar = get_sidebar()
         with plt.ioff():
             self.fig = plt.figure()
@@ -475,6 +477,7 @@ class InfoWidget(object):
         self.sidebar[0,0].options = spectrum_list
         self.sidebar[9,0].options = reference_list
         self.key = list(self.datasets)[dataset_index]
+        self.dataset = self.datasets[self.key]
         #self.sidebar[0,0].value = dataset_index #f'{self.key}: {self.datasets[self.key].title}'
         self.sidebar[2,0].value = np.round(self.datasets[self.key].energy_loss[0], 3)  
         self.sidebar[3,0].value = np.round(self.datasets[self.key].energy_loss[1] - self.datasets[self.key].energy_loss[0], 4)  
