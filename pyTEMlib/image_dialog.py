@@ -14,7 +14,7 @@ try:
     from PyQt5 import QtCore,  QtWidgets
 except:
     Qt_available = False
-    print('Qt dialogs are not available')
+    # print('Qt dialogs are not available')
 
 from matplotlib.widgets import SpanSelector
 from skimage import exposure
