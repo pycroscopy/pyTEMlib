@@ -196,12 +196,16 @@ class FileWidget(object):
 
         self.dir_label = os.path.split(self.dir_name)[-1] + ':'
         self.select_files.options = self.display_list
-        self.path_list = [self.dir_name]
-        paths = os.path.abspath(self.path_list[0]).split('\\')
-        for i in range(1, len(paths)):
-            self.path_list.append('\\'.join(paths[:-i]))
-        self.path_choice.options = self.path_list
-        self.path_choice.value = self.path_list[0]
+        
+        path = self.dir_name
+        old_path = ' '
+        path_list = []
+        while path != old_path:
+            path_list.append(path)
+            old_path = path
+            path = os.path.split(path)[0]
+        self.path_choice.options = path_list
+        self.path_choice.value = path_list[0]
 
     def get_file_name(self, b):
 
