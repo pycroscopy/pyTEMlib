@@ -15,7 +15,7 @@ try:
     from PyQt5 import QtCore, QtGui, QtWidgets
 except:
     Qt_available = False
-    print('Qt dialogs are not available')
+    # print('Qt dialogs are not available')
 
 if Qt_available:
     class UiDialog(object):
