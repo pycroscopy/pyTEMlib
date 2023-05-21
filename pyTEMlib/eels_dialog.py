@@ -1307,18 +1307,52 @@ class CompositionWidget(object):
         self.model = self.edges['model']['spectrum']
         self.update()
         self.plot()
+    
+    def modify_onset(self, value=-1):
+        edge_index = self.sidebar[4, 0].value
+        edge = self.edges[str(edge_index)]
+        edge['onset'] = self.sidebar[7,0].value
+        edge['chemical_shift'] = edge['onset'] -  edge['original_onset']
+        self.update()
         
+            
+    def modify_start_exclude(self, value=-1):
+        edge_index = self.sidebar[4, 0].value
+        edge = self.edges[str(edge_index)]
+        edge['start_exclude'] = self.sidebar[8,0].value
+        self.plot()
         
+    def modify_end_exclude(self, value=-1):
+        edge_index = self.sidebar[4, 0].value
+        edge = self.edges[str(edge_index)]
+        edge['end_exclude'] = self.sidebar[9,0].value
+        self.plot()
+    
+    def modify_areal_density(self, value=-1):
+        edge_index = self.sidebar[4, 0].value
+        edge = self.edges[str(edge_index)]
+        if self.y_scale == 1.0:
+            edge['areal_density'] = self.sidebar[10, 0].value
+        else:
+            dispersion = self.energy_scale[1]-self.energy_scale[0]
+            edge['areal_density'] = self.sidebar[10, 0].value *self.dataset.metadata['experiment']['flux_ppm']/1e-6
+        self.plot()
+
     def set_action(self):
-        self.sidebar[1,0].observe(self.set_fit_area, names='value')
-        self.sidebar[2,0].observe(self.set_fit_area, names='value')
+        self.sidebar[1, 0].observe(self.set_fit_area, names='value')
+        self.sidebar[2, 0].observe(self.set_fit_area, names='value')
         
-        self.sidebar[3,0].on_click(self.find_elements)
-        self.sidebar[4,0].observe(self.update)
-        self.sidebar[5,0].observe(self.set_element, names='value')
+        self.sidebar[3, 0].on_click(self.find_elements)
+        self.sidebar[4, 0].observe(self.update)
+        self.sidebar[5, 0].observe(self.set_element, names='value')
+
+        self.sidebar[7, 0].observe(self.modify_onset, names='value')
+        self.sidebar[8, 0].observe(self.modify_start_exclude, names='value')
+        self.sidebar[9, 0].observe(self.modify_end_exclude, names='value')
+        #self.sidebar[10, 0].observe(self.modify_areal_density, names='value')
         
-        self.sidebar[11,0].on_click(self.do_fit)
-        self.sidebar[12,2].observe(self.plot)
-        self.sidebar[0,0].observe(self.plot)
+        self.sidebar[11, 0].on_click(self.do_fit)
+        self.sidebar[12, 2].observe(self.plot)
+        self.sidebar[0, 0].observe(self.plot)
 
         self.sidebar[12,0].observe(self.set_y_scale)

@@ -341,9 +341,7 @@ def get_sidebar():
             value=0,
             description='Main Dataset:',
             disabled=False)
-    side_bar[0, 2] = ipywidgets.Button(description='Add Spectrum',
-                     style=ipywidgets.ButtonStyle(button_color='lightblue'),
-                     layout=ipywidgets.Layout(width='100px'))
+    
     row = 1
     side_bar[row, :3] = ipywidgets.Button(description='Energy Scale',
                      layout=ipywidgets.Layout(width='auto', grid_area='header'),
