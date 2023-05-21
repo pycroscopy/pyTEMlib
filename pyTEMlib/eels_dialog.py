@@ -1331,11 +1331,16 @@ class CompositionWidget(object):
     def modify_areal_density(self, value=-1):
         edge_index = self.sidebar[4, 0].value
         edge = self.edges[str(edge_index)]
-        if self.y_scale == 1.0:
-            edge['areal_density'] = self.sidebar[10, 0].value
-        else:
+        
+        edge['areal_density'] = self.sidebar[10, 0].value
+        if self.y_scale != 1.0:
             dispersion = self.energy_scale[1]-self.energy_scale[0]
             edge['areal_density'] = self.sidebar[10, 0].value *self.dataset.metadata['experiment']['flux_ppm']/1e-6
+
+        self.model = self.edges['model']['background']
+        for key in self.edges:
+            if key.isdigit():
+                self.model = self.model + self.edges[key]['areal_density'] * self.edges[key]['data']
         self.plot()
 
     def set_action(self):
@@ -1349,7 +1354,7 @@ class CompositionWidget(object):
         self.sidebar[7, 0].observe(self.modify_onset, names='value')
         self.sidebar[8, 0].observe(self.modify_start_exclude, names='value')
         self.sidebar[9, 0].observe(self.modify_end_exclude, names='value')
-        #self.sidebar[10, 0].observe(self.modify_areal_density, names='value')
+        self.sidebar[10, 0].observe(self.modify_areal_density, names='value')
         
         self.sidebar[11, 0].on_click(self.do_fit)
         self.sidebar[12, 2].observe(self.plot)
