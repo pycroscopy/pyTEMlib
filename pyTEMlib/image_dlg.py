@@ -10,7 +10,7 @@ try:
     from PyQt5 import QtCore, QtGui, QtWidgets
 except:
     Qt_available = False
-    print('Qt dialogs are not available')
+    # print('Qt dialogs are not available')
 
 from matplotlib.figure import Figure
 

@@ -7,7 +7,7 @@ try:
     from PyQt5 import QtCore,  QtWidgets
 except:
     Qt_available = False
-    print('Qt dialogs are not available')
+    # print('Qt dialogs are not available')
 
 import numpy as np
 import scipy
@@ -570,6 +570,45 @@ class PeakFitWidget(object):
         self.update()
         self.plot()
         
+    def make_model(self):
+        p_peaks = []
+        for key, peak in self.peaks['peaks'].items():
+            if key.isdigit():
+                p_peaks.append(peak['position'])
+                p_peaks.append(peak['amplitude'])
+                p_peaks.append(peak['width'])
+
+        
+        # set the energy scale and fit start and end points
+        energy_scale = np.array(self.energy_scale)
+        start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
+        end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
+        energy_scale = self.energy_scale[start_channel:end_channel]
+        # select the core loss model if it exists. Otherwise, we will fit to the full spectrum.
+            
+        fit = eels_tools.model_smooth(energy_scale, p_peaks, False)
+        self.peak_model[start_channel:end_channel] = fit
+        
+        self.model = self.dataset.metadata['peak_fit']['edge_model'] + self.peak_model
+        
+    def modify_peak_position(self, value=-1):
+        peak_index = self.sidebar[7, 0].value
+        self.peaks['peaks'][str(peak_index)]['position'] = self.sidebar[9,0].value
+        self.make_model()
+        self.plot()
+
+    def modify_peak_amplitude(self, value=-1):
+        peak_index = self.sidebar[7, 0].value
+        self.peaks['peaks'][str(peak_index)]['amplitude'] = self.sidebar[10,0].value
+        self.make_model()
+        self.plot()
+    
+    def modify_peak_width(self, value=-1):
+        peak_index = self.sidebar[7, 0].value
+        self.peaks['peaks'][str(peak_index)]['width'] = self.sidebar[11,0].value
+        self.make_model()
+        self.plot()
+    
         
     def set_action(self):
         self.sidebar[1, 0].observe(self.set_fit_area, names='value')
@@ -579,11 +618,10 @@ class PeakFitWidget(object):
         self.sidebar[7,0].observe(self.update)
         self.sidebar[5,2].on_click(self.find_peaks)
         
-        self.sidebar[6,0].on_click(self.fit_peaks)
-        #self.sidebar[12,2].observe(self.plot)
-        #self.sidebar[4,2].observe(self.plot)
-
-        #self.sidebar[12,0].observe(self.set_y_scale)
+        self.sidebar[6, 0].on_click(self.fit_peaks)
+        self.sidebar[9, 0].observe(self.modify_peak_position, names='value')
+        self.sidebar[10, 0].observe(self.modify_peak_amplitude, names='value')
+        self.sidebar[11, 0].observe(self.modify_peak_width, names='value')
         
 
 

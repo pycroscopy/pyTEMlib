@@ -12,7 +12,7 @@ try:
 
 except:
     Qt_available = False
-    print('Qt dialogs are not available')
+    # print('Qt dialogs are not available')
 
 import sidpy
 import matplotlib.patches as patches

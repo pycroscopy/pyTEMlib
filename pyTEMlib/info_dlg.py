@@ -20,7 +20,7 @@ try:
 
 except:
     Qt_available = False
-    print('Qt dialogs are not available')
+    # print('Qt dialogs are not available')
 
 
 if Qt_available:
