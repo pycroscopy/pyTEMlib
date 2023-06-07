@@ -446,9 +446,9 @@ def demon_registration(dataset, verbose=False):
 
 def rigid_registration(dataset):
     """
-    Rigid registration of image stack with sub-pixel accuracy
+    Rigid registration of image stack with pixel accuracy
 
-    Uses phase_cross_correlation from 'skimage.registration'
+    Uses simple cross_correlation
     (we determine drift from one image to next)
 
     Parameters
@@ -461,56 +461,71 @@ def rigid_registration(dataset):
     rigid_registered: sidpy.Dataset
         Registered Stack and drift (with respect to center image)
     """
-
+    
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('We need a sidpy.Dataset')
     if dataset.data_type.name != 'IMAGE_STACK':
         raise TypeError('Registration makes only sense for an image stack')
-
-    frame_dim = dataset.get_dimensions_by_type(['temporal'])
-    image_dims = dataset.get_dimensions_by_type(['spatial'])
-
-    nopix = dataset.shape[image_dims[0]]
-    nopiy = dataset.shape[image_dims[1]]
+    
+    frame_dim = []
+    spatial_dim = []
+    selection = []
+    
+    for i, axis in dataset._axes.items():
+        if axis.dimension_type.name == 'SPATIAL':
+            spatial_dim.append(i)
+            selection.append(slice(None))
+        else:
+            frame_dim.append(i)
+            selection.append(slice(0, 1))
+    
+    if len(spatial_dim) != 2:
+        print('need two spatial dimensions')
+    if len(frame_dim) != 1:
+        print('need one frame dimensions')
+    
+    nopix = dataset.shape[spatial_dim[0]]
+    nopiy = dataset.shape[spatial_dim[1]]
     nimages = dataset.shape[frame_dim[0]]
-
+    
     print('Stack contains ', nimages, ' images, each with', nopix, ' pixels in x-direction and ', nopiy,
           ' pixels in y-direction')
-
-    data_array = np.moveaxis(np.array(dataset), frame_dim[0], 0)
-
-    fixed = np.array(data_array[0])
-    fft_fixed = np.fft.fft2(fixed)
-
+    
+    fixed = dataset[tuple(selection)].squeeze().compute()
+    fft_fixed =  np.fft.fft2(fixed)
+    
     relative_drift = [[0., 0.]]
-
+    
     for i in trange(nimages):
-        moving = np.array(data_array[i])
+        selection[frame_dim[0]] = slice(i, i+1)
+        moving = dataset[tuple(selection)].squeeze().compute()
         fft_moving = np.fft.fft2(moving)
-        if skimage.__version__[:4] == '0.16':
-            raise DeprecationWarning('Old scikit image version does not work')
-        else:
-            shift = registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000, space='fourier')
+        image_product = fft_fixed * fft_moving.conj()
+        cc_image = np.fft.fftshift(np.fft.ifft2(image_product))
+        shift =np.array(ndimage.maximum_position(cc_image.real))-cc_image.shape[0]/2
         fft_fixed = fft_moving
-        relative_drift.append(shift[0])
+        relative_drift.append(shift)
+    rig_reg, drift = rig_reg_drift(dataset, relative_drift)
 
-    rig_reg, drift = rig_reg_drift(data_array, relative_drift)
-
+    
     crop_reg, input_crop = crop_image_stack(rig_reg, drift)
-
-    rigid_registered = sidpy.Dataset.from_array(crop_reg)
-    rigid_registered.set_dimension(0, dataset._axes[frame_dim[0]])
-    rigid_registered.set_dimension(1, dataset._axes[image_dims[0]][input_crop[0]:input_crop[1]])
-    rigid_registered.set_dimension(2, dataset._axes[image_dims[1]][input_crop[2]:input_crop[3]])
-    rigid_registered.data_type = 'Image_stack'
-
+    
+    rigid_registered = dataset.like_data(crop_reg)
     rigid_registered.title = 'Rigid Registration'
     rigid_registered.source = dataset.title
     rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
-                                 'input_crop': input_crop, 'input_shape': np.array(dataset.shape)[image_dims]}
-
-    return rigid_registered
-
+                                 'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
+    if hasattr(rigid_registered, 'z'):
+        del rigid_registered.z
+    if hasattr(rigid_registered, 'x'):
+        del rigid_registered.x
+    if hasattr(rigid_registered, 'y'):
+        del rigid_registered.y
+    rigid_registered._axes = {}
+    rigid_registered.set_dimension(0, dataset._axes[frame_dim[0]])
+    rigid_registered.set_dimension(1, dataset._axes[spatial_dim[0]][input_crop[0]:input_crop[1]])
+    rigid_registered.set_dimension(2, dataset._axes[spatial_dim[1]][input_crop[2]:input_crop[3]])
+    return rigid_registered.rechunk({0: 'auto', 1: -1, 2: -1})
 
 def rig_reg_drift(dset, rel_drift):
     """ Shifting images on top of each other
@@ -564,7 +579,7 @@ def rig_reg_drift(dset, rel_drift):
     for i in range(rig_reg.shape[0]):
         selection[frame_dim[0]] = slice(i, i+1)
         # Now we shift
-        rig_reg[i, :, :] = ndimage.shift(dset[tuple(selection)].squeeze(), [drift[i, 0], drift[i, 1]], order=3)
+        rig_reg[i, :, :] = ndimage.shift(dset[tuple(selection)].squeeze().compute(), [drift[i, 0], drift[i, 1]], order=3)
     return rig_reg, drift
 
 
@@ -589,7 +604,6 @@ def crop_image_stack(rig_reg, drift):
     ypmax = int(rig_reg.shape[2] - np.ceil(np.max(np.array(drift)[:, 1])))
 
     return rig_reg[:, xpmin:xpmax, ypmin:ypmax], [xpmin, xpmax, ypmin, ypmax]
-
 
 class ImageWithLineProfile:
     """Image with line profile"""
@@ -926,6 +940,57 @@ def calculate_scherzer(wavelength, cs):
     return scherzer
 
 
+def get_rotation(fft_spots, diff_spots):
+    """Get rotation by comparing spots in diffractogram to diffraction Bragg spots
+
+    Parameter
+    ---------
+    fft_spots: numpy array (nx2)
+        positions (in 1/nm) of spots in diffractogram
+    diff_spots: numpy array (nx2)
+        positions (in 1/nm) of Bragg spots according to kinematic scattering theory
+
+    """
+    # sort fft spots  them by angle
+    r_f, phi_f = cart2pol(fft_spots)
+    phi_f = phi_f[r_f > 0.1]
+    r_f = r_f[r_f > 0.1]
+    phi_f_index = np.argsort(phi_f)
+    phi_f = phi_f[phi_f_index]
+    r_f = r_f[phi_f_index]
+
+    # get crystal spots of same length and sort them by angle as well
+    r_c, phi_c = cart2pol(diff_spots)
+    same_r = np.argsort(r_c)
+    spots_c = diff_spots[same_r[0:len(r_f)], 0:2]
+    r_c, phi_c = cart2pol(spots_c[:, 0:2])
+    phi_c_index = np.argsort(phi_c)
+    phi_c = phi_c[phi_c_index]
+    r_c = r_c[phi_c_index]
+    r_c2 = r_c
+    d_min = 1e12
+    d_i = 0
+
+    # rotate first crystal spot on each fft spot and check for best match
+    for i in range(len(phi_f)):
+        phi_c2 = phi_c
+
+        phi_c2 = np.roll(phi_c2, i)
+        r_c2 = np.roll(r_c, i)
+        d = np.sqrt(r_f ** 2 + r_c2 ** 2 - 2 * r_f * r_c2 * np.cos(phi_f - phi_c2))
+        if d.sum() < d_min:
+            d_min = d.sum()
+            d_i = i
+        angle = phi_c[0] - phi_f[d_i]
+
+    st = np.sin(angle)
+    ct = np.cos(angle)
+    rotation_matrix = np.array([[ct, -st], [st, ct]])
+
+    return rotation_matrix, angle
+
+
+
 def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
     """depreciated get change of scale from comparison of spots to Bragg angles """
     gx = fft_tags['spatial_scale_x']
@@ -945,6 +1010,7 @@ def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
     x0 = [1.001, 0.999]
     [dg, sig] = optimization.leastsq(func, x0, args=(closest_exp_reflections[:, 0], closest_exp_reflections[:, 1]))
     return dg
+
 
 
 def align_crystal_reflections(spots, crystals):

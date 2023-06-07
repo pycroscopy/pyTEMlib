@@ -246,7 +246,7 @@ class PeakFitWidget(object):
         for key in self.peaks['peaks']:
             if key.isdigit():
                 self.peak_list.append((f'Peak {int(key) + 1}', int(key)))
-        self.peak_list.append((f'add peak', -1))
+        self.peak_list.append(('add peak', -1))
         self.sidebar[7, 0].options = self.peak_list
         self.sidebar[7, 0].value = 0
 
@@ -588,9 +588,10 @@ class PeakFitWidget(object):
             
         fit = eels_tools.model_smooth(energy_scale, p_peaks, False)
         self.peak_model[start_channel:end_channel] = fit
-        
-        self.model = self.dataset.metadata['peak_fit']['edge_model'] + self.peak_model
-        
+        if 'edge_model' in self.dataset.metadata['peak_fit']:
+            self.model = self.dataset.metadata['peak_fit']['edge_model'] + self.peak_model
+        else:
+            self.model = np.zeros(self.dataset.shape)
     def modify_peak_position(self, value=-1):
         peak_index = self.sidebar[7, 0].value
         self.peaks['peaks'][str(peak_index)]['position'] = self.sidebar[9,0].value
