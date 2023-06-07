@@ -148,7 +148,8 @@ class FileWidget(object):
         self.loaded_datasets.options = self.dataset_list
         self.loaded_datasets.value = self.dataset_list[0]
         self.dataset = self.datasets[list(self.datasets.keys())[0]]
-
+        self.selected_dataset = self.dataset
+        
     def add_dataset(self, value=0):
         key = add_dataset_from_file(self.datasets, self.file_name, 'Channel')
         self.dataset_list.append(f'{key}: {self.datasets[key].title}')

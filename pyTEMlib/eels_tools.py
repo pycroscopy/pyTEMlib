@@ -1149,9 +1149,11 @@ def resolution_function2(dataset, width =0.3):
     [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
 
     z_loss = zl_func(p_zl, dataset.energy_loss)
-    z_loss = dataset.like_array(z_loss)
+    z_loss = dataset.like_data(z_loss)
     z_loss.title = 'resolution_function'
     z_loss.metadata['zero_loss_parameter']=p_zl
+    dataset.metadata['low_loss']['zero_loss'] = {'zero_loss_parameter': p_zl,
+                                                 'zero_loss_fit': 'Product2Lorentzians'}
     return z_loss, p_zl
 
 
