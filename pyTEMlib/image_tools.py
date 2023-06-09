@@ -940,54 +940,33 @@ def calculate_scherzer(wavelength, cs):
     return scherzer
 
 
-def get_rotation(fft_spots, diff_spots):
+def get_rotation(experiment_spots, crystal_spots):
     """Get rotation by comparing spots in diffractogram to diffraction Bragg spots
 
     Parameter
     ---------
-    fft_spots: numpy array (nx2)
+    experiment_spots: numpy array (nx2)
         positions (in 1/nm) of spots in diffractogram
-    diff_spots: numpy array (nx2)
+    crystal_spots: numpy array (nx2)
         positions (in 1/nm) of Bragg spots according to kinematic scattering theory
 
     """
-    # sort fft spots  them by angle
-    r_f, phi_f = cart2pol(fft_spots)
-    phi_f = phi_f[r_f > 0.1]
-    r_f = r_f[r_f > 0.1]
-    phi_f_index = np.argsort(phi_f)
-    phi_f = phi_f[phi_f_index]
-    r_f = r_f[phi_f_index]
 
+    r_experiment, phi_experiment = cart2pol(experiment_spots)
+    
     # get crystal spots of same length and sort them by angle as well
-    r_c, phi_c = cart2pol(diff_spots)
-    same_r = np.argsort(r_c)
-    spots_c = diff_spots[same_r[0:len(r_f)], 0:2]
-    r_c, phi_c = cart2pol(spots_c[:, 0:2])
-    phi_c_index = np.argsort(phi_c)
-    phi_c = phi_c[phi_c_index]
-    r_c = r_c[phi_c_index]
-    r_c2 = r_c
-    d_min = 1e12
-    d_i = 0
+    r_crystal, phi_crystal, _ = xy2polar(crystal_spots)
+   
+    angle_index = np.argmin(np.abs(r_experiment-r_crystal[0]) )
+    
+    rotation_angle = phi_experiment[angle_index]- phi_crystal[0]
+    print(rotation_angle, angle_index)
 
-    # rotate first crystal spot on each fft spot and check for best match
-    for i in range(len(phi_f)):
-        phi_c2 = phi_c
-
-        phi_c2 = np.roll(phi_c2, i)
-        r_c2 = np.roll(r_c, i)
-        d = np.sqrt(r_f ** 2 + r_c2 ** 2 - 2 * r_f * r_c2 * np.cos(phi_f - phi_c2))
-        if d.sum() < d_min:
-            d_min = d.sum()
-            d_i = i
-        angle = phi_c[0] - phi_f[d_i]
-
-    st = np.sin(angle)
-    ct = np.cos(angle)
+    st = np.sin(rotation_angle)
+    ct = np.cos(rotation_angle)
     rotation_matrix = np.array([[ct, -st], [st, ct]])
 
-    return rotation_matrix, angle
+    return rotation_matrix, rotation_angle
 
 
 
