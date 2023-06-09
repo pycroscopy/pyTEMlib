@@ -141,6 +141,7 @@ class FileWidget(object):
 
     def select_main(self, value=0):
         self.datasets = {}
+        self.loaded_datasets.value = self.dataset_list[0]
         self.datasets = open_file(self.file_name)
         self.dataset_list = []
         for key in self.datasets.keys():
@@ -155,7 +156,6 @@ class FileWidget(object):
         self.dataset_list.append(f'{key}: {self.datasets[key].title}')
         self.loaded_datasets.options = self.dataset_list
         self.loaded_datasets.value = self.dataset_list[-1]
-
 
     def get_directory(self, directory=None):
         self.dir_name = directory
