@@ -809,6 +809,7 @@ def cart2pol(points):
 
     rho = np.linalg.norm(points[:, 0:2], axis=1)
     phi = np.arctan2(points[:, 1], points[:, 0])
+    
     return rho, phi
 
 
@@ -853,7 +854,7 @@ def xy2polar(points, rounding=1e-3):
 
     r, phi = cart2pol(points)
 
-    phi = phi-phi.min()  # only positive angles
+    phi = phi  # %np.pi # only positive angles
     r = (np.floor(r/rounding))*rounding  # Remove rounding error differences
 
     sorted_indices = np.lexsort((phi, r))  # sort first by r and then by phi
@@ -955,13 +956,10 @@ def get_rotation(experiment_spots, crystal_spots):
     r_experiment, phi_experiment = cart2pol(experiment_spots)
     
     # get crystal spots of same length and sort them by angle as well
-    r_crystal, phi_crystal, _ = xy2polar(crystal_spots)
-   
-    angle_index = np.argmin(np.abs(r_experiment-r_crystal[0]) )
-    
-    rotation_angle = phi_experiment[angle_index]- phi_crystal[0]
-    print(rotation_angle, angle_index)
-
+    r_crystal, phi_crystal, crystal_indices = xy2polar(crystal_spots)
+    angle_index = np.argmin(np.abs(r_experiment-r_crystal[1]) )
+    rotation_angle = phi_experiment[angle_index]%(2*np.pi)#- phi_crystal[1]
+    print(phi_experiment[angle_index])
     st = np.sin(rotation_angle)
     ct = np.cos(rotation_angle)
     rotation_matrix = np.array([[ct, -st], [st, ct]])
