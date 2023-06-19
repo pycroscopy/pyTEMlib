@@ -26,7 +26,7 @@ import ase.build
 import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
-
+from scipy.spatial import cKDTree
 _spglib_present = True
 try:
     import spglib
@@ -117,6 +117,47 @@ def set_bond_radii(atoms):
     for i in range(len(atoms)):
         bond_radii[i] = electronFF[atoms.symbols[i]]['bond_length'][1]
     atoms.info['bond_radii'] = bond_radii
+
+
+def get_projection(crystal, layers=1):
+    zone_axis = crystal.info['experimental']['zone_axis']
+    angle = crystal.info['experimental']['angle']
+    projected_crystal = ase.build.surface(crystal, zone_axis, vacuum=.0, layers=layers)
+
+    element_tree = cKDTree(projected_crystal.positions[:, 0:2])
+    done = []
+    projected = []
+    for atom in projected_crystal:
+        if atom.index not in done:
+            near = element_tree.query_ball_point(atom.position[:2], 0.05)
+            projected.append(near)
+            done.extend(near)
+    print('projected atomic numbers')
+    atomic_numbers = []
+    for pro in projected:
+        atomic_numbers.append(projected_crystal.get_atomic_numbers()[pro].sum())
+        
+    projected_crystal.rotate(np.degrees(angle)%360, 'z', rotate_cell=True)
+    
+    near_base = np.array([projected_crystal.cell[0,:2], -projected_crystal.cell[0,:2],
+                          projected_crystal.cell[1,:2], -projected_crystal.cell[1,:2],
+                          projected_crystal.cell[0,:2] + projected_crystal.cell[1,:2],
+                          -(projected_crystal.cell[0,:2] + projected_crystal.cell[1,:2])])
+    lines = np.array( [[[0, near_base[0,0]],[0, near_base[0,1]]],
+                       [[0, near_base[2,0]],[0, near_base[2,1]]],
+                       [[near_base[0,0], near_base[4,0]],[near_base[0,1], near_base[4,1]]],
+                       [[near_base[2,0], near_base[4,0]],[near_base[2,1], near_base[4,1]]]])
+    projected_atoms = []
+    for index in projected:
+       projected_atoms.append(index[0])
+    
+    projected_crystal.info['projection']={'indices': projected, 
+                                          'projected': projected_atoms,
+                                          'projected_Z': atomic_numbers, 
+                                          'angle': np.degrees(angle)+180%360,
+                                          'near_base': near_base,
+                                          'lines': lines}    
+    return projected_crystal
 
 
 def jmol_viewer(atoms, size=2):
@@ -257,7 +298,7 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     return super_cell
 
 
-def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
+def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax = None):
     """
     Simple plot of unit cell
     """
@@ -267,8 +308,9 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     corners = super_cell.info['plot_cell']['corner_vectors']
     positions = super_cell.positions - super_cell.cell.lengths()/2
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    if ax is None:
+       fig = plt.figure()
+       ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
 
     for line in super_cell.info['plot_cell']['corner_matrix'].keys():
@@ -296,7 +338,7 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     ax.set_xlabel('x [Å]')
     ax.set_ylabel('y [Å]')
     ax.set_zlabel('z [Å]')
-    return fig
+    return ax.get_figure()
 
 
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
