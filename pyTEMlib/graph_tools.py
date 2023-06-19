@@ -3,15 +3,18 @@
 """
 import numpy as np
 # import ase
+import sys
 
 # from scipy.spatial import cKDTree, Voronoi, ConvexHull
 import scipy.spatial
 import scipy.optimize
 
-# from skimage.measure import grid_points_in_poly, points_in_poly
+from skimage.measure import grid_points_in_poly, points_in_poly
 
 # import plotly.graph_objects as go
 # import plotly.express as px
+import matplotlib.patches as patches
+
 import pyTEMlib.crystal_tools
 from tqdm.auto import tqdm, trange
 
@@ -179,7 +182,7 @@ def set_bond_radii(atoms, bond_type='bond'):
     return r_a
 
 
-def get_voronoi(tetrahedra, atoms, optimize=True):
+def get_voronoi(tetrahedra, atoms, bond_radii=None, optimize=True):
     """
     Find Voronoi vertices and keep track of associated tetrahedrons and interstitial radii
 
@@ -207,8 +210,12 @@ def get_voronoi(tetrahedra, atoms, optimize=True):
     extent = atoms.cell.lengths()
     if atoms.info is None:
         atoms.info = {}
-    if 'bond_radii' in atoms.info:
+
+    if bond_radii is not None:
+        bond_radii = [bond_radii]*len(atoms)
+    elif 'bond_radii' in atoms.info:
         bond_radii = atoms.info['bond_radii']
+    
     else:
         bond_radii = get_bond_radii(atoms)
         
@@ -399,8 +406,271 @@ def make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, vi
 # polyhedra functions
 ##################################################################
 
+def get_non_periodic_supercell(super_cell):
+    super_cell.wrap()
+    atoms = super_cell*3
+    atoms.positions -= super_cell.cell.lengths()
+    atoms.positions[:,0] += super_cell.cell[0,0]*.0
+    del(atoms[atoms.positions[: , 0]<-5])
+    del(atoms[atoms.positions[: , 0]>super_cell.cell[0,0]+5])
+    del(atoms[atoms.positions[: , 1]<-5])
+    del(atoms[atoms.positions[: , 1]>super_cell.cell[1,1]+5])
+    del(atoms[atoms.positions[: , 2]<-5])
+    del(atoms[atoms.positions[: , 2]>super_cell.cell[2,2]+5])
+    return atoms
 
-def find_polyhedra(atoms, optimize=True, cheat=1.0):
+def get_connectivity_matrix(crystal, atoms, polyhedra):
+    crystal_tree = scipy.spatial.cKDTree(crystal.positions)
+    
+    
+    connectivity_matrix = np.zeros([len(atoms),len(atoms)], dtype=int)
+
+    for polyhedron in polyhedra.values():
+        vertices = polyhedron['vertices'] - crystal.cell.lengths()
+        atom_ind = np.array(polyhedron['indices'])
+        dd, polyhedron['atom_indices'] = crystal_tree.query(vertices , k=1)
+        to_bond = np.where(dd<0.001)[0]
+       
+        for triangle in polyhedron['triangles']:
+            triangle = np.array(triangle)
+            for permut in [[0,1], [1,2], [0,2]]:
+                vertex = [np.min(triangle[permut]), np.max(triangle[permut])]
+                if vertex[0] in to_bond or vertex[1] in to_bond:
+                    connectivity_matrix[atom_ind[vertex[1]], atom_ind[vertex[0]]] = 1 
+                    connectivity_matrix[atom_ind[vertex[0]], atom_ind[vertex[1]]] = 1 
+    return connectivity_matrix
+    
+
+
+def get_bonds(crystal, shift= 0., verbose = False, cheat=1.0):
+    """
+    Get polyhedra, and bonds from  and edges and lengths of edges for each polyhedron and store it in info dictionary of new ase.Atoms object
+    
+    Parameter:
+    ----------
+    crystal: ase.atoms_object
+        information on all polyhedra
+    """
+    crystal.positions += shift * crystal.cell[0, 0]
+    crystal.wrap()
+   
+    atoms = get_non_periodic_supercell(crystal)
+    atoms = atoms[atoms.numbers.argsort()]
+
+    
+    atoms.positions += crystal.cell.lengths()
+    polyhedra = find_polyhedra(atoms, cheat=cheat)
+
+    connectivity_matrix = get_connectivity_matrix(crystal, atoms, polyhedra) 
+    coord = connectivity_matrix.sum(axis=1)
+    
+    del(atoms[np.where(coord==0)])
+    new_polyhedra = {}
+    index = 0
+    octahedra =[]
+    tetrahedra = []
+    other = []
+    super_cell_atoms =[]
+    
+    atoms_tree = scipy.spatial.cKDTree(atoms.positions-crystal.cell.lengths())
+    crystal_tree = scipy.spatial.cKDTree(crystal.positions)
+    connectivity_matrix = np.zeros([len(atoms),len(atoms)], dtype=float)
+    
+    for polyhedron in polyhedra.values():
+        polyhedron['vertices'] -= crystal.cell.lengths()
+        vertices = polyhedron['vertices']
+        center = np.average(polyhedron['vertices'], axis=0)
+        
+        dd, polyhedron['indices'] = atoms_tree.query(vertices , k=1)
+        atom_ind = (np.array(polyhedron['indices']))
+        dd, polyhedron['atom_indices'] = crystal_tree.query(vertices , k=1)
+
+        to_bond = np.where(dd<0.001)[0]
+        super_cell_atoms.extend(list(atom_ind[to_bond]))
+        
+        edges = []
+        lengths = []
+        for triangle in polyhedron['triangles']:
+            triangle = np.array(triangle)
+            for permut in [[0,1], [1,2], [0,2]]:
+                vertex = [np.min(triangle[permut]), np.max(triangle[permut])]
+                length = np.linalg.norm(vertices[vertex[0]]-vertices[vertex[1]])
+                if vertex[0] in to_bond or vertex[1] in to_bond:
+                    connectivity_matrix[atom_ind[vertex[1]], atom_ind[vertex[0]]] = length 
+                    connectivity_matrix[atom_ind[vertex[0]], atom_ind[vertex[1]]] = length 
+                    if vertex[0] not in to_bond:
+                        atoms[atom_ind[vertex[0]]].symbol = 'Be'
+                    if vertex[1] not in to_bond: 
+                        atoms[atom_ind[vertex[1]]].symbol = 'Be'
+                if vertex not in edges:
+                    edges.append(vertex)
+                    lengths.append(np.linalg.norm(vertices[vertex[0]]-vertices[vertex[1]] ))
+        polyhedron['edges'] = edges
+        polyhedron['edge_lengths'] = lengths
+        if all(center > -0.000001) and all(center < crystal.cell.lengths()-0.01):
+                new_polyhedra[str(index)]=polyhedron
+                if polyhedron['length'] == 4:
+                    tetrahedra.append(str(index)) 
+                elif polyhedron['length'] == 6:
+                    octahedra.append(str(index))
+                else:
+                    other.append(str(index))
+                    if verbose:
+                        print(polyhedron['length'])
+                index += 1
+    atoms.positions -= crystal.cell.lengths()
+    coord = connectivity_matrix.copy()
+    coord[np.where(coord>.1)] = 1
+    coord = coord.sum(axis=1)
+    
+    super_cell_atoms = np.sort(np.unique(super_cell_atoms))
+    atoms.info.update({'polyhedra': {'polyhedra': new_polyhedra, 
+                                    'tetrahedra': tetrahedra,
+                                    'octahedra': octahedra,
+                                    'other' : other}})
+    atoms.info.update({'bonds': {'connectivity_matrix': connectivity_matrix, 
+                                 'super_cell_atoms': super_cell_atoms,
+                                 'super_cell_dimensions': crystal.cell.array,
+                                 'coordination': coord}})
+    atoms.info.update({'supercell': crystal})
+    return atoms    
+
+def plot_atoms(atoms: ase.Atoms, polyhedra_indices=None, plot_bonds=False, color='', template=None, atom_size=None, max_size=35) -> go.Figure:
+    """
+    Plot structure in a ase.Atoms object with plotly
+    
+    If the info dictionary of the atoms object contains bond or polyedra information, these can be set tobe plotted
+    
+    Partameter:
+    -----------
+    atoms: ase.Atoms object
+        structure of supercell
+    polyhedra_indices: list of integers
+        indices of polyhedra to be plotted
+    plot_bonds: boolean
+        whether to plot bonds or not
+
+    Returns:
+    --------
+    fig: plotly figure object
+        handle to figure needed to modify appearance
+    """
+    energies = np.zeros(len(atoms))
+    if 'bonds' in atoms.info:
+        if 'atom_energy' in atoms.info['bonds']:
+            energies = np.round(np.array(atoms.info['bonds']['atom_energy'] - 12 * atoms.info['bonds']['ideal_bond_energy']) *1000,0)
+    
+            for atom in atoms:
+                if atom.index not in atoms.info['bonds']['super_cell_atoms']:
+                    energies[atom.index] = 0.
+    if color == 'coordination':
+        colors = atoms.info['bonds']['coordination']
+    elif color == 'layer':
+        colors = atoms.positions[:, 2]
+    elif color == 'energy':
+        colors = energies
+        colors[colors>50] = 50
+        colors = np.log(1+ energies)
+        
+    else: 
+        colors = atoms.get_atomic_numbers()
+        
+    if atom_size is None:
+        atom_size = atoms.get_atomic_numbers()*4
+    elif isinstance(atom_size, float):
+        atom_size = atoms.get_atomic_numbers()*4*atom_size
+        atom_size[atom_size>max_size] = max_size
+    elif isinstance(atom_size, int):
+        atom_size = [atom_size]*len(atoms)
+    if len(atom_size) !=  len(atoms):
+        atom_size = [10]*len(atoms)
+        print('wrong length of atom_size parameter')
+    plot_polyhedra = False
+    data = []
+    if polyhedra_indices is not None:
+        if 'polyhedra' in atoms.info:   
+            if polyhedra_indices == -1:
+                data = plot_polyhedron(atoms.info['polyhedra']['polyhedra'], range(len(atoms.info['polyhedra']['polyhedra'])))
+                plot_polyhedra = True
+            elif isinstance(polyhedra_indices, list):
+                data = plot_polyhedron(atoms.info['polyhedra']['polyhedra'], polyhedra_indices)
+                plot_polyhedra = True
+    text = []
+    if 'bonds' in atoms.info:
+        coord = atoms.info['bonds']['coordination']
+        for atom in atoms:
+            if atom.index in atoms.info['bonds']['super_cell_atoms']:
+
+                text.append(f'Atom {atom.index}: coordination={coord[atom.index]}' +
+                            f'x:{atom.position[0]:.2f} \n y:{atom.position[1]:.2f} \n z:{atom.position[2]:.2f}')
+                if 'atom_energy' in atoms.info['bonds']:
+                    text[-1] += f"\n energy: {energies[atom.index]:.0f} meV"
+            else:
+                text.append('')
+    else: 
+        text = [''] * len(atoms)
+          
+    if plot_bonds:
+         data += get_plot_bonds(atoms)
+    if plot_polyhedra or plot_bonds:
+        fig = go.Figure(data=data)
+    else:
+        fig = go.Figure()
+    if color=='energy':
+        fig.add_trace(go.Scatter3d(
+                        mode='markers',
+                        x=atoms.positions[:,0], y=atoms.positions[:,1], z=atoms.positions[:,2],
+                        hovertemplate='<b>%{text}</b><extra></extra>',
+                        text = text,
+                        marker=dict(
+                            color=colors,
+                            size=atom_size,
+                            sizemode='diameter',
+                            colorscale='Rainbow', #px.colors.qualitative.Light24,
+                            colorbar=dict(thickness=10, orientation='h'))))
+                            #hover_name = colors)))  # ["blue", "green", "red"])))        
+    
+    elif 'bonds' in atoms.info:
+        fig.add_trace(go.Scatter3d(
+                        mode='markers',
+                        x=atoms.positions[:,0], y=atoms.positions[:,1], z=atoms.positions[:,2],
+                        hovertemplate='<b>%{text}</b><extra></extra>',
+                        text = text,
+                        marker=dict(
+                            color=colors,
+                            size=atom_size,
+                            sizemode='diameter',
+                            colorscale= px.colors.qualitative.Light24)))
+                            #hover_name = colors)))  # ["blue", "green", "red"])))         
+            
+    else:
+         fig.add_trace(go.Scatter3d(
+                        mode='markers',
+                        x=atoms.positions[:,0], y=atoms.positions[:,1], z=atoms.positions[:,2],
+                        marker=dict(
+                            color=colors,
+                            size=atom_size,
+                            sizemode='diameter',
+                            colorbar=dict(thickness=10),
+                            colorscale= px.colors.qualitative.Light24)))
+                            #hover_name = colors)))  # ["blue", "green", "red"])))         
+    fig.update_layout(width=1000, height=700, showlegend=False, template=template)
+    fig.update_layout(scene_aspectmode='data',
+                      scene_aspectratio=dict(x=1, y=1, z=1))
+
+    camera = {'up': {'x': 0, 'y': 1, 'z': 0},
+              'center': {'x': 0, 'y': 0, 'z': 0},
+              'eye': {'x': 0, 'y': 0, 'z': 1}}
+    fig.update_coloraxes(showscale=True)
+    fig.update_layout(scene_camera=camera, title=r"Al-GB $")
+    fig.update_scenes(camera_projection_type="orthographic" ) 
+    fig.show()
+    return fig
+
+
+
+
+def find_polyhedra(atoms, optimize=True, cheat=1.0, bond_radii=None):
     """ get polyhedra information from an ase.Atoms object
 
     This is following the method of Banadaki and Patala
@@ -429,17 +699,48 @@ def find_polyhedra(atoms, optimize=True, cheat=1.0):
     else:
         tetrahedra = scipy.spatial.Delaunay(atoms.positions)
 
-    voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms, optimize=optimize)
-
+    voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms, optimize=optimize, bond_radii=bond_radii)
+    if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
+        r_vv = np.array(r_vv)*3.
     overlapping_pairs = find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=cheat)
 
     clusters, visited_all = find_interstitial_clusters(overlapping_pairs)
 
     if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
-        polyhedra = make_polygons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
+        rings = get_polygons(atoms, clusters, voronoi_tetrahedrons)
+        return rings
     else:
         polyhedra = make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
     return polyhedra
+
+
+def polygon_sort(corners):
+    center = np.average(corners[:, :2], axis=0)
+    angles = (np.arctan2(corners[:,0]-center[0], corners[:,1]-center[1]) + 2.0 * np.pi)% (2.0 * np.pi)
+    return corners[np.argsort(angles)]
+
+def get_polygons(atoms, clusters, voronoi_tetrahedrons):
+    polygons = []
+    cyclicity = []
+    centers = []
+    corners =[]
+    for index, cluster in (enumerate(clusters)):
+        cc = []
+        for c in cluster:
+            cc = cc + list(voronoi_tetrahedrons[c])
+        
+        sorted_corners = polygon_sort(atoms.positions[list(set(cc)), :2])
+        cyclicity.append(len(sorted_corners))
+        corners.append(sorted_corners)
+        centers.append(np.mean(sorted_corners[:,:2], axis=0))
+        polygons.append(patches.Polygon(np.array(sorted_corners)[:,:2], closed=True, fill=True, edgecolor='red'))
+
+    rings={'atoms': atoms.positions[:, :2],
+           'cyclicity': np.array(cyclicity),
+           'centers': np.array(centers),
+           'corners': corners,
+           'polygons': polygons}
+    return rings
 
 
 def sort_polyhedra_by_vertices(polyhedra, visible=range(4, 100), z_lim=[0, 100], verbose=False):
@@ -531,6 +832,88 @@ def breadth_first_search(graph, initial, projected_crystal):
 
     return graph[visited], ideal
 
+####################
+# Distortion Matrix
+####################
+def get_distortion_matrix(atoms, ideal_lattice):
+    """    Calculates distortion matrix
+
+    Calculates the distortion matrix by comparing ideal and distorted Voronoi tiles
+    """
+
+    vor = scipy.spatial.Voronoi(atoms)
+
+    # determine a middle Voronoi tile
+    ideal_vor = scipy.spatial.Voronoi(ideal_lattice)
+    near_center = np.average(ideal_lattice, axis=0)
+    index = np.argmin(np.linalg.norm(ideal_lattice - near_center, axis=0))
+
+    # the ideal vertices fo such an Voronoi tile (are there crystals with more than one voronoi?)
+    ideal_vertices = ideal_vor.vertices[ideal_vor.regions[ideal_vor.point_region[index]]]
+    ideal_vertices = get_significant_vertices(ideal_vertices - np.average(ideal_vertices, axis=0))
+
+    distortion_matrix = []
+    for index in range(vor.points.shape[0]):
+        done = int((index + 1) / vor.points.shape[0] * 50)
+        sys.stdout.write('\r')
+        # progress output :
+        sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
+        sys.stdout.flush()
+
+        # determine vertices of Voronoi polygons of an atom with number index
+        poly_point = vor.points[index]
+        poly_vertices = get_significant_vertices(vor.vertices[vor.regions[vor.point_region[index]]] - poly_point)
+
+        # where ATOM has to be moved (not pixel)
+        ideal_point = ideal_lattice[index]
+
+        # transform voronoi to ideal one and keep transformation matrix A
+        uncorrected, corrected, aa = transform_voronoi(poly_vertices, ideal_vertices)
+
+        # pixel positions
+        corrected = corrected + ideal_point + (np.rint(poly_point) - poly_point)
+        for i in range(len(corrected)):
+            # original image pixels
+            x, y = uncorrected[i] + np.rint(poly_point)
+            # collect the two origin and target coordinates and store
+            distortion_matrix.append([x, y, corrected[i, 0], corrected[i, 1]])
+    print()
+    return np.array(distortion_matrix)
+
+
+def undistort(distortion_matrix, image_data):
+    """ Undistort image according to distortion matrix
+    
+    Uses the griddata interpolation of scipy to apply distortion matrix to image.
+    The distortion matrix contains in origin and target pixel coordinates
+    target is where the pixel has to be moved (floats)
+    
+    Parameters
+    ----------
+    distortion_matrix: numpy array (Nx2)
+        distortion matrix (format N x 2)
+    image_data: numpy array or sidpy.Dataset
+        image 
+        
+    Returns
+    -------
+    interpolated: numpy array
+        undistorted image
+    """
+
+    intensity_values = image_data[(distortion_matrix[:, 0].astype(int), distortion_matrix[:, 1].astype(int))]
+
+    corrected = distortion_matrix[:, 2:4]
+
+    size_x, size_y = 2 ** np.round(np.log2(image_data.shape[0:2]))  # nearest power of 2
+    size_x = int(size_x)
+    size_y = int(size_y)
+    grid_x, grid_y = np.mgrid[0:size_x - 1:size_x * 1j, 0:size_y - 1:size_y * 1j]
+    print('interpolate')
+
+    interpolated = griddata(np.array(corrected), np.array(intensity_values), (grid_x, grid_y), method='linear')
+    return interpolated
+
 
 def transform_voronoi(vertices, ideal_voronoi):
     """ find transformation matrix A between a distorted polygon and a perfect reference one
@@ -606,7 +989,7 @@ def get_significant_vertices(vertices, distance=3):
             list of points that are all a minimum of 3 apart.
     """
 
-    tt = cKDTree(np.array(vertices))
+    tt = scipy.spatial.cKDTree(np.array(vertices))
     near = tt.query_ball_point(vertices, distance)
     ideal_vertices = []
     for indices in near:
@@ -778,4 +1161,3 @@ def undistort_stack(distortion_matrix, data):
     print(':-)')
     print('You have successfully completed undistortion of image stack')
     return interpolated
-

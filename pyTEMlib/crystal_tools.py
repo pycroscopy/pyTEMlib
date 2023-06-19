@@ -298,7 +298,7 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     return super_cell
 
 
-def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
+def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax = None):
     """
     Simple plot of unit cell
     """
@@ -308,8 +308,9 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     corners = super_cell.info['plot_cell']['corner_vectors']
     positions = super_cell.positions - super_cell.cell.lengths()/2
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    if ax is None:
+       fig = plt.figure()
+       ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
 
     for line in super_cell.info['plot_cell']['corner_matrix'].keys():
@@ -337,7 +338,7 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0):
     ax.set_xlabel('x [Å]')
     ax.set_ylabel('y [Å]')
     ax.set_zlabel('z [Å]')
-    return fig
+    return ax.get_figure()
 
 
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
