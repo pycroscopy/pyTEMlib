@@ -958,7 +958,7 @@ def get_rotation(experiment_spots, crystal_spots):
     # get crystal spots of same length and sort them by angle as well
     r_crystal, phi_crystal, crystal_indices = xy2polar(crystal_spots)
     angle_index = np.argmin(np.abs(r_experiment-r_crystal[1]) )
-    rotation_angle = phi_experiment[angle_index]%(2*np.pi)#- phi_crystal[1]
+    rotation_angle = phi_experiment[angle_index]%(2*np.pi) - phi_crystal[1]
     print(phi_experiment[angle_index])
     st = np.sin(rotation_angle)
     ct = np.cos(rotation_angle)
