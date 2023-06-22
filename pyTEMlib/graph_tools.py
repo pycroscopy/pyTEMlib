@@ -8,6 +8,7 @@ import sys
 # from scipy.spatial import cKDTree, Voronoi, ConvexHull
 import scipy.spatial
 import scipy.optimize
+import scipy.interpolate
 
 from skimage.measure import grid_points_in_poly, points_in_poly
 
@@ -139,10 +140,13 @@ def get_bond_radii(atoms, bond_type='bond'):
     
     r_a = []
     for atom in atoms:
-        if bond_type == 'covalent':
-            r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][0])
+        if atom.symbol == 'X':
+            r_a.append(1.2)
         else:
-            r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][1])
+            if bond_type == 'covalent':
+                r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][0])
+            else:
+                r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][1])
     if atoms.info is None:
         atoms.info = {}
     atoms.info['bond_radii'] = r_a
@@ -911,7 +915,7 @@ def undistort(distortion_matrix, image_data):
     grid_x, grid_y = np.mgrid[0:size_x - 1:size_x * 1j, 0:size_y - 1:size_y * 1j]
     print('interpolate')
 
-    interpolated = griddata(np.array(corrected), np.array(intensity_values), (grid_x, grid_y), method='linear')
+    interpolated = scipy.interpolate.griddata(np.array(corrected), np.array(intensity_values), (grid_x, grid_y), method='linear')
     return interpolated
 
 
