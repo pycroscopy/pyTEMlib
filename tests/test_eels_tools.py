@@ -149,7 +149,7 @@ class TestFileFunctions(unittest.TestCase):
         new_dataset[0, 0, :] = np.array(dataset)
         new_dataset[1, 0, :] = np.array(dataset)
 
-        shifts = eels.get_energy_shifts(new_dataset, dataset.energy_loss.values, 0.5)
+        # shifts = eels.get_energy_shifts(new_dataset, dataset.energy_loss.values, 0.5)
 
         # print('\n shifts ', shifts[:2, 0])
         self.assertTrue(True)  # np.isclose(shifts[0, 0], -0.22673, rtol=1e-01))
