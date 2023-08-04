@@ -44,7 +44,6 @@ if Qt_available:
             self.set_action()
             self.datasets = datasets
 
-            
             self.spec_dim = []
             self.energy_scale = np.array([])
             self.experiment = {}
@@ -306,8 +305,6 @@ if Qt_available:
                     self.set_flux(key)
                     
                 self.update()
-        
-                
 
         def set_action(self):
             self.ui.statusBar.showMessage('action')
@@ -334,7 +331,7 @@ if Qt_available:
 
 
 def get_sidebar():
-    side_bar = ipywidgets.GridspecLayout(14, 3,width='auto', grid_gap="0px")
+    side_bar = ipywidgets.GridspecLayout(17, 3,width='auto', grid_gap="0px")
 
     side_bar[0, :2] = ipywidgets.Dropdown(
             options=[('None', 0)],
@@ -396,8 +393,106 @@ def get_sidebar():
     side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Current:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="pA", layout=ipywidgets.Layout(width='100px') )
     
+    row += 1
+
+    side_bar[row, :3] = ipywidgets.Button(description='Spectrum Image',
+                     layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                     style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    
+    row += 1
+    side_bar[row, :2] = ipywidgets.IntText(value=1, description='bin X:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.IntText(value=1, description='bin X:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+    
+    for i in range(14, 17):
+        side_bar[i, 0].layout.display = "none"
     return side_bar
 
+
+class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
+    def __init__(self, dset, spectrum_number=0, figure=None, **kwargs):
+        with plt.ioff():
+            self.figure = plt.figure()
+        self.figure.canvas.toolbar_position = 'right'
+        self.figure.canvas.toolbar_visible = True
+
+        super().__init__(dset, spectrum_number=spectrum_number, figure=self.figure, **kwargs)
+        
+        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
+                                                       self.start_cursor,ipywidgets.Label('eV'), 
+                                                       self.end_cursor, ipywidgets.Label('eV')]),
+                                      self.figure.canvas])
+        
+        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        #self.axis.legend()
+        display(self.panel)
+
+    def line_select_callback(self, x_min, x_max):
+        self.start_cursor.value = np.round(x_min, 3)
+        self.end_cursor.value = np.round(x_max, 3)
+        self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+
+    
+class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
+    def __init__(self, dset, figure=None, horizontal=True, **kwargs):
+        if figure is None:
+            with plt.ioff():
+                self.figure = plt.figure()
+        else:
+            self.figure = figure
+        self.figure.canvas.toolbar_position = 'right'
+        self.figure.canvas.toolbar_visible = True
+
+        super().__init__(dset, figure= self.figure, horizontal=horizontal, **kwargs)
+        
+        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
+                                                       self.start_cursor,ipywidgets.Label('eV'), 
+                                                       self.end_cursor, ipywidgets.Label('eV')]),
+                                      self.figure.canvas])
+        self.axis = self.axes[-1]
+        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+       
+    def line_select_callback(self, x_min, x_max):
+        self.start_cursor.value = np.round(x_min, 3)
+        self.end_cursor.value = np.round(x_max, 3)
+        self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+
+    def _update(self, ev=None):
+
+        xlim = self.axes[1].get_xlim()
+        ylim = self.axes[1].get_ylim()
+        self.axes[1].clear()
+        self.get_spectrum()
+        if len(self.energy_scale)!=self.spectrum.shape[0]:
+            self.spectrum = self.spectrum.T
+        self.axes[1].plot(self.energy_scale, self.spectrum.compute(), label='experiment')
+
+        if self.set_title:
+            self.axes[1].set_title('spectrum {}, {}'.format(self.x, self.y))
+        self.fig.tight_layout()
+        self.selector = matplotlib.widgets.SpanSelector(self.axes[1], self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        
+        self.axes[1].set_xlim(xlim)
+        self.axes[1].set_ylim(ylim)
+        self.axes[1].set_xlabel(self.xlabel)
+        self.axes[1].set_ylabel(self.ylabel)
+
+        self.fig.canvas.draw_idle()
 
 class InfoWidget(object):
     def __init__(self, datasets=None):
@@ -405,61 +500,60 @@ class InfoWidget(object):
         self.dataset = None
 
         self.sidebar = get_sidebar()
-        with plt.ioff():
-            self.fig = plt.figure()
-        self.fig.canvas.toolbar_position = 'right'
-        self.fig.canvas.toolbar_visible = True
+        
         self.set_dataset()
         self.set_action()
         
-        self.y_scale = 1.0
-        self.change_y_scale = 1.0
-        self.plot(scale=False)
-    
-        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
-                                                       self.start_cursor,ipywidgets.Label('eV'), 
-                                                       self.end_cursor, ipywidgets.Label('eV')]),
-                                      self.fig.canvas])
                                       
         self.app_layout = ipywidgets.AppLayout(
             left_sidebar=self.sidebar,
-            center=self.panel,
+            center=self.view.panel,
             footer=None,#message_bar,
             pane_heights=[0, 10, 0],
             pane_widths=[4, 10, 0],
         )
+        
         display(self.app_layout)
         
-    def line_select_callback(self, x_min, x_max):
-            self.start_cursor.value = np.round(x_min, 3)
-            self.end_cursor.value = np.round(x_max, 3)
-            self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
-            self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
             
-    def plot(self, scale=True):
-        
-        ylim = self.fig.gca().get_ylim()
-        
-        ax = self.fig.gca()
-        ax.clear()
-        ax.plot(self.datasets[self.key].energy_loss, self.datasets[self.key]*self.y_scale, label=self.datasets[self.key].title)
+    def get_spectrum(self):
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
+            spectrum = self.dataset.view.get_spectrum()
+            self.axis = self.dataset.view.axes[1]
+        else:
+            spectrum = np.array(self.dataset)
+            self.axis = self.dataset.view.axis
 
-        ax.set_xlabel(self.datasets[self.key].labels[0])
-        ax.set_ylabel(self.datasets[self.key].data_descriptor)
-        ax.ticklabel_format(style='sci', scilimits=(-2, 3))
+        spectrum *= self.y_scale
+        return spectrum
+
+    def plot(self, scale=True):
+        spectrum = self.get_spectrum()
+        self.energy_scale = self.dataset.energy_loss.values
+        x_limit = self.axis.get_xlim()
+        y_limit = np.array(self.axis.get_ylim())
+        """
+        self.axis.clear()
+
+        self.axis.plot(self.energy_scale, spectrum, label='spectrum')
+                
+        
+        self.axis.set_xlabel(self.datasets[self.key].labels[0])
+        self.axis.set_ylabel(self.datasets[self.key].data_descriptor)
+        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
         if scale:
-            ax.set_ylim(np.array(ylim)*self.change_y_scale)
+            self.axis.set_ylim(np.array(y_limit)*self.change_y_scale)
         self.change_y_scale = 1.0
         if self.y_scale != 1.:
-                ax.set_ylabel('scattering probability (ppm/eV)')
-        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
+                self.axis.set_ylabel('scattering probability (ppm/eV)')
+        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
                                          direction="horizontal",
                                          interactive=True,
                                          props=dict(facecolor='blue', alpha=0.2))
-        ax.legend()
-        
+        self.axis.legend()
+        self.figure.canvas.draw_idle()
+        """
+
     def set_dataset(self, index=0):
        
         spectrum_list = []
@@ -467,15 +561,20 @@ class InfoWidget(object):
         dataset_index = self.sidebar[0, 0].value
         for index, key in enumerate(self.datasets.keys()):
             if 'Reference' not in key:
-                if self.datasets[key].data_type.name == 'SPECTRUM':
+                if 'SPECTR' in self.datasets[key].data_type.name:
                     spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
             reference_list.append((f'{key}: {self.datasets[key].title}', index))
        
-        
         self.sidebar[0,0].options = spectrum_list
         self.sidebar[9,0].options = reference_list
         self.key = list(self.datasets)[dataset_index]
         self.dataset = self.datasets[self.key]
+        if 'SPECTRUM' in self.dataset.data_type.name:
+           for i in range(14, 17):
+                self.sidebar[i, 0].layout.display = "none"
+        else:
+            for i in range(14, 17):
+                self.sidebar[i, 0].layout.display = "flex"
         #self.sidebar[0,0].value = dataset_index #f'{self.key}: {self.datasets[self.key].title}'
         self.sidebar[2,0].value = np.round(self.datasets[self.key].energy_loss[0], 3)  
         self.sidebar[3,0].value = np.round(self.datasets[self.key].energy_loss[1] - self.datasets[self.key].energy_loss[0], 4)  
@@ -492,7 +591,13 @@ class InfoWidget(object):
         if 'beam_current' not in self.datasets[self.key].metadata['experiment']:
             self.datasets[self.key].metadata['experiment']['beam_current'] = 0
         self.sidebar[13,0].value = self.datasets[self.key].metadata['experiment']['beam_current']
-    
+        
+        self.view = SIPlot(self.dataset)
+        
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        
+        
     def cursor2energy_scale(self, value):
        
         dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
@@ -535,17 +640,26 @@ class InfoWidget(object):
         self.datasets[self.key].metadata['experiment']['convergence_angle'] = self.sidebar[5,0].value
         self.datasets[self.key].metadata['experiment']['collection_angle'] = self.sidebar[6,0].value
         self.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.sidebar[7,0].value*1000
-        
+    
+    def set_binning(self, value):
+        if 'SPECTRAL' in self.dataset.data_type.name:
+            bin_x = self.sidebar[15,0].value
+            bin_y = self.sidebar[16,0].value
+            self.dataset.view.set_bin([bin_x, bin_y])
+            self.datasets[self.key].metadata['experiment']['SI_bin_x'] = bin_x
+            self.datasets[self.key].metadata['experiment']['SI_bin_y'] = bin_y
+
     def set_action(self):
+        self.sidebar[0,0].observe(self.set_dataset)
         self.sidebar[1,0].on_click(self.cursor2energy_scale)
         self.sidebar[2,0].observe(self.set_energy_scale, names='value')
         self.sidebar[3,0].observe(self.set_energy_scale, names='value')
-        self.sidebar[0,0].observe(self.set_dataset)
-        self.sidebar[9,0].observe(self.set_flux)
-        self.sidebar[10,0].observe(self.set_flux)
-        self.sidebar[9,2].observe(self.set_y_scale)
-        self.sidebar[9,2].observe(self.set_y_scale)
         self.sidebar[5,0].observe(self.set_microscope_parameter)
         self.sidebar[6,0].observe(self.set_microscope_parameter)
         self.sidebar[7,0].observe(self.set_microscope_parameter)
+        self.sidebar[9,0].observe(self.set_flux)
+        self.sidebar[9,2].observe(self.set_y_scale)
+        self.sidebar[10,0].observe(self.set_flux)
+        self.sidebar[15,0].observe(self.set_binning)
+        self.sidebar[16,0].observe(self.set_binning)
         
