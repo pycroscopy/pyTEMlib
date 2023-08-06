@@ -659,7 +659,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
 
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
-            reader = SciFiReaders.DM3Reader(filename)
+            reader = SciFiReaders.DMReader(filename)
 
         elif extension in ['.emi']:
             try:

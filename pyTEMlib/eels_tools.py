@@ -182,6 +182,7 @@ def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_int
     # TODO: remove zero_loss_fit_width add absolute
 
     fit_energy = energy_scale[start_fit:end_fit]
+    spectrum = np.array(spectrum)
     fit_spectrum = spectrum[start_fit:end_fit]
 
     pin_flat = [item for sublist in pin for item in sublist]
