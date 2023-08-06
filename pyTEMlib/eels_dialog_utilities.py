@@ -554,6 +554,8 @@ def get_likely_edges(energy_scale):
     return likely_edges
 
 
+
+
 def get_periodic_table_info():
     """Info for periodic table dialog"""
     pt_info = \
