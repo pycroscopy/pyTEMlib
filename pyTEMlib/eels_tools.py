@@ -1246,7 +1246,7 @@ def get_resolution_functions(spectrum_image, energy_scale=None, zero_loss_fit_wi
             raise TypeError('Dataset needs to have exactly one spectral dimension to analyze zero-loss peak') 
         energy_dimension = spectrum_image.get_dimension_by_number(energy_dimension)[0]
         energy_scale = energy_dimension.values
-    spatial_dimension = spectrum_image.get_dimensions_by_type('spatial')
+        spatial_dimension = spectrum_image.get_dimensions_by_type('spatial')
     if len(spatial_dimension) == 0:
         fwhm, delta_e = fix_energy_scale(spectrum_image)
         z_loss, p_zl = resolution_function(energy_scale - delta_e, spectrum_image, zero_loss_fit_width)
@@ -1515,6 +1515,7 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
     the output is shown in Fig. b.1a,b.
 
     """
+    
     epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
     
     b = dset.metadata['collection_angle']/ 1000.  # rad

@@ -152,6 +152,10 @@ class TestFileFunctions(unittest.TestCase):
         # shifts = eels.get_energy_shifts(new_dataset, dataset.energy_loss.values, 0.5)
 
         # print('\n shifts ', shifts[:2, 0])
+        new_dataset = sidpy.Dataset.from_array(new_dataset)
+        new_dataset.data_type = 'SPECTRAL_IMAGE'
+        new_dataset.set_dimension(2, dataset.energy_loss)
+
         self.assertTrue(True)  # np.isclose(shifts[0, 0], -0.22673, rtol=1e-01))
         # self.assertTrue(np.isclose(shifts[1, 0], -0.22673, rtol=1e-01))
 
