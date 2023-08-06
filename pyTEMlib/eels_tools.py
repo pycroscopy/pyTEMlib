@@ -1100,21 +1100,23 @@ def fit_model(x, y, pin, number_of_peaks, peak_shape, p_zl, restrict_pos=0, rest
 def fix_energy_scale(spec, energy=None):    
     """Shift energy scale according to zero-loss peak position
     
-    This function assumes that the zero loss peak is the maximum of the spectrum. 
+    This function assumes that the fzero loss peak is the maximum of the spectrum. 
     """
 
     # determine start and end fitting region in pixels
     if isinstance(spec, sidpy.Dataset):
-        if energy is not None:
+        if energy is None:
             energy = spec.energy_loss.values
+            spec = np.array(spec)
+           
     else:
         if energy is None:
             return
         if not isinstance(spec, np.ndarray):
             return
-
-    start = np.searchsorted(energy, -10)
-    end = np.searchsorted(energy, 10)
+        
+    start = np.searchsorted(np.array(energy), -10)
+    end = np.searchsorted(np.array(energy), 10)
     startx = np.argmax(spec[start:end]) + start
 
     end = startx + 3

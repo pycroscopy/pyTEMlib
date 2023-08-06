@@ -11,16 +11,18 @@ import numpy as np
 import sidpy
 print(sidpy.__version__)
 import sys
+
 sys.path.insert(0, '../')
+sys.path.insert(0, './')
+                
 import pyTEMlib.file_tools as ft
-
 import pyTEMlib.eels_tools as eels
-
+import pyTEMlib
+print(pyTEMlib.__version__)
 
 class TestFileFunctions(unittest.TestCase):
     def test_dm3_eels_info(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
-        print(file_path)
 
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
         datasets = ft.open_file(file_name)
@@ -124,7 +126,7 @@ class TestFileFunctions(unittest.TestCase):
         datasets = ft.open_file(file_name)
         dataset = datasets['Channel_000']
 
-        fwhm, fit_mu = eels.fix_energy_scale(dataset, dataset.energy_loss)
+        fwhm, fit_mu = eels.fix_energy_scale(dataset)
 
         self.assertTrue(fwhm < 0.3)
 
