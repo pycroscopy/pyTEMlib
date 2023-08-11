@@ -345,10 +345,10 @@ def get_sidebar():
                      style=ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Offset:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    side_bar[row, 2] = ipywidgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Dispersion:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
+    side_bar[row, 2] = ipywidgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
     
     row += 1
     side_bar[row, :3] = ipywidgets.Button(description='Microscope',
@@ -356,13 +356,13 @@ def get_sidebar():
                      style=ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Conv.Angle:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
+    side_bar[row, 2] = ipywidgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Coll.Angle:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
+    side_bar[row, 2] = ipywidgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Acc Voltage:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="keV", layout=ipywidgets.Layout(width='100px'))
+    side_bar[row, 2] = ipywidgets.Label(value="keV", layout=ipywidgets.Layout(width='100px'))
     row += 1
 
     side_bar[row, :3] = ipywidgets.Button(description='Quantification',
@@ -382,16 +382,16 @@ def get_sidebar():
                      layout=ipywidgets.Layout(width='100px'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Exp_Time:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="s", layout=ipywidgets.Layout(width='100px'))
+    side_bar[row, 2] = ipywidgets.Label(value="s", layout=ipywidgets.Layout(width='100px'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=7.5,description='Flux:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="Mcounts", layout=ipywidgets.Layout(width='100px'))
+    side_bar[row, 2] = ipywidgets.Label(value="Mcounts", layout=ipywidgets.Layout(width='100px'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Conversion:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value=r"e$^-$/counts", layout=ipywidgets.Layout(width='100px'))
+    side_bar[row, 2] = ipywidgets.Label(value=r"e$^-$/counts", layout=ipywidgets.Layout(width='100px'))
     row += 1
     side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Current:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="pA", layout=ipywidgets.Layout(width='100px') )
+    side_bar[row, 2] = ipywidgets.Label(value="pA", layout=ipywidgets.Layout(width='100px') )
     
     row += 1
 
@@ -430,13 +430,13 @@ class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
                                          interactive=True,
                                          props=dict(facecolor='blue', alpha=0.2))
         #self.axis.legend()
-        display(self.panel)
+        #display(self.panel)
 
     def line_select_callback(self, x_min, x_max):
         self.start_cursor.value = np.round(x_min, 3)
         self.end_cursor.value = np.round(x_max, 3)
-        self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
-        self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
 
     
 class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
@@ -466,8 +466,8 @@ class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
     def line_select_callback(self, x_min, x_max):
         self.start_cursor.value = np.round(x_min, 3)
         self.end_cursor.value = np.round(x_max, 3)
-        self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
-        self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
 
     def _update(self, ev=None):
 
@@ -591,9 +591,10 @@ class InfoWidget(object):
         if 'beam_current' not in self.datasets[self.key].metadata['experiment']:
             self.datasets[self.key].metadata['experiment']['beam_current'] = 0
         self.sidebar[13,0].value = self.datasets[self.key].metadata['experiment']['beam_current']
-        
-        self.view = SIPlot(self.dataset)
-        
+        if self.dataset.data_type =='SPECTRAL_IMAGE':
+            self.view = SIPlot(self.dataset)
+        else:
+            self.view = SpectrumPlot(self.dataset)    
         self.y_scale = 1.0
         self.change_y_scale = 1.0
         
