@@ -519,10 +519,10 @@ class InfoWidget(object):
     def get_spectrum(self):
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.dataset.view.get_spectrum()
-            self.axis = self.dataset.view.axes[1]
+            self.axis = self.view.axes[1]
         else:
             spectrum = np.array(self.dataset)
-            self.axis = self.dataset.view.axis
+            self.axis = self.view.axis
 
         spectrum *= self.y_scale
         return spectrum
@@ -601,10 +601,10 @@ class InfoWidget(object):
         
     def cursor2energy_scale(self, value):
        
-        dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
+        dispersion = (self.view.end_cursor.value - self.view.start_cursor.value) / (self.view.end_channel - self.view.start_channel)
         self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
         self.sidebar[3, 0].value = dispersion
-        offset = self.start_cursor.value - self.start_channel * dispersion
+        offset = self.view.start_cursor.value - self.view.start_channel * dispersion
         self.datasets[self.key].energy_loss += (self.sidebar[2, 0].value-self.datasets[self.key].energy_loss[0])
         self.sidebar[2, 0].value = offset
         self.plot()
