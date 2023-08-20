@@ -409,6 +409,114 @@ def get_sidebar():
     return side_bar
 
 
+class PeriodicTableWidget(object):
+    """ Modal dialog to get a selection of elements.
+
+    Elements that are not having a valid cross-sections are disabled.
+
+    Parameters
+    ----------
+    initial_elements: list of str
+        the elements that are already selected
+    energy_scale: list or numpy array
+        energy-scale of spectrum/spectra to determine likely edges
+
+    Returns
+    -------
+    list of strings: elements.
+
+    Example
+    -------
+    >> PT_dialog =  periodic_table_dialog(None, ['Mn', 'O'])
+    >> if PT_dialog.exec_() == periodic_table_dialog.Accepted:
+    >>     selected_elements = PT_dialog.get_output()
+    >> print(selected_elements)
+    """
+
+    signal_selected = QtCore.pyqtSignal(list)
+
+    def __init__(self, initial_elements=None, energy_scale=None, parent=None):
+        super(PeriodicTableDialog, self).__init__(None, QtCore.Qt.WindowStaysOnTopHint)
+
+        if initial_elements is None:
+            initial_elements = [' ']
+        self.initial_elements = initial_elements
+        if energy_scale is None:
+            energy_scale = [100., 150., 200.]
+        self.parent = parent
+        self._output = []
+        self.elements_selected = initial_elements
+        self.energy_scale = np.array(energy_scale)
+
+        self.setWindowTitle("Periodic Table")
+        likely_edges = get_likely_edges(self.energy_scale)
+        self.likely_edges = likely_edges
+
+        # GD:font = wx.Font(10, wx.MODERN, wx.NORMAL, wx.BOLD)
+        self.buttons1 = []
+        self.button = []
+        self.pt_info = get_periodic_table_info()
+        self.init_ui()
+
+        for button in self.button:
+            if button.text() in initial_elements:
+                button.toggle()
+            pass
+
+    def on_close(self):
+        self.get_output()
+        self.signal_selected[list].emit(self._output)
+        self.accept()
+
+    def get_output(self):
+        self._output = []
+        for btn in self.button:
+            if btn.isChecked():
+                self._output.append(btn.text())
+
+    def exec_(self):
+        super(PeriodicTableDialog, self).exec_()
+        return self._output
+
+    def init_ui(self):
+
+        v_sizer = QtWidgets.QVBoxLayout()
+        g_sizer = QtWidgets.QGridLayout()
+
+        main_group = QtWidgets.QWidget()
+
+        color1 = "background-color: lightblue;\n"
+        color1l = "background-color: dodgerblue;\n"
+        color2 = "background-color: coral;\n"
+
+        for symbol, parameter in self.pt_info.items():
+            self.button.append(QtWidgets.QPushButton(symbol))
+            if parameter['PT_row'] > 7:
+                self.button[-1].setStyleSheet(color2)
+            elif '*' in symbol:
+                self.button[-1].setStyleSheet(color2)
+            else:
+                if symbol in self.likely_edges:
+                    self.button[-1].setStyleSheet(color1l)
+                else:
+                    self.button[-1].setStyleSheet(color1)
+            if parameter['Z'] == 0:
+                self.button[-1].setEnabled(False)
+            self.button[-1].setFixedWidth(50)
+            self.button[-1].setCheckable(True)
+            g_sizer.addWidget(self.button[-1], parameter['PT_row'], parameter['PT_col'])
+        main_group.setLayout(g_sizer)
+
+        v_sizer.addWidget(main_group)
+        self.setLayout(v_sizer)
+
+        ok_button = QtWidgets.QPushButton('OK')
+        ok_button.clicked.connect(self.on_close)
+
+        v_sizer.addWidget(ok_button)
+        self.setLayout(v_sizer)
+
+        
 class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
     def __init__(self, dset, spectrum_number=0, figure=None, **kwargs):
         with plt.ioff():
