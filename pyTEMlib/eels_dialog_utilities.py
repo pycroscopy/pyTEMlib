@@ -347,6 +347,9 @@ if Qt_available:
             self.axis.figure.canvas.draw()
 
 
+
+
+
 class RegionSelector(object):
     """Selects fitting region and the regions that are excluded for each edge.
 

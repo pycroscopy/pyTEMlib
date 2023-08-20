@@ -169,7 +169,7 @@ class PeakFitWidget(object):
         self.fig.canvas.toolbar_position = 'right'
         self.fig.canvas.toolbar_visible = True
         #self.set_dataset()
-        self.set_action()
+        
         self.y_scale = 1.0
         self.change_y_scale = 1.0
         self.plot(scale=False)
@@ -178,18 +178,17 @@ class PeakFitWidget(object):
             self.dataset.metadata['peak_fit'] = {}
             if 'edges' in self.dataset.metadata:
                 if 'fit_area' in self.dataset.metadata['edges']:
-                    self.dataset.metadata['peak_fit']['fit_start'] = \
-                        self.dataset.metadata['edges']['fit_area']['fit_start']
+                    self.dataset.metadata['peak_fit']['fit_start'] = self.dataset.metadata['edges']['fit_area']['fit_start']
                     self.dataset.metadata['peak_fit']['fit_end'] = self.dataset.metadata['edges']['fit_area']['fit_end']
                 self.dataset.metadata['peak_fit']['peaks'] = {'0': {'position': self.energy_scale[1],
                                                                     'amplitude': 1000.0, 'width': 1.0,
                                                                     'type': 'Gauss', 'asymmetry': 0}}
 
-
         self.peaks = self.dataset.metadata['peak_fit']
         if 'fit_start' not in self.peaks:
-            self.peaks['fit_start'].value = self.energy_scale[1]
-            self.peaks['fit_end'].value = self.energy_scale[-2]
+            self.peaks['fit_start'] = self.energy_scale[1]
+        if 'fit_end' not in self.peaks:
+            self.peaks['fit_end'] = self.energy_scale[-2]
 
         if 'peak_model' in self.peaks:
             self.peak_model = self.peaks['peak_model']
@@ -210,7 +209,7 @@ class PeakFitWidget(object):
             self.core_loss = False
 
         self.update()
-
+        
         self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
                                          direction="horizontal",
                                          interactive=True,
@@ -230,6 +229,7 @@ class PeakFitWidget(object):
             pane_widths=[4, 10, 0],
         )
         display(self.app_layout)
+        self.set_action()
         
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
@@ -298,15 +298,14 @@ class PeakFitWidget(object):
             self.edges['fit_area'] = {}
         if 'fit_start' not in self.edges['fit_area']:
             self.sidebar[1,0].value = np.round(self.energy_scale[50], 3)
-            self.edges['fit_area']['fit_start'] = self.sidebar[1,0].value 
         else:
             self.sidebar[1,0].value = np.round(self.edges['fit_area']['fit_start'],3)
+        self.peaks['fit_start'] = self.sidebar[1,0].value 
         if 'fit_end' not in self.edges['fit_area']:
-            self.sidebar[2,0].value = np.round(self.energy_scale[-2], 3)
-            self.edges['fit_area']['fit_end'] = self.sidebar[2,0].value 
+            self.sidebar[2,0].value = np.round(self.energy_scale[-20], 3)
         else:
             self.sidebar[2,0].value = np.round(self.edges['fit_area']['fit_end'],3)
-        
+        self.peaks['fit_end'] = self.sidebar[2,0].value 
         if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
             if 'SI_bin_x' not in self.dataset.metadata['experiment']:
                 self.dataset.metadata['experiment']['SI_bin_x'] = 1
@@ -369,7 +368,7 @@ class PeakFitWidget(object):
        
     def fit_peaks(self, value = 0):
         """Fit spectrum with peaks given in peaks dictionary"""
-        print('Fitting peaks...')
+        # print('Fitting peaks...')
         p_in = []
         for key, peak in self.peaks['peaks'].items():
             if key.isdigit():
@@ -389,10 +388,10 @@ class PeakFitWidget(object):
         if 'model' in self.dataset.metadata:
             model = self.dataset.metadata['model'][start_channel:end_channel]
         elif self.core_loss:
-            print('Core loss model found. Fitting on top of the model.')
+            # print('Core loss model found. Fitting on top of the model.')
             model = self.dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
         else:
-            print('No core loss model found. Fitting to the full spectrum.')
+            # print('No core loss model found. Fitting to the full spectrum.')
             model = np.zeros(end_channel - start_channel)
 
         # if we have a core loss model we will only fit the difference between the model and the data.
@@ -514,6 +513,7 @@ class PeakFitWidget(object):
                 self.sidebar[15, 0].options = ['None']
                 self.sidebar[15, 0].value = 'None'
                 self.sidebar[15, 2].value = ' '
+
     def find_peaks(self, value=0):
         number_of_peaks = int(self.sidebar[5, 0].value)
 

@@ -193,7 +193,8 @@ if Qt_available:
                                 if int(minor_edge[-1]) % 2 == 0 or key[-1] > minor_edge[-1]:
                                     minor_edge = key
 
-                        all_edges[key] = {'onset': x_section[key]['onset']}
+                        all_edges[key] = {'onset': x_section[key]['onset'], 'original_onset': x_section[key]['onset']}
+                        
 
             if major_edge != '':
                 key = major_edge
@@ -897,6 +898,87 @@ def get_sidebar():
     return side_bar
 
 
+import ipywidgets
+
+def get_periodic_table_widget(energy_scale=None):
+
+    if energy_scale is None:
+        energy_scale = [100., 150., 200.]
+    
+    likely_edges = eels_dialog_utilities.get_likely_edges(energy_scale)
+    
+    pt_info =  eels_dialog_utilities.get_periodic_table_info()
+    table = ipywidgets.GridspecLayout(10, 18,width= '60%', grid_gap="0px")
+    for symbol, parameter in pt_info.items():
+        #print(parameter['PT_row'], parameter['PT_col'])
+        if parameter['PT_row'] > 7:
+            color = 'warning'
+        elif '*' in symbol:
+            color = 'warning'
+        else:
+            if symbol in likely_edges:
+                color = 'primary'
+            else:
+                color = 'info'
+        table[parameter['PT_row'], parameter['PT_col']] = ipywidgets.ToggleButton(description=symbol, 
+                                                                                  value=False, 
+                                                                                  button_style=color,
+                                                                                  layout=ipywidgets.Layout(width='auto'),
+                                                                                  style={"button_width": "30px"})
+    return table
+
+
+class PeriodicTableWidget(object):
+    """ Modal dialog to get a selection of elements.
+
+    Elements that are not having a valid cross-sections are disabled.
+
+    Parameters
+    ----------
+    initial_elements: list of str
+        the elements that are already selected
+    energy_scale: list or numpy array
+        energy-scale of spectrum/spectra to determine likely edges
+
+    Returns
+    -------
+    list of strings: elements.
+
+    Example
+    -------
+    >> PT_dialog =  periodic_table_dialog(None, ['Mn', 'O'])
+    >> if PT_dialog.exec_() == periodic_table_dialog.Accepted:
+    >>     selected_elements = PT_dialog.get_output()
+    >> print(selected_elements)
+    """
+
+    def __init__(self, initial_elements=None, energy_scale=None):
+
+        if initial_elements is None:
+            initial_elements = [' ']
+        self.elements_selected = initial_elements
+        if energy_scale is None:
+            energy_scale = [100., 150., 200.]
+        self._output = []
+        self.energy_scale = np.array(energy_scale)
+        self.pt_info =  eels_dialog_utilities.get_periodic_table_info()
+    
+        self.periodic_table = get_periodic_table_widget(energy_scale) 
+        self.update()
+
+    def get_output(self):
+        self.elements_selected = []
+        for symbol, parameter in self.pt_info.items():
+            if self.periodic_table[parameter['PT_row'], parameter['PT_col']].value == True:  # [parameter['PT_row'], parameter['PT_col']]
+                self.elements_selected.append(self.periodic_table[parameter['PT_row'], parameter['PT_col']].description)
+        return self.elements_selected
+    
+    def update(self):
+        for symbol, parameter in self.pt_info.items():
+            if self.periodic_table[parameter['PT_row'], parameter['PT_col']].description in self.elements_selected:
+                self.periodic_table[parameter['PT_row'], parameter['PT_col']].value = True
+
+
 class CompositionWidget(object):
     def __init__(self, datasets=None):
         self.datasets = datasets
@@ -930,7 +1012,7 @@ class CompositionWidget(object):
         self.fig.canvas.toolbar_visible = True
         self.key = list(self.datasets.keys())[0]
         self.set_dataset()
-        self.set_action()
+        
         self.y_scale = 1.0
         self.change_y_scale = 1.0
         self.plot(scale=False)
@@ -944,15 +1026,24 @@ class CompositionWidget(object):
                                                        self.start_cursor,ipywidgets.Label('eV'), 
                                                        self.end_cursor, ipywidgets.Label('eV')]),
                                       self.fig.canvas])
-                                      
+        self.periodic_table = PeriodicTableWidget(self.energy_scale)
+        self.elements_cancel_button = ipywidgets.Button(description='Cancel')
+        self.elements_select_button = ipywidgets.Button(description='Select')
+        self.elements_auto_button = ipywidgets.Button(description='Auto ID')
+       
+        self.periodic_table_panel = ipywidgets.VBox([self.periodic_table.periodic_table,
+                                                     ipywidgets.HBox([self.elements_cancel_button, self.elements_auto_button, self.elements_select_button])])
+        # Button(description=description, button_style=button_style, layout=Layout(height='auto', width='auto'))
+                                                                                    
         self.app_layout = ipywidgets.AppLayout(
             left_sidebar=self.sidebar,
-            center=self.panel,
+            center=self.panel,   ## can be changed with: self.app_layout.center = self.periodic_table.periodic_table
             footer=None,#message_bar,
             pane_heights=[0, 10, 0],
             pane_widths=[4, 10, 0],
         )
         IPython.display.display(self.app_layout)
+        self.set_action()
         
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
@@ -1131,8 +1222,6 @@ class CompositionWidget(object):
         self.edges[str(index)]['areal_density'] = 0.0
         self.edges[str(index)]['original_onset'] = self.edges[str(index)]['onset']
         return True
-        
-
     
     def sort_elements(self):
         onsets = []
@@ -1159,24 +1248,36 @@ class CompositionWidget(object):
         if edge['end_exclude'] > self.energy_scale[-3]:
             edge['end_exclude'] = self.energy_scale[-3]
 
-    def set_elements(self, selected_elements):
+    def set_elements(self, value=0):
+        selected_elements = self.periodic_table.get_output()
+        edges = self.edges.copy()
+        to_delete = []
+        old_elements = []
+        if len(selected_elements) > 0:
+            for key in self.edges:
+                if key.isdigit():
+                    to_delete.append(key)
+                    old_elements.append(self.edges[key]['element'])
 
-        for index, elem in enumerate(selected_elements):
-            self.sidebar[4, 0].value =index
-            self.update_element(elem)
-
-        # self.sort_elements()
-        self.update()
+        for key in to_delete:
+            edges[key] = self.edges[key]
+            del self.edges[key]
     
+        for index, elem in enumerate(selected_elements):
+            if elem  in old_elements:
+                self.edges[str(index)] = edges[str(old_elements.index(elem))]   
+            else:
+                self.update_element(elem, index=index)
+        self.sort_elements()
+        self.update()
+        self.set_figure_pane()
 
-        
     def set_element(self, elem):
         self.update_element(self.sidebar[5, 0].value)
         # self.sort_elements()
         self.update()
        
     def cursor2energy_scale(self, value):
-       
         dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
         self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
         self.sidebar[3, 0].value = dispersion
@@ -1199,38 +1300,43 @@ class CompositionWidget(object):
         
     def set_y_scale(self, value):  
         self.change_y_scale = 1/self.y_scale
-        if self.sidebar[12, 0].value:
-            dispersion = self.energy_scale[1] - self.energy_scale[0]
-            self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm'] * dispersion
-        else:
-            self.y_scale = 1.0
+        self.y_scale = 1.0
+        if self.dataset.metadata['experiment']['flux_ppm'] > 0:
+            if self.sidebar[12, 0].value:
+                dispersion = self.energy_scale[1] - self.energy_scale[0]
+                self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm'] * dispersion
             
         self.change_y_scale *= self.y_scale
         self.update()
         self.plot()
+
+    def auto_id(self, value=0):
+        found_edges = eels.auto_id_edges(self.dataset)
+        if len(found_edges) > 0:
+            self.periodic_table.elements_selected = found_edges
+            self.periodic_table.update()
         
     def find_elements(self, value=0):
         
         if '0' not in self.edges:
-            self.edges['0'] ={}
-        found_edges = eels.auto_id_edges(self.dataset)
-
-        to_delete = []
-        if len(found_edges) >0:
-            for key in self.edges:
-                if key.isdigit():
-                    to_delete.append(key)
-        for key in to_delete:
-            del self.edges[key]
-        if len(to_delete) > 0:
             self.edges['0'] = {}
+        # found_edges = eels.auto_id_edges(self.dataset)
+        found_edges = {}
 
         selected_elements = []
-        for key in found_edges:
-            selected_elements.append(key)
-        self.set_elements(selected_elements)
+        elements = self.edges.copy()
 
-        self.update()
+        for key in self.edges:
+            if key.isdigit():
+                if 'element' in self.edges[key]:
+                    selected_elements.append(self.edges[key]['element'])
+        self.periodic_table.elements_selected = selected_elements
+        self.periodic_table.update()
+        self.app_layout.center = self.periodic_table_panel # self.periodic_table.periodic_table
+
+    def set_figure_pane(self, value=0):
+        
+        self.app_layout.center = self.panel
     
     def update(self, index=0):
         
@@ -1242,10 +1348,10 @@ class CompositionWidget(object):
             self.sidebar[4,0].value = len(self.sidebar[4,0].options)-2
         if str(index) not in self.edges:
             self.edges[str(index)] = {'z': 0,  'element': 'x', 'symmetry': 'K1', 'onset': 0, 'start_exclude': 0, 'end_exclude':0,
-                                     'areal_density': 0}
+                                     'areal_density': 0, 'chemical_shift':0}
         if 'z' not in self.edges[str(index)]:
              self.edges[str(index)] = {'z': 0,  'element': 'x', 'symmetry': 'K1', 'onset': 0, 'start_exclude': 0, 'end_exclude':0,
-                                      'areal_density': 0}
+                                      'areal_density': 0, 'chemical_shift':0}
         edge = self.edges[str(index)]
             
         self.sidebar[5,0].value = edge['z']
@@ -1312,6 +1418,8 @@ class CompositionWidget(object):
         edge_index = self.sidebar[4, 0].value
         edge = self.edges[str(edge_index)]
         edge['onset'] = self.sidebar[7,0].value
+        if 'original_onset' not in edge:
+            edge['original_onset'] = edge['onset']
         edge['chemical_shift'] = edge['onset'] -  edge['original_onset']
         self.update()
         
@@ -1340,7 +1448,9 @@ class CompositionWidget(object):
         self.model = self.edges['model']['background']
         for key in self.edges:
             if key.isdigit():
-                self.model = self.model + self.edges[key]['areal_density'] * self.edges[key]['data']
+                if 'data' in self.edges[key]:
+
+                    self.model = self.model + self.edges[key]['areal_density'] * self.edges[key]['data']
         self.plot()
 
     def set_action(self):
@@ -1361,3 +1471,7 @@ class CompositionWidget(object):
         self.sidebar[0, 0].observe(self.plot)
 
         self.sidebar[12,0].observe(self.set_y_scale)
+
+        self.elements_cancel_button.on_click(self.set_figure_pane)
+        self.elements_auto_button.on_click(self.auto_id)
+        self.elements_select_button.on_click(self.set_elements)
