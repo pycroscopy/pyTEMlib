@@ -15,6 +15,7 @@ import numpy as np
 
 import ipywidgets
 import IPython.display
+from IPython.display import display
 import matplotlib
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
