@@ -21,13 +21,13 @@ import matplotlib.patches as patches
 
 from pyTEMlib import file_tools as ft
 from pyTEMlib import eels_tools as eels
+from pyTEMlib import eels_dialog_utilities
 
 import sidpy
 
 if Qt_available:
     from pyTEMlib import eels_dlg
-    from pyTEMlib import eels_dialog_utilities
-
+    
     class EELSDialog(QtWidgets.QDialog):
         """
         EELS Input Dialog for Chemical Analysis
@@ -900,196 +900,72 @@ def get_sidebar():
 
 import ipywidgets
 
-def get_periodic_table_widget(energy_scale=None):
-
-    if energy_scale is None:
-        energy_scale = [100., 150., 200.]
-    
-    likely_edges = eels_dialog_utilities.get_likely_edges(energy_scale)
-    
-    pt_info =  eels_dialog_utilities.get_periodic_table_info()
-    table = ipywidgets.GridspecLayout(10, 18,width= '60%', grid_gap="0px")
-    for symbol, parameter in pt_info.items():
-        #print(parameter['PT_row'], parameter['PT_col'])
-        if parameter['PT_row'] > 7:
-            color = 'warning'
-        elif '*' in symbol:
-            color = 'warning'
-        else:
-            if symbol in likely_edges:
-                color = 'primary'
-            else:
-                color = 'info'
-        table[parameter['PT_row'], parameter['PT_col']] = ipywidgets.ToggleButton(description=symbol, 
-                                                                                  value=False, 
-                                                                                  button_style=color,
-                                                                                  layout=ipywidgets.Layout(width='auto'),
-                                                                                  style={"button_width": "30px"})
-    return table
-
-
-class PeriodicTableWidget(object):
-    """ Modal dialog to get a selection of elements.
-
-    Elements that are not having a valid cross-sections are disabled.
-
-    Parameters
-    ----------
-    initial_elements: list of str
-        the elements that are already selected
-    energy_scale: list or numpy array
-        energy-scale of spectrum/spectra to determine likely edges
-
-    Returns
-    -------
-    list of strings: elements.
-
-    Example
-    -------
-    >> PT_dialog =  periodic_table_dialog(None, ['Mn', 'O'])
-    >> if PT_dialog.exec_() == periodic_table_dialog.Accepted:
-    >>     selected_elements = PT_dialog.get_output()
-    >> print(selected_elements)
-    """
-
-    def __init__(self, initial_elements=None, energy_scale=None):
-
-        if initial_elements is None:
-            initial_elements = [' ']
-        self.elements_selected = initial_elements
-        if energy_scale is None:
-            energy_scale = [100., 150., 200.]
-        self._output = []
-        self.energy_scale = np.array(energy_scale)
-        self.pt_info =  eels_dialog_utilities.get_periodic_table_info()
-    
-        self.periodic_table = get_periodic_table_widget(energy_scale) 
-        self.update()
-
-    def get_output(self):
-        self.elements_selected = []
-        for symbol, parameter in self.pt_info.items():
-            if self.periodic_table[parameter['PT_row'], parameter['PT_col']].value == True:  # [parameter['PT_row'], parameter['PT_col']]
-                self.elements_selected.append(self.periodic_table[parameter['PT_row'], parameter['PT_col']].description)
-        return self.elements_selected
-    
-    def update(self):
-        for symbol, parameter in self.pt_info.items():
-            if self.periodic_table[parameter['PT_row'], parameter['PT_col']].description in self.elements_selected:
-                self.periodic_table[parameter['PT_row'], parameter['PT_col']].value = True
-
 
 class CompositionWidget(object):
-    def __init__(self, datasets=None):
-        self.datasets = datasets
-        if not isinstance(datasets, dict):
-            raise TypeError('dataset or first item inhas to be a sidpy dataset')
-            
-        self.sidebar = get_sidebar()
-        self.dataset = datasets[list(datasets)[0]]
-        if not isinstance(self.dataset, sidpy.Dataset):
-            raise TypeError('dataset or first item inhas to be a sidpy dataset')
-        self.spec_dim = ft.get_dimensions_by_type('spectral', self.dataset)
-        if len(self.spec_dim) != 1:
-            raise TypeError('We need exactly one SPECTRAL dimension')
-        self.spec_dim = self.spec_dim[0]
-        #self.energy_scale = self.dataset._axes[self.spec_dim]
+    def __init__(self, datasets=None, index=0):
         
-        self.energy_scale = self.spec_dim[1]
-        self.model = np.array([])
-        self.y_scale = 1.0
-        self.change_y_scale = 1.0
-        self.spectrum_ll = None
-        self.low_loss_key = None
-
-        self.edges = {}
-
-        self.show_regions = False
-            
-        with plt.ioff():
-            self.fig = plt.figure()
-        self.fig.canvas.toolbar_position = 'right'
-        self.fig.canvas.toolbar_visible = True
-        self.key = list(self.datasets.keys())[0]
+        if not isinstance(datasets, dict):
+            raise TypeError('dataset or first item has to be a sidpy dataset')
+        self.datasets = datasets
+        self.dataset = datasets[list(datasets)[0]]
+        self.model = []
+        self.sidebar = get_sidebar()
+        
         self.set_dataset()
         
-        self.y_scale = 1.0
-        self.change_y_scale = 1.0
-        self.plot(scale=False)
-        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
-                                         direction="horizontal",
-                                         interactive=True,
-                                         props=dict(facecolor='blue', alpha=0.2))
-        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
-                                                       self.start_cursor,ipywidgets.Label('eV'), 
-                                                       self.end_cursor, ipywidgets.Label('eV')]),
-                                      self.fig.canvas])
-        self.periodic_table = PeriodicTableWidget(self.energy_scale)
+        self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.energy_scale)
         self.elements_cancel_button = ipywidgets.Button(description='Cancel')
         self.elements_select_button = ipywidgets.Button(description='Select')
         self.elements_auto_button = ipywidgets.Button(description='Auto ID')
        
         self.periodic_table_panel = ipywidgets.VBox([self.periodic_table.periodic_table,
                                                      ipywidgets.HBox([self.elements_cancel_button, self.elements_auto_button, self.elements_select_button])])
-        # Button(description=description, button_style=button_style, layout=Layout(height='auto', width='auto'))
-                                                                                    
+        
+                                      
         self.app_layout = ipywidgets.AppLayout(
             left_sidebar=self.sidebar,
-            center=self.panel,   ## can be changed with: self.app_layout.center = self.periodic_table.periodic_table
+            center=self.view.panel,
             footer=None,#message_bar,
             pane_heights=[0, 10, 0],
             pane_widths=[4, 10, 0],
         )
-        IPython.display.display(self.app_layout)
         self.set_action()
+        display(self.app_layout)
+
         
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
             self.end_cursor.value = np.round(x_max, 3)
             self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
             self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
+       
             
     def plot(self, scale=True):
+        self.view.change_y_scale = self.change_y_scale
+        self.view.y_scale = self.y_scale
+        self.energy_scale = self.dataset.energy_loss.values
         
-        ylim = self.fig.gca().get_ylim()
-        
-        ax = self.fig.gca()
-        ax.clear()
-        ax.plot(self.energy_scale, self.datasets[self.key]*self.y_scale, label=self.datasets[self.key].title)
-
-        ax.set_xlabel(self.datasets[self.key].labels[0])
-        ax.set_ylabel(self.datasets[self.key].data_descriptor)
-        ax.ticklabel_format(style='sci', scilimits=(-2, 3))
-        if scale:
-            ax.set_ylim(np.array(ylim)*self.change_y_scale)
-        self.change_y_scale = 1.0
-        if self.y_scale != 1.:
-                ax.set_ylabel('scattering probability (ppm/eV)')
-        self.selector = matplotlib.widgets.SpanSelector(self.fig.gca(), self.line_select_callback,
-                                         direction="horizontal",
-                                         interactive=True,
-                                         props=dict(facecolor='blue', alpha=0.2))
-       
+        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
+            spectrum = self.dataset.view.get_spectrum()
+        else:
+            spectrum = self.dataset
         if len(self.model) > 1:
-            ax.plot(self.energy_scale, self.model*self.y_scale, label='model')
-            difference_spec  = self.datasets[self.key] - self.model
-            ax.plot(self.energy_scale, difference_spec*self.y_scale, label='difference')
-            # axis.plot(self.energy_scale, (self.datasets[key] - self.model) / np.sqrt(self.datasets[key])*self.y_scale, label='Poisson')
-                
-                
-        ax.legend()
-        
+            additional_spectra = {'model': self.model,
+                                  'difference': spectrum-self.model}   
+        else:
+            additional_spectra = None
+        self.view.plot(scale=True, additional_spectra=additional_spectra )
+        self.change_y_scale = 1.
+    
         if self.sidebar[12, 2].value:
-                self.show_edges()
+            self.show_edges()
         if self.sidebar[0, 0].value:
             self.plot_regions()
-        self.fig.canvas.draw_idle()
+        self.view.figure.canvas.draw_idle()
         
         
     def plot_regions(self):
-        axis = self.fig.gca()
+        axis = self.view.figure.gca()
         y_min, y_max = axis.get_ylim()
         height = y_max - y_min
 
@@ -1116,7 +992,7 @@ class CompositionWidget(object):
                 axis.text(x_min, y_max, f"exclude\n edge {int(key)+1}", verticalalignment='top')
 
     def show_edges(self):
-        axis = self.fig.gca()
+        axis = self.view.figure.gca()
         x_min, x_max = axis.get_xlim()
         y_min, y_max = axis.get_ylim()
         
@@ -1136,6 +1012,12 @@ class CompositionWidget(object):
     
         
     def set_dataset(self, index=0):    
+        spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
+        self.spec_dim = self.dataset._axes[spec_dim[0]]
+
+        self.energy_scale = self.spec_dim.values
+        self.dataset.metadata['experiment']['offset'] = self.energy_scale[0]
+        self.dataset.metadata['experiment']['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
         if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
             self.dataset.metadata['edges'] = {'0': {}, 'model': {}, 'use_low_loss': False}
        
@@ -1164,6 +1046,13 @@ class CompositionWidget(object):
             bin_x = self.dataset.metadata['experiment']['SI_bin_x']
             bin_y = self.dataset.metadata['experiment']['SI_bin_y']
             # self.dataset.view.set_bin([bin_x, bin_y])
+        if self.dataset.data_type.name =='SPECTRAL_IMAGE':
+            self.view = eels_dialog_utilities.SIPlot(self.dataset)
+        else:
+            self.view = eels_dialog_utilities.SpectrumPlot(self.dataset)    
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        
         self.update()
         
     def update_element(self, z=0, index=-1):
@@ -1336,7 +1225,7 @@ class CompositionWidget(object):
 
     def set_figure_pane(self, value=0):
         
-        self.app_layout.center = self.panel
+        self.app_layout.center = self.view.panel
     
     def update(self, index=0):
         
