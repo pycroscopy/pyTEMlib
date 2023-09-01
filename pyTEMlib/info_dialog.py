@@ -14,19 +14,19 @@ except:
     Qt_available = False
     # print('Qt dialogs are not available')
 
-
-import pyTEMlib.eels_dialog_utilities as ieels
-from pyTEMlib.microscope import microscope
 import ipywidgets
-import matplotlib.pylab as plt
-import matplotlib
+
 from IPython.display import display
+
+from pyTEMlib.microscope import microscope
 from pyTEMlib import file_tools as ft
+from pyTEMlib import eels_dialog_utilities
 _version = 000
 
 
 if Qt_available:
     from pyTEMlib import info_dlg
+    from pyTEMlib import interactive_eels as ieels
     class InfoDialog(QtWidgets.QDialog):
         """
         Input Dialog for EELS Analysis
@@ -67,7 +67,7 @@ if Qt_available:
 
             self.set_dataset(self.dataset)
 
-            view = self.dataset.plot()
+            #  view = self.dataset.plot()
             if hasattr(self.dataset.view, 'axes'):
                 self.axis = self.dataset.view.axes[-1]
             elif hasattr(self.dataset.view, 'axis'):
@@ -408,200 +408,6 @@ def get_sidebar():
         side_bar[i, 0].layout.display = "none"
     return side_bar
 
-
-class PeriodicTableWidget(object):
-    """ Modal dialog to get a selection of elements.
-
-    Elements that are not having a valid cross-sections are disabled.
-
-    Parameters
-    ----------
-    initial_elements: list of str
-        the elements that are already selected
-    energy_scale: list or numpy array
-        energy-scale of spectrum/spectra to determine likely edges
-
-    Returns
-    -------
-    list of strings: elements.
-
-    Example
-    -------
-    >> PT_dialog =  periodic_table_dialog(None, ['Mn', 'O'])
-    >> if PT_dialog.exec_() == periodic_table_dialog.Accepted:
-    >>     selected_elements = PT_dialog.get_output()
-    >> print(selected_elements)
-    """
-
-    signal_selected = QtCore.pyqtSignal(list)
-
-    def __init__(self, initial_elements=None, energy_scale=None, parent=None):
-        super(PeriodicTableDialog, self).__init__(None, QtCore.Qt.WindowStaysOnTopHint)
-
-        if initial_elements is None:
-            initial_elements = [' ']
-        self.initial_elements = initial_elements
-        if energy_scale is None:
-            energy_scale = [100., 150., 200.]
-        self.parent = parent
-        self._output = []
-        self.elements_selected = initial_elements
-        self.energy_scale = np.array(energy_scale)
-
-        self.setWindowTitle("Periodic Table")
-        likely_edges = get_likely_edges(self.energy_scale)
-        self.likely_edges = likely_edges
-
-        # GD:font = wx.Font(10, wx.MODERN, wx.NORMAL, wx.BOLD)
-        self.buttons1 = []
-        self.button = []
-        self.pt_info = get_periodic_table_info()
-        self.init_ui()
-
-        for button in self.button:
-            if button.text() in initial_elements:
-                button.toggle()
-            pass
-
-    def on_close(self):
-        self.get_output()
-        self.signal_selected[list].emit(self._output)
-        self.accept()
-
-    def get_output(self):
-        self._output = []
-        for btn in self.button:
-            if btn.isChecked():
-                self._output.append(btn.text())
-
-    def exec_(self):
-        super(PeriodicTableDialog, self).exec_()
-        return self._output
-
-    def init_ui(self):
-
-        v_sizer = QtWidgets.QVBoxLayout()
-        g_sizer = QtWidgets.QGridLayout()
-
-        main_group = QtWidgets.QWidget()
-
-        color1 = "background-color: lightblue;\n"
-        color1l = "background-color: dodgerblue;\n"
-        color2 = "background-color: coral;\n"
-
-        for symbol, parameter in self.pt_info.items():
-            self.button.append(QtWidgets.QPushButton(symbol))
-            if parameter['PT_row'] > 7:
-                self.button[-1].setStyleSheet(color2)
-            elif '*' in symbol:
-                self.button[-1].setStyleSheet(color2)
-            else:
-                if symbol in self.likely_edges:
-                    self.button[-1].setStyleSheet(color1l)
-                else:
-                    self.button[-1].setStyleSheet(color1)
-            if parameter['Z'] == 0:
-                self.button[-1].setEnabled(False)
-            self.button[-1].setFixedWidth(50)
-            self.button[-1].setCheckable(True)
-            g_sizer.addWidget(self.button[-1], parameter['PT_row'], parameter['PT_col'])
-        main_group.setLayout(g_sizer)
-
-        v_sizer.addWidget(main_group)
-        self.setLayout(v_sizer)
-
-        ok_button = QtWidgets.QPushButton('OK')
-        ok_button.clicked.connect(self.on_close)
-
-        v_sizer.addWidget(ok_button)
-        self.setLayout(v_sizer)
-
-        
-class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
-    def __init__(self, dset, spectrum_number=0, figure=None, **kwargs):
-        with plt.ioff():
-            self.figure = plt.figure()
-        self.figure.canvas.toolbar_position = 'right'
-        self.figure.canvas.toolbar_visible = True
-
-        super().__init__(dset, spectrum_number=spectrum_number, figure=self.figure, **kwargs)
-        
-        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
-                                                       self.start_cursor,ipywidgets.Label('eV'), 
-                                                       self.end_cursor, ipywidgets.Label('eV')]),
-                                      self.figure.canvas])
-        
-        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
-                                         direction="horizontal",
-                                         interactive=True,
-                                         props=dict(facecolor='blue', alpha=0.2))
-        #self.axis.legend()
-        #display(self.panel)
-
-    def line_select_callback(self, x_min, x_max):
-        self.start_cursor.value = np.round(x_min, 3)
-        self.end_cursor.value = np.round(x_max, 3)
-        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
-        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
-
-    
-class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
-    def __init__(self, dset, figure=None, horizontal=True, **kwargs):
-        if figure is None:
-            with plt.ioff():
-                self.figure = plt.figure()
-        else:
-            self.figure = figure
-        self.figure.canvas.toolbar_position = 'right'
-        self.figure.canvas.toolbar_visible = True
-
-        super().__init__(dset, figure= self.figure, horizontal=horizontal, **kwargs)
-        
-        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
-        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
-                                                       self.start_cursor,ipywidgets.Label('eV'), 
-                                                       self.end_cursor, ipywidgets.Label('eV')]),
-                                      self.figure.canvas])
-        self.axis = self.axes[-1]
-        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
-                                         direction="horizontal",
-                                         interactive=True,
-                                         props=dict(facecolor='blue', alpha=0.2))
-       
-    def line_select_callback(self, x_min, x_max):
-        self.start_cursor.value = np.round(x_min, 3)
-        self.end_cursor.value = np.round(x_max, 3)
-        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
-        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
-
-    def _update(self, ev=None):
-
-        xlim = self.axes[1].get_xlim()
-        ylim = self.axes[1].get_ylim()
-        self.axes[1].clear()
-        self.get_spectrum()
-        if len(self.energy_scale)!=self.spectrum.shape[0]:
-            self.spectrum = self.spectrum.T
-        self.axes[1].plot(self.energy_scale, self.spectrum.compute(), label='experiment')
-
-        if self.set_title:
-            self.axes[1].set_title('spectrum {}, {}'.format(self.x, self.y))
-        self.fig.tight_layout()
-        self.selector = matplotlib.widgets.SpanSelector(self.axes[1], self.line_select_callback,
-                                         direction="horizontal",
-                                         interactive=True,
-                                         props=dict(facecolor='blue', alpha=0.2))
-        
-        self.axes[1].set_xlim(xlim)
-        self.axes[1].set_ylim(ylim)
-        self.axes[1].set_xlabel(self.xlabel)
-        self.axes[1].set_ylabel(self.ylabel)
-
-        self.fig.canvas.draw_idle()
-
 class InfoWidget(object):
     def __init__(self, datasets=None):
         self.datasets = datasets
@@ -611,7 +417,6 @@ class InfoWidget(object):
         
         self.set_dataset()
         self.set_action()
-        
                                       
         self.app_layout = ipywidgets.AppLayout(
             left_sidebar=self.sidebar,
@@ -620,9 +425,7 @@ class InfoWidget(object):
             pane_heights=[0, 10, 0],
             pane_widths=[4, 10, 0],
         )
-        
         display(self.app_layout)
-        
             
     def get_spectrum(self):
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
@@ -636,34 +439,13 @@ class InfoWidget(object):
         return spectrum
 
     def plot(self, scale=True):
-        spectrum = self.get_spectrum()
         self.energy_scale = self.dataset.energy_loss.values
-        x_limit = self.axis.get_xlim()
-        y_limit = np.array(self.axis.get_ylim())
-        """
-        self.axis.clear()
-
-        self.axis.plot(self.energy_scale, spectrum, label='spectrum')
-                
+        self.view.change_y_scale = self.change_y_scale
+        self.view.y_scale = self.y_scale
         
-        self.axis.set_xlabel(self.datasets[self.key].labels[0])
-        self.axis.set_ylabel(self.datasets[self.key].data_descriptor)
-        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
-        if scale:
-            self.axis.set_ylim(np.array(y_limit)*self.change_y_scale)
-        self.change_y_scale = 1.0
-        if self.y_scale != 1.:
-                self.axis.set_ylabel('scattering probability (ppm/eV)')
-        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
-                                         direction="horizontal",
-                                         interactive=True,
-                                         props=dict(facecolor='blue', alpha=0.2))
-        self.axis.legend()
-        self.figure.canvas.draw_idle()
-        """
-
+        self.view.plot()
+        
     def set_dataset(self, index=0):
-       
         spectrum_list = []
         reference_list =[('None', -1)]
         dataset_index = self.sidebar[0, 0].value
@@ -699,16 +481,14 @@ class InfoWidget(object):
         if 'beam_current' not in self.datasets[self.key].metadata['experiment']:
             self.datasets[self.key].metadata['experiment']['beam_current'] = 0
         self.sidebar[13,0].value = self.datasets[self.key].metadata['experiment']['beam_current']
-        if self.dataset.data_type =='SPECTRAL_IMAGE':
-            self.view = SIPlot(self.dataset)
+        if self.dataset.data_type.name =='SPECTRAL_IMAGE':
+            self.view = eels_dialog_utilities.SIPlot(self.dataset)
         else:
-            self.view = SpectrumPlot(self.dataset)    
+            self.view = eels_dialog_utilities.SpectrumPlot(self.dataset)    
         self.y_scale = 1.0
         self.change_y_scale = 1.0
         
-        
     def cursor2energy_scale(self, value):
-       
         dispersion = (self.view.end_cursor.value - self.view.start_cursor.value) / (self.view.end_channel - self.view.start_channel)
         self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
         self.sidebar[3, 0].value = dispersion
@@ -730,10 +510,8 @@ class InfoWidget(object):
             self.y_scale = 1/self.datasets[self.key].metadata['experiment']['flux_ppm'] * dispersion
         else:
             self.y_scale = 1.0
-            
         self.change_y_scale *= self.y_scale
-        self.plot()
-        
+        self.plot()     
     
     def set_flux(self, value):  
         self.datasets[self.key].metadata['experiment']['exposure_time'] = self.sidebar[10,0].value

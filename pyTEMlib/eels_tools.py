@@ -346,6 +346,72 @@ def find_all_edges(edge_onset, maximal_chemical_shift=5):
     return text
 
 
+def find_associated_edges(dataset):
+    onsets = []
+    edges = []
+    if 'edges' in dataset.metadata:
+        for key, edge in dataset.metadata['edges'].items():
+            if key.isdigit():
+                element = edge['element']
+                pre_edge = 0. # edge['onset']-edge['start_exclude']
+                post_edge = edge['end_exclude'] - edge['onset']
+
+                for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
+                    onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift']-pre_edge)
+                    edges.append([key, f"{element}-{sym}", onsets[-1]])
+        for key, peak in dataset.metadata['peak_fit']['peaks'].items():
+            if key.isdigit():
+                distance = dataset.energy_loss[-1]
+                index = -1
+                for ii, onset in enumerate(onsets):
+                    if onset < peak['position'] < onset+post_edge:
+                        if distance > np.abs(peak['position'] - onset):
+                            distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
+                            distance_onset = peak['position'] - onset
+                            index = ii
+                if index >= 0:
+                    peak['associated_edge'] = edges[index][1]  # check if more info is necessary
+                    peak['distance_to_onset'] = distance_onset
+
+
+def find_white_lines(dataset):
+    if 'edges' in dataset.metadata:
+        white_lines = {}
+        for index, peak in dataset.metadata['peak_fit']['peaks'].items():
+            if index.isdigit():
+                if 'associated_edge' in peak:
+                    if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
+                        if peak['distance_to_onset'] < 10:
+                            area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
+                            if peak['associated_edge'] not in white_lines:
+                                white_lines[peak['associated_edge']] = 0.
+                            if area > 0:
+                                white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
+        white_line_ratios = {}
+        white_line_sum = {}
+        for sym, area in white_lines.items():
+            if sym[-2:] in ['L2', 'M4', 'M2']:
+                if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
+                    if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
+                        white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
+                            f"{sym[:-1]}{int(sym[-1]) + 1}"]
+                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
+                                    area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
+
+                        areal_density = 1.
+                        if 'edges' in dataset.metadata:
+                            for key, edge in dataset.metadata['edges'].items():
+                                if key.isdigit():
+                                    if edge['element'] == sym.split('-')[0]:
+                                        areal_density = edge['areal_density']
+                                        break
+                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
+
+        dataset.metadata['peak_fit']['white_lines'] = white_lines
+        dataset.metadata['peak_fit']['white_line_ratios'] = white_line_ratios
+        dataset.metadata['peak_fit']['white_line_sums'] = white_line_sum
+        
+
 def second_derivative(dataset, sensitivity):
     """Calculates second derivative of a sidpy.dataset"""
 

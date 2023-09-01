@@ -515,16 +515,14 @@ def rigid_registration(dataset):
     rigid_registered.source = dataset.title
     rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
                                  'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
-    #if hasattr(rigid_registered, 'z'):
+
+    # if hasattr(rigid_registered, 'z'):
     #    del rigid_registered.z
-    #if hasattr(rigid_registered, 'x'):
+    # if hasattr(rigid_registered, 'x'):
     #    del rigid_registered.x
-    #if hasattr(rigid_registered, 'y'):
+    # if hasattr(rigid_registered, 'y'):
     #    del rigid_registered.y
 
-    rigid_registered.del_dimension(0)
-    rigid_registered.del_dimension(1)
-    rigid_registered.del_dimension(2)
 
     # rigid_registered._axes = {}
     rigid_registered.set_dimension(0, dataset._axes[frame_dim[0]])

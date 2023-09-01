@@ -15,14 +15,16 @@ except:
     # print('Qt dialogs are not available')
 
 import sidpy
+import matplotlib
+import matplotlib.pyplot as plt
+
 import matplotlib.patches as patches
 from matplotlib.widgets import RectangleSelector, SpanSelector
 
 import h5py  # TODO: needs to go
-import matplotlib.pyplot as plt
 
 from IPython.display import display
-import ipywidgets as widgets
+import ipywidgets
 
 from pyTEMlib import eels_tools as eels
 from pyTEMlib import file_tools as ft
@@ -556,6 +558,200 @@ def get_likely_edges(energy_scale):
 
     return likely_edges
 
+        
+class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
+    def __init__(self, dset, spectrum_number=0, figure=None, **kwargs):
+        with plt.ioff():
+            self.figure = plt.figure()
+        self.figure.canvas.toolbar_position = 'right'
+        self.figure.canvas.toolbar_visible = True
+
+        super().__init__(dset, spectrum_number=spectrum_number, figure=self.figure, **kwargs)
+        
+        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
+                                                       self.start_cursor,ipywidgets.Label('eV'), 
+                                                       self.end_cursor, ipywidgets.Label('eV')]),
+                                      self.figure.canvas])
+        
+        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        
+    def line_select_callback(self, x_min, x_max):
+        self.start_cursor.value = np.round(x_min, 3)
+        self.end_cursor.value = np.round(x_max, 3)
+        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
+    
+    def plot(self, scale=True, additional_spectra=None):
+        
+        self.energy_scale = self.dset.energy_loss.values
+        x_limit = self.axis.get_xlim()
+        y_limit = np.array(self.axis.get_ylim())
+        
+        self.axis.clear()
+
+        self.axis.plot(self.energy_scale, self.dset*self.y_scale, label='spectrum')
+                
+        if additional_spectra is not None:
+            if isinstance(additional_spectra, dict):
+                for key, spectrum in additional_spectra.items():
+                    self.axis.plot(self.energy_scale, spectrum*self.y_scale, label=key)
+
+        self.axis.set_xlabel(self.dset.labels[0])
+        self.axis.set_ylabel(self.dset.data_descriptor)
+        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
+        if scale:
+            self.axis.set_ylim(np.array(y_limit)*self.change_y_scale)
+        
+        self.change_y_scale = 1.0
+        if self.y_scale != 1.:
+                self.axis.set_ylabel('scattering probability (ppm/eV)')
+        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        self.axis.legend()
+        self.figure.canvas.draw_idle()
+        
+    
+class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
+    def __init__(self, dset, figure=None, horizontal=True, **kwargs):
+        if figure is None:
+            with plt.ioff():
+                self.figure = plt.figure()
+        else:
+            self.figure = figure
+        self.figure.canvas.toolbar_position = 'right'
+        self.figure.canvas.toolbar_visible = True
+
+        super().__init__(dset, figure= self.figure, horizontal=horizontal, **kwargs)
+        
+        self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
+        self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
+                                                       self.start_cursor,ipywidgets.Label('eV'), 
+                                                       self.end_cursor, ipywidgets.Label('eV')]),
+                                      self.figure.canvas])
+        self.axis = self.axes[-1]
+        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+       
+    def line_select_callback(self, x_min, x_max):
+        self.start_cursor.value = np.round(x_min, 3)
+        self.end_cursor.value = np.round(x_max, 3)
+        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
+    
+    def plot(self, scale=True, additional_spectra=None):
+        
+        xlim = self.axes[1].get_xlim()
+        ylim = self.axes[1].get_ylim()
+        self.axes[1].clear()
+        self.get_spectrum()
+        if len(self.energy_scale)!=self.spectrum.shape[0]:
+            self.spectrum = self.spectrum.T
+        self.axes[1].plot(self.energy_scale, self.spectrum.compute(), label='experiment')
+        if additional_spectra is not None:
+            if isinstance(additional_spectra, dict):
+                for key, spectrum in additional_spectra.items():
+                    self.axes[1].plot(self.energy_scale, spectrum, label=key)
+
+        if self.set_title:
+            self.axes[1].set_title('spectrum {}, {}'.format(self.x, self.y))
+        self.fig.tight_layout()
+        self.selector = matplotlib.widgets.SpanSelector(self.axes[1], self.line_select_callback,
+                                         direction="horizontal",
+                                         interactive=True,
+                                         props=dict(facecolor='blue', alpha=0.2))
+        
+        self.axes[1].set_xlim(xlim)
+        self.axes[1].set_ylim(ylim)
+        self.axes[1].set_xlabel(self.xlabel)
+        self.axes[1].set_ylabel(self.ylabel)
+
+        self.fig.canvas.draw_idle()
+
+
+
+
+def get_periodic_table_widget(energy_scale=None):
+
+    if energy_scale is None:
+        energy_scale = [100., 150., 200.]
+    
+    likely_edges = get_likely_edges(energy_scale)
+    
+    pt_info =  get_periodic_table_info()
+    table = ipywidgets.GridspecLayout(10, 18,width= '60%', grid_gap="0px")
+    for symbol, parameter in pt_info.items():
+        #print(parameter['PT_row'], parameter['PT_col'])
+        if parameter['PT_row'] > 7:
+            color = 'warning'
+        elif '*' in symbol:
+            color = 'warning'
+        else:
+            if symbol in likely_edges:
+                color = 'primary'
+            else:
+                color = 'info'
+        table[parameter['PT_row'], parameter['PT_col']] = ipywidgets.ToggleButton(description=symbol, 
+                                                                                  value=False, 
+                                                                                  button_style=color,
+                                                                                  layout=ipywidgets.Layout(width='auto'),
+                                                                                  style={"button_width": "30px"})
+    return table
+
+
+class PeriodicTableWidget(object):
+    """ ipywidget to get a selection of elements.
+
+    Elements that are not having a valid cross-sections are disabled.
+
+    Parameters
+    ----------
+    initial_elements: list of str
+        the elements that are already selected
+    energy_scale: list or numpy array
+        energy-scale of spectrum/spectra to determine likely edges
+
+    Returns
+    -------
+    list of strings: elements.
+        use get_output() function
+    """
+
+    def __init__(self, initial_elements=None, energy_scale=None):
+
+        if initial_elements is None:
+            initial_elements = [' ']
+        self.elements_selected = initial_elements
+        if energy_scale is None:
+            energy_scale = [100., 150., 200.]
+        self._output = []
+        self.energy_scale = np.array(energy_scale)
+        self.pt_info =  get_periodic_table_info()
+    
+        self.periodic_table = get_periodic_table_widget(energy_scale) 
+        self.update()
+
+    def get_output(self):
+        self.elements_selected = []
+        for symbol, parameter in self.pt_info.items():
+            if self.periodic_table[parameter['PT_row'], parameter['PT_col']].value == True:  # [parameter['PT_row'], parameter['PT_col']]
+                self.elements_selected.append(self.periodic_table[parameter['PT_row'], parameter['PT_col']].description)
+        return self.elements_selected
+    
+    def update(self):
+        for symbol, parameter in self.pt_info.items():
+            if str(self.periodic_table[parameter['PT_row'], parameter['PT_col']].description) in list(self.elements_selected):
+                self.periodic_table[parameter['PT_row'], parameter['PT_col']].value = True
+
 
 
 
@@ -654,15 +850,15 @@ class InteractiveSpectrumImage(object):
 
     def __init__(self, data_source, horizontal=True):
 
-        box_layout = widgets.Layout(display='flex',
+        box_layout = ipywidgets.Layout(display='flex',
                                     flex_flow='row',
                                     align_items='stretch',
                                     width='100%')
 
         words = ['fix_energy', 'fit_zero_loss', 'fit_low_loss', 'fit_composition', 'fit_ELNES']
 
-        self.buttons = [widgets.ToggleButton(value=False, description=word, disabled=False) for word in words]
-        box = widgets.Box(children=self.buttons, layout=box_layout)
+        self.buttons = [ipywidgets.ToggleButton(value=False, description=word, disabled=False) for word in words]
+        box = ipywidgets.Box(children=self.buttons, layout=box_layout)
         display(box)
 
         # MAKE Dictionary
@@ -1201,13 +1397,13 @@ class EdgesAtCursor(object):
 
 
 def make_box_layout():
-    return widgets.Layout(border='solid 1px black', margin='0px 10px 10px 0px', padding='5px 5px 5px 5px')
+    return ipywidgets.Layout(border='solid 1px black', margin='0px 10px 10px 0px', padding='5px 5px 5px 5px')
     
 
-class plot_EELS(widgets.HBox):
+class plot_EELS(ipywidgets.HBox):
     def __init__(self, dataset):
         super().__init__()
-        output = widgets.Output()
+        output = ipywidgets.Output()
         self.dataset = dataset
         self.spec_dim = 0
         initial_color = '#FF00DD'
@@ -1229,48 +1425,48 @@ class plot_EELS(widgets.HBox):
         self.fig.canvas.mpl_connect('pick_event', self.on_legend_pick)
         
         # define widgets
-        int_slider = widgets.IntSlider(
+        int_slider = ipywidgets.IntSlider(
             value=1, 
             min=0, 
             max=10, 
             step=1, 
             description='freq'
         )
-        self.offset = widgets.Text(
+        self.offset = ipywidgets.Text(
             value='0', 
             width=5,
             description='offset', 
             continuous_update=False
         )
-        self.dispersion = widgets.Text(
+        self.dispersion = ipywidgets.Text(
             value='0', 
             width=5,
             description='dispersion', 
             continuous_update=False
         )
 
-        self.exposure = widgets.Text(
+        self.exposure = ipywidgets.Text(
             value='0', 
             width=5,
             description='exposure', 
             continuous_update=False
         )
         
-        button_energy_scale = widgets.Button(description='Cursor')
-        button_elements_at_cursor = widgets.Button(description='Elements Cursor')
-        button_main_elements = widgets.Button(description='Main Elements')
+        button_energy_scale = ipywidgets.Button(description='Cursor')
+        button_elements_at_cursor = ipywidgets.Button(description='Elements Cursor')
+        button_main_elements = ipywidgets.Button(description='Main Elements')
         
-        controls = widgets.VBox([
-            widgets.HBox([self.offset, widgets.Label('eV')]),
-            widgets.HBox([self.dispersion, widgets.Label('eV/channel')]),
-            widgets.HBox([self.exposure, widgets.Label('s')]),
+        controls = ipywidgets.VBox([
+            ipywidgets.HBox([self.offset, ipywidgets.Label('eV')]),
+            ipywidgets.HBox([self.dispersion, ipywidgets.Label('eV/channel')]),
+            ipywidgets.HBox([self.exposure, ipywidgets.Label('s')]),
             button_energy_scale,
-            widgets.HBox([button_elements_at_cursor, button_main_elements])
+            ipywidgets.HBox([button_elements_at_cursor, button_main_elements])
         ])
             
         controls.layout = make_box_layout()
          
-        out_box = widgets.Box([output])
+        out_box = ipywidgets.Box([output])
         output.layout = make_box_layout()
  
         # observe stuff
