@@ -26,6 +26,7 @@ _version = 000
 
 if Qt_available:
     from pyTEMlib import info_dlg
+    from pyTEMlib import interactive_eels as ieels
     class InfoDialog(QtWidgets.QDialog):
         """
         Input Dialog for EELS Analysis
