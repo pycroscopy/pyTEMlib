@@ -202,7 +202,7 @@ def power_spectrum(dset, smoothing=3):
     return power_spec
 
 
-def diffractogram_spots(dset, spot_threshold):
+def diffractogram_spots(dset, spot_threshold, return_center = False):
     """Find spots in diffractogram and sort them by distance from center
 
     Uses blob_log from scipy.spatial
@@ -242,7 +242,12 @@ def diffractogram_spots(dset, spot_threshold):
     spots = spots_random[spots_index]
     # third row is angles
     spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
-    return spots
+
+    if return_center == True:
+        center = np.mean(spots)
+
+
+    return spots, center
 
 
 def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
