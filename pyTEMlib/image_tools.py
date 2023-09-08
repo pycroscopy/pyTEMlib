@@ -244,11 +244,14 @@ def diffractogram_spots(dset, spot_threshold, return_center = False):
     spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
 
     if return_center == True:
+        points = spots[:, 0:2]
+        # Reshape the points array to have an extra dimension
+        reshaped_points = points[:, np.newaxis, :]
+        # Calculate the midpoints using broadcasting
+        midpoints = (reshaped_points + reshaped_points.transpose(1, 0, 2)) / 2.0
+        midpoints = midpoints.reshape(-1, 2)
 
-        center = np.mean(spots) + 0.1
-
-
-    return spots, center
+    return spots, midpoints
 
 
 def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
