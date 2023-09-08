@@ -244,7 +244,8 @@ def diffractogram_spots(dset, spot_threshold, return_center = False):
     spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
 
     if return_center == True:
-        center = np.mean(spots)
+
+        center = np.mean(spots) + 0.1
 
 
     return spots, center
