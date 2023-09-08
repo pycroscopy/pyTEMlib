@@ -45,6 +45,10 @@ from skimage.feature import blob_log  # blob_dog, blob_doh
 
 from sklearn.feature_extraction import image
 from sklearn.utils.extmath import randomized_svd
+from sklearn.cluster import DBSCAN
+
+from collections import Counter
+
 
 _SimpleITK_present = True
 try:
@@ -202,7 +206,7 @@ def power_spectrum(dset, smoothing=3):
     return power_spec
 
 
-def diffractogram_spots(dset, spot_threshold, return_center = False):
+def diffractogram_spots(dset, spot_threshold, return_center = False, eps = 0.1):
     """Find spots in diffractogram and sort them by distance from center
 
     Uses blob_log from scipy.spatial
@@ -245,13 +249,23 @@ def diffractogram_spots(dset, spot_threshold, return_center = False):
 
     if return_center == True:
         points = spots[:, 0:2]
-        # Reshape the points array to have an extra dimension
+
+        # Calculate the midpoints between all points
         reshaped_points = points[:, np.newaxis, :]
-        # Calculate the midpoints using broadcasting
         midpoints = (reshaped_points + reshaped_points.transpose(1, 0, 2)) / 2.0
         midpoints = midpoints.reshape(-1, 2)
 
-    return spots, midpoints
+        # Find the most dense cluster of midpoints
+        dbscan = DBSCAN(eps = 0.1, min_samples = 2)
+        labels = dbscan.fit_predict(midpoints)
+        cluster_counter = Counter(labels)
+        largest_cluster_label = max(cluster_counter, key=cluster_counter.get)
+        largest_cluster_points = midpoints[labels == largest_cluster_label]
+
+        # Average of these midpoints must be the center
+        center = np.mean(largest_cluster_points,axis=0)
+
+    return spots, center
 
 
 def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
