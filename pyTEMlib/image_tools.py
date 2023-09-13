@@ -910,24 +910,30 @@ def cartesian2polar(x, y, grid, r, t, order=3):
     return ndimage.map_coordinates(grid, np.array([new_ix, new_iy]), order=order).reshape(new_x.shape)
 
 
-def warp(diff, center):
-    """Convert diffraction pattern to polar coordinates"""
+def warp(diff):
+    """Takes a centered diffraction pattern (as a sidpy dataset)and warps it to a polar grid"""
+    """Centered diff can be produced with it.diffractogram_spots(return_center = True)"""
 
     # Define original polar grid
-    nx = diff.shape[0]
-    ny = diff.shape[1]
+    nx = np.shape(diff)[0]
+    ny = np.shape(diff)[1]
 
-    x = np.linspace(1, nx, nx, endpoint=True)-center[1]
-    y = np.linspace(1, ny, ny, endpoint=True)-center[0]
-    z = np.abs(diff)
+    # Define center pixel
+    pix2nm = np.gradient(diff.u.values)[0]
+    center_pixel = [abs(min(diff.u.values)), abs(min(diff.v.values))]//pix2nm
+
+    x = np.linspace(1, nx, nx, endpoint = True)-center_pixel[0]
+    y = np.linspace(1, ny, ny, endpoint = True)-center_pixel[1]
+    z = diff
 
     # Define new polar grid
-    nr = min([center[0], center[1], diff.shape[0]-center[0], diff.shape[1]-center[1]])-1
+    nr = int(min([center_pixel[0], center_pixel[1], diff.shape[0]-center_pixel[0], diff.shape[1]-center_pixel[1]])-1)
     nt = 360*3
 
     r = np.linspace(1, nr, nr)
-    t = np.linspace(0., np.pi, nt, endpoint=False)
-    return cartesian2polar(x, y, z, r, t, order=3).T
+    t = np.linspace(0., np.pi, nt, endpoint = False)
+
+    return cartesian2polar(x,y, z, r, t, order=3)
 
 
 def calculate_ctf(wavelength, cs, defocus, k):
