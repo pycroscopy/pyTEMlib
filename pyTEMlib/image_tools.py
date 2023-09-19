@@ -206,7 +206,7 @@ def power_spectrum(dset, smoothing=3):
     return power_spec
 
 
-def diffractogram_spots(dset, spot_threshold, return_center = False, eps = 0.1):
+def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
     """Find spots in diffractogram and sort them by distance from center
 
     Uses blob_log from scipy.spatial
