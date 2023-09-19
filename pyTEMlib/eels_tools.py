@@ -1374,10 +1374,10 @@ def get_wave_length(e0):
     return constants.h / np.sqrt(2 * constants.m_e * ev * (1 + ev / (2 * constants.m_e * constants.c ** 2)))
 
 
-def drude(ep, eb, gamma, e):
+def drude(peak_position, peak_width, gamma, energy_scale):
     """dielectric function according to Drude theory"""
 
-    eps = 1 - (ep ** 2 - eb * e * 1j) / (e ** 2 + 2 * e * gamma * 1j)  # Mod drude term
+    eps = 1 - (peak_position ** 2 - peak_width * energy_scale * 1j) / (energy_scale ** 2 + 2 * energy_scale * gamma * 1j)  # Mod drude term
     return eps
 
 
