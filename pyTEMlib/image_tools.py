@@ -256,7 +256,7 @@ def diffractogram_spots(dset, spot_threshold, return_center = False, eps = 0.1):
         midpoints = midpoints.reshape(-1, 2)
 
         # Find the most dense cluster of midpoints
-        dbscan = DBSCAN(eps = 0.1, min_samples = 2)
+        dbscan = DBSCAN(eps = eps, min_samples = 2)
         labels = dbscan.fit_predict(midpoints)
         cluster_counter = Counter(labels)
         largest_cluster_label = max(cluster_counter, key=cluster_counter.get)
