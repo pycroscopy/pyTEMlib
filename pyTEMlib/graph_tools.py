@@ -797,15 +797,14 @@ def breadth_first_search(graph, initial, projected_crystal):
 
     # get lattice vectors to hopp along through graph
     projected_unit_cell = projected_crystal.cell[:2, :2]
-    a_lattice_vector = projected_unit_cell[0]/10
-    b_lattice_vector = projected_unit_cell[1]/10
-    print(a_lattice_vector, b_lattice_vector)
+    a_lattice_vector = projected_unit_cell[0]
+    b_lattice_vector = projected_unit_cell[1]
     main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
     near = np.append(main, projection_tags['near_base'], axis=0)  # all nearest atoms
     # get k next nearest neighbours for each node
     neighbour_tree = scipy.spatial.cKDTree(graph)
     distances, indices = neighbour_tree.query(graph,  # let's get all neighbours
-                                              k=8)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
+                                              k=50)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
     # print(projection_tags['number_of_nearest_neighbours'] * 2 + 1)
     visited = []  # the atoms we visited
     ideal = []  # atoms at ideal lattice

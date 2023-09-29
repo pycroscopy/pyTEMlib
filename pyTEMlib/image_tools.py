@@ -45,6 +45,10 @@ from skimage.feature import blob_log  # blob_dog, blob_doh
 
 from sklearn.feature_extraction import image
 from sklearn.utils.extmath import randomized_svd
+from sklearn.cluster import DBSCAN
+
+from collections import Counter
+
 
 _SimpleITK_present = True
 try:
@@ -202,7 +206,7 @@ def power_spectrum(dset, smoothing=3):
     return power_spec
 
 
-def diffractogram_spots(dset, spot_threshold):
+def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
     """Find spots in diffractogram and sort them by distance from center
 
     Uses blob_log from scipy.spatial
@@ -242,7 +246,26 @@ def diffractogram_spots(dset, spot_threshold):
     spots = spots_random[spots_index]
     # third row is angles
     spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
-    return spots
+
+    if return_center == True:
+        points = spots[:, 0:2]
+
+        # Calculate the midpoints between all points
+        reshaped_points = points[:, np.newaxis, :]
+        midpoints = (reshaped_points + reshaped_points.transpose(1, 0, 2)) / 2.0
+        midpoints = midpoints.reshape(-1, 2)
+
+        # Find the most dense cluster of midpoints
+        dbscan = DBSCAN(eps = eps, min_samples = 2)
+        labels = dbscan.fit_predict(midpoints)
+        cluster_counter = Counter(labels)
+        largest_cluster_label = max(cluster_counter, key=cluster_counter.get)
+        largest_cluster_points = midpoints[labels == largest_cluster_label]
+
+        # Average of these midpoints must be the center
+        center = np.mean(largest_cluster_points,axis=0)
+
+    return spots, center
 
 
 def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
@@ -887,24 +910,30 @@ def cartesian2polar(x, y, grid, r, t, order=3):
     return ndimage.map_coordinates(grid, np.array([new_ix, new_iy]), order=order).reshape(new_x.shape)
 
 
-def warp(diff, center):
-    """Convert diffraction pattern to polar coordinates"""
+def warp(diff):
+    """Takes a centered diffraction pattern (as a sidpy dataset)and warps it to a polar grid"""
+    """Centered diff can be produced with it.diffractogram_spots(return_center = True)"""
 
     # Define original polar grid
-    nx = diff.shape[0]
-    ny = diff.shape[1]
+    nx = np.shape(diff)[0]
+    ny = np.shape(diff)[1]
 
-    x = np.linspace(1, nx, nx, endpoint=True)-center[1]
-    y = np.linspace(1, ny, ny, endpoint=True)-center[0]
-    z = np.abs(diff)
+    # Define center pixel
+    pix2nm = np.gradient(diff.u.values)[0]
+    center_pixel = [abs(min(diff.u.values)), abs(min(diff.v.values))]//pix2nm
+
+    x = np.linspace(1, nx, nx, endpoint = True)-center_pixel[0]
+    y = np.linspace(1, ny, ny, endpoint = True)-center_pixel[1]
+    z = diff
 
     # Define new polar grid
-    nr = min([center[0], center[1], diff.shape[0]-center[0], diff.shape[1]-center[1]])-1
+    nr = int(min([center_pixel[0], center_pixel[1], diff.shape[0]-center_pixel[0], diff.shape[1]-center_pixel[1]])-1)
     nt = 360*3
 
     r = np.linspace(1, nr, nr)
-    t = np.linspace(0., np.pi, nt, endpoint=False)
-    return cartesian2polar(x, y, z, r, t, order=3).T
+    t = np.linspace(0., np.pi, nt, endpoint = False)
+
+    return cartesian2polar(x,y, z, r, t, order=3)
 
 
 def calculate_ctf(wavelength, cs, defocus, k):
