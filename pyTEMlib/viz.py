@@ -13,12 +13,12 @@ import pyTEMlib.eels_tools as eels
 import pyTEMlib.file_tools as ft
 
 
-from bokeh.layouts import column
+"""from bokeh.layouts import column
 from bokeh.plotting import figure  # , show, output_notebook
 from bokeh.models import CustomJS, Slider, Span
 from bokeh.models import LinearColorMapper, ColorBar, ColumnDataSource, BoxSelectTool
 from bokeh.palettes import Spectral11
-
+"""
 from pyTEMlib.sidpy_tools import *
 import sys
 import matplotlib.pyplot as plt
@@ -163,7 +163,7 @@ def plot_image(dataset, palette="Viridis256"):
     return p
 
 
-def plot_spectrum(dataset, selected_range, palette=Spectral11):
+def plot_spectrum(dataset, selected_range, palette=None):
     """Plot spectrum"""
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('Need a sidpy dataset for plotting')
