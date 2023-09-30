@@ -204,3 +204,7 @@ example_data/EELS_STO3.hf5
 .pyTEMlib.files.pkl
 .pyTEMlib.files.pkl
 example_data/EELS_STO3-1.hf5
+data/Y.csv
+notebooks/Imaging/data/Bote.txt
+notebooks/Imaging/data/ffast.pkl
+notebooks/Imaging/data/lineweight.txt

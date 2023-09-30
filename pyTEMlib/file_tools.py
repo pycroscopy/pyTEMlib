@@ -142,6 +142,9 @@ class FileWidget(object):
     def select_main(self, value=0):
         self.datasets = {}
         self.loaded_datasets.value = self.dataset_list[0]
+        self.dataset_list = []
+        #self.loaded_datasets.options = self.dataset_list
+        
         self.datasets = open_file(self.file_name)
         self.dataset_list = []
         for key in self.datasets.keys():
