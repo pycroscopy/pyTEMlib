@@ -707,7 +707,6 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             if isinstance(dset, sidpy.Dataset):
                 dset = [dset]
             
-
         if isinstance(dset, dict):
             dataset_dict = dset
 
