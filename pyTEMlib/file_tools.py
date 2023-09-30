@@ -702,14 +702,19 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
 
         if extension in ['.dm3', '.dm4']:
             title = (basename.strip().replace('-', '_')).split('/')[-1]
-            if not isinstance(dset, list):
+            if not isinstance(dset, dict):
+                print(dset)
                 print('Please use new SciFiReaders Package for full functionality')
+            if isinstance(dset, sidpy.Dataset):
                 dset = [dset]
             if 'PageSetup' in dset[0].original_metadata:
                 del dset[0].original_metadata['PageSetup']
             dset[0].original_metadata['original_title'] = title
 
-        if isinstance(dset, list):
+        if isinstance(dset, dict):
+            dataset_dict = dset
+
+        elif isinstance(dset, list):
             if len(dset) < 1:
                 print('no dataset found in file')
                 return {}
