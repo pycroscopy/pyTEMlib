@@ -1227,13 +1227,13 @@ def resolution_function2(dataset, width =0.3):
     [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
 
     z_loss = zl_func(p_zl, dataset.energy_loss)
-    z_loss = dataset.like_data(z_loss)
-    z_loss.title = 'resolution_function'
-    z_loss.metadata['zero_loss_parameter']=p_zl
+    zero_loss = dataset.like_data(z_loss)
+    zero_loss.title = 'resolution_function'
+    zero_loss.metadata['zero_loss_parameter']=p_zl
     
     dataset.metadata['low_loss']['zero_loss'] = {'zero_loss_parameter': p_zl,
                                                  'zero_loss_fit': 'Product2Lorentzians'}
-    zero_loss = dataset.like_array(z_loss)
+
     return zero_loss, p_zl
 
 
@@ -1320,7 +1320,20 @@ def get_resolution_functions(spectrum_image, energy_scale=None, zero_loss_fit_wi
         fwhm, delta_e = fix_energy_scale(spectrum_image)
         z_loss, p_zl = resolution_function(energy_scale - delta_e, spectrum_image, zero_loss_fit_width)
         fwhm2, delta_e2 = fix_energy_scale(z_loss, energy_scale - delta_e)
-        return delta_e + delta_e2, fwhm2
+        spectrum_image.energy_loss -= delta_e+delta_e2
+        z_loss = zl_func(p_zl, spectrum_image.energy_loss)
+        zero_loss = spectrum_image.like_data(z_loss)
+        zero_loss.title = 'resolution_function'
+
+        spectrum_image.metadata['zero_loss'] = {'zero_loss_parameter': p_zl,
+                                                'zero_loss_fit': 'Product2Lorentzians'}
+        spectrum_image.metadata['low_loss'] = {'shift': delta_e+delta_e2,
+                                               'width': fwhm2}
+        zero_loss.metadata['zero_loss'] = spectrum_image.metadata['zero_loss']
+        zero_loss.metadata['low_loss'] = spectrum_image.metadata['low_loss']
+    
+        return zero_loss
+    
     elif len(spatial_dimension) != 2:
         return
     shifts = np.zeros(spectrum_image.shape[0:2])
