@@ -26,6 +26,9 @@ from scipy import fftpack
 # from scipy import signal
 from scipy.interpolate import interp1d  # , interp2d
 import scipy.optimize as optimization
+from scipy.stats import kurtosis
+from scipy.signal import savgol_filter
+from scipy.ndimage import center_of_mass
 
 # Multidimensional Image library
 import scipy.ndimage as ndimage
@@ -266,6 +269,128 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
         center = np.mean(largest_cluster_points,axis=0)
 
     return spots, center
+
+
+def diffractogram_center_by_mass(dataset, initial_radius=10, radius_increment=10, max_iterations=100, tolerance=1e-6):
+    """
+    Find the center of mass of a diffractogram, iteratively refining by excluding a central region.
+
+    Parameters:
+    -----------
+    image: ndarray
+        The input image for which the center is to be found.
+    initial_radius: int
+        Initial radius for excluding the region around the first center of mass.
+    max_iterations: int
+        Maximum number of iterations for refining the center.
+    tolerance: float
+        Threshold for stopping the iteration. Iteration stops when the movement of the center is below this value.
+
+    Returns:
+    --------
+    tuple:
+        Optimal center coordinates (y, x)
+    """
+    scale = np.gradient(dataset._axes[0].values)[0]
+    image = np.array(dataset)
+
+    previous_center = center_of_mass(image)
+    current_center = previous_center
+    current_radius = initial_radius
+
+    for _ in range(max_iterations):
+        # Create a mask for the region around the center
+        y, x = np.ogrid[:image.shape[0], :image.shape[1]]
+        mask = (y - current_center[0]) ** 2 + (x - current_center[1]) ** 2 <= current_radius ** 2
+
+        # Exclude the region around the center
+        masked_image = np.where(mask, 0, image)
+
+        # Compute the center of mass for the remaining part
+        new_center = center_of_mass(masked_image)
+
+        # Check for convergence
+        shift = np.sqrt((new_center[0] - current_center[0]) ** 2 + (new_center[1] - current_center[1]) ** 2)
+        if shift < tolerance:
+            break
+
+        current_center = new_center
+        current_radius += radius_increment
+
+    return scale * np.array(current_center)
+
+
+
+def diffractogram_center_by_kurtosis(dataset, fit_start, fit_end, step_size=0.1, max_iterations=1000, tolerance=1e-6):
+    """
+    Parameters:
+    -----------
+    dataset: sidpy.Dataset
+        the diffractogram to be centered
+    fit_start, fit_end: float
+        start and end of the peaks to fit
+        warning: the fit window does not change adaptively.  make it wider than the peak
+    step_size: float
+        size of step to take in each direction during hill-climbing
+    iterations: float
+        number of iterations for the optimization algorithm
+
+    Output:
+    -------
+    array of optimal center coordinates [x, y]
+    """
+
+    # Get the scale starting center estimate
+    scale = np.gradient(dataset._axes[0].values)[0]
+    current_center = np.array(center_of_mass(dataset))*scale
+    
+    # Define possible moves
+    moves = np.array([(dx, dy) for dx in [-step_size, 0, step_size] for dy in [-step_size, 0, step_size] if not (dx==0 and dy==0)])
+    
+    # Initialize variables
+    max_kurt = -np.inf
+    no_improvement_steps = 0
+    
+    fit_start = int(fit_start//scale)
+    fit_end = int(fit_end//scale)
+
+    for _ in range(max_iterations):
+        best_kurt = max_kurt
+        best_move = np.zeros(2)
+
+        for move in moves:
+            # get polar projection (profile)
+            new_center = current_center + move
+            polar_projection = warp(dataset, new_center)
+            polar_projection[polar_projection < 0] = 0.
+            profile = polar_projection.sum(axis=0)
+
+            # smooth and crop the peak for fitting
+            smoothed_profile = savgol_filter(profile, window_length=20, polyorder=3)
+
+            # fit the peak
+            current_kurt = kurtosis(smoothed_profile[fit_start:fit_end]) # was 'smoothed_profile'
+            if current_kurt > best_kurt:
+                best_kurt = current_kurt
+                best_move = move
+
+        kurt_improvement = best_kurt - max_kurt
+
+        # if there's no significant improvement for 10 steps, halt
+        if kurt_improvement < tolerance:
+            no_improvement_steps += 1
+        else:
+            no_improvement_steps = 0
+        if no_improvement_steps >= 10:
+            break
+
+        current_center += best_move
+        max_kurt = best_kurt
+        
+        if no_improvement_steps % 5 == 4:
+            step_size /= 2
+
+    return current_center
 
 
 def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
@@ -910,30 +1035,40 @@ def cartesian2polar(x, y, grid, r, t, order=3):
     return ndimage.map_coordinates(grid, np.array([new_ix, new_iy]), order=order).reshape(new_x.shape)
 
 
-def warp(diff):
-    """Takes a centered diffraction pattern (as a sidpy dataset)and warps it to a polar grid"""
-    """Centered diff can be produced with it.diffractogram_spots(return_center = True)"""
+def warp(diff, center):
+    """Takes a diffraction pattern (as a sidpy dataset) and warps it to a polar grid.
+    The diffraction pattern should be produced with it.diffractogram_spots(return_center = True).
+
+    Parameters
+    ----------
+    diff: diffraction pattern (sidpy dataset)
+    center: center of the pattern (array)
+
+    Returns
+    -------
+    warped pattern in polar grid
+    """
 
     # Define original polar grid
     nx = np.shape(diff)[0]
     ny = np.shape(diff)[1]
 
-    # Define center pixel
+    # Define center pixel in terms of array indices
     pix2nm = np.gradient(diff.u.values)[0]
-    center_pixel = [abs(min(diff.u.values)), abs(min(diff.v.values))]//pix2nm
+    center_pixel = [center[0]//pix2nm, center[1]//pix2nm]
 
-    x = np.linspace(1, nx, nx, endpoint = True)-center_pixel[0]
-    y = np.linspace(1, ny, ny, endpoint = True)-center_pixel[1]
+    x = np.linspace(1, nx, nx, endpoint=True) - center_pixel[0]
+    y = np.linspace(1, ny, ny, endpoint=True) - center_pixel[1]
     z = diff
 
     # Define new polar grid
-    nr = int(min([center_pixel[0], center_pixel[1], diff.shape[0]-center_pixel[0], diff.shape[1]-center_pixel[1]])-1)
+    nr = int(min([center_pixel[0], center_pixel[1], diff.shape[0]-center_pixel[0], diff.shape[1]-center_pixel[1]]) - 1)
     nt = 360*3
 
     r = np.linspace(1, nr, nr)
-    t = np.linspace(0., np.pi, nt, endpoint = False)
+    t = np.linspace(0., np.pi, nt, endpoint=False)
 
-    return cartesian2polar(x,y, z, r, t, order=3)
+    return cartesian2polar(x, y, z, r, t, order=3)
 
 
 def calculate_ctf(wavelength, cs, defocus, k):
