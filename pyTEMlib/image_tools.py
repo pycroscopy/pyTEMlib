@@ -28,8 +28,8 @@ from scipy.interpolate import interp1d  # , interp2d
 import scipy.optimize as optimization
 from scipy.stats import kurtosis
 from scipy.signal import savgol_filter
-from scipy.ndimage import center_of_mass
-
+from scipy.ndimage import center_of_mass, gaussian_filter
+import cv2
 # Multidimensional Image library
 import scipy.ndimage as ndimage
 import scipy.constants as const
@@ -268,7 +268,11 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
         # Average of these midpoints must be the center
         center = np.mean(largest_cluster_points,axis=0)
 
-    return spots, center
+        return spots, center
+        
+    else:
+        return spots
+
 
 
 def diffractogram_center_by_mass(dataset, initial_radius=10, radius_increment=10, max_iterations=100, tolerance=1e-6):
@@ -391,6 +395,41 @@ def diffractogram_center_by_kurtosis(dataset, fit_start, fit_end, step_size=0.1,
             step_size /= 2
 
     return current_center
+
+def diffractogra_center_by_threshold(dset, threshold):
+    im = np.array(dset)
+    im[im<0] = 0
+
+    blurred = gaussian_filter(im, sigma=3)
+    image = 225*blurred/np.max(blurred)
+
+    threshold_value = np.percentile(image, 100 - threshold)
+    thresholded_image = np.where(image > threshold_value, 255, 0)
+    thresholded_image = gaussian_filter(thresholded_image, sigma=3)
+
+    #plt.figure()
+    #plt.imshow(thresholded_image)
+
+    circles = cv2.HoughCircles(thresholded_image.astype(np.uint8), cv2.HOUGH_GRADIENT, dp=1.5, minDist=10,
+                                param1=40, param2=20, minRadius=400)
+
+    if circles is not None:
+        x_s = circles[0,:,0]
+        y_s = circles[0,:,1]
+        x = np.mean(x_s)
+        y = np.mean(y_s)
+        return x,y    
+    else:
+        median_value = np.median(im)
+        thresh = np.where(im > 2 * median_value, 255, 0)
+
+        circles = cv2.HoughCircles(thresh.astype(np.uint8), cv2.HOUGH_GRADIENT, dp=1.5, minDist=10,
+                                param1=50, param2=30, minRadius=5)
+        x_s = circles[0,:,0]
+        y_s = circles[0,:,1]
+        x = np.mean(x_s)
+        y = np.mean(y_s)
+        return x,y 
 
 
 def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
