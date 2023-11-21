@@ -23,28 +23,15 @@ from tqdm.auto import trange, tqdm
 from itertools import product
 
 from scipy import fftpack
-# from scipy import signal
-from scipy.interpolate import interp1d  # , interp2d
+from scipy.interpolate import interp1d
 import scipy.optimize as optimization
-from scipy.stats import kurtosis
-from scipy.signal import savgol_filter
-from scipy.ndimage import center_of_mass, gaussian_filter
-import cv2
-# Multidimensional Image library
+from scipy.signal import savgol_filter, find_peaks
+from scipy.ndimage import gaussian_filter
+
 import scipy.ndimage as ndimage
 import scipy.constants as const
 
-# from scipy.spatial import Voronoi, KDTree, cKDTree
-
-import skimage
-
-import skimage.registration as registration
-# from skimage.feature import register_translation  # blob_dog, blob_doh
-from skimage.feature import peak_local_max
-# from skimage.measure import points_in_poly
-
-# our blob detectors from the scipy image package
-from skimage.feature import blob_log  # blob_dog, blob_doh
+from skimage.feature import peak_local_max, blob_log
 
 from sklearn.feature_extraction import image
 from sklearn.utils.extmath import randomized_svd
@@ -274,163 +261,73 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
         return spots
 
 
+def center_diffractogram(dset, center_guess=None, start_fit_pix=660, end_fit_pix=790, offset_angle = 45, slice_width = 20, return_plot = False):
 
-def diffractogram_center_by_mass(dataset, initial_radius=10, radius_increment=10, max_iterations=100, tolerance=1e-6):
-    """
-    Find the center of mass of a diffractogram, iteratively refining by excluding a central region.
+    scale = np.gradient(dset.u)[0] # 1/nm
+    if center_guess is None:
+        center_guess = np.array(dset.shape)/2 * scale
 
-    Parameters:
-    -----------
-    image: ndarray
-        The input image for which the center is to be found.
-    initial_radius: int
-        Initial radius for excluding the region around the first center of mass.
-    max_iterations: int
-        Maximum number of iterations for refining the center.
-    tolerance: float
-        Threshold for stopping the iteration. Iteration stops when the movement of the center is below this value.
+    polar_projection = warp(dset,center_guess)
+    polar_projection[polar_projection<0]=0. # get rid of negative value
+    profile_x = scale * np.linspace(0, np.shape(polar_projection)[0], np.shape(polar_projection)[0], endpoint=True)
 
-    Returns:
-    --------
-    tuple:
-        Optimal center coordinates (y, x)
-    """
-    scale = np.gradient(dataset._axes[0].values)[0]
-    image = np.array(dataset)
+    # Slice Params
+    slice_centers = np.array([0,90,180,270]) + offset_angle # for the 4-fold symmetry case. easy to change for 3/6-fold
+    sliced_data = []
+    sliced_profiles = []
+    smoothed_profiles = []
+    # Make the Slices
+    for i, center in enumerate(slice_centers):
+        sliced_data.append(polar_projection[int(center-slice_width):int(center+slice_width),:])
+        sliced_profiles.append(savgol_filter(np.sum(sliced_data[i], axis=0), window_length = 20, polyorder = 3))
+        smoothed_profiles.append(gaussian_filter(sliced_profiles[i], sigma = 10))
 
-    previous_center = center_of_mass(image)
-    current_center = previous_center
-    current_radius = initial_radius
+    # Plot the Slices
+    if return_plot:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (10,5))
+        ax1.imshow(polar_projection, vmax = 2000)
 
-    for _ in range(max_iterations):
-        # Create a mask for the region around the center
-        y, x = np.ogrid[:image.shape[0], :image.shape[1]]
-        mask = (y - current_center[0]) ** 2 + (x - current_center[1]) ** 2 <= current_radius ** 2
+        colors = ['C0', 'C1', 'C2', 'C3']
+        for i, center in enumerate(slice_centers):
+            ax1.axhline(center-slice_width, color = colors[i])
+            ax1.axhline(center+slice_width, color = colors[i])
+            ax2.plot(smoothed_profiles[i], color = colors[i])
 
-        # Exclude the region around the center
-        masked_image = np.where(mask, 0, image)
+    # Finding the Peaks
+    specs2fit = [profile[start_fit_pix:end_fit_pix] for profile in smoothed_profiles]
+    peak0 = find_peaks(specs2fit[0])[0]
+    peak1 = find_peaks(specs2fit[1])[0]
+    peak2 = find_peaks(specs2fit[2])[0]
+    peak3 = find_peaks(specs2fit[3])[0]
+    shift02 = peak0 - peak2
+    shift13 = peak1 - peak3
 
-        # Compute the center of mass for the remaining part
-        new_center = center_of_mass(masked_image)
+    # Rotate the Shift to Familar Coords and Update
+    center_tilted_shift = np.array([shift02, shift13])
+    angle = -np.radians(offset_angle)
+    rotation_matrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+    center_shift = np.dot(rotation_matrix, center_tilted_shift).ravel() * scale
+    center = center_guess + center_shift
 
-        # Check for convergence
-        shift = np.sqrt((new_center[0] - current_center[0]) ** 2 + (new_center[1] - current_center[1]) ** 2)
-        if shift < tolerance:
-            break
+    # Plot the new Projection
+    if return_plot:
+        polar_projection = warp(dset,center)
+        polar_projection[polar_projection<0]=0.
+        profile = polar_projection.sum(axis=0)
+        smoothed_profile = savgol_filter(profile, window_length=20, polyorder=3)
+        profile_x = scale * np.linspace(0, np.shape(profile)[0], np.shape(profile)[0], endpoint=True)
+        profile_x = profile_x + center[0]
 
-        current_center = new_center
-        current_radius += radius_increment
+        smoothed_profile /= np.max(smoothed_profile)
+        smoothed_profile *= - 0.45 * scale * len(dset.u)
+        smoothed_profile = smoothed_profile + center[1]
 
-    return scale * np.array(current_center)
-
-
-
-def diffractogram_center_by_kurtosis(dataset, fit_start, fit_end, step_size=0.1, max_iterations=1000, tolerance=1e-6):
-    """
-    Parameters:
-    -----------
-    dataset: sidpy.Dataset
-        the diffractogram to be centered
-    fit_start, fit_end: float
-        start and end of the peaks to fit
-        warning: the fit window does not change adaptively.  make it wider than the peak
-    step_size: float
-        size of step to take in each direction during hill-climbing
-    iterations: float
-        number of iterations for the optimization algorithm
-
-    Output:
-    -------
-    array of optimal center coordinates [x, y]
-    """
-
-    # Get the scale starting center estimate
-    scale = np.gradient(dataset._axes[0].values)[0]
-    current_center = np.array(center_of_mass(dataset))*scale
-    
-    # Define possible moves
-    moves = np.array([(dx, dy) for dx in [-step_size, 0, step_size] for dy in [-step_size, 0, step_size] if not (dx==0 and dy==0)])
-    
-    # Initialize variables
-    max_kurt = -np.inf
-    no_improvement_steps = 0
-    
-    fit_start = int(fit_start//scale)
-    fit_end = int(fit_end//scale)
-
-    for _ in range(max_iterations):
-        best_kurt = max_kurt
-        best_move = np.zeros(2)
-
-        for move in moves:
-            # get polar projection (profile)
-            new_center = current_center + move
-            polar_projection = warp(dataset, new_center)
-            polar_projection[polar_projection < 0] = 0.
-            profile = polar_projection.sum(axis=0)
-
-            # smooth and crop the peak for fitting
-            smoothed_profile = savgol_filter(profile, window_length=20, polyorder=3)
-
-            # fit the peak
-            current_kurt = kurtosis(smoothed_profile[fit_start:fit_end]) # was 'smoothed_profile'
-            if current_kurt > best_kurt:
-                best_kurt = current_kurt
-                best_move = move
-
-        kurt_improvement = best_kurt - max_kurt
-
-        # if there's no significant improvement for 10 steps, halt
-        if kurt_improvement < tolerance:
-            no_improvement_steps += 1
-        else:
-            no_improvement_steps = 0
-        if no_improvement_steps >= 10:
-            break
-
-        current_center += best_move
-        max_kurt = best_kurt
+        dset.plot(vmax=2000)
+        plt.plot(profile_x, smoothed_profile, c = 'r')
+        plt.plot(center[0], center[1], 'o', c = 'r', label = 'new center')
+        plt.plot(center_guess[0], center_guess[1], 'o', c = 'b', label = 'center guess')
         
-        if no_improvement_steps % 5 == 4:
-            step_size /= 2
-
-    return current_center
-
-def diffractogra_center_by_threshold(dset, threshold):
-    im = np.array(dset)
-    im[im<0] = 0
-
-    blurred = gaussian_filter(im, sigma=3)
-    image = 225*blurred/np.max(blurred)
-
-    threshold_value = np.percentile(image, 100 - threshold)
-    thresholded_image = np.where(image > threshold_value, 255, 0)
-    thresholded_image = gaussian_filter(thresholded_image, sigma=3)
-
-    #plt.figure()
-    #plt.imshow(thresholded_image)
-
-    circles = cv2.HoughCircles(thresholded_image.astype(np.uint8), cv2.HOUGH_GRADIENT, dp=1.5, minDist=10,
-                                param1=40, param2=20, minRadius=400)
-
-    if circles is not None:
-        x_s = circles[0,:,0]
-        y_s = circles[0,:,1]
-        x = np.mean(x_s)
-        y = np.mean(y_s)
-        return x,y    
-    else:
-        median_value = np.median(im)
-        thresh = np.where(im > 2 * median_value, 255, 0)
-
-        circles = cv2.HoughCircles(thresh.astype(np.uint8), cv2.HOUGH_GRADIENT, dp=1.5, minDist=10,
-                                param1=50, param2=30, minRadius=5)
-        x_s = circles[0,:,0]
-        y_s = circles[0,:,1]
-        x = np.mean(x_s)
-        y = np.mean(y_s)
-        return x,y 
-
+    return center
 
 def adaptive_fourier_filter(dset, spots, low_pass=3, reflection_radius=0.3):
     """
@@ -1081,7 +978,7 @@ def warp(diff, center):
     Parameters
     ----------
     diff: diffraction pattern (sidpy dataset)
-    center: center of the pattern (array)
+    center: center of the pattern (array, units: nm)
 
     Returns
     -------
@@ -1093,7 +990,7 @@ def warp(diff, center):
     ny = np.shape(diff)[1]
 
     # Define center pixel in terms of array indices
-    pix2nm = np.gradient(diff.u.values)[0]
+    pix2nm = np.gradient(diff.dim_0.values)[0] 
     center_pixel = [center[0]//pix2nm, center[1]//pix2nm]
 
     x = np.linspace(1, nx, nx, endpoint=True) - center_pixel[0]
@@ -1102,7 +999,7 @@ def warp(diff, center):
 
     # Define new polar grid
     nr = int(min([center_pixel[0], center_pixel[1], diff.shape[0]-center_pixel[0], diff.shape[1]-center_pixel[1]]) - 1)
-    nt = 360*3
+    nt = 360
 
     r = np.linspace(1, nr, nr)
     t = np.linspace(0., np.pi, nt, endpoint=False)
