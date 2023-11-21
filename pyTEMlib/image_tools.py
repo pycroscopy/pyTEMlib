@@ -295,12 +295,28 @@ def center_diffractogram(dset, center_guess=None, start_fit_pix=660, end_fit_pix
 
     # Finding the Peaks
     specs2fit = [profile[start_fit_pix:end_fit_pix] for profile in smoothed_profiles]
-    peak0 = find_peaks(specs2fit[0])[0]
-    peak1 = find_peaks(specs2fit[1])[0]
-    peak2 = find_peaks(specs2fit[2])[0]
-    peak3 = find_peaks(specs2fit[3])[0]
-    shift02 = peak0 - peak2
-    shift13 = peak1 - peak3
+    tallest_peaks = []
+    for profile in specs2fit:
+        # Find peaks and their properties
+        peaks, properties = find_peaks(profile, height=0)
+        if peaks.size > 0:  # If any peaks were found
+            # Get the index of the tallest peak
+            tallest_peak_index = np.argmax(properties['peak_heights'])
+            tallest_peaks.append(peaks[tallest_peak_index])
+        else:
+            tallest_peaks.append(None)
+
+    if tallest_peaks[0] is not None and tallest_peaks[2] is not None:
+        shift02 = tallest_peaks[0] - tallest_peaks[2]
+    else:
+        shift02 = 0.
+        print('no peaks found')
+
+    if tallest_peaks[1] is not None and tallest_peaks[3] is not None:
+        shift13 = tallest_peaks[1] - tallest_peaks[3]
+    else:
+        shift13 = 0.
+        print('no peaks found')
 
     # Rotate the Shift to Familar Coords and Update
     center_tilted_shift = np.array([shift02, shift13])
