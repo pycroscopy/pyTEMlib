@@ -6,7 +6,7 @@ MIT license except where stated differently
 """
 
 import numpy as np
-
+import matplotlib
 import matplotlib as mpl
 import matplotlib.pylab as plt
 import matplotlib.widgets as mwidgets
@@ -697,6 +697,45 @@ class ImageWithLineProfile:
         self.ax[1].set_xlim(0, x_axis.max())
         self.ax[1].set_ylim(zi2.min(), zi2.max())
         self.ax[1].draw()
+
+
+class LineSelector(matplotlib.widgets.PolygonSelector):
+    def __init__(self, ax, onselect, line_width=1, **kwargs):
+        super().__init__(ax, onselect, **kwargs)
+        bounds  =ax.viewLim.get_points()
+        np.max(bounds[0])
+        self.line_verts = np.array( [[np.max(bounds[1])/2, np.max(bounds[0])/5], [np.max(bounds[1])/2, np.max(bounds[0])/5+1],  
+                                     [np.max(bounds[1])/5, np.max(bounds[0])/2], [np.max(bounds[1])/5, np.max(bounds[0])/2]])
+        self.verts = self.line_verts
+        self.line_width = line_width
+
+    def set_linewidth(self, line_width):
+        self.line_width = line_width
+
+        m = -(self.line_verts[0,1]-self.line_verts[3,1])/(self.line_verts[0,0]-self.line_verts[3,0])
+        c =  1/np.sqrt(1+m**2)
+        s = c*m
+        self.line_verts[1] = [self.line_verts[0, 0]+self.line_width*s, self.line_verts[0, 1]+self.line_width*c]
+        self.line_verts[2] = [self.line_verts[3, 0]+self.line_width*s, self.line_verts[3, 1]+self.line_width*c]
+        
+        self.verts = self.line_verts.copy()
+
+    def onmove(self, event):
+        super().onmove(event)
+        if np.max(np.linalg.norm(self.line_verts-self.verts, axis=1))>1:
+            self.moved_point = np.argmax(np.linalg.norm(self.line_verts-self.verts, axis=1))
+            
+            self.new_point = self.verts[self.moved_point]
+            moved_point = int(np.floor(self.moved_point/2)*3)
+            self.moved_point = moved_point
+            self.line_verts[moved_point] = self.new_point
+            m = -(self.line_verts[0,1]-self.line_verts[3,1])/(self.line_verts[0,0]-self.line_verts[3,0])
+            c =  1/np.sqrt(1+m**2)
+            s = c*m
+            self.line_verts[1] = [self.line_verts[0, 0]+self.line_width*s, self.line_verts[0, 1]+self.line_width*c]
+            self.line_verts[2] = [self.line_verts[3, 0]+self.line_width*s, self.line_verts[3, 1]+self.line_width*c]
+                        
+            self.verts = self.line_verts.copy()
 
 
 def histogram_plot(image_tags):

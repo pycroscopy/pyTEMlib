@@ -1227,13 +1227,13 @@ def resolution_function2(dataset, width =0.3):
     [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
 
     z_loss = zl_func(p_zl, dataset.energy_loss)
-    z_loss = dataset.like_data(z_loss)
-    z_loss.title = 'resolution_function'
-    z_loss.metadata['zero_loss_parameter']=p_zl
+    zero_loss = dataset.like_data(z_loss)
+    zero_loss.title = 'resolution_function'
+    zero_loss.metadata['zero_loss_parameter']=p_zl
     
     dataset.metadata['low_loss']['zero_loss'] = {'zero_loss_parameter': p_zl,
                                                  'zero_loss_fit': 'Product2Lorentzians'}
-    zero_loss = dataset.like_array(z_loss)
+
     return zero_loss, p_zl
 
 
@@ -1320,7 +1320,20 @@ def get_resolution_functions(spectrum_image, energy_scale=None, zero_loss_fit_wi
         fwhm, delta_e = fix_energy_scale(spectrum_image)
         z_loss, p_zl = resolution_function(energy_scale - delta_e, spectrum_image, zero_loss_fit_width)
         fwhm2, delta_e2 = fix_energy_scale(z_loss, energy_scale - delta_e)
-        return delta_e + delta_e2, fwhm2
+        spectrum_image.energy_loss -= delta_e+delta_e2
+        z_loss = zl_func(p_zl, spectrum_image.energy_loss)
+        zero_loss = spectrum_image.like_data(z_loss)
+        zero_loss.title = 'resolution_function'
+
+        spectrum_image.metadata['zero_loss'] = {'zero_loss_parameter': p_zl,
+                                                'zero_loss_fit': 'Product2Lorentzians'}
+        spectrum_image.metadata['low_loss'] = {'shift': delta_e+delta_e2,
+                                               'width': fwhm2}
+        zero_loss.metadata['zero_loss'] = spectrum_image.metadata['zero_loss']
+        zero_loss.metadata['low_loss'] = spectrum_image.metadata['low_loss']
+    
+        return zero_loss
+    
     elif len(spatial_dimension) != 2:
         return
     shifts = np.zeros(spectrum_image.shape[0:2])
@@ -2167,3 +2180,125 @@ def get_spectrum_eels_db(formula=None, edge=None, title=None, element=None):
     print(f'found {len(reference_spectra.keys())} spectra in EELS database)')
 
     return reference_spectra
+
+
+    # ### To Delete
+
+def smooth(dataset, fit_start, fit_end, peaks=None, iterations=2, sensitivity=2.):
+    """Using Gaussian mixture model (non-Bayesian) to fit spectrum
+
+    Set up to fit lots of Gaussian to spectrum
+
+    Parameter
+    ---------
+    dataset: sidpy dataset
+    fit_start: float
+        start of energy window of fitting
+    fit_end: float
+        start of energy window of fitting
+    peaks: numpy array float
+    iterations: int
+    sensitivity: float
+    """
+
+    if dataset.data_type.name == 'SPECTRAL_IMAGE':
+        spectrum = dataset.view.get_spectrum()
+    else:
+        spectrum = np.array(dataset)
+
+    spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
+    energy_scale = np.array(spec_dim[1])
+    start_channel = np.searchsorted(energy_scale, fit_start)
+    end_channel = np.searchsorted(energy_scale, fit_end)
+
+    if peaks is None:
+        second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
+        [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
+
+        peaks = []
+        for index in indices:
+            if start_channel < index < end_channel:
+                peaks.append(index - start_channel)
+    else:
+        peaks = peaks[::3]
+
+    if energy_scale[0] > 0:
+        if 'edges' not in dataset.metadata:
+            return
+        if 'model' not in dataset.metadata['edges']:
+            return
+        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
+
+    else:
+        model = np.zeros(end_channel - start_channel)
+
+    if 'model' in dataset.metadata:
+        model = dataset.metadata['model'][start_channel:end_channel]
+    energy_scale = energy_scale[start_channel:end_channel]
+
+    difference = np.array(spectrum)[start_channel:end_channel] - model
+
+    peak_model, peak_out_list = gaussian_mixing(difference, energy_scale, iterations=iterations, n_pks=30, peaks=peaks)
+    peak_model2 = np.zeros(len(spec_dim[1]))
+    peak_model2[start_channel:end_channel] = peak_model
+
+    return peak_model2, peak_out_list
+
+
+def gaussian_mixing(difference, energy_scale, iterations=2, n_pks=30, peaks=None):
+    """Gaussian mixture model (non-Bayesian) """
+    original_difference = np.array(difference)
+    peak_out_list = []
+    fit = np.zeros(len(energy_scale))
+    if peaks is not None:
+        if len(peaks) > 0:
+            p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
+            p_out, cov = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
+                                                                                              difference,
+                                                                                              False))
+            peak_out_list.append(p_out)
+            fit = fit + model_smooth(energy_scale, p_out, False)
+
+    difference = np.array(original_difference - fit)
+
+    for i in range(iterations):
+        i_pk = scipy.signal.find_peaks_cwt(np.abs(difference), widths=range(3, len(energy_scale) // n_pks))
+        p_in = np.ravel([[energy_scale[i], difference[i], 1.0] for i in i_pk])  # starting guess for fit
+
+        p_out, cov = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale, difference,
+                                                                                          False))
+        peak_out_list.append(p_out)
+        fit = fit + model_smooth(energy_scale, p_out, False)
+        difference = np.array(original_difference - fit)
+
+    return fit, peak_out_list
+
+
+def smooth2(dataset, iterations, advanced_present):
+    """Gaussian mixture model (non-Bayesian)
+
+    Fit lots of Gaussian to spectrum and let the program sort it out
+    We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
+
+    """
+
+    # TODO: add sensitivity to dialog and the two functions below
+    peaks = dataset.metadata['peak_fit']
+
+    if advanced_present and iterations > 1:
+        peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
+                                                               peaks['fit_end'], iterations=iterations)
+    else:
+        peak_model, peak_out_list = find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
+        peak_out_list = [peak_out_list]
+
+    flat_list = [item for sublist in peak_out_list for item in sublist]
+    new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
+    area = np.sqrt(2 * np.pi) * np.abs(new_list[:, 1]) * np.abs(new_list[:, 2] / np.sqrt(2 * np.log(2)))
+    arg_list = np.argsort(area)[::-1]
+    area = area[arg_list]
+    peak_out_list = new_list[arg_list]
+
+    number_of_peaks = np.searchsorted(area * -1, -np.average(area))
+
+    return peak_model, peak_out_list, number_of_peaks

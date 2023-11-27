@@ -689,6 +689,10 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         elif extension == '.emd':
             reader = SciFiReaders.EMDReader(filename)
 
+        elif 'edax' in filename.lower():
+            if 'h5' in extension:
+                reader = SciFiReaders.EDAXReader(filename)
+
         elif extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
 

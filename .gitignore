@@ -208,3 +208,6 @@ data/Y.csv
 notebooks/Imaging/data/Bote.txt
 notebooks/Imaging/data/ffast.pkl
 notebooks/Imaging/data/lineweight.txt
+.pyTEMlib.files.pkl
+notebooks/EELS/relax.csv
+Untitled.ipynb
