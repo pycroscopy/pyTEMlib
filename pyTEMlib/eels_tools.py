@@ -2287,7 +2287,8 @@ def smooth2(dataset, iterations, advanced_present):
 
     if advanced_present and iterations > 1:
         # peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
-        pass                                                       peaks['fit_end'], iterations=iterations)
+        #                                                       peaks['fit_end'], iterations=iterations)
+        pass
     else:
         peak_model, peak_out_list = find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
         peak_out_list = [peak_out_list]
