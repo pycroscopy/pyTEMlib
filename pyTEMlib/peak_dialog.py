@@ -86,7 +86,7 @@ def get_sidebar():
                      style=ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
     side_bar[row, :2] = ipywidgets.Dropdown(
-            options=[('Peak 1', 0), ('Add Peak', -1)],
+            options=[('Peak 1', 0), ('add peak', -1)],
             value=0,
             description='Peaks:',
             disabled=False,
@@ -203,11 +203,12 @@ class PeakFitWidget(object):
             additional_spectra = {'model': self.model,
                                   'difference': spectrum-self.model}   
         else:
-            additional_spectra = None
+            additional_spectra = {}
         if 'peaks' in self.peaks:
-            for index, peak in self.peaks['peaks'].items():
-                p = [peak['position'], peak['amplitude'], peak['width']]
-                additional_spectra[f'peak {index}']= eels_tools.gauss(self.energy_scale, p)
+            if len(self.peaks)>0:
+                for index, peak in self.peaks['peaks'].items(): # ll
+                    p = [peak['position'], peak['amplitude'], peak['width']]
+                    additional_spectra[f'peak {index}']= eels_tools.gauss(self.energy_scale, p)
         self.view.plot(scale=True, additional_spectra=additional_spectra )
         self.change_y_scale = 1.
     
@@ -372,52 +373,58 @@ class PeakFitWidget(object):
 
     def find_white_lines(self):
         eels_tools.find_white_lines(self.dataset)
-        
         self.wl_list = []
         self.wls_list = []
-        if len(self.dataset.metadata['peak_fit']['white_line_ratios']) > 0:
-            for key in self.dataset.metadata['peak_fit']['white_line_ratios']:
-                self.wl_list.append(key)
-            for key in self.dataset.metadata['peak_fit']['white_line_sums']:
-                self.wls_list.append(key)
+        if 'white_line_ratios' in self.dataset.metadata['peak_fit']:
+            if len(self.dataset.metadata['peak_fit']['white_line_ratios']) > 0:
+                for key in self.dataset.metadata['peak_fit']['white_line_ratios']:
+                    self.wl_list.append(key)
+                for key in self.dataset.metadata['peak_fit']['white_line_sums']:
+                    self.wls_list.append(key)
 
-            self.sidebar[14, 0].options = self.wl_list
-            self.sidebar[14, 0].value = self.wl_list[0]
-            self.sidebar[14, 2].value = f"{self.dataset.metadata['peak_fit']['white_line_ratios'][self.wl_list[0]]:.2f}"
-            
-            self.sidebar[15, 0].options = self.wls_list
-            self.sidebar[15, 0].value = self.wls_list[0]
-            self.sidebar[15, 2].value = f"{self.dataset.metadata['peak_fit']['white_line_sums'][self.wls_list[0]]*1e6:.4f} ppm"
+                self.sidebar[14, 0].options = self.wl_list
+                self.sidebar[14, 0].value = self.wl_list[0]
+                self.sidebar[14, 2].value = f"{self.dataset.metadata['peak_fit']['white_line_ratios'][self.wl_list[0]]:.2f}"
+                
+                self.sidebar[15, 0].options = self.wls_list
+                self.sidebar[15, 0].value = self.wls_list[0]
+                self.sidebar[15, 2].value = f"{self.dataset.metadata['peak_fit']['white_line_sums'][self.wls_list[0]]*1e6:.4f} ppm"
 
-        else:
-            self.wl_list.append('Ratio')
-            self.wls_list.append('Sum')
+            else:
+                self.wl_list.append('Ratio')
+                self.wls_list.append('Sum')
 
-            self.sidebar[14, 0].options = ['None']
-            self.sidebar[14, 0].value = 'None'
-            self.sidebar[14, 2].value = ' '
-            
-            self.sidebar[15, 0].options = ['None']
-            self.sidebar[15, 0].value = 'None'
-            self.sidebar[15, 2].value = ' '
+                self.sidebar[14, 0].options = ['None']
+                self.sidebar[14, 0].value = 'None'
+                self.sidebar[14, 2].value = ' '
+                
+                self.sidebar[15, 0].options = ['None']
+                self.sidebar[15, 0].value = 'None'
+                self.sidebar[15, 2].value = ' '
 
     def find_peaks(self, value=0):
         number_of_peaks = int(self.sidebar[5, 0].value)
-
+        if number_of_peaks > len(self.peak_out_list):
+            number_of_peaks = len(self.peak_out_list)
+            self.sidebar[5, 0].value = str(len(self.peak_out_list))
         self.peak_list = []
         self.peaks['peaks'] = {}
+        new_number_of_peaks = 0
         for i in range(number_of_peaks):
             self.peak_list.append((f'Peak {i+1}', i))
             p = self.peak_out_list[i]
-            self.peaks['peaks'][str(i)] = {'position': p[0], 'amplitude': p[1], 'width': p[2], 'type': 'Gauss',
+            if p[1]>0:
+                self.peaks['peaks'][str(new_number_of_peaks)] = {'position': p[0], 'amplitude': p[1], 'width': p[2], 'type': 'Gauss',
                                            'asymmetry': 0}
-
+                new_number_of_peaks += 1
+        self.sidebar[5, 0].value = str(new_number_of_peaks)
         self.peak_list.append((f'add peak', -1))
         
         self.sidebar[7, 0].options = self.peak_list
         self.sidebar[7, 0].value = 0
-        eels_tools.find_associated_edges(self.dataset)
-        self.find_white_lines()
+
+        #eels_tools.find_associated_edges(self.dataset)
+        #self.find_white_lines()
 
         self.update()
         self.plot()
@@ -447,7 +454,7 @@ class PeakFitWidget(object):
         self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
         self.dataset.metadata['peak_fit']['peak_out_list'] = self.peak_out_list
         
-        self.sidebar[5, 0].value =  number_of_peaks 
+        self.sidebar[5, 0].value = str(len(self.peak_out_list))
         self.update()
         self.plot()
         
@@ -491,13 +498,24 @@ class PeakFitWidget(object):
         self.peaks['peaks'][str(peak_index)]['width'] = self.sidebar[11,0].value
         self.make_model()
         self.plot()
+
+    def peak_selection(self, change=None):
+        options = list(self.sidebar[7,0].options)
+            
+        if self.sidebar[7, 0].value < 0:
+            options.insert(-1, (f'Peak {len(options)}', len(options)-1))
+            self.sidebar[7, 0].value = 0
+            self.sidebar[7,0].options = options 
+            self.sidebar[7, 0].value = int(len(options)-2)
+            
+        self.update()
     
     def set_action(self):
         self.sidebar[1, 0].observe(self.set_fit_area, names='value')
         self.sidebar[2, 0].observe(self.set_fit_area, names='value')
         
         self.sidebar[4, 2].on_click(self.smooth)
-        self.sidebar[7,0].observe(self.update)
+        self.sidebar[7,0].observe(self.peak_selection)
         self.sidebar[5,2].on_click(self.find_peaks)
         
         self.sidebar[6, 0].on_click(self.fit_peaks)
@@ -749,6 +767,11 @@ if Qt_available:
             We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
 
             """
+            if 'edges' in self.dataset.metadata:
+                if 'model' in  self.dataset.metadata['edges']:
+                    self.dataset.metadata['model'] = self.dataset.metadata['edges']['model']
+            if 'resolution_function' in self.datasets:
+                self.dataset.metadata['model'] = np.array(self.datasets['resolution_function'])
             iterations = int(self.ui.smooth_list.currentIndex())
 
             self.peak_model, self.peak_out_list, number_of_peaks = smooth(self.dataset, iterations, advanced_present)
@@ -1002,12 +1025,15 @@ def smooth(dataset, iterations, advanced_present):
     # TODO: add sensitivity to dialog and the two functions below
     peaks = dataset.metadata['peak_fit']
 
-    if advanced_present and iterations > 1:
-        peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
-                                                                peaks['fit_end'], iterations=iterations)
-    else:
-        peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
-        peak_out_list = [peak_out_list]
+    peak_model, peak_out_list = eels_tools.smooth(dataset, peaks['fit_start'],
+                                                    peaks['fit_end'], iterations=iterations)
+    # 
+    #cif advanced_present and iterations > 1:
+    # peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
+    #                                                             peaks['fit_end'], iterations=iterations)
+    # else:
+    #    peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
+    #    peak_out_list = [peak_out_list]
 
     flat_list = [item for sublist in peak_out_list for item in sublist]
     new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
