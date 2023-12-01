@@ -40,7 +40,10 @@ import pyTEMlib.file_tools as ft
 from pyTEMlib.xrpa_x_sections import x_sections
 
 import sidpy
+from sidpy.proc.fitter import SidFitter
 from sidpy.base.num_utils import get_slope
+# from scipy.signal import find_peaks
+# we have a function called find peaks - is it necessary?
 
 major_edges = ['K1', 'L3', 'M5', 'N5']
 all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'O1', 'O2',
@@ -1168,6 +1171,8 @@ def fix_energy_scale(spec, energy=None):
     """Shift energy scale according to zero-loss peak position
     
     This function assumes that the fzero loss peak is the maximum of the spectrum. 
+
+    input should be a sidpy dataset for future compatability
     """
 
     # determine start and end fitting region in pixels
@@ -1186,8 +1191,8 @@ def fix_energy_scale(spec, energy=None):
     end = np.searchsorted(np.array(energy), 10)
     startx = np.argmax(spec[start:end]) + start
 
-    end = startx + 3
-    start = startx - 3
+    end = startx + 7
+    start = startx - 7
     for i in range(10):
         if spec[startx - i] < 0.3 * spec[startx]:
             start = startx - i
@@ -1212,30 +1217,6 @@ def fix_energy_scale(spec, energy=None):
 
     return fwhm, fit_mu
 
-def resolution_function2(dataset, width =0.3):
-    guess = [0.2, 1000, 0.02, 0.2, 1000, 0.2]
-    p0 = np.array(guess)
-
-    start = np.searchsorted(dataset.energy_loss, -width / 2.)
-    end = np.searchsorted(dataset.energy_loss, width / 2.)
-    x = dataset.energy_loss[start:end]
-    y = np.array(dataset)[start:end]
-    def zl2(pp, yy, xx):
-        eerr = (yy - zl_func(pp, xx))  # /np.sqrt(y)
-        return eerr
-    
-    [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
-
-    z_loss = zl_func(p_zl, dataset.energy_loss)
-    z_loss = dataset.like_data(z_loss)
-    z_loss.title = 'resolution_function'
-    z_loss.metadata['zero_loss_parameter']=p_zl
-    
-    dataset.metadata['low_loss']['zero_loss'] = {'zero_loss_parameter': p_zl,
-                                                 'zero_loss_fit': 'Product2Lorentzians'}
-    zero_loss = dataset.like_array(z_loss)
-    return zero_loss, p_zl
-
 
 
 def resolution_function(energy_scale, spectrum, width, verbose=False):
@@ -1253,39 +1234,6 @@ def resolution_function(energy_scale, spectrum, width, verbose=False):
         eerr = (yy - zl_func(pp, xx))  # /np.sqrt(y)
         return eerr
 
-    def zl_restrict(pp, yy, xx):
-
-        if pp[2] > xx[-1] * .8:
-            pp[2] = xx[-1] * .8
-        if pp[2] < xx[0] * .8:
-            pp[2] = xx[0] * .8
-
-        if pp[5] > xx[-1] * .8:
-            pp[5] = xx[-1] * .8
-        if pp[5] < x[0] * .8:
-            pp[5] = xx[0] * .8
-
-        if len(pp) > 6:
-            pp[7] = abs(pp[7])
-            if abs(pp[7]) > (pp[1] + pp[4]) / 10:
-                pp[7] = abs(pp[1] + pp[4]) / 10
-            if abs(pp[8]) > 1:
-                pp[8] = pp[8] / abs(pp[8])
-            pp[6] = abs(pp[6])
-            pp[9] = abs(pp[9])
-
-        pp[0] = abs(pp[0])
-        pp[3] = abs(pp[3])
-        if pp[0] > (xx[-1] - xx[0]) / 2.0:
-            pp[0] = xx[-1] - xx[0] / 2.0
-        if pp[3] > (xx[-1] - xx[0]) / 2.0:
-            pp[3] = xx[-1] - xx[0] / 2.0
-
-        yy[yy < 0] = 0.  # no negative numbers in sqrt below
-        eerr = (yy - zl_func(pp, xx)) / np.sqrt(yy)
-
-        return eerr
-
     [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
     if verbose:
         print('Fit of a Product of two Lorentzian')
@@ -1300,39 +1248,32 @@ def resolution_function(energy_scale, spectrum, width, verbose=False):
     return z_loss, p_zl
 
 
-def get_energy_shifts(spectrum_image, energy_scale=None, zero_loss_fit_width=0.3):
-    """ get shift of spectrum from zero-loss peak position
-        better to use get resolution_functions 
-    """
-    resolution_functions = get_resolution_functions(spectrum_image, energy_scale=energy_scale, zero_loss_fit_width=zero_loss_fit_width)
-    return resolution_functions.metadata['low_loss']['shifts'], resolution_functions.metadata['low_loss']['widths']
-                                               
-def get_resolution_functions(spectrum_image, energy_scale=None, zero_loss_fit_width=0.3):
-    """get resolution_function and shift of spectra form zero-loss peak position"""
-    if isinstance(spectrum_image, sidpy.Dataset):
-        energy_dimension = spectrum_image.get_dimensions_by_type('spectral')
-        if len(energy_dimension) != 1:
-            raise TypeError('Dataset needs to have exactly one spectral dimension to analyze zero-loss peak') 
-        energy_dimension = spectrum_image.get_dimension_by_number(energy_dimension)[0]
-        energy_scale = energy_dimension.values
-        spatial_dimension = spectrum_image.get_dimensions_by_type('spatial')
-    if len(spatial_dimension) == 0:
-        fwhm, delta_e = fix_energy_scale(spectrum_image)
-        z_loss, p_zl = resolution_function(energy_scale - delta_e, spectrum_image, zero_loss_fit_width)
-        fwhm2, delta_e2 = fix_energy_scale(z_loss, energy_scale - delta_e)
-        return delta_e + delta_e2, fwhm2
-    elif len(spatial_dimension) != 2:
-        return
-    shifts = np.zeros(spectrum_image.shape[0:2])
-    widths = np.zeros(spectrum_image.shape[0:2])
-    resolution_functions = spectrum_image.copy()
-    for x in range(spectrum_image.shape[0]):
-        for y in range(spectrum_image.shape[1]):
-            spectrum = np.array(spectrum_image[x, y])
-            fwhm, delta_e = fix_energy_scale(spectrum, energy_scale)
-            z_loss, p_zl = resolution_function(energy_scale - delta_e, spectrum, zero_loss_fit_width)
+def get_resolution_functions(dataset, startFitEnergy, endFitEnergy):
+    # rechunk dataset
+    if dataset.ndim == 3:
+        dataset = dataset.rechunk(chunks = (1,1,-1))
+
+    # define window for fitting
+    energy = dataset.energy_loss.values
+    startFitPixel =np.argmin(abs(energy-startFitEnergy))
+    endFitPixel = np.argmin(abs(energy-endFitEnergy))
+    fit_dset = dataset[:,:,startFitPixel:endFitPixel]
+
+    zero_loss_fitter = SidFitter(fit_dset, zl_func, num_workers=4,
+                           threads=2, return_cov=False, return_fit=False, return_std=False,
+                           km_guess=False, num_fit_parms=6)
+    [z_loss_params] = zero_loss_fitter.do_fit()
+
+    shifts = np.zeros(dataset.shape[0:2])
+    widths = np.zeros(dataset.shape[0:2])
+    resolution_functions = dataset.copy()
+    for x in range(dataset.shape[0]):
+        for y in range(dataset.shape[1]):
+            spectrum = np.array(dataset[x, y])
+            fwhm, delta_e = fix_energy_scale(spectrum, energy)
+            z_loss, p_zl = resolution_function(energy - delta_e, spectrum, zero_loss_fit_width)
             resolution_functions[x, y] = z_loss
-            fwhm2, delta_e2 = fix_energy_scale(z_loss, energy_scale - delta_e)
+            fwhm2, delta_e2 = fix_energy_scale(z_loss, energy - delta_e)
             shifts[x, y] = delta_e + delta_e2
             widths[x,y] = fwhm2
 
@@ -1343,20 +1284,20 @@ def get_resolution_functions(spectrum_image, energy_scale=None, zero_loss_fit_wi
 
 def shift_on_same_scale(spectrum_image, shifts=None, energy_scale=None, master_energy_scale=None):
     """shift spectrum in energy"""
-    if isinstance(spectrum_image, sidpy.Dataset):
-        if shifts is None:
-            if 'low_loss' in spectrum_image.metadata:
-                if 'shifts' in spectrum_image.metadata['low_loss']:
-                    shifts = spectrum_image.metadata['low_loss']['shifts']
-                else:
-                    resolution_functions = get_resolution_functions(spectrum_image)
-                    shifts = resolution_functions.metadata['low_loss']['shifts']
-        energy_dimension = spectrum_image.get_dimensions_by_type('spectral')
-        if len(energy_dimension) != 1:
-            raise TypeError('Dataset needs to have exactly one spectral dimension to analyze zero-loss peak') 
-        energy_dimension = spectrum_image.get_dimension_by_number(energy_dimension)[0]
-        energy_scale = energy_dimension.values
-        master_energy_scale = energy_scale.copy()
+    #if isinstance(spectrum_image, sidpy.Dataset):
+    if shifts is None:
+        if 'low_loss' in spectrum_image.metadata:
+            if 'shifts' in spectrum_image.metadata['low_loss']:
+                shifts = spectrum_image.metadata['low_loss']['shifts']
+        else:
+            resolution_functions = get_resolution_functions(spectrum_image)
+            shifts = resolution_functions.metadata['low_loss']['shifts']
+    energy_dimension = spectrum_image.get_dimensions_by_type('spectral')
+    if len(energy_dimension) != 1:
+        raise TypeError('Dataset needs to have exactly one spectral dimension to analyze zero-loss peak') 
+    energy_dimension = spectrum_image.get_dimension_by_number(energy_dimension)[0]
+    energy_scale = energy_dimension.values
+    master_energy_scale = energy_scale.copy()
                    
     new_si = spectrum_image.copy()
     new_si *= 0.0
@@ -1374,7 +1315,7 @@ def get_wave_length(e0):
     return constants.h / np.sqrt(2 * constants.m_e * ev * (1 + ev / (2 * constants.m_e * constants.c ** 2)))
 
 
-def drude(peak_position, peak_width, gamma, energy_scale):
+def drude(energy_scale, peak_position, peak_width, gamma):
     """dielectric function according to Drude theory"""
 
     eps = 1 - (peak_position ** 2 - peak_width * energy_scale * 1j) / (energy_scale ** 2 + 2 * energy_scale * gamma * 1j)  # Mod drude term
@@ -1388,6 +1329,68 @@ def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
     for i in range(leng):
         eps = eps + amplitude[i] * (1 / (e + ep[i] + gamma[i] * 1j) - 1 / (e - ep[i] + gamma[i] * 1j))
     return eps
+
+def align_zlps(dset, return_shifts=False):
+    # basically a wrapper for shift_on_same_scale without needing to pass in the shifts or using resolution_function
+    # to parallelize this, we would need to use SidFitter with some zlp model function
+    # but I couldn't get them to fit consistently.
+    # Need to talk to Gerd about the theoretical shape of the zlp
+
+    shifts = np.zeros(dset.shape[:2])
+    new_si = dset.copy()
+    new_si *= 0.0
+
+    def get_shift(energy, spectrum):
+        peak_ind = scipy.signal.find_peaks(spectrum/np.max(spectrum), height=0.98)[0][0]
+        return energy[peak_ind]
+
+    master_energy_scale = dset.energy_loss.values
+    for x in range(dset.shape[0]):
+        for y in range(dset.shape[1]):
+            energy = dset[x,y,:].energy_loss.values
+            shifts[x,y] = get_shift(energy, dset[x,y,:])
+            tck = interpolate.splrep(np.array(energy - shifts[x, y]), np.array(dset[x, y]), k=1, s=0)
+            new_si[x, y, :] = interpolate.splev(master_energy_scale, tck, der=0)
+
+    if return_shifts:
+        return new_si, shifts
+    else:
+        return new_si
+
+
+def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result = False):
+    # define Drude function for plasmon fitting
+    def energy_loss_function(E,Ep,Ew,A):
+        E = E/E.max()
+        eps = 1 - Ep**2/(E**2+Ew**2) +1j* Ew* Ep**2/E/(E**2+Ew**2)
+        elf = (-1/eps).imag
+        return A*elf
+
+    # rechunk dataset
+    if dataset.ndim == 3:
+        dataset = dataset.rechunk(chunks = (1,1,-1))
+
+    # define window for fitting
+    energy = dataset.energy_loss.values
+    startFitPixel =np.argmin(abs(energy-startFitEnergy))
+    endFitPixel = np.argmin(abs(energy-endFitEnergy))
+    fit_dset = dataset[:,:,startFitPixel:endFitPixel]
+
+    fitter = SidFitter(fit_dset, energy_loss_function, num_workers=4,
+                           threads=2, return_cov=False, return_fit=False, return_std=False,
+                           km_guess=False, num_fit_parms=3)
+    [fitted_dataset] = fitter.do_fit()
+
+    if plot_result:
+        fig, (ax1,ax2,ax3) = plt.subplots(1,3, sharex=True, sharey=True)
+        ax1.imshow(fitted_dataset[:,:,0], cmap='jet')
+        ax1.set_title('Ep - Peak Position')
+        ax2.imshow(fitted_dataset[:,:,1], cmap='jet')
+        ax2.set_title('Ew - Peak Width')
+        ax3.imshow(fitted_dataset[:,:,2], cmap='jet')
+        ax3.set_title('A - Amplitude')
+
+    return fitted_dataset
 
 
 def plot_dispersion(plotdata, units, a_data, e_data, title, max_p, ee, ef=4., ep=16.8, es=0, ibt=[]):
@@ -1450,9 +1453,9 @@ def plot_dispersion(plotdata, units, a_data, e_data, title, max_p, ee, ef=4., ep
     ax2.legend(loc='lower right')
 
 
-def zl_func(p, x):
+def zl_func(x, p):
     """zero-loss peak function"""
-
+    # p = 6 params by default, 12 params if needed
     p[0] = abs(p[0])
 
     gauss1 = np.zeros(len(x))
@@ -1467,13 +1470,6 @@ def zl_func(p, x):
     y = (lorentz * lorentz2) + gauss1 + gauss2 + lorentz3
 
     return y
-
-
-def drude2(tags, e, p):
-    """dielectric function according to Drude theory for fitting"""
-
-    return drude(e, p[0], p[1], p[2], p[3])
-
 
 def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
     """ Calculate momentum-integrated cross-section for EELS from X-ray photo-absorption cross-sections.
