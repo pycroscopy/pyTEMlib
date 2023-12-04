@@ -19,21 +19,18 @@ All the input and output is done through a dictionary which is to be found in th
 attribute of the sidpy.Dataset
 """
 import numpy as np
-
-import scipy
-from scipy.interpolate import interp1d, splrep  # splev, splint
-from scipy import interpolate
-from scipy.signal import peak_prominences
-from scipy.ndimage import gaussian_filter
-
-from scipy import constants
 import matplotlib.pyplot as plt
 
+import scipy
+from scipy import constants
+from scipy import interpolate
+from scipy.interpolate import interp1d, splrep
+from scipy.signal import peak_prominences
+from scipy.ndimage import gaussian_filter
+from scipy.optimize import curve_fit, leastsq
+
 import requests
-
-from scipy.optimize import leastsq  # least square fitting routine fo scipy
-
-import pickle  # pkg_resources,
+import pickle
 
 # ## And we use the image tool library of pyTEMlib
 import pyTEMlib.file_tools as ft
@@ -42,8 +39,9 @@ from pyTEMlib.xrpa_x_sections import x_sections
 import sidpy
 from sidpy.proc.fitter import SidFitter
 from sidpy.base.num_utils import get_slope
-# from scipy.signal import find_peaks
+
 # we have a function called find peaks - is it necessary?
+# or could we just use scipy.signal import find_peaks
 
 major_edges = ['K1', 'L3', 'M5', 'N5']
 all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'O1', 'O2',
@@ -157,7 +155,7 @@ def model_ll(x, p, only_positive_intensity):
 
     return y
 
-
+# can we get rid of the below function? - use scipy.signal.find_peaks instead?
 def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_intensity=False):
     """fit peaks to spectrum
 
@@ -1058,19 +1056,26 @@ def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
     else:
         return p[1] * np.exp(-(x - p[0]) ** 2 / (2.0 * (p[2] / 2.3548) ** 2))
 
+def lorentz(x, center, amplitude, width):
+    """ Lorentzian Function """
+    lorentz_peak = 0.5 * width / np.pi / ((x - center) ** 2 + (width / 2) ** 2)
+    return amplitude * lorentz_peak / lorentz_peak.max()
 
-def lorentz(x, p):
-    """lorentzian function"""
-    lorentz_peak = 0.5 * p[2] / np.pi / ((x - p[0]) ** 2 + (p[2] / 2) ** 2)
-    return p[1] * lorentz_peak / lorentz_peak.max()
+def zl_func(x, center1, amplitude1, width1, center2, amplitude2, width2):
+    """ zero loss function as product of two lorentzians """
+    return lorentz(x, center1, amplitude1, width1) * lorentz(x, center2, amplitude2, width2)
 
+def vectorized_zl_func(x, params):
+    """ Vectorized zero loss function as product of two Lorentzians """
+    center1, amplitude1, width1, center2, amplitude2, width2 = np.split(params, 6, axis=-1)
+    return lorentz(x, center1, amplitude1, width1) * lorentz(x, center2, amplitude2, width2)
 
 def zl(x, p, p_zl):
     """zero-loss function"""
     p_zl_local = p_zl.copy()
     p_zl_local[2] += p[0]
     p_zl_local[5] += p[0]
-    zero_loss = zl_func(p_zl_local, x)
+    zero_loss = zl_func(x, p_zl_local)
     return p[1] * zero_loss / zero_loss.max()
 
 
@@ -1217,7 +1222,28 @@ def fix_energy_scale(spec, energy=None):
 
     return fwhm, fit_mu
 
+def resolution_function2(dataset, width =0.3):
+    guess = [0.2, 1000, 0.02, 0.2, 1000, 0.2]
+    p0 = np.array(guess)
 
+    start = np.searchsorted(dataset.energy_loss, -width / 2.)
+    end = np.searchsorted(dataset.energy_loss, width / 2.)
+    x = dataset.energy_loss[start:end]
+    y = np.array(dataset)[start:end]
+    def zl2(pp, yy, xx):
+        eerr = (yy - zl_func(xx, pp))  # /np.sqrt(y)
+        return eerr
+    
+    [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
+
+    z_loss = zl_func(dataset.energy_loss, p_zl)
+    zero_loss = dataset.like_data(z_loss)
+    zero_loss.title = 'resolution_function'
+    zero_loss.metadata['zero_loss_parameter']=p_zl
+    
+    dataset.metadata['low_loss']['zero_loss'] = {'zero_loss_parameter': p_zl,
+                                                 'zero_loss_fit': 'Product2Lorentzians'}
+    return zero_loss, p_zl
 
 def resolution_function(energy_scale, spectrum, width, verbose=False):
     """get resolution function (zero-loss peak shape) from low-loss spectrum"""
@@ -1231,7 +1257,7 @@ def resolution_function(energy_scale, spectrum, width, verbose=False):
     y = spectrum[start:end]
 
     def zl2(pp, yy, xx):
-        eerr = (yy - zl_func(pp, xx))  # /np.sqrt(y)
+        eerr = (yy - zl_func(xx, pp))  # /np.sqrt(y)
         return eerr
 
     [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
@@ -1240,46 +1266,64 @@ def resolution_function(energy_scale, spectrum, width, verbose=False):
         print('Positions: ', p_zl[2], p_zl[5], 'Distance: ', p_zl[2] - p_zl[5])
         print('Width: ', p_zl[0], p_zl[3])
         print('Areas: ', p_zl[1], p_zl[4])
-        err = (y - zl_func(p_zl, x)) / np.sqrt(y)
+        err = (y - zl_func(x, p_zl)) / np.sqrt(y)
         print(f'Goodness of Fit: {sum(err ** 2) / len(y) / sum(y) * 1e2:.5}%')
 
-    z_loss = zl_func(p_zl, energy_scale)
+    z_loss = zl_func(energy_scale, p_zl)
 
     return z_loss, p_zl
 
 
-def get_resolution_functions(dataset, startFitEnergy, endFitEnergy):
-    # rechunk dataset
-    if dataset.ndim == 3:
-        dataset = dataset.rechunk(chunks = (1,1,-1))
-
+def get_resolution_functions(dset, startFitEnergy, endFitEnergy, n_workers = 1, n_threads = 8):
     # define window for fitting
-    energy = dataset.energy_loss.values
+    energy = dset.energy_loss.values
     startFitPixel =np.argmin(abs(energy-startFitEnergy))
     endFitPixel = np.argmin(abs(energy-endFitEnergy))
-    fit_dset = dataset[:,:,startFitPixel:endFitPixel]
+    fit_dset = dset[:,:,startFitPixel:endFitPixel]
 
-    zero_loss_fitter = SidFitter(fit_dset, zl_func, num_workers=4,
-                           threads=2, return_cov=False, return_fit=False, return_std=False,
-                           km_guess=False, num_fit_parms=6)
+    guess_width = endFitEnergy - startFitEnergy
+    guess_amplitude = np.sqrt(fit_dset.max())
+    
+    def get_good_guess(zl_func, spectrum):
+        popt, pcov = curve_fit(zl_func, spectrum.energy_loss.values, spectrum, 
+                           p0=[0, guess_amplitude, guess_width, 
+                               0, guess_amplitude, guess_width])
+        return popt
+
+    # get a good guess for the fit parameters
+    if len(dset.shape) == 3:
+        guess_params = get_good_guess(zl_func, fit_dset.sum(axis=(0,1))/fit_dset.shape[0]/fit_dset.shape[1])
+    elif len(dset.shape) == 2:
+        guess_params = get_good_guess(zl_func, fit_dset)
+    else:
+        print('Error: need a spectrum or spectral image sidpy dataset')
+        print('Not dset.shape = ', dset.shape)
+        return None
+
+    # define guess function for SidFitter
+    def guess_function(xvec,yvec):
+        return guess_params
+    
+    # apply to all spectra
+    zero_loss_fitter = SidFitter(fit_dset, zl_func, num_workers = n_workers, guess_fn = guess_function,
+                           threads = n_threads, return_cov = False, return_fit = False, return_std = False,
+                           km_guess = False, num_fit_parms = 6)
+    
     [z_loss_params] = zero_loss_fitter.do_fit()
+    z_loss_dset = dset.copy()
+    z_loss_dset *= 0.0
 
-    shifts = np.zeros(dataset.shape[0:2])
-    widths = np.zeros(dataset.shape[0:2])
-    resolution_functions = dataset.copy()
-    for x in range(dataset.shape[0]):
-        for y in range(dataset.shape[1]):
-            spectrum = np.array(dataset[x, y])
-            fwhm, delta_e = fix_energy_scale(spectrum, energy)
-            z_loss, p_zl = resolution_function(energy - delta_e, spectrum, zero_loss_fit_width)
-            resolution_functions[x, y] = z_loss
-            fwhm2, delta_e2 = fix_energy_scale(z_loss, energy - delta_e)
-            shifts[x, y] = delta_e + delta_e2
-            widths[x,y] = fwhm2
+    energy_grid = np.broadcast_to(energy.reshape((1, 1, -1)), (z_loss_dset.shape[0], z_loss_dset.shape[1], energy.shape[0]))
+    z_loss_peaks = vectorized_zl_func(energy_grid, z_loss_params)
+    z_loss_dset += z_loss_peaks
 
-    resolution_functions.metadata['low_loss'] = {'shifts': shifts,
-                                                 'widths': widths}
-    return resolution_functions
+    shifts = z_loss_params[:,:,0] * z_loss_params[:,:,3]
+    widths = z_loss_params[:,:,2] * z_loss_params[:,:,5]
+    
+    z_loss_dset.metadata['low_loss'] = {'shifts': shifts,
+                                        'widths': widths}
+
+    return z_loss_dset, z_loss_params
 
 
 def shift_on_same_scale(spectrum_image, shifts=None, energy_scale=None, master_energy_scale=None):
@@ -1389,7 +1433,7 @@ def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result = False):
         ax2.set_title('Ew - Peak Width')
         ax3.imshow(fitted_dataset[:,:,2], cmap='jet')
         ax3.set_title('A - Amplitude')
-
+        plt.show()
     return fitted_dataset
 
 
@@ -1452,24 +1496,6 @@ def plot_dispersion(plotdata, units, a_data, e_data, title, max_p, ee, ef=4., ep
     ax2.set_xlabel(units[0])
     ax2.legend(loc='lower right')
 
-
-def zl_func(x, p):
-    """zero-loss peak function"""
-    # p = 6 params by default, 12 params if needed
-    p[0] = abs(p[0])
-
-    gauss1 = np.zeros(len(x))
-    gauss2 = np.zeros(len(x))
-    lorentz3 = np.zeros(len(x))
-    lorentz = ((0.5 * p[0] * p[1] / 3.14) / ((x - p[2]) ** 2 + ((p[0] / 2) ** 2)))
-    lorentz2 = ((0.5 * p[3] * p[4] / 3.14) / ((x - (p[5])) ** 2 + ((p[3] / 2) ** 2)))
-    if len(p) > 6:
-        lorentz3 = (0.5 * p[6] * p[7] / 3.14) / ((x - p[8]) ** 2 + (p[6] / 2) ** 2)
-        gauss2 = p[10] * np.exp(-(x - p[11]) ** 2 / (2.0 * (p[9] / 2.3548) ** 2))
-        # ((0.5 *  p[9]* p[10]/3.14)/((x- (p[11]))**2+(( p[9]/2)**2)))
-    y = (lorentz * lorentz2) + gauss1 + gauss2 + lorentz3
-
-    return y
 
 def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
     """ Calculate momentum-integrated cross-section for EELS from X-ray photo-absorption cross-sections.
