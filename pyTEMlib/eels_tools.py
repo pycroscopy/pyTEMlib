@@ -1245,10 +1245,7 @@ def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
     return eps
 
 def align_zlps(dset, return_shifts=False):
-    # basically a wrapper for shift_on_same_scale without needing to pass in the shifts or using resolution_function
-    # to parallelize this, we would need to use SidFitter with some zlp model function
-    # but I couldn't get them to fit consistently.
-    # Need to talk to Gerd about the theoretical shape of the zlp
+    """ Align zero-loss peaks of any spectral sidpy dataset """
 
     shifts = np.zeros(dset.shape[:2])
     new_si = dset.copy()
@@ -1259,12 +1256,18 @@ def align_zlps(dset, return_shifts=False):
         return energy[peak_ind]
 
     master_energy_scale = dset.energy_loss.values
-    for x in range(dset.shape[0]):
-        for y in range(dset.shape[1]):
-            energy = dset[x,y,:].energy_loss.values
-            shifts[x,y] = get_shift(energy, dset[x,y,:])
-            tck = interpolate.splrep(np.array(energy - shifts[x, y]), np.array(dset[x, y]), k=1, s=0)
-            new_si[x, y, :] = interpolate.splev(master_energy_scale, tck, der=0)
+    if len(dset.shape) == 2: # single spectrum
+        energy = dset.energy_loss.values
+        shifts = get_shift(energy, dset)
+        tck = interpolate.splrep(np.array(energy - shifts), np.array(dset), k=1, s=0)
+        new_si[:, :] = interpolate.splev(master_energy_scale, tck, der=0)
+    if len(dset.shape) == 3: # spectral image
+        for x in range(dset.shape[0]):
+            for y in range(dset.shape[1]):
+                energy = dset[x,y,:].energy_loss.values
+                shifts[x,y] = get_shift(energy, dset[x,y,:])
+                tck = interpolate.splrep(np.array(energy - shifts[x, y]), np.array(dset[x, y]), k=1, s=0)
+                new_si[x, y, :] = interpolate.splev(master_energy_scale, tck, der=0)
 
     if return_shifts:
         return new_si, shifts
