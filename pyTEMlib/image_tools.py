@@ -196,7 +196,7 @@ def power_spectrum(dset, smoothing=3):
     return power_spec
 
 
-def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
+def diffractogram_spots(dset, spot_threshold, eps = 0.1):
     """Find spots in diffractogram and sort them by distance from center
 
     Uses blob_log from scipy.spatial
@@ -237,31 +237,10 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
     # third row is angles
     spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
 
-    if return_center == True:
-        points = spots[:, 0:2]
-
-        # Calculate the midpoints between all points
-        reshaped_points = points[:, np.newaxis, :]
-        midpoints = (reshaped_points + reshaped_points.transpose(1, 0, 2)) / 2.0
-        midpoints = midpoints.reshape(-1, 2)
-
-        # Find the most dense cluster of midpoints
-        dbscan = DBSCAN(eps = eps, min_samples = 2)
-        labels = dbscan.fit_predict(midpoints)
-        cluster_counter = Counter(labels)
-        largest_cluster_label = max(cluster_counter, key=cluster_counter.get)
-        largest_cluster_points = midpoints[labels == largest_cluster_label]
-
-        # Average of these midpoints must be the center
-        center = np.mean(largest_cluster_points,axis=0)
-
-        return spots, center
-        
-    else:
-        return spots
+    return spots
 
 
-def center_diffractogram(dset, center_guess=None, start_fit_pix=660, end_fit_pix=790, offset_angle = 45, slice_width = 20, return_plot = False):
+def center_diffractogram(dset, center_guess=None, start_fit_pix=660, end_fit_pix=790, offset_angle = 45, slice_width = 20, slice_smoothing = 10, return_plot = False):
 
     scale = np.gradient(dset.u)[0] # 1/nm
     if center_guess is None:
@@ -280,7 +259,7 @@ def center_diffractogram(dset, center_guess=None, start_fit_pix=660, end_fit_pix
     for i, center in enumerate(slice_centers):
         sliced_data.append(polar_projection[int(center-slice_width):int(center+slice_width),:])
         sliced_profiles.append(savgol_filter(np.sum(sliced_data[i], axis=0), window_length = 20, polyorder = 3))
-        smoothed_profiles.append(gaussian_filter(sliced_profiles[i], sigma = 10))
+        smoothed_profiles.append(gaussian_filter(sliced_profiles[i], sigma = slice_smoothing))
 
     # Plot the Slices
     if return_plot:
