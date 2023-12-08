@@ -1172,14 +1172,42 @@ def fit_model(x, y, pin, number_of_peaks, peak_shape, p_zl, restrict_pos=0, rest
     return p, peak_shape
 
 def get_resolution_functions(dset, startFitEnergy, endFitEnergy, n_workers = 1, n_threads = 8):
-    # define window for fitting
+    """
+    Analyze and fit low-loss EELS data within a specified energy range to determine zero-loss peaks.
+
+    This function processes a low-loss EELS dataset from transmission electron microscopy (TEM) data, 
+    focusing on a specified energy range for analyzing and fitting the spectrum. 
+    It determines fitting parameters and applies these to extract zero-loss peak information 
+    from the dataset. The function handles both 2D and 3D datasets.
+
+    Parameters:
+        dset: sidpy.Dataset
+            The dataset containing TEM spectral data.
+        startFitEnergy: float
+            The start energy of the fitting window.
+        endFitEnergy: float
+            The end energy of the fitting window.
+        n_workers: int, optional
+            The number of workers for parallel processing (default is 1).
+        n_threads: int, optional
+            The number of threads for parallel processing (default is 8).
+
+    Returns:
+        tuple: A tuple containing:
+            - z_loss_dset (sidpy.Dataset): The dataset with added zero-loss peak information.
+            - z_loss_params (numpy.ndarray): Array of parameters used for the zero-loss peak fitting.
+
+    Raises:
+        ValueError: If the input dataset does not have the expected dimensions or format.
+
+    Notes:
+        - The function expects `dset` to have specific dimensionalities and will raise an error if they are not met.
+        - Parallel processing is employed to enhance performance, particularly for large datasets.
+    """
     energy = dset.energy_loss.values
     startFitPixel =np.argmin(abs(energy-startFitEnergy))
     endFitPixel = np.argmin(abs(energy-endFitEnergy))
-    fit_dset = dset[:,:,startFitPixel:endFitPixel]
-
     guess_width = endFitEnergy - startFitEnergy
-    guess_amplitude = np.sqrt(fit_dset.max())
     
     def get_good_guess(zl_func, spectrum):
         popt, pcov = curve_fit(zl_func, spectrum.energy_loss.values, spectrum, 
@@ -1189,9 +1217,21 @@ def get_resolution_functions(dset, startFitEnergy, endFitEnergy, n_workers = 1, 
 
     # get a good guess for the fit parameters
     if len(dset.shape) == 3:
+        fit_dset = dset[:,:,startFitPixel:endFitPixel]
+        guess_amplitude = np.sqrt(fit_dset.max())
         guess_params = get_good_guess(zl_func, fit_dset.sum(axis=(0,1))/fit_dset.shape[0]/fit_dset.shape[1])
     elif len(dset.shape) == 2:
+        fit_dset = dset[:,startFitPixel:endFitPixel]
+        guess_amplitude = np.sqrt(fit_dset.max())
+        guess_params = get_good_guess(zl_func, fit_dset.sum(axis=0)/fit_dset.shape[0])
+    elif len(dset.shape) == 1:
+        fit_dset = dset[startFitPixel:endFitPixel]
+        guess_amplitude = np.sqrt(fit_dset.max())
         guess_params = get_good_guess(zl_func, fit_dset)
+        z_loss_dset = dset.copy()
+        z_loss_dset *= 0.0
+        z_loss_dset += zl_func(energy, *guess_params)
+        return z_loss_dset, guess_params
     else:
         print('Error: need a spectrum or spectral image sidpy dataset')
         print('Not dset.shape = ', dset.shape)
@@ -1247,7 +1287,7 @@ def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
 def align_zlps(dset, return_shifts=False):
     """ Align zero-loss peaks of any spectral sidpy dataset """
 
-    shifts = np.zeros(dset.shape[:2])
+    
     new_si = dset.copy()
     new_si *= 0.0
 
@@ -1256,12 +1296,21 @@ def align_zlps(dset, return_shifts=False):
         return energy[peak_ind]
 
     master_energy_scale = dset.energy_loss.values
-    if len(dset.shape) == 2: # single spectrum
+    if len(dset.shape) == 1: # single specrta
         energy = dset.energy_loss.values
         shifts = get_shift(energy, dset)
         tck = interpolate.splrep(np.array(energy - shifts), np.array(dset), k=1, s=0)
-        new_si[:, :] = interpolate.splev(master_energy_scale, tck, der=0)
-    if len(dset.shape) == 3: # spectral image
+        new_si[:] = interpolate.splev(master_energy_scale, tck, der=0)
+        new_si.data_type = 'Spectrum'
+    elif len(dset.shape) == 2: # line scan
+        shifts = np.zeros(dset.shape[:1])
+        for x in range(dset.shape[0]):
+            energy = dset[x,:].energy_loss.values
+            shifts[x] = get_shift(energy, dset[x,:])
+            tck = interpolate.splrep(np.array(energy - shifts[x]), np.array(dset[x,:]), k=1, s=0)
+            new_si[x,:] = interpolate.splev(master_energy_scale, tck, der=0)
+    elif len(dset.shape) == 3: # spectral image
+        shifts = np.zeros(dset.shape[:2])
         for x in range(dset.shape[0]):
             for y in range(dset.shape[1]):
                 energy = dset[x,y,:].energy_loss.values
@@ -1275,7 +1324,42 @@ def align_zlps(dset, return_shifts=False):
         return new_si
 
 
-def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result = False):
+def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result = False, number_workers=4, number_threads=8):
+    """
+    Fit plasmon peak positions and widths in a TEM dataset using a Drude model.
+
+    This function applies the Drude model to fit plasmon peaks in a dataset obtained 
+    from transmission electron microscopy (TEM). It processes the dataset to determine 
+    peak positions, widths, and amplitudes within a specified energy range. The function 
+    can handle datasets with different dimensions and offers parallel processing capabilities.
+
+    Parameters:
+        dataset: sidpy.Dataset or numpy.ndarray
+            The dataset containing TEM spectral data.
+        startFitEnergy: float
+            The start energy of the fitting window.
+        endFitEnergy: float
+            The end energy of the fitting window.
+        plot_result: bool, optional
+            If True, plots the fitting results (default is False).
+        number_workers: int, optional
+            The number of workers for parallel processing (default is 4).
+        number_threads: int, optional
+            The number of threads for parallel processing (default is 8).
+
+    Returns:
+        fitted_dataset: sidpy.Dataset or numpy.ndarray
+            The dataset with fitted plasmon peak parameters. The dimensions and 
+            format depend on the input dataset.
+
+    Raises:
+        ValueError: If the input dataset does not have the expected dimensions or format.
+
+    Notes:
+        - The function uses the Drude model to fit plasmon peaks.
+        - The fitting parameters are peak position (Ep), peak width (Ew), and amplitude (A).
+        - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
+    """
     # define Drude function for plasmon fitting
     def energy_loss_function(E,Ep,Ew,A):
         E = E/E.max()
@@ -1283,18 +1367,30 @@ def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result = False):
         elf = (-1/eps).imag
         return A*elf
 
-    # rechunk dataset
-    if dataset.ndim == 3:
-        dataset = dataset.rechunk(chunks = (1,1,-1))
-
     # define window for fitting
     energy = dataset.energy_loss.values
     startFitPixel =np.argmin(abs(energy-startFitEnergy))
     endFitPixel = np.argmin(abs(energy-endFitEnergy))
-    fit_dset = dataset[:,:,startFitPixel:endFitPixel]
 
-    fitter = SidFitter(fit_dset, energy_loss_function, num_workers=4,
-                           threads=2, return_cov=False, return_fit=False, return_std=False,
+    # rechunk dataset
+    if dataset.ndim == 3:
+        dataset = dataset.rechunk(chunks = (1,1,-1))
+        fit_dset = dataset[:,:,startFitPixel:endFitPixel]
+    elif dataset.ndim == 2:
+        dataset = dataset.rechunk(chunks = (1,-1))
+        fit_dset = dataset[:, startFitPixel:endFitPixel]
+    else:
+        fit_dset = np.array(dataset[startFitPixel:endFitPixel])
+        guess_pos = np.argmax(fit_dset)
+        guess_amplitude = fit_dset[guess_pos]
+        guess_width = (endFitEnergy - startFitEnergy)/2
+        popt, pcov = curve_fit(energy_loss_function, dataset.energy_loss.values, dataset, 
+                           p0=[guess_pos, guess_width, guess_amplitude])
+        return popt
+    
+    # if it can be parallelized:
+    fitter = SidFitter(fit_dset, energy_loss_function, num_workers=number_workers,
+                           threads=number_threads, return_cov=False, return_fit=False, return_std=False,
                            km_guess=False, num_fit_parms=3)
     [fitted_dataset] = fitter.do_fit()
 
