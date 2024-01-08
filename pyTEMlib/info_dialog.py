@@ -23,7 +23,6 @@ from pyTEMlib import file_tools as ft
 from pyTEMlib import eels_dialog_utilities
 _version = 000
 
-
 if Qt_available:
     from pyTEMlib import info_dlg
     from pyTEMlib import interactive_eels as ieels
@@ -409,13 +408,14 @@ def get_sidebar():
     return side_bar
 
 class InfoWidget(object):
-    def __init__(self, datasets=None):
+    def __init__(self, datasets=None, key=None):
+        
         self.datasets = datasets
         self.dataset = None
 
         self.sidebar = get_sidebar()
         
-        self.set_dataset()
+        self.set_dataset(key)
         self.set_action()
                                       
         self.app_layout = ipywidgets.AppLayout(
@@ -444,20 +444,27 @@ class InfoWidget(object):
         self.view.y_scale = self.y_scale
         
         self.view.plot()
+
         
-    def set_dataset(self, index=0):
+    def set_dataset(self, set_key):
         spectrum_list = []
+        self.spectrum_keys_list = []
         reference_list =[('None', -1)]
-        dataset_index = self.sidebar[0, 0].value
+        
         for index, key in enumerate(self.datasets.keys()):
             if 'Reference' not in key:
                 if 'SPECTR' in self.datasets[key].data_type.name:
                     spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
+                    self.spectrum_keys_list.append(key)
             reference_list.append((f'{key}: {self.datasets[key].title}', index))
        
         self.sidebar[0,0].options = spectrum_list
         self.sidebar[9,0].options = reference_list
-        self.key = list(self.datasets)[dataset_index]
+        if set_key in self.spectrum_keys_list:
+            self.sidebar[0, 0].index = self.spectrum_keys_list.index(set_key)
+
+        dataset_index = self.sidebar[0, 0].index
+        self.key = self.spectrum_keys_list[dataset_index] # list(self.datasets)[]
         self.dataset = self.datasets[self.key]
         if 'SPECTRUM' in self.dataset.data_type.name:
            for i in range(14, 17):
@@ -485,9 +492,37 @@ class InfoWidget(object):
             self.view = eels_dialog_utilities.SIPlot(self.dataset)
         else:
             self.view = eels_dialog_utilities.SpectrumPlot(self.dataset)    
+        #self.dataset.view = self.view
         self.y_scale = 1.0
         self.change_y_scale = 1.0
-        
+
+    def change_dataset(self, value):
+        dataset_index = self.sidebar[0, 0].index
+        self.key = self.spectrum_keys_list[dataset_index] 
+        self.y_scale = 1.0
+        self.change_y_scale = 1.0
+        self.view.dset = self.datasets[self.key]
+        self.sidebar[2,0].value = np.round(self.datasets[self.key].energy_loss[0], 3)  
+        self.sidebar[3,0].value = np.round(self.datasets[self.key].energy_loss[1] - self.datasets[self.key].energy_loss[0], 4)  
+        self.sidebar[5,0].value = np.round(self.datasets[self.key].metadata['experiment']['convergence_angle'], 1)  
+        self.sidebar[6,0].value = np.round(self.datasets[self.key].metadata['experiment']['collection_angle'], 1)
+        self.sidebar[7,0].value = np.round(self.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
+        self.sidebar[10,0].value = np.round(self.datasets[self.key].metadata['experiment']['exposure_time'], 4)
+        if 'flux_ppm' not in self.datasets[self.key].metadata['experiment']:
+            self.datasets[self.key].metadata['experiment']['flux_ppm'] = 0
+        self.sidebar[11,0].value = self.datasets[self.key].metadata['experiment']['flux_ppm']
+        if 'count_conversion' not in self.datasets[self.key].metadata['experiment']:
+            self.datasets[self.key].metadata['experiment']['count_conversion'] = 1
+        self.sidebar[12,0].value = self.datasets[self.key].metadata['experiment']['count_conversion']
+        if 'beam_current' not in self.datasets[self.key].metadata['experiment']:
+            self.datasets[self.key].metadata['experiment']['beam_current'] = 0
+        self.sidebar[13,0].value = self.datasets[self.key].metadata['experiment']['beam_current']
+        self.view.set_dataset()
+        self.view.axes[0].clear()
+        self.view.set_image()
+        self.view.axes[1].clear()
+        self.view.set_spectrum()
+
     def cursor2energy_scale(self, value):
         dispersion = (self.view.end_cursor.value - self.view.start_cursor.value) / (self.view.end_channel - self.view.start_channel)
         self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
@@ -517,10 +552,12 @@ class InfoWidget(object):
         self.datasets[self.key].metadata['experiment']['exposure_time'] = self.sidebar[10,0].value
         if self.sidebar[9,0].value < 0:
             self.datasets[self.key].metadata['experiment']['flux_ppm'] = 0.
+            self.datasets[self.key].metadata['experiment']['low_loss_reference'] = None
         else:
             key = list(self.datasets.keys())[self.sidebar[9,0].value]
             self.datasets[self.key].metadata['experiment']['flux_ppm'] = (np.array(self.datasets[key])*1e-6).sum() / self.datasets[key].metadata['experiment']['exposure_time']
             self.datasets[self.key].metadata['experiment']['flux_ppm'] *= self.datasets[self.key].metadata['experiment']['exposure_time']
+            self.datasets[self.key].metadata['experiment']['low_loss_reference'] = key
         self.sidebar[11,0].value = np.round(self.datasets[self.key].metadata['experiment']['flux_ppm'], 2)
         
     def set_microscope_parameter(self, value):
@@ -532,12 +569,12 @@ class InfoWidget(object):
         if 'SPECTRAL' in self.dataset.data_type.name:
             bin_x = self.sidebar[15,0].value
             bin_y = self.sidebar[16,0].value
-            self.dataset.view.set_bin([bin_x, bin_y])
+            self.view.set_bin([bin_x, bin_y])
             self.datasets[self.key].metadata['experiment']['SI_bin_x'] = bin_x
             self.datasets[self.key].metadata['experiment']['SI_bin_y'] = bin_y
 
     def set_action(self):
-        self.sidebar[0,0].observe(self.set_dataset)
+        self.sidebar[0,0].observe(self.change_dataset)
         self.sidebar[1,0].on_click(self.cursor2energy_scale)
         self.sidebar[2,0].observe(self.set_energy_scale, names='value')
         self.sidebar[3,0].observe(self.set_energy_scale, names='value')

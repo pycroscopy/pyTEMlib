@@ -32,18 +32,6 @@ if sys.version_info.major == 3:
 default_cmap = plt.cm.viridis
 
 
-def plot(dataset, palette='Viridis256'):
-    """plot according to data_type"""
-    if dataset.data_type.name == 'IMAGE_STACK':
-        p = plot_stack(dataset, palette=palette)
-    elif dataset.data_type.name == 'IMAGE':
-        p = plot_image(dataset, palette=palette)
-    elif dataset.data_type.name == 'SPECTRUM':
-        p = plot_spectrum(dataset, palette=palette)
-    else:
-        p = None
-    return p
-
 
 def plot_stack(dataset, palette="Viridis256"):
     """Plotting a stack of images
@@ -273,6 +261,17 @@ class CurveVisualizer(object):
             legline.set_alpha(0.2)
         self.fig.canvas.draw()
 
+def plot(dataset, palette='Viridis256'):
+    """plot according to data_type"""
+    if dataset.data_type.name == 'IMAGE_STACK':
+        p = plot_stack(dataset, palette=palette)
+    elif dataset.data_type.name == 'IMAGE':
+        p = plot_image(dataset, palette=palette)
+    elif dataset.data_type.name == 'SPECTRUM':
+        p = plot_spectrum(dataset, palette=palette)
+    else:
+        p = None
+    return p
         
 def verify_spectrum_dataset(datasets):
     if isinstance(datasets, sidpy.Dataset):

@@ -47,8 +47,11 @@ Dimension = sidpy.Dimension
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '2022.3.3'
 
+from traitlets import Unicode, Bool, validate, TraitError
+import ipywidgets 
 
-class FileWidget(object):
+@ipywidgets.register
+class FileWidget(ipywidgets.DOMWidget):
     """Widget to select directories or widgets from a list
 
     Works in google colab.
@@ -77,7 +80,14 @@ class FileWidget(object):
     >>dataset = pyTEMlib.file_tools.open_file(file_list.file_name)
 
     """
+    _view_name = Unicode('EmailView').tag(sync=True)
+    _view_module = Unicode('email_widget').tag(sync=True)
+    _view_module_version = Unicode('0.1.0').tag(sync=True)
 
+    # Attributes
+    value = Bool(False, help="Enable or disable user changes.").tag(sync=True)
+    disabled = Bool(False, help="Enable or disable user changes.").tag(sync=True)
+    comm_id = 10021
     def __init__(self, dir_name=None, extension=['*']):
         self.save_path = False
         self.dir_dictionary = {}
@@ -137,7 +147,7 @@ class FileWidget(object):
 
         select_button.on_click(self.select_main)
         add_button.on_click(self.add_dataset)
-        self.loaded_datasets.observe(self.selected_dataset)
+        self.loaded_datasets.observe(self.select_dataset)
 
     def select_main(self, value=0):
         self.datasets = {}
@@ -171,11 +181,12 @@ class FileWidget(object):
         self.select_files.index = 0
         self.set_options()
 
-    def selected_dataset(self, value=0):
+    def select_dataset(self, value=0):
         
         key = self.loaded_datasets.value.split(':')[0]
         if key != 'None':
             self.selected_dataset = self.datasets[key]
+            self.selected_key = key
 
     def set_options(self):
         self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
