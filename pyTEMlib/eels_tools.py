@@ -1086,7 +1086,7 @@ def find_edges(dataset: sidpy.Dataset, sensitivity:float=2.5)->None:
             selected_edges.append('O-K1')
         else:
             selected_edge = ''
-            edges = find_major_edges(energy_scale[peak], 20)
+            edges = find_all_edges(energy_scale[peak], 20, major_edges_only=True)
             edges = edges.split('\n')
             minimum_dist = 100.
             for edge in edges[1:]:
