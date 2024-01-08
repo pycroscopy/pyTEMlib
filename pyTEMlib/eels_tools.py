@@ -1471,7 +1471,7 @@ def fit_edges2(spectrum, energy_scale, edges):
             edges[key]['areal_density'] = p[int(key)+5]
 
     edges['model'] = {}
-    edges['model']['background'] = (back + p[6] + p[7] * x + p[8] * x * x)
+    edges['model']['background'] = (background + p[6] + p[7] * x + p[8] * x * x)
     edges['model']['background-poly_0'] = p[6]
     edges['model']['background-poly_1'] = p[7]
     edges['model']['background-poly_2'] = p[8]
