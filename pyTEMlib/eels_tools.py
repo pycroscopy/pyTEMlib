@@ -20,6 +20,7 @@ attribute of the sidpy.Dataset
 
 Update by Austin Houston, UTK 12-2023 : Parallization of spectrum images
 """
+import typing
 from typing import Union
 import numpy as np
 import matplotlib.pyplot as plt
