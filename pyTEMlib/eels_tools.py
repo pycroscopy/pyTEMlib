@@ -1104,7 +1104,7 @@ def find_edges(dataset: sidpy.Dataset, sensitivity:float=2.5)->None:
     return selected_edges
 
 
-def assign_likely_edges(edge_channels:Union[list[float], np.ndarray], energy_scale:np.ndarray): 
+def assign_likely_edges(edge_channels:Union[list, np.ndarray], energy_scale:np.ndarray): 
     edges_in_list = []
     result = {}
     for channel in edge_channels: 
@@ -1358,7 +1358,7 @@ def power_law(energy: np.ndarray, a:float, r:float)->np.ndarray:
     return a * np.power(energy, -r)
 
 
-def power_law_background(spectrum:np.ndarray, energy_scale:np.ndarray, fit_area:Union[list[float, np.ndarray]], verbose:bool=False):
+def power_law_background(spectrum:np.ndarray, energy_scale:np.ndarray, fit_area:list, verbose:bool=False):
     """fit of power law to spectrum """
 
     # Determine energy window  for background fit in pixels
