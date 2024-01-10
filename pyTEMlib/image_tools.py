@@ -247,6 +247,8 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
     # third row is angles
     spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
 
+    center = [0, 0]
+
     if return_center == True:
         points = spots[:, 0:2]
 
@@ -802,7 +804,7 @@ def histogram_plot(image_tags):
             else:
                 vmax = data.max()
                 vmin = data.min()
-        onselect(vmin, vmax)
+            onselect(vmin, vmax)
 
     fig2 = plt.figure()
 

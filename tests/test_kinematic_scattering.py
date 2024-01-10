@@ -64,7 +64,7 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_get_rotation_matrix(self):
         tags = {'zone_hkl': [1, 1, 1], 'mistilt_alpha': 0, 'mistilt_beta': 0, 'reciprocal_unit_cell': np.identity(3)}
 
-        matrix = ks.get_rotation_matrix(tags)
+        matrix = ks.get_zone_rotation(tags)
         matrix_desired = [[0.81649658,  0., 0.57735027],
                           [-0.40824829, 0.70710678, 0.5773502],
                           [-0.40824829, -0.70710678, 0.57735027]]
