@@ -445,6 +445,8 @@ def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endF
         z_loss_dset = dset.copy()
         z_loss_dset *= 0.0
         z_loss_dset += zl_func(energy, *guess_params)
+        if 'zero_loss' not in z_loss_dset.metadata:
+            z_loss_dset.metadata = {}
         z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
                                                   'endFitEnergy': endFitEnergy,
                                                   'fit_parameter': guess_params,
@@ -1027,7 +1029,7 @@ def find_white_lines(dataset: sidpy.Dataset) -> None:
 def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
     """Calculates second derivative of a sidpy.dataset"""
 
-    dim = dataset.get_spectrum_dims()
+    dim = dataset.get_spectral_dims()
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
         spectrum = dataset.view.get_spectrum()
@@ -1062,7 +1064,7 @@ def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
 def find_edges(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
     """find edges within a sidpy.Dataset"""
 
-    dim = dataset.get_spectrum_dims()
+    dim = dataset.get_spectral_dims()
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
 
     second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
@@ -1147,7 +1149,7 @@ def assign_likely_edges(edge_channels: Union[list, np.ndarray], energy_scale: np
 
 def auto_id_edges(dataset):
     edge_channels = identify_edges(dataset)
-    dim = dataset.get_spectrum_dims()
+    dim = dataset.get_spectral_dims()
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     found_edges = assign_likely_edges(edge_channels, energy_scale)
     return found_edges
@@ -1170,7 +1172,7 @@ def identify_edges(dataset: sidpy.Dataset, noise_level: float=2.0):
     edge_channel: numpy.ndarray
     
     """
-    dim = dataset.get_spectrum_dims()
+    dim = dataset.get_spectral_dims()
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     dispersion = get_slope(energy_scale)
     spec = scipy.ndimage.gaussian_filter(dataset, 3/dispersion)  # smooth with 3eV wideGaussian
