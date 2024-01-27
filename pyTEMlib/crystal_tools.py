@@ -289,7 +289,9 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
             del_double.append((k, s))
     del_double.sort(reverse=False)
     for key in del_double:
-        bond_matrix.pop(key)
+        # Todo: why is ther a key error
+        # bond_matrix.pop(key)
+        pass
 
     if super_cell.info is None:
         super_cell.info = {}
