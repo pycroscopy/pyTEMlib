@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.get\_dynamically\_allowed
+========================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: get_dynamically_allowed

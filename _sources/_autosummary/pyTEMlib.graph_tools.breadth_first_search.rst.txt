@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.breadth\_first\_search
+============================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: breadth_first_search

@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.read\_cif
+==============================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: read_cif

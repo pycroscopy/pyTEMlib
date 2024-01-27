@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=d4dee072"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="#" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="install.html" />
+    <link rel="prev" title="pyTEMlib Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">pyTEMlib</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what">What?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why">Why?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#who">Who?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="_autosummary/pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/about.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pytemlib">
+<h1>pyTEMlib<a class="headerlink" href="#pytemlib" title="Permalink to this heading">¶</a></h1>
+<p><strong>Python framework for model based analysis of TEM/STEM data</strong></p>
+<section id="what">
+<h2>What?<a class="headerlink" href="#what" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>The <a class="reference external" href="../pyTEMlib.html">pyTEMlib</a>:</p>
+<ul>
+<li><p>is a <a class="reference external" href="../pycroscopy/about.html">pycroscopy</a> package based on <a class="reference external" href="http://www.python.org/">python</a></p></li>
+<li><p>enables quantitative analysis through model based approach</p></li>
+<li><p>provides routines for the analysis of diffraction, image and spectroscopic datasets</p></li>
+<li><p>handles one, two, three, and four dimensional datasets</p></li>
+<li><p>works in jupyter notebooks and in python programs.</p></li>
+<li><p>provides dialog windows for metadata  and analysis input in jupyter notebooks and in python programs.</p></li>
+</ul>
+</li>
+<li><p>pyNSID is a <a class="reference external" href="http://www.python.org/">python</a> package that currently provides three areas of analysis:</p>
+<ol class="arabic simple">
+<li><p><strong>Diffraction</strong>: Single and poly crystalline diffraction data and analysis in parallel and convergent  illumination</p></li>
+<li><p><strong>Imaging</strong>: Image analysis, atom detection and image stack registration.</p></li>
+<li><p><strong>EELS</strong>: It provides a framework for quantification of EELS spectra and spectrum images.</p></li>
+</ol>
+</li>
+<li><p>Just as scipy uses numpy underneath, scientific packages like <strong>pyTEMlib</strong> use <strong>sidpy</strong>  format for dataset representation</p></li>
+<li><p>and <strong>pyNSID</strong> for all file-handling.</p></li>
+<li><p>Dialogs are based on <strong>pyQt5</strong> and some features require <strong>Ipython widgets</strong></p></li>
+<li><p>The packages <strong>sidpy</strong> and <strong>pyNSID</strong> use popular packages such as numpy, h5py, dask, matplotlib, etc. for most of</p></li>
+<li><p>the storage, computation, and visualization.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We are running weekly hackathons for pycroscopy development every Friday from 3-5 PM - USA Eastern time.
+The requirements for participation are: knowledge of python, numpy, h5py, git.
+Please email vasudevanrk <em>at</em> ornl.gov to be added to the hackathons</p>
+</div>
+</section>
+<section id="why">
+<h2>Why?<a class="headerlink" href="#why" title="Permalink to this heading">¶</a></h2>
+<p>pyTEMlib originates in the need for teaching and the development of new techniques for TEM/STEM data analysis.
+Please, see my lecture note(-books) for information on the background of analysis.</p>
+<dl class="simple">
+<dt><strong>1. Growing data sizes</strong></dt><dd><ul class="simple">
+<li><p>Cannot use desktop computers for analysis</p></li>
+<li><p><em>Need: High performance computing, storage resources and compatible, scalable file structures</em></p></li>
+</ul>
+</dd>
+<dt><strong>2. Increasing data complexity</strong></dt><dd><ul class="simple">
+<li><p>Sophisticated imaging and spectroscopy modes resulting in 5,6,7… dimensional data</p></li>
+<li><p><em>Need: Robust software and generalized data formatting</em></p></li>
+</ul>
+</dd>
+<dt><strong>3. Multiple file formats</strong></dt><dd><ul class="simple">
+<li><p>Different formats from each instrument. Proprietary in most cases</p></li>
+<li><p>Incompatible for correlation</p></li>
+<li><p><em>Need: Open, instrument-independent data format</em></p></li>
+</ul>
+</dd>
+<dt><strong>4. Expensive analysis software</strong></dt><dd><ul class="simple">
+<li><p>Software supplied with instruments often insufficient / incapable of custom analysis routines</p></li>
+<li><p>Commercial software (Eg: Matlab, Origin..) are often prohibitively expensive.</p></li>
+<li><p><em>Need: Free, powerful, open source, user-friendly software</em></p></li>
+</ul>
+</dd>
+<dt><strong>5. Closed science</strong></dt><dd><ul class="simple">
+<li><p>Analysis software and data not shared</p></li>
+<li><p>No guarantees of reproducibility or traceability</p></li>
+<li><p><em>Need: open source data structures, file formats, centralized code and data repositories</em></p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="who">
+<h2>Who?<a class="headerlink" href="#who" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>We envision <strong>pyTEMlib</strong> to be a convenient package that facilitates all scientists to analyse data and develop new methods of anlysis, without being burdened with basic code functionality.</p></li>
+<li><p>This project is being led by staff members at Oak Ridge National Laboratory (ORNL), and professors at University of Tennessee, Knoxville</p></li>
+<li><p>We invite anyone interested to join our team to build better, free software for the scientific community</p></li>
+<li><p>Please visit our <a class="reference external" href="./credits.html">credits and acknowledgements</a> page for more information.</p></li>
+<li><p>If you are interested in integrating our in your existing package, please <a class="reference external" href="./contact.html">get in touch</a> with us.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="pyTEMlib Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="install.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

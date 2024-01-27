@@ -1,0 +1,6 @@
+pyTEMlib.viz.verify\_spectrum\_dataset
+======================================
+
+.. currentmodule:: pyTEMlib.viz
+
+.. autofunction:: verify_spectrum_dataset

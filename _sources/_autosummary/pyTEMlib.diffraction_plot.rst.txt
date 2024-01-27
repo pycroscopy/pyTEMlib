@@ -1,0 +1,41 @@
+pyTEMlib.diffraction\_plot
+==========================
+
+.. automodule:: pyTEMlib.diffraction_plot
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      cartesian2polar
+      circles
+      plotCBED_parameter
+      plotHOLZ_parameter
+      plotKikuchi
+      plotSAED_parameter
+      plot_diffraction_pattern
+      plot_reciprocal_unit_cell_2D
+      plot_ring_pattern
+      topolar
+      warp
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

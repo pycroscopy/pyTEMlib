@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.make\_polygons
+====================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: make_polygons

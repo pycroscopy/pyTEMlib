@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.get\_rotation\_matrix
+====================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: get_rotation_matrix

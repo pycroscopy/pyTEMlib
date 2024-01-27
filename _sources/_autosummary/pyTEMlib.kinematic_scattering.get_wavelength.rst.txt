@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.get\_wavelength
+==============================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: get_wavelength

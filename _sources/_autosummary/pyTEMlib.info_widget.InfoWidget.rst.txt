@@ -1,0 +1,50 @@
+pyTEMlib.info\_widget.InfoWidget
+================================
+
+.. currentmodule:: pyTEMlib.info_widget
+
+.. autoclass:: InfoWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~InfoWidget.add_dataset
+      ~InfoWidget.cursor2energy_scale
+      ~InfoWidget.get_directory
+      ~InfoWidget.get_file_name
+      ~InfoWidget.get_resolution_function
+      ~InfoWidget.get_spectrum
+      ~InfoWidget.line_select_callback
+      ~InfoWidget.plot
+      ~InfoWidget.plot_spectrum
+      ~InfoWidget.plot_spectrum_image
+      ~InfoWidget.select_dataset
+      ~InfoWidget.select_main
+      ~InfoWidget.set_action
+      ~InfoWidget.set_binning
+      ~InfoWidget.set_dataset
+      ~InfoWidget.set_dir
+      ~InfoWidget.set_energy_scale
+      ~InfoWidget.set_file_options
+      ~InfoWidget.set_flux
+      ~InfoWidget.set_image
+      ~InfoWidget.set_microscope_parameter
+      ~InfoWidget.set_y_scale
+      ~InfoWidget.shift_low_loss
+      ~InfoWidget.shift_spectrum
+      ~InfoWidget.update_dataset
+      ~InfoWidget.update_sidebar
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.add\_dataset\_from\_file
+=============================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: add_dataset_from_file

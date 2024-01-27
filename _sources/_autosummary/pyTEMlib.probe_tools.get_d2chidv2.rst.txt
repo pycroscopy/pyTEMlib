@@ -1,0 +1,6 @@
+pyTEMlib.probe\_tools.get\_d2chidv2
+===================================
+
+.. currentmodule:: pyTEMlib.probe_tools
+
+.. autofunction:: get_d2chidv2

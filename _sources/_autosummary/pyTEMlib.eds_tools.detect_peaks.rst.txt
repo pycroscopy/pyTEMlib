@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.detect\_peaks
+=================================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: detect_peaks

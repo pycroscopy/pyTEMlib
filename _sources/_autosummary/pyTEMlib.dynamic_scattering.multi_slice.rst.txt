@@ -1,0 +1,6 @@
+pyTEMlib.dynamic\_scattering.multi\_slice
+=========================================
+
+.. currentmodule:: pyTEMlib.dynamic_scattering
+
+.. autofunction:: multi_slice

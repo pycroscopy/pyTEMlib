@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.get\_zone\_rotation
+==================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: get_zone_rotation

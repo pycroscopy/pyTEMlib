@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.get\_spectrum
+==================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: get_spectrum

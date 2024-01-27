@@ -1,0 +1,40 @@
+pyTEMlib.eels\_dialog
+=====================
+
+.. automodule:: pyTEMlib.eels_dialog
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      get_sidebar
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      CompositionWidget
+   
+   
+
+   
+   
+   
+
+
+

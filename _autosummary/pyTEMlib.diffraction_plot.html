@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.diffraction_plot &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib.diffraction_plot</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/pyTEMlib.diffraction_plot.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pyTEMlib.diffraction_plot">
+<span id="pytemlib-diffraction-plot"></span><h1>pyTEMlib.diffraction_plot<a class="headerlink" href="#module-pyTEMlib.diffraction_plot" title="Permalink to this heading">¶</a></h1>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.cartesian2polar.html#pyTEMlib.diffraction_plot.cartesian2polar" title="pyTEMlib.diffraction_plot.cartesian2polar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cartesian2polar</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.circles.html#pyTEMlib.diffraction_plot.circles" title="pyTEMlib.diffraction_plot.circles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">circles</span></code></a></p></td>
+<td><p>Make a scatter plot of circles. Similar to plt.scatter, but the size of circles are in data scale. :param x: Input data :type x: scalar or array_like, shape (n, ) :param y: Input data :type y: scalar or array_like, shape (n, ) :param s: Radius of circles. :type s: scalar or array_like, shape (n, ) :param c: <cite>c</cite> can be a single color format string, or a sequence of color           specifications of length <cite>N</cite>, or a sequence of <cite>N</cite> numbers to be           mapped to colors using the <cite>cmap</cite> and <cite>norm</cite> specified via kwargs. Note that <cite>c</cite> should not be a single numeric RGB or RGBA sequence           because that is indistinguishable from an array of values           to be colormapped. (If you insist, use <cite>color</cite> instead.)           <cite>c</cite> can be a 2-D array in which the rows are RGB or RGBA, however. :type c: color or sequence of color, optional, default : 'b' :param vmin: <cite>vmin</cite> and <cite>vmax</cite> are used in conjunction with <cite>norm</cite> to normalize              luminance data. If either are <cite>None</cite>, the min and max of the              color array is used. :type vmin: scalar, optional, default: None :param vmax: <cite>vmin</cite> and <cite>vmax</cite> are used in conjunction with <cite>norm</cite> to normalize              luminance data. If either are <cite>None</cite>, the min and max of the              color array is used. :type vmax: scalar, optional, default: None :param kwargs: Eg. alpha, edgecolor(ec), facecolor(fc), linewidth(lw), linestyle(ls),                norm, cmap, transform, etc. :type kwargs: <cite>~matplotlib.collections.Collection</cite> properties.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.plotCBED_parameter.html#pyTEMlib.diffraction_plot.plotCBED_parameter" title="pyTEMlib.diffraction_plot.plotCBED_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotCBED_parameter</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.plotHOLZ_parameter.html#pyTEMlib.diffraction_plot.plotHOLZ_parameter" title="pyTEMlib.diffraction_plot.plotHOLZ_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotHOLZ_parameter</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.plotKikuchi.html#pyTEMlib.diffraction_plot.plotKikuchi" title="pyTEMlib.diffraction_plot.plotKikuchi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotKikuchi</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.plotSAED_parameter.html#pyTEMlib.diffraction_plot.plotSAED_parameter" title="pyTEMlib.diffraction_plot.plotSAED_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plotSAED_parameter</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.plot_diffraction_pattern.html#pyTEMlib.diffraction_plot.plot_diffraction_pattern" title="pyTEMlib.diffraction_plot.plot_diffraction_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_diffraction_pattern</span></code></a></p></td>
+<td><p>Plot of spot diffraction pattern with matplotlib Plot of spot diffraction pattern with matplotlib</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.plot_reciprocal_unit_cell_2D.html#pyTEMlib.diffraction_plot.plot_reciprocal_unit_cell_2D" title="pyTEMlib.diffraction_plot.plot_reciprocal_unit_cell_2D"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_reciprocal_unit_cell_2D</span></code></a></p></td>
+<td><p>Plot # unit cell in reciprocal space in 2D</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.plot_ring_pattern.html#pyTEMlib.diffraction_plot.plot_ring_pattern" title="pyTEMlib.diffraction_plot.plot_ring_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_ring_pattern</span></code></a></p></td>
+<td><p>Plot of ring diffraction pattern with matplotlib</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.topolar.html#pyTEMlib.diffraction_plot.topolar" title="pyTEMlib.diffraction_plot.topolar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">topolar</span></code></a></p></td>
+<td><p>Transform img to its polar coordinate representation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.diffraction_plot.warp.html#pyTEMlib.diffraction_plot.warp" title="pyTEMlib.diffraction_plot.warp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">warp</span></code></a></p></td>
+<td><p>Define original polar grid</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

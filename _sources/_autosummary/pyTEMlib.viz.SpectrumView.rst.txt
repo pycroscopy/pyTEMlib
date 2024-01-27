@@ -1,0 +1,29 @@
+pyTEMlib.viz.SpectrumView
+=========================
+
+.. currentmodule:: pyTEMlib.viz
+
+.. autoclass:: SpectrumView
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~SpectrumView.add_region
+      ~SpectrumView.identify_edges
+      ~SpectrumView.initialize_edge
+      ~SpectrumView.regions_visibility
+      ~SpectrumView.update_region
+   
+   
+
+   
+   
+   

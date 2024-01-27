@@ -1,0 +1,23 @@
+pyTEMlib.interactive\_eels
+==========================
+
+.. automodule:: pyTEMlib.interactive_eels
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

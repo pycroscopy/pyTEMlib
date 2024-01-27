@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.eels_tools.effective_collection_angle &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib.eels_tools.effective_collection_angle</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/pyTEMlib.eels_tools.effective_collection_angle.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pytemlib-eels-tools-effective-collection-angle">
+<h1>pyTEMlib.eels_tools.effective_collection_angle<a class="headerlink" href="#pytemlib-eels-tools-effective-collection-angle" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyTEMlib.eels_tools.effective_collection_angle">
+<span class="sig-prename descclassname"><span class="pre">pyTEMlib.eels_tools.</span></span><span class="sig-name descname"><span class="pre">effective_collection_angle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">energy_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beam_kv</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyTEMlib/eels_tools.html#effective_collection_angle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyTEMlib.eels_tools.effective_collection_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the effective collection angle in mrad:</p>
+<p>Translate from original Fortran program
+Calculates the effective collection angle in mrad:
+Parameter
+———
+energy_scale: numpy array</p>
+<blockquote>
+<div><p>first and last energy loss of spectrum in eV</p>
+</div></blockquote>
+<dl class="simple">
+<dt>alpha: float</dt><dd><p>convergence angle in mrad</p>
+</dd>
+<dt>beta: float</dt><dd><p>collection  angle in mrad</p>
+</dd>
+<dt>beamKV: float</dt><dd><p>acceleration voltage in V</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>eff_beta</strong> (<em>float</em>) – effective collection angle in mrad</p></li>
+<li><p><em># function y = effbeta(ene,  alpha, beta, beam_kv)</em></p></li>
+<li><p><em>#</em></p></li>
+<li><p><em>#       This program computes etha(alpha,beta), that is the collection</em></p></li>
+<li><p><em>#       efficiency associated to the following geometry</em></p></li>
+<li><p><em>#</em></p></li>
+<li><p><em>#       alpha = half angle of illumination  (0 -&gt; pi/2)</em></p></li>
+<li><p><em>#       beta  = half angle of collection    (0 -&gt; pi/2)</em></p></li>
+<li><p><em>#                                           (pi/2 = 1570.795 mrad)</em></p></li>
+<li><p><em>#</em></p></li>
+<li><p><em>#           A constant angular distribution of incident electrons is assumed</em></p></li>
+<li><p><em>#       for any incident angle (-alpha,alpha). These electrons imping the</em></p></li>
+<li><p><em>#       target and a single energy-loss event occurs, with a characteristic</em></p></li>
+<li><p><em>#       angle theta-e (relativistic). The angular distribution of the</em></p></li>
+<li><p><em>#       electrons after the target is analytically derived.</em></p></li>
+<li><p><em>#           This program integrates this distribution from theta=0 up to</em></p></li>
+<li><p><em>#       theta=beta with an adjustable angular step.</em></p></li>
+<li><p><em>#           This program also computes beta</em> which is the theoretical*</p></li>
+<li><p><em>#       collection angle which would give the same value of etha(alpha,beta)</em></p></li>
+<li><p><em>#       with a parallel incident beam.</em></p></li>
+<li><p><em>#</em></p></li>
+<li><p><em>#       subroutines and function subprograms required</em></p></li>
+<li><p><em>#       ———————————————</em></p></li>
+<li><p><em>#       none</em></p></li>
+<li><p><em>#</em></p></li>
+<li><p><em>#       comments</em></p></li>
+<li><p><em>#       ——–</em></p></li>
+<li><p><em>#</em></p></li>
+<li><p><em>#       The following parameters are asked as input</em></p></li>
+<li><p><em>#        accelerating voltage (kV), energy loss range (eV) for the study,</em></p></li>
+<li><p><em>#        energy loss step (eV) in this range, alpha (mrad), beta (mrad).</em></p></li>
+<li><p><em>#       The program returns for each energy loss step</em></p></li>
+<li><p><em>#        alpha (mrad), beta (mrad), theta-e (relativistic) (mrad),</em></p></li>
+<li><p><em>#        energy loss (eV), etha (#), beta * (mrad)</em></p></li>
+<li><p><em>#</em></p></li>
+<li><p><em>#       author</em></p></li>
+<li><p><em>#       ——–</em></p></li>
+<li><p><em>#       Pierre TREBBIA</em></p></li>
+<li><p><strong>#       US 41</strong> (<em>“Microscopie Electronique Analytique Quantitative”</em>)</p></li>
+<li><p><em>#       Laboratoire de Physique des Solides, Bat. 510</em></p></li>
+<li><p><em>#       Universite Paris-Sud, F91405 ORSAY Cedex</em></p></li>
+<li><p><strong>#       Phone</strong> (<em>(33-1) 69 41 53 68</em>)</p></li>
+<li><p><em>#</em></p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

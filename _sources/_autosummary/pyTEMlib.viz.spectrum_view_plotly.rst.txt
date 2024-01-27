@@ -1,0 +1,6 @@
+pyTEMlib.viz.spectrum\_view\_plotly
+===================================
+
+.. currentmodule:: pyTEMlib.viz
+
+.. autofunction:: spectrum_view_plotly

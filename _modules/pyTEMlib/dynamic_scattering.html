@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.dynamic_scattering &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../_autosummary/pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pyTEMlib.dynamic_scattering</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pyTEMlib.dynamic_scattering</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Dynamic Scattering Library for Multi-Slice Calculations</span>
+
+<span class="sd">author: Gerd Duscher</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy.constants</span>
+<span class="kn">import</span> <span class="nn">scipy.special</span>
+
+<span class="kn">import</span> <span class="nn">pyTEMlib.kinematic_scattering</span> <span class="k">as</span> <span class="nn">ks</span>         <span class="c1"># kinematic scattering Library</span>
+
+
+<div class="viewcode-block" id="potential_1dim"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.potential_1dim.html#pyTEMlib.dynamic_scattering.potential_1dim">[docs]</a><span class="k">def</span> <span class="nf">potential_1dim</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">r</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Calculates the projected potential of an atom of element</span>
+
+<span class="sd">    The projected potential will be in units of V nm^2,</span>
+<span class="sd">    however, internally we will use Angstrom instead of nm!</span>
+<span class="sd">    The basis for these calculations are the atomic form factors of Kirkland 2𝑛𝑑 edition</span>
+<span class="sd">    following the equation in  Appendix C page 252.</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    element: str</span>
+<span class="sd">        name of &#39;element</span>
+<span class="sd">    r: numpy array [nxn]</span>
+<span class="sd">        impact parameters (distances from atom position) in nm</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy array (nxn)</span>
+<span class="sd">        projected potential in units of V nm^2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># get elementary constants</span>
+    <span class="n">a0</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="s1">&#39;Bohr radius&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e10</span>  <span class="c1"># in Angstrom</span>
+    <span class="n">rydberg_div_e</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="s1">&#39;Rydberg constant times hc in eV&#39;</span><span class="p">)</span>  <span class="c1"># in V</span>
+    <span class="n">e0</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">rydberg_div_e</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="s1">&#39;Bohr radius&#39;</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e10</span>      <span class="c1"># now in V A</span>
+
+    <span class="n">pre_factor</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">a0</span> <span class="o">*</span> <span class="n">e0</span>
+
+    <span class="n">param</span> <span class="o">=</span> <span class="n">ks</span><span class="o">.</span><span class="n">electronFF</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>  <span class="c1"># parametrized form factors</span>
+    <span class="n">f_lorentz</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="mi">0</span>  <span class="c1"># Lorentzian term</span>
+    <span class="n">f_gauss</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="mi">0</span>  <span class="c1"># Gaussian term</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">f_lorentz</span> <span class="o">+=</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fa&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">special</span><span class="o">.</span><span class="n">k0</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">param</span><span class="p">[</span><span class="s1">&#39;fb&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]))</span>
+        <span class="n">f_gauss</span> <span class="o">+=</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fc&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">r</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+    <span class="n">f_lorentz</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_lorentz</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># / 100 is  conversion from V Angstrom^2 to V  nm^2</span>
+    <span class="k">return</span> <span class="n">pre_factor</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">f_lorentz</span> <span class="o">+</span> <span class="n">f_gauss</span><span class="p">)</span>  <span class="c1"># V Angstrom^2</span></div>
+
+
+<div class="viewcode-block" id="potential_2dim"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.potential_2dim.html#pyTEMlib.dynamic_scattering.potential_2dim">[docs]</a><span class="k">def</span> <span class="nf">potential_2dim</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">n_cell_x</span><span class="p">,</span> <span class="n">n_cell_y</span><span class="p">,</span> <span class="n">lattice_parameter</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a super-cell with potentials</span>
+
+<span class="sd">    Limitation is that we only place atom potential with single pixel resolution</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_cell_x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">n_cell_x</span><span class="p">))</span>
+    <span class="n">n_cell_y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">n_cell_y</span><span class="p">))</span>
+
+    <span class="n">pixel_size</span> <span class="o">=</span> <span class="n">lattice_parameter</span> <span class="o">/</span> <span class="p">(</span><span class="n">nx</span> <span class="o">/</span> <span class="n">n_cell_x</span><span class="p">)</span>
+
+    <span class="n">a_nx</span> <span class="o">=</span> <span class="n">a_ny</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">pixel_size</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">a_nx</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">a_ny</span><span class="p">]</span> <span class="o">*</span> <span class="n">pixel_size</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">nx</span> <span class="o">/</span> <span class="n">n_cell_x</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">y</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="n">atom_potential</span> <span class="o">=</span> <span class="n">potential_1dim</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+    <span class="n">potential</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">])</span>
+
+    <span class="n">atom_potential_corner</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">])</span>
+    <span class="n">atom_potential_corner</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">a_nx</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">a_ny</span><span class="p">]</span> <span class="o">=</span> <span class="n">atom_potential</span>
+    <span class="n">atom_potential_corner</span><span class="p">[</span><span class="n">nx</span> <span class="o">-</span> <span class="n">a_nx</span><span class="p">:,</span> <span class="mi">0</span><span class="p">:</span><span class="n">a_ny</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">atom_potential</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">atom_potential_corner</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">a_nx</span><span class="p">,</span> <span class="n">ny</span> <span class="o">-</span> <span class="n">a_ny</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">atom_potential</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">atom_potential_corner</span><span class="p">[</span><span class="n">nx</span> <span class="o">-</span> <span class="n">a_nx</span><span class="p">:,</span> <span class="n">ny</span> <span class="o">-</span> <span class="n">a_ny</span><span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">atom_potential</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">unit_cell_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">base</span><span class="p">)</span> <span class="o">*</span> <span class="n">a</span>
+    <span class="n">unit_cell_base</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">unit_cell_base</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">unit_cell_base</span><span class="p">:</span>
+        <span class="n">potential</span> <span class="o">=</span> <span class="n">potential</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">atom_potential_corner</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pos</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">n_cell_x</span><span class="p">))):</span>
+        <span class="n">potential</span> <span class="o">=</span> <span class="n">potential</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">potential</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="n">column</span> <span class="o">*</span> <span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">n_cell_y</span><span class="p">))):</span>
+        <span class="n">potential</span> <span class="o">=</span> <span class="n">potential</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">potential</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="n">row</span> <span class="o">*</span> <span class="n">a</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">potential</span></div>
+
+
+<div class="viewcode-block" id="interaction_parameter"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.interaction_parameter.html#pyTEMlib.dynamic_scattering.interaction_parameter">[docs]</a><span class="k">def</span> <span class="nf">interaction_parameter</span><span class="p">(</span><span class="n">acceleration_voltage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculates interaction parameter sigma</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    acceleration_voltage: float</span>
+<span class="sd">        acceleration voltage in volt</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    interaction parameter: float</span>
+<span class="sd">        interaction parameter (dimensionless)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">e0</span> <span class="o">=</span> <span class="mf">510998.95</span>  <span class="c1"># m_0 c^2 in eV</span>
+
+    <span class="n">wavelength</span> <span class="o">=</span> <span class="n">ks</span><span class="o">.</span><span class="n">get_wavelength</span><span class="p">(</span><span class="n">acceleration_voltage</span><span class="p">)</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">acceleration_voltage</span>
+
+    <span class="k">return</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="p">(</span><span class="n">wavelength</span> <span class="o">*</span> <span class="n">e</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">e0</span> <span class="o">+</span> <span class="n">e</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span> <span class="o">*</span> <span class="n">e0</span> <span class="o">+</span> <span class="n">e</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_transmission"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.get_transmission.html#pyTEMlib.dynamic_scattering.get_transmission">[docs]</a><span class="k">def</span> <span class="nf">get_transmission</span><span class="p">(</span><span class="n">potential</span><span class="p">,</span> <span class="n">acceleration_voltage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Get transmission function</span>
+
+<span class="sd">    has to be multiplied in real space with wave function</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    potential: numpy array (nxn)</span>
+<span class="sd">        potential of a layer</span>
+<span class="sd">    acceleration_voltage: float</span>
+<span class="sd">        acceleration voltage in V</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    complex numpy array (nxn)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">interaction_parameter</span><span class="p">(</span><span class="n">acceleration_voltage</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">*</span> <span class="n">potential</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_propagator"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.get_propagator.html#pyTEMlib.dynamic_scattering.get_propagator">[docs]</a><span class="k">def</span> <span class="nf">get_propagator</span><span class="p">(</span><span class="n">size_in_pixel</span><span class="p">,</span> <span class="n">delta_z</span><span class="p">,</span> <span class="n">number_layers</span><span class="p">,</span> <span class="n">wavelength</span><span class="p">,</span> <span class="n">field_of_view</span><span class="p">,</span> <span class="n">bandwidth_factor</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get propagator function</span>
+
+<span class="sd">    has to be convoluted with wave function after transmission</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    size_in_pixel: int</span>
+<span class="sd">        number of pixels of one axis in square image</span>
+<span class="sd">    delta_z: float</span>
+<span class="sd">        distance between layers</span>
+<span class="sd">    number_layers: int</span>
+<span class="sd">        number of layers to make a propagator</span>
+<span class="sd">    wavelength: float</span>
+<span class="sd">        wavelength of incident electrons</span>
+<span class="sd">    field_of_view: float</span>
+<span class="sd">        field of view of image</span>
+<span class="sd">    bandwidth_factor: float</span>
+<span class="sd">        relative bandwidth to avoid anti-aliasing</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    propagator: complex numpy array (layers x size_in_pixel x size_in_pixel)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">k2max</span> <span class="o">=</span> <span class="n">size_in_pixel</span> <span class="o">/</span> <span class="n">field_of_view</span> <span class="o">/</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">bandwidth_factor</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">k2max</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bandwidth limited to a real space resolution of </span><span class="si">{</span><span class="mf">1.0</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">k2max</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">}</span><span class="s2"> pm&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;   (= </span><span class="si">{</span><span class="n">wavelength</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">k2max</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">1000.0</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> mrad)  for symmetrical anti-aliasing.&quot;</span><span class="p">)</span>
+    <span class="n">k2max</span> <span class="o">=</span> <span class="n">k2max</span> <span class="o">*</span> <span class="n">k2max</span>
+
+    <span class="n">kx</span><span class="p">,</span> <span class="n">ky</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="o">-</span><span class="n">size_in_pixel</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span><span class="n">size_in_pixel</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">size_in_pixel</span> <span class="o">/</span> <span class="mi">2</span><span class="p">:</span><span class="n">size_in_pixel</span> <span class="o">/</span> <span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="n">field_of_view</span>
+    <span class="n">k_square</span> <span class="o">=</span> <span class="n">kx</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">ky</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">k_square</span><span class="p">[</span><span class="n">k_square</span> <span class="o">&gt;</span> <span class="n">k2max</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># bandwidth limiting</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">size_in_pixel</span><span class="p">,</span> <span class="n">size_in_pixel</span><span class="p">])</span>
+        <span class="n">temp</span><span class="p">[</span><span class="n">k_square</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of symmetrical non-aliasing beams = </span><span class="si">{</span><span class="n">temp</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">propagator</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">number_layers</span><span class="p">,</span> <span class="n">size_in_pixel</span><span class="p">,</span> <span class="n">size_in_pixel</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_layers</span><span class="p">):</span>
+        <span class="n">propagator</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">wavelength</span> <span class="o">*</span> <span class="n">k_square</span> <span class="o">*</span> <span class="n">delta_z</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">propagator</span></div>
+
+
+<div class="viewcode-block" id="multi_slice"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.multi_slice.html#pyTEMlib.dynamic_scattering.multi_slice">[docs]</a><span class="k">def</span> <span class="nf">multi_slice</span><span class="p">(</span><span class="n">wave</span><span class="p">,</span> <span class="n">number_of_unit_cell_z</span><span class="p">,</span> <span class="n">number_layers</span><span class="p">,</span> <span class="n">transmission</span><span class="p">,</span> <span class="n">propagator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Multi-Slice Calculation</span>
+
+<span class="sd">    The wave function will be changed iteratively</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    wave: complex numpy array (nxn)</span>
+<span class="sd">        starting wave function</span>
+<span class="sd">    number_of_unit_cell_z: int</span>
+<span class="sd">        this gives the thickness in multiples of c lattice parameter</span>
+<span class="sd">    number_layers: int</span>
+<span class="sd">        number of layers per unit cell</span>
+<span class="sd">    transmission: complex numpy array</span>
+<span class="sd">        transmission function</span>
+<span class="sd">    propagator: complex numpy array</span>
+<span class="sd">        propagator function</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    complex numpy array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_of_unit_cell_z</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_layers</span><span class="p">):</span>
+            <span class="n">wave</span> <span class="o">=</span> <span class="n">wave</span> <span class="o">*</span> <span class="n">transmission</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span>  <span class="c1"># transmission  - real space</span>
+            <span class="n">wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft2</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>
+            <span class="n">wave</span> <span class="o">=</span> <span class="n">wave</span> <span class="o">*</span> <span class="n">propagator</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span>  <span class="c1"># propagation; propagator is defined in reciprocal space</span>
+            <span class="n">wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft2</span><span class="p">(</span><span class="n">wave</span><span class="p">)</span>  <span class="c1"># back to real space</span>
+    <span class="k">return</span> <span class="n">wave</span></div>
+
+
+<div class="viewcode-block" id="make_chi"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.make_chi.html#pyTEMlib.dynamic_scattering.make_chi">[docs]</a><span class="k">def</span> <span class="nf">make_chi</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">aberrations</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ###</span>
+<span class="sd">    # Aberration function chi</span>
+<span class="sd">    ###</span>
+<span class="sd">    phi and theta are meshgrids of the angles in polar coordinates.</span>
+<span class="sd">    aberrations is a dictionary with the aberrations coefficients</span>
+<span class="sd">    Attention: an empty aberration dictionary will give you a perfect aberration</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">chi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">):</span>  <span class="c1"># First Sum up to fifth order</span>
+        <span class="n">term_first_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># term in first sum</span>
+
+        <span class="n">second_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># second Sum initialized with zeros</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">((</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">2</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="c1"># print(n, m)</span>
+
+            <span class="k">if</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">a&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">aberrations</span><span class="p">:</span>  <span class="c1"># Set non existent aberrations coefficient to zero</span>
+                    <span class="n">aberrations</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">a&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+                <span class="k">if</span> <span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">b&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">aberrations</span><span class="p">:</span>
+                    <span class="n">aberrations</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">b&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+                <span class="c1"># term in second sum</span>
+                <span class="n">second_sum</span> <span class="o">=</span> <span class="n">second_sum</span> <span class="o">+</span> <span class="n">aberrations</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">a&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="n">phi</span><span class="p">)</span> <span class="o">+</span> <span class="n">aberrations</span><span class="p">[</span>
+                    <span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">b&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="n">phi</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">aberrations</span><span class="p">:</span>  <span class="c1"># Set non existent aberrations coefficient to zero</span>
+                    <span class="n">aberrations</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+                <span class="c1"># term in second sum</span>
+                <span class="n">second_sum</span> <span class="o">=</span> <span class="n">second_sum</span> <span class="o">+</span> <span class="n">aberrations</span><span class="p">[</span><span class="sa">f</span><span class="s1">&#39;C</span><span class="si">{</span><span class="n">n</span><span class="si">}{</span><span class="n">m</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">]</span>
+        <span class="n">chi</span> <span class="o">=</span> <span class="n">chi</span> <span class="o">+</span> <span class="n">term_first_sum</span> <span class="o">*</span> <span class="n">second_sum</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="n">aberrations</span><span class="p">[</span><span class="s1">&#39;wavelength&#39;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">chi</span></div>
+
+
+<div class="viewcode-block" id="objective_lens_function"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.dynamic_scattering.objective_lens_function.html#pyTEMlib.dynamic_scattering.objective_lens_function">[docs]</a><span class="k">def</span> <span class="nf">objective_lens_function</span><span class="p">(</span><span class="n">ab</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">field_of_view</span><span class="p">,</span> <span class="n">aperture_size</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Objective len function to be convoluted with exit wave to derive image function</span>
+
+<span class="sd">    Parameter:</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ab: dict</span>
+<span class="sd">        aberrations in nm should at least contain defocus (C10), and spherical aberration (C30)</span>
+<span class="sd">    nx: int</span>
+<span class="sd">        number of pixel in x direction</span>
+<span class="sd">    ny: int</span>
+<span class="sd">        number of pixel in y direction</span>
+<span class="sd">    field_of_view: float</span>
+<span class="sd">        field of view of potential</span>
+<span class="sd">    wavelength: float</span>
+<span class="sd">        wavelength in nm</span>
+<span class="sd">    aperture_size: float</span>
+<span class="sd">        aperture size in 1/nm</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    object function: numpy array (nx x ny)</span>
+<span class="sd">    extent: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">wavelength</span> <span class="o">=</span> <span class="n">ab</span><span class="p">[</span><span class="s1">&#39;wavelength&#39;</span><span class="p">]</span>
+    <span class="c1"># Reciprocal plane in 1/nm</span>
+    <span class="n">dk</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">field_of_view</span>
+    <span class="n">t_xv</span><span class="p">,</span> <span class="n">t_yv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">nx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">):</span><span class="nb">int</span><span class="p">(</span><span class="n">nx</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">ny</span> <span class="o">/</span> <span class="mi">2</span><span class="p">):</span><span class="nb">int</span><span class="p">(</span><span class="n">ny</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span> <span class="o">*</span> <span class="n">dk</span>
+
+    <span class="c1"># define reciprocal plane in angles</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">t_yv</span><span class="p">,</span> <span class="n">t_xv</span><span class="p">)</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">t_xv</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">t_yv</span> <span class="o">**</span> <span class="mi">2</span><span class="p">),</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">wavelength</span><span class="p">)</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">&lt;</span> <span class="n">aperture_size</span> <span class="o">*</span> <span class="n">wavelength</span>
+
+    <span class="c1"># calculate chi</span>
+    <span class="n">chi</span> <span class="o">=</span> <span class="n">make_chi</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">ab</span><span class="p">)</span>
+
+    <span class="n">extent</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="n">nx</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dk</span><span class="p">,</span> <span class="n">nx</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dk</span><span class="p">,</span> <span class="o">-</span><span class="n">nx</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dk</span><span class="p">,</span> <span class="n">nx</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">dk</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="n">chi</span><span class="p">)</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="n">extent</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

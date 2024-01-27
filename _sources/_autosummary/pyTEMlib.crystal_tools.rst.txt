@@ -1,0 +1,40 @@
+pyTEMlib.crystal\_tools
+=======================
+
+.. automodule:: pyTEMlib.crystal_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      atoms_from_dictionary
+      ball_and_stick
+      get_dictionary
+      get_projection
+      get_symmetry
+      jmol_viewer
+      plot_super_cell
+      plot_unit_cell
+      set_bond_radii
+      structure_by_name
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

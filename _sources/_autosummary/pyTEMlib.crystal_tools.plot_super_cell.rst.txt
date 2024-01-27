@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.plot\_super\_cell
+=========================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: plot_super_cell

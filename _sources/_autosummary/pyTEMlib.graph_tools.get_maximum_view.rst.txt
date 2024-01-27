@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.get\_maximum\_view
+========================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: get_maximum_view

@@ -1,0 +1,6 @@
+pyTEMlib.probe\_tools.get\_ronchigram
+=====================================
+
+.. currentmodule:: pyTEMlib.probe_tools
+
+.. autofunction:: get_ronchigram

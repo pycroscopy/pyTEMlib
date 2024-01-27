@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.atom_tools &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../_autosummary/pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pyTEMlib.atom_tools</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pyTEMlib.atom_tools</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Atom detection</span>
+
+<span class="sd">All atom detection is done here</span>
+<span class="sd">Everything is in unit of pixel!!</span>
+
+<span class="sd">Author: Gerd Duscher</span>
+
+<span class="sd">part of pyTEMlib</span>
+
+<span class="sd">a pycroscopy package</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="c1"># from skimage.feature import peak_local_max</span>
+<span class="kn">from</span> <span class="nn">skimage.feature</span> <span class="kn">import</span> <span class="n">blob_log</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">KMeans</span>
+<span class="kn">from</span> <span class="nn">scipy.spatial</span> <span class="kn">import</span> <span class="n">cKDTree</span>
+<span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="k">as</span> <span class="nn">optimization</span>
+
+<span class="kn">import</span> <span class="nn">pyTEMlib.probe_tools</span> <span class="k">as</span> <span class="nn">probe_tools</span>
+<span class="kn">import</span> <span class="nn">pyTEMlib.file_tools</span> <span class="k">as</span> <span class="nn">ft</span>
+<span class="kn">import</span> <span class="nn">sidpy</span>
+<span class="kn">from</span> <span class="nn">tqdm.auto</span> <span class="kn">import</span> <span class="n">trange</span>
+
+
+<div class="viewcode-block" id="find_atoms"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.atom_tools.find_atoms.html#pyTEMlib.atom_tools.find_atoms">[docs]</a><span class="k">def</span> <span class="nf">find_atoms</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">atom_size</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Find atoms is a simple wrapper for blob_log in skimage.feature</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    image: sidpy.Dataset</span>
+<span class="sd">        the image to find atoms</span>
+<span class="sd">    atom_size: float</span>
+<span class="sd">        visible size of atom blob diameter in nm gives minimal distance between found blobs</span>
+<span class="sd">    threshold: float</span>
+<span class="sd">        threshold for blob finder; (usually between 0.001 and 1.0) for threshold &lt;= 0 we use the RMS contrast</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    atoms: numpy array(Nx3)</span>
+<span class="sd">        atoms positions and radius of blob</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;We need a sidpy.Dataset&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">image</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;IMAGE&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;We need sidpy.Dataset of sidpy.Datatype: IMAGE&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">atom_size</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;atom_size parameter has to be a number&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">threshold</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;threshold parameter has to be a float number&#39;</span><span class="p">)</span>
+
+    <span class="n">scale_x</span> <span class="o">=</span> <span class="n">ft</span><span class="o">.</span><span class="n">get_slope</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">dim_0</span><span class="p">)</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="o">-</span><span class="n">image</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">im</span><span class="o">/</span><span class="n">im</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">threshold</span> <span class="o">&lt;=</span> <span class="mf">0.</span><span class="p">:</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">im</span><span class="p">)</span>
+    <span class="n">atoms</span> <span class="o">=</span> <span class="n">blob_log</span><span class="p">(</span><span class="n">im</span><span class="p">,</span> <span class="n">max_sigma</span><span class="o">=</span><span class="n">atom_size</span><span class="o">/</span><span class="n">scale_x</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">atoms</span></div>
+
+
+<div class="viewcode-block" id="atoms_clustering"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.atom_tools.atoms_clustering.html#pyTEMlib.atom_tools.atoms_clustering">[docs]</a><span class="k">def</span> <span class="nf">atoms_clustering</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">mid_atoms</span><span class="p">,</span> <span class="n">number_of_clusters</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">nearest_neighbours</span><span class="o">=</span><span class="mi">7</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; A wrapper for sklearn.cluster kmeans clustering of atoms.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    atoms: list or np.array (Nx2)</span>
+<span class="sd">        list of all atoms</span>
+<span class="sd">    mid_atoms: list or np.array (Nx2)</span>
+<span class="sd">        atoms to be evaluated</span>
+<span class="sd">    number_of_clusters: int</span>
+<span class="sd">        number of clusters to sort (ini=3)</span>
+<span class="sd">    nearest_neighbours: int</span>
+<span class="sd">        number of nearest neighbours evaluated</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    clusters, distances, indices: numpy arrays</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># get distances</span>
+    <span class="n">nn_tree</span> <span class="o">=</span> <span class="n">cKDTree</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">atoms</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="n">distances</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">nn_tree</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mid_atoms</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">nearest_neighbours</span><span class="p">)</span>
+
+    <span class="c1"># Clustering</span>
+    <span class="n">k_means</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">number_of_clusters</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># Fixing the RNG in kmeans</span>
+    <span class="n">k_means</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span>
+    <span class="n">clusters</span> <span class="o">=</span> <span class="n">k_means</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">clusters</span><span class="p">,</span> <span class="n">distances</span><span class="p">,</span> <span class="n">indices</span></div>
+
+
+<div class="viewcode-block" id="gauss_difference"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.atom_tools.gauss_difference.html#pyTEMlib.atom_tools.gauss_difference">[docs]</a><span class="k">def</span> <span class="nf">gauss_difference</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Difference between part of an image and a Gaussian</span>
+<span class="sd">    This function is used int he atom refine function of pyTEMlib</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    params: list</span>
+<span class="sd">        list of Gaussian parameters [width, position_x, position_y, intensity]</span>
+<span class="sd">    area:  numpy array</span>
+<span class="sd">        2D matrix = part of an image</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy array: flattened array of difference</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gauss</span> <span class="o">=</span> <span class="n">probe_tools</span><span class="o">.</span><span class="n">make_gauss</span><span class="p">(</span><span class="n">area</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">area</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">width</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x0</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y0</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                   <span class="n">intensity</span><span class="o">=</span><span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">area</span> <span class="o">-</span> <span class="n">gauss</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="atom_refine"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.atom_tools.atom_refine.html#pyTEMlib.atom_tools.atom_refine">[docs]</a><span class="k">def</span> <span class="nf">atom_refine</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">max_int</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">min_int</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_dist</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fits a Gaussian in a blob of an image</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    image: np.array or sidpy Dataset</span>
+<span class="sd">    atoms: list or np.array</span>
+<span class="sd">        positions of atoms</span>
+<span class="sd">    radius: float</span>
+<span class="sd">        radius of circular mask to define fitting of Gaussian</span>
+<span class="sd">    max_int: float</span>
+<span class="sd">        optional - maximum intensity to be considered for fitting (to exclude contaminated areas for example)</span>
+<span class="sd">    min_int: float</span>
+<span class="sd">        optional - minimum intensity to be considered for fitting (to exclude contaminated holes for example)</span>
+<span class="sd">    max_dist: float</span>
+<span class="sd">        optional - maximum distance of movement of Gaussian during fitting</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sym: dict</span>
+<span class="sd">        dictionary containing new atom positions and other output such as intensity of the fitted Gaussian</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rr</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">radius</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># atom radius</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;using radius &#39;</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="s1">&#39;pixels&#39;</span><span class="p">)</span>
+
+    <span class="n">pixels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">rr</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">rr</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">pixels</span><span class="p">,</span> <span class="n">pixels</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">y</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">rr</span> <span class="o">**</span> <span class="mi">2</span>
+
+    <span class="n">guess</span> <span class="o">=</span> <span class="p">[</span><span class="n">rr</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">sym</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;number_of_atoms&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)}</span>
+
+    <span class="n">volume</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">position</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">intensities</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">maximum_area</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">new_atoms</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">gauss_width</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">gauss_amplitude</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">gauss_intensity</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">atoms</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="n">area</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">x</span> <span class="o">-</span> <span class="n">rr</span><span class="p">:</span><span class="n">x</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">rr</span><span class="p">:</span><span class="n">y</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">append</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">rr</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">y</span> <span class="o">-</span> <span class="n">rr</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">x</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">y</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>  <span class="c1"># atom not found</span>
+            <span class="n">position</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">intensities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span>
+            <span class="n">maximum_area</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># atom found</span>
+            <span class="n">position</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">intensities</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">area</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">maximum_area</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">area</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">max_int</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">area</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">max_int</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">area</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">min_int</span><span class="p">:</span>
+                    <span class="n">append</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">area</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">min_int</span><span class="p">:</span>
+            <span class="n">append</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">pout</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">append</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">rr</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">y</span> <span class="o">-</span> <span class="n">rr</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">x</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">y</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="p">[</span><span class="n">pout</span><span class="p">,</span> <span class="n">_</span><span class="p">]</span> <span class="o">=</span> <span class="n">optimization</span><span class="o">.</span><span class="n">leastsq</span><span class="p">(</span><span class="n">gauss_difference</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">area</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">pout</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">max_dist</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">pout</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">max_dist</span><span class="p">):</span>
+                <span class="n">pout</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">volume</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">pout</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">pout</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">pout</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="n">new_atoms</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">x</span> <span class="o">+</span> <span class="n">pout</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span> <span class="o">+</span> <span class="n">pout</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>  <span class="c1"># ,pout[0],  volume)) #,pout[3]))</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">v</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pout</span><span class="p">):</span>
+            <span class="n">gauss_intensity</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">0.</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gauss</span> <span class="o">=</span> <span class="n">probe_tools</span><span class="o">.</span><span class="n">make_gauss</span><span class="p">(</span><span class="n">area</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">area</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">width</span><span class="o">=</span><span class="n">pout</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x0</span><span class="o">=</span><span class="n">pout</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y0</span><span class="o">=</span><span class="n">pout</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                           <span class="n">intensity</span><span class="o">=</span><span class="n">pout</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="n">gauss_intensity</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">gauss</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="n">gauss_width</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pout</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">gauss_amplitude</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pout</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;inside&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">position</span>
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;intensity_area&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">intensities</span>
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;maximum_area&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">maximum_area</span>
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;atoms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_atoms</span>
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;gauss_width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gauss_width</span>
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;gauss_amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gauss_amplitude</span>
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;gauss_intensity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gauss_intensity</span>
+    <span class="n">sym</span><span class="p">[</span><span class="s1">&#39;gauss_volume&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">volume</span>
+
+    <span class="k">return</span> <span class="n">sym</span></div>
+
+
+<div class="viewcode-block" id="intensity_area"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.atom_tools.intensity_area.html#pyTEMlib.atom_tools.intensity_area">[docs]</a><span class="k">def</span> <span class="nf">intensity_area</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    integrated intensity of atoms in an image with a mask around each atom of radius radius</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rr</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">radius</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>  <span class="c1"># atom radius</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;using radius &#39;</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="s1">&#39;pixels&#39;</span><span class="p">)</span>
+
+    <span class="n">pixels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">rr</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">rr</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">pixels</span><span class="p">,</span> <span class="n">pixels</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">y</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">rr</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">intensities</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">area</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">x</span> <span class="o">-</span> <span class="n">rr</span><span class="p">:</span><span class="n">x</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">rr</span><span class="p">:</span><span class="n">y</span> <span class="o">+</span> <span class="n">rr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">area</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">intensities</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">area</span> <span class="o">*</span> <span class="n">mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">intensities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">intensities</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

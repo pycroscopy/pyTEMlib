@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.get\_peak
+=============================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: get_peak

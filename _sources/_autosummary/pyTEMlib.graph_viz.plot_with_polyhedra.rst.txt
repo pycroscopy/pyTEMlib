@@ -1,0 +1,6 @@
+pyTEMlib.graph\_viz.plot\_with\_polyhedra
+=========================================
+
+.. currentmodule:: pyTEMlib.graph_viz
+
+.. autofunction:: plot_with_polyhedra

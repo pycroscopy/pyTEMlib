@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.add\_element\_to\_dataset
+==============================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: add_element_to_dataset

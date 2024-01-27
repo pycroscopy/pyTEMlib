@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.auto\_id\_edges
+====================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: auto_id_edges

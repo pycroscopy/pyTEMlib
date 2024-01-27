@@ -1,0 +1,35 @@
+pyTEMlib.info\_dialog.InfoWidget
+================================
+
+.. currentmodule:: pyTEMlib.info_dialog
+
+.. autoclass:: InfoWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~InfoWidget.change_dataset
+      ~InfoWidget.cursor2energy_scale
+      ~InfoWidget.get_spectrum
+      ~InfoWidget.plot
+      ~InfoWidget.set_action
+      ~InfoWidget.set_binning
+      ~InfoWidget.set_dataset
+      ~InfoWidget.set_energy_scale
+      ~InfoWidget.set_flux
+      ~InfoWidget.set_microscope_parameter
+      ~InfoWidget.set_y_scale
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.ball\_and\_stick
+========================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: ball_and_stick

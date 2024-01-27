@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.get\_metric\_tensor
+==================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: get_metric_tensor

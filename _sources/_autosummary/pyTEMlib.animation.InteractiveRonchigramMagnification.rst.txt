@@ -1,0 +1,26 @@
+pyTEMlib.animation.InteractiveRonchigramMagnification
+=====================================================
+
+.. currentmodule:: pyTEMlib.animation
+
+.. autoclass:: InteractiveRonchigramMagnification
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~InteractiveRonchigramMagnification.on_button_clicked
+      ~InteractiveRonchigramMagnification.update
+   
+   
+
+   
+   
+   

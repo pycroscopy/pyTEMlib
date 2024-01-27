@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.read\_essential\_metadata
+==============================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: read_essential_metadata

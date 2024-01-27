@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.h5\_group\_to\_dict
+========================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: h5_group_to_dict

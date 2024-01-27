@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.get\_projection
+=======================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: get_projection

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.eds_tools.detector_response &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib.eds_tools.detector_response</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/pyTEMlib.eds_tools.detector_response.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pytemlib-eds-tools-detector-response">
+<h1>pyTEMlib.eds_tools.detector_response<a class="headerlink" href="#pytemlib-eds-tools-detector-response" title="Permalink to this heading">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyTEMlib.eds_tools.detector_response">
+<span class="sig-prename descclassname"><span class="pre">pyTEMlib.eds_tools.</span></span><span class="sig-name descname"><span class="pre">detector_response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">detector_definition</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">energy_scale</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyTEMlib/eds_tools.html#detector_response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyTEMlib.eds_tools.detector_response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates response of Si drift detector for EDS spectrum background based on detector parameters</p>
+<section id="parameters">
+<h2>Parameters:<a class="headerlink" href="#parameters" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt>detector_definition: dictionary</dt><dd><p>definition of detector</p>
+</dd>
+<dt>energy_scale: numpy array (1 dim)</dt><dd><p>energy scale of spectrum should start at about 100eV!!</p>
+</dd>
+</dl>
+</section>
+<section id="return">
+<h2>Return:<a class="headerlink" href="#return" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt>response: numpy array with length(energy_scale)</dt><dd><p>detector response</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>tags ={}
+tags[‘acceleration_voltage_V’] = 200000</p>
+<p>tags[‘detector’] ={}</p>
+<p>## layer thicknesses of commen materials in EDS detectors in m
+tags[‘detector’][‘Al_thickness’] = 0.03 * 1e-6  # in m
+tags[‘detector’][‘Be_thickness’] = 0.  # in m
+tags[‘detector’][‘Au_thickness’] = 0.0 * 1e-6  # in m
+tags[‘detector’][‘Par_thickness’] =  0 <a href="#id1"><span class="problematic" id="id2">*</span></a>1e-6  # in m   # Window</p>
+<p>tags[‘detector’][‘SiDeadThickness’] = .03 <a href="#id3"><span class="problematic" id="id4">*</span></a>1e-6  # in m</p>
+<p>tags[‘detector’][‘SiLiveThickness’] = 0.05  # in m
+tags[‘detector’][‘detector_area’] = 30 * 1e-6 #in m2
+tags[‘detector’][‘resolution’] = 125  # in eV</p>
+<p>energy_scale = np.linspace(.01,20,1199)*1000 # i eV
+start = np.searchsorted(spectrum.energy, 100)
+energy_scale = spectrum.energy[start:]
+detector_Efficiency= pyTEMlib.eds_tools.detector_response(tags, spectrum.energy[start:])</p>
+<p>p = np.array([1, 37, .3])/10000*3
+E_0= 200000
+background = np.zeros(len(spectrum))
+background[start:] = detector_Efficiency * (p[0] + p[1]*(E_0-energy_scale)/energy_scale + p[2]*(E_0-energy_scale)**2/energy_scale)</p>
+<p>plt.figure()
+plt.plot(spectrum.energy, spectrum, label = ‘spec’)
+plt.plot(spectrum.energy, background, label = ‘background’)
+plt.show()</p>
+</section>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

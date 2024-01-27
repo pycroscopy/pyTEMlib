@@ -1,0 +1,6 @@
+pyTEMlib.peak\_dialog.smooth
+============================
+
+.. currentmodule:: pyTEMlib.peak_dialog
+
+.. autofunction:: smooth

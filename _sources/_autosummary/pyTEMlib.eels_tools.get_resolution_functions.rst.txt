@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.get\_resolution\_functions
+===============================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: get_resolution_functions

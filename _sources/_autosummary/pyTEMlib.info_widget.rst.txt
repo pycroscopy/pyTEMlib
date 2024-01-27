@@ -1,0 +1,44 @@
+pyTEMlib.info\_widget
+=====================
+
+.. automodule:: pyTEMlib.info_widget
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      get_file_widget_ui
+      get_info_sidebar
+      get_low_loss_sidebar
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      EELSWidget
+      InfoWidget
+      LowLossWidget
+   
+   
+
+   
+   
+   
+
+
+

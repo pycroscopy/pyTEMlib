@@ -1,0 +1,58 @@
+pyTEMlib.image\_tools.LineSelector
+==================================
+
+.. currentmodule:: pyTEMlib.image_tools
+
+.. autoclass:: LineSelector
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~LineSelector.add_state
+      ~LineSelector.clear
+      ~LineSelector.connect_default_events
+      ~LineSelector.connect_event
+      ~LineSelector.disconnect_events
+      ~LineSelector.get_active
+      ~LineSelector.get_visible
+      ~LineSelector.ignore
+      ~LineSelector.on_key_press
+      ~LineSelector.on_key_release
+      ~LineSelector.on_scroll
+      ~LineSelector.onmove
+      ~LineSelector.press
+      ~LineSelector.release
+      ~LineSelector.remove_state
+      ~LineSelector.set_active
+      ~LineSelector.set_handle_props
+      ~LineSelector.set_linewidth
+      ~LineSelector.set_props
+      ~LineSelector.set_visible
+      ~LineSelector.update
+      ~LineSelector.update_background
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LineSelector.active
+      ~LineSelector.artists
+      ~LineSelector.drawon
+      ~LineSelector.eventson
+      ~LineSelector.state_modifier_keys
+      ~LineSelector.verts
+      ~LineSelector.visible
+   
+   

@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.voronoi\_volumes
+======================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: voronoi_volumes

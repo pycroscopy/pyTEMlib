@@ -1,0 +1,38 @@
+pyTEMlib.dynamic\_scattering
+============================
+
+.. automodule:: pyTEMlib.dynamic_scattering
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      get_propagator
+      get_transmission
+      interaction_parameter
+      make_chi
+      multi_slice
+      objective_lens_function
+      potential_1dim
+      potential_2dim
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

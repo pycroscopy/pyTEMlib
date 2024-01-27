@@ -1,0 +1,39 @@
+pyTEMlib.graph\_viz
+===================
+
+.. automodule:: pyTEMlib.graph_viz
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      get_boundary_polyhedra
+      plot_bonds
+      plot_polyhedron
+      plot_super_cell
+      plot_supercell
+      plot_supercell_bonds
+      plot_supercell_polyhedra
+      plot_with_polyhedra
+      show_polyhedra
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

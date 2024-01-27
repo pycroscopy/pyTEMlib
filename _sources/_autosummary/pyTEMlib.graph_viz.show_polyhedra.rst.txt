@@ -1,0 +1,6 @@
+pyTEMlib.graph\_viz.show\_polyhedra
+===================================
+
+.. currentmodule:: pyTEMlib.graph_viz
+
+.. autofunction:: show_polyhedra

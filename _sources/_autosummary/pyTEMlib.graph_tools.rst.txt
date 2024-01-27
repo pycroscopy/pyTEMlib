@@ -1,0 +1,57 @@
+pyTEMlib.graph\_tools
+=====================
+
+.. automodule:: pyTEMlib.graph_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      breadth_first_search
+      circum_center
+      find_interstitial_clusters
+      find_overlapping_spheres
+      find_polyhedra
+      get_bond_radii
+      get_bonds
+      get_connectivity_matrix
+      get_distortion_matrix
+      get_maximum_view
+      get_non_periodic_supercell
+      get_polygons
+      get_significant_vertices
+      get_voronoi
+      interstitial_sphere_center
+      make_polygons
+      make_polyhedrons
+      plot_atoms
+      polygon_sort
+      set_bond_radii
+      sort_polyhedra_by_vertices
+      transform_voronoi
+      undistort
+      undistort_sitk
+      undistort_stack
+      undistort_stack_sitk
+      voronoi_volumes
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.auto\_chemical\_composition
+================================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: auto_chemical_composition

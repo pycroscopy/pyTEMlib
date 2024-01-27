@@ -1,0 +1,23 @@
+pyTEMlib.file\_tools\_qt
+========================
+
+.. automodule:: pyTEMlib.file_tools_qt
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

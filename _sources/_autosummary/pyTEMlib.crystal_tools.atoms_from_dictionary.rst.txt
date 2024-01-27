@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.atoms\_from\_dictionary
+===============================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: atoms_from_dictionary

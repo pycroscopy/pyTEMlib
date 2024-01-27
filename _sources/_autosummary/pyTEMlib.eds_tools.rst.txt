@@ -1,0 +1,44 @@
+pyTEMlib.eds\_tools
+===================
+
+.. automodule:: pyTEMlib.eds_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      detect_peaks
+      detector_response
+      find_elements
+      fit_model
+      gaussian
+      getFWHM
+      get_eds_cross_sections
+      get_eds_xsection
+      get_model
+      get_peak
+      get_phases
+      get_x_ray_lines
+      plot_phases
+      update_fit_values
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,63 @@
+pyTEMlib.eels\_dialog\_utilities.RangeSelector
+==============================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autoclass:: RangeSelector
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~RangeSelector.add_state
+      ~RangeSelector.clear
+      ~RangeSelector.connect_default_events
+      ~RangeSelector.connect_event
+      ~RangeSelector.disconnect_events
+      ~RangeSelector.draw_shape
+      ~RangeSelector.get_active
+      ~RangeSelector.get_visible
+      ~RangeSelector.ignore
+      ~RangeSelector.on_key_press
+      ~RangeSelector.on_key_release
+      ~RangeSelector.on_scroll
+      ~RangeSelector.onmove
+      ~RangeSelector.press
+      ~RangeSelector.release
+      ~RangeSelector.remove_state
+      ~RangeSelector.set_active
+      ~RangeSelector.set_handle_props
+      ~RangeSelector.set_props
+      ~RangeSelector.set_visible
+      ~RangeSelector.update
+      ~RangeSelector.update_background
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~RangeSelector.active
+      ~RangeSelector.artists
+      ~RangeSelector.center
+      ~RangeSelector.corners
+      ~RangeSelector.drawon
+      ~RangeSelector.edge_centers
+      ~RangeSelector.eventson
+      ~RangeSelector.extents
+      ~RangeSelector.geometry
+      ~RangeSelector.rotation
+      ~RangeSelector.state_modifier_keys
+      ~RangeSelector.visible
+   
+   

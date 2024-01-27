@@ -1,0 +1,6 @@
+pyTEMlib.diffraction\_plot.plot\_diffraction\_pattern
+=====================================================
+
+.. currentmodule:: pyTEMlib.diffraction_plot
+
+.. autofunction:: plot_diffraction_pattern

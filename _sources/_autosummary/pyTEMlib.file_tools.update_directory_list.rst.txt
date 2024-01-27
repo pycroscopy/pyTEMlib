@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.update\_directory\_list
+============================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: update_directory_list

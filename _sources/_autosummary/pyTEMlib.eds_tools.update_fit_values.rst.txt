@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.update\_fit\_values
+=======================================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: update_fit_values

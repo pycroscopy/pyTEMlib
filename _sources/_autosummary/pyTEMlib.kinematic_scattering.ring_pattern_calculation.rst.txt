@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.ring\_pattern\_calculation
+=========================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: ring_pattern_calculation

@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.sort\_polyhedra\_by\_vertices
+===================================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: sort_polyhedra_by_vertices

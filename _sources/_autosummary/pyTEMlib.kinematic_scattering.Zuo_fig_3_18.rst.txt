@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.Zuo\_fig\_3\_18
+==============================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: Zuo_fig_3_18

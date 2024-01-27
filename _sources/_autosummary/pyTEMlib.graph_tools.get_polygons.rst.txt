@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.get\_polygons
+===================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: get_polygons

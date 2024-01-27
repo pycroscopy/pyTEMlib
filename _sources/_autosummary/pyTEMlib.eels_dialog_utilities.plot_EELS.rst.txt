@@ -1,0 +1,86 @@
+pyTEMlib.eels\_dialog\_utilities.plot\_EELS
+===========================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autoclass:: plot_EELS
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~plot_EELS.add_class
+      ~plot_EELS.add_traits
+      ~plot_EELS.blur
+      ~plot_EELS.class_own_trait_events
+      ~plot_EELS.class_own_traits
+      ~plot_EELS.class_trait_names
+      ~plot_EELS.class_traits
+      ~plot_EELS.close
+      ~plot_EELS.close_all
+      ~plot_EELS.focus
+      ~plot_EELS.get_manager_state
+      ~plot_EELS.get_state
+      ~plot_EELS.get_view_spec
+      ~plot_EELS.handle_comm_opened
+      ~plot_EELS.handle_control_comm_opened
+      ~plot_EELS.has_trait
+      ~plot_EELS.hold_sync
+      ~plot_EELS.hold_trait_notifications
+      ~plot_EELS.line_color
+      ~plot_EELS.notify_change
+      ~plot_EELS.observe
+      ~plot_EELS.on_legend_pick
+      ~plot_EELS.on_msg
+      ~plot_EELS.on_trait_change
+      ~plot_EELS.on_widget_constructed
+      ~plot_EELS.open
+      ~plot_EELS.remove_class
+      ~plot_EELS.send
+      ~plot_EELS.send_state
+      ~plot_EELS.set_dimension
+      ~plot_EELS.set_state
+      ~plot_EELS.set_trait
+      ~plot_EELS.setup_instance
+      ~plot_EELS.trait_defaults
+      ~plot_EELS.trait_events
+      ~plot_EELS.trait_has_value
+      ~plot_EELS.trait_metadata
+      ~plot_EELS.trait_names
+      ~plot_EELS.trait_values
+      ~plot_EELS.traits
+      ~plot_EELS.unobserve
+      ~plot_EELS.unobserve_all
+      ~plot_EELS.update
+      ~plot_EELS.update_exposure
+      ~plot_EELS.update_ylabel
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~plot_EELS.box_style
+      ~plot_EELS.children
+      ~plot_EELS.comm
+      ~plot_EELS.cross_validation_lock
+      ~plot_EELS.keys
+      ~plot_EELS.layout
+      ~plot_EELS.log
+      ~plot_EELS.model_id
+      ~plot_EELS.tabbable
+      ~plot_EELS.tooltip
+      ~plot_EELS.widget_types
+      ~plot_EELS.widgets
+   
+   

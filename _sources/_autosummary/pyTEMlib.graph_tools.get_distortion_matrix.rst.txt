@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.get\_distortion\_matrix
+=============================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: get_distortion_matrix

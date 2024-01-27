@@ -1,0 +1,6 @@
+pyTEMlib.image\_tools.get\_rotation
+===================================
+
+.. currentmodule:: pyTEMlib.image_tools
+
+.. autofunction:: get_rotation

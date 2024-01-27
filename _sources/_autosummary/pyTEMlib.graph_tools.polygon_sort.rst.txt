@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.polygon\_sort
+===================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: polygon_sort

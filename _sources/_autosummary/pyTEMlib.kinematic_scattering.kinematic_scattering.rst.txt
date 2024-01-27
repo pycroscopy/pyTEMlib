@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.kinematic\_scattering
+====================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: kinematic_scattering

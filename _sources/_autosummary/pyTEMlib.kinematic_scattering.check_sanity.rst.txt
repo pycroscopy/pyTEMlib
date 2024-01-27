@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.check\_sanity
+============================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: check_sanity

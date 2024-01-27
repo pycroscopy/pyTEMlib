@@ -1,0 +1,6 @@
+pyTEMlib.eels\_dialog\_utilities.get\_periodic\_table\_widget
+=============================================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autofunction:: get_periodic_table_widget

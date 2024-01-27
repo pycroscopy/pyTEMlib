@@ -1,0 +1,51 @@
+pyTEMlib.eels\_dialog\_utilities
+================================
+
+.. automodule:: pyTEMlib.eels_dialog_utilities
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      get_likely_edges
+      get_periodic_table_info
+      get_periodic_table_widget
+      make_box_layout
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      EdgesAtCursor
+      ElementalEdges
+      InteractiveSpectrumImage
+      PeriodicTableWidget
+      RangeSelector
+      RegionSelector
+      SIPlot
+      SpectrumPlot
+      plot_EELS
+   
+   
+
+   
+   
+   
+
+
+

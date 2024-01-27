@@ -1,0 +1,23 @@
+pyTEMlib.info\_dlg
+==================
+
+.. automodule:: pyTEMlib.info_dlg
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

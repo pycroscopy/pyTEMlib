@@ -1,0 +1,6 @@
+pyTEMlib.dynamic\_scattering.get\_propagator
+============================================
+
+.. currentmodule:: pyTEMlib.dynamic_scattering
+
+.. autofunction:: get_propagator

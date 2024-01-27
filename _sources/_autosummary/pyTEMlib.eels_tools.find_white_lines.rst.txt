@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.find\_white\_lines
+=======================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: find_white_lines

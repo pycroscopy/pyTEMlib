@@ -1,0 +1,39 @@
+pyTEMlib.info\_widget.EELSWidget
+================================
+
+.. currentmodule:: pyTEMlib.info_widget
+
+.. autoclass:: EELSWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~EELSWidget.add_dataset
+      ~EELSWidget.get_directory
+      ~EELSWidget.get_file_name
+      ~EELSWidget.get_spectrum
+      ~EELSWidget.line_select_callback
+      ~EELSWidget.plot
+      ~EELSWidget.plot_spectrum
+      ~EELSWidget.plot_spectrum_image
+      ~EELSWidget.select_dataset
+      ~EELSWidget.select_main
+      ~EELSWidget.set_dataset
+      ~EELSWidget.set_dir
+      ~EELSWidget.set_file_options
+      ~EELSWidget.set_image
+      ~EELSWidget.update_sidebar
+   
+   
+
+   
+   
+   

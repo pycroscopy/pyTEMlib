@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.transform\_voronoi
+========================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: transform_voronoi

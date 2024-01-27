@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.find\_elements
+==================================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: find_elements

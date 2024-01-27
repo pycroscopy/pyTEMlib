@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.kinematic_scattering &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib.kinematic_scattering</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/pyTEMlib.kinematic_scattering.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pyTEMlib.kinematic_scattering">
+<span id="pytemlib-kinematic-scattering"></span><h1>pyTEMlib.kinematic_scattering<a class="headerlink" href="#module-pyTEMlib.kinematic_scattering" title="Permalink to this heading">¶</a></h1>
+<p>kinematic_scattering
+Copyright by Gerd Duscher</p>
+<p>The University of Tennessee, Knoxville
+Department of Materials Science &amp; Engineering</p>
+<dl>
+<dt>Sources:</dt><dd><p>Scattering Theory:
+Zuo and Spence, “Advanced TEM”, 2017</p>
+<p>Spence and Zuo, Electron Microdiffraction, Plenum 1992</p>
+<dl class="simple">
+<dt>Atomic Form Factor:</dt><dd><p>Kirkland: Advanced Computing in Electron Microscopy 2nd edition
+Appendix C</p>
+</dd>
+</dl>
+</dd>
+<dt>Units:</dt><dd><p>everything is in SI units, except length which is given in Angstrom.</p>
+</dd>
+<dt>Usage:</dt><dd><p>See the notebooks for examples of these routines</p>
+</dd>
+</dl>
+<p>All the input and output is done through a ase.Atoms object and the dictionary in the info attribute</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.Zuo_fig_3_18.html#pyTEMlib.kinematic_scattering.Zuo_fig_3_18" title="pyTEMlib.kinematic_scattering.Zuo_fig_3_18"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Zuo_fig_3_18</span></code></a></p></td>
+<td><p>Input for Figure 3.18 in Zuo and Spence &quot;Advanced TEM&quot;, 2017</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.check_sanity.html#pyTEMlib.kinematic_scattering.check_sanity" title="pyTEMlib.kinematic_scattering.check_sanity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_sanity</span></code></a></p></td>
+<td><p>Check sanity of input parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.example.html#pyTEMlib.kinematic_scattering.example" title="pyTEMlib.kinematic_scattering.example"><code class="xref py py-obj docutils literal notranslate"><span class="pre">example</span></code></a></p></td>
+<td><p>same as Zuo_fig_3_18</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.feq.html#pyTEMlib.kinematic_scattering.feq" title="pyTEMlib.kinematic_scattering.feq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feq</span></code></a></p></td>
+<td><p>Atomic form factor parametrized in 1/Angstrom but converted to 1/Angstrom</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.find_angles.html#pyTEMlib.kinematic_scattering.find_angles" title="pyTEMlib.kinematic_scattering.find_angles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_angles</span></code></a></p></td>
+<td><p>Microscope stage coordinates of zone</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.find_nearest_zone_axis.html#pyTEMlib.kinematic_scattering.find_nearest_zone_axis" title="pyTEMlib.kinematic_scattering.find_nearest_zone_axis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_nearest_zone_axis</span></code></a></p></td>
+<td><p>Test all zone axis up to a maximum of hkl_max</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.get_all_miller_indices.html#pyTEMlib.kinematic_scattering.get_all_miller_indices" title="pyTEMlib.kinematic_scattering.get_all_miller_indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_all_miller_indices</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.get_dynamically_allowed.html#pyTEMlib.kinematic_scattering.get_dynamically_allowed" title="pyTEMlib.kinematic_scattering.get_dynamically_allowed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dynamically_allowed</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.get_metric_tensor.html#pyTEMlib.kinematic_scattering.get_metric_tensor" title="pyTEMlib.kinematic_scattering.get_metric_tensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_metric_tensor</span></code></a></p></td>
+<td><p>The metric tensor of the lattice.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.get_rotation_matrix.html#pyTEMlib.kinematic_scattering.get_rotation_matrix" title="pyTEMlib.kinematic_scattering.get_rotation_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_rotation_matrix</span></code></a></p></td>
+<td><p>Rotation of zone axis by mistilt</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.get_wavelength.html#pyTEMlib.kinematic_scattering.get_wavelength" title="pyTEMlib.kinematic_scattering.get_wavelength"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wavelength</span></code></a></p></td>
+<td><p>Calculates the relativistic corrected de Broglie wavelength of an electron in Angstrom</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.get_zone_rotation.html#pyTEMlib.kinematic_scattering.get_zone_rotation" title="pyTEMlib.kinematic_scattering.get_zone_rotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_zone_rotation</span></code></a></p></td>
+<td><p>zone axis in global coordinate system</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.kinematic_scattering.html#pyTEMlib.kinematic_scattering.kinematic_scattering" title="pyTEMlib.kinematic_scattering.kinematic_scattering"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kinematic_scattering</span></code></a></p></td>
+<td><p>All kinematic scattering calculation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.make_pretty_labels.html#pyTEMlib.kinematic_scattering.make_pretty_labels" title="pyTEMlib.kinematic_scattering.make_pretty_labels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_pretty_labels</span></code></a></p></td>
+<td><p>Make pretty labels</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.read_poscar.html#pyTEMlib.kinematic_scattering.read_poscar" title="pyTEMlib.kinematic_scattering.read_poscar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_poscar</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.ring_pattern_calculation.html#pyTEMlib.kinematic_scattering.ring_pattern_calculation" title="pyTEMlib.kinematic_scattering.ring_pattern_calculation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ring_pattern_calculation</span></code></a></p></td>
+<td><p>Calculate the ring diffraction pattern of a crystal structure</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.scattering_matrix.html#pyTEMlib.kinematic_scattering.scattering_matrix" title="pyTEMlib.kinematic_scattering.scattering_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scattering_matrix</span></code></a></p></td>
+<td><p>Scattering matrix</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.stage_rotation_matrix.html#pyTEMlib.kinematic_scattering.stage_rotation_matrix" title="pyTEMlib.kinematic_scattering.stage_rotation_matrix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stage_rotation_matrix</span></code></a></p></td>
+<td><p>Microscope stage coordinate system</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.vector_norm.html#pyTEMlib.kinematic_scattering.vector_norm" title="pyTEMlib.kinematic_scattering.vector_norm"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_norm</span></code></a></p></td>
+<td><p>Length of vector</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.kinematic_scattering.zone_mistilt.html#pyTEMlib.kinematic_scattering.zone_mistilt" title="pyTEMlib.kinematic_scattering.zone_mistilt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zone_mistilt</span></code></a></p></td>
+<td><p>Rotation of zone axis by mistilt</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

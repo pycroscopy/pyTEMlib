@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.get\_x\_ray\_lines
+======================================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: get_x_ray_lines

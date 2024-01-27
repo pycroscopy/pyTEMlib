@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.getFWHM
+===========================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: getFWHM

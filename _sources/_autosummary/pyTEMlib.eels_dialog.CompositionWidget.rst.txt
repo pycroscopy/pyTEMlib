@@ -1,0 +1,47 @@
+pyTEMlib.eels\_dialog.CompositionWidget
+=======================================
+
+.. currentmodule:: pyTEMlib.eels_dialog
+
+.. autoclass:: CompositionWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~CompositionWidget.auto_id
+      ~CompositionWidget.cursor2energy_scale
+      ~CompositionWidget.do_all_button_click
+      ~CompositionWidget.do_fit
+      ~CompositionWidget.find_elements
+      ~CompositionWidget.line_select_callback
+      ~CompositionWidget.modify_areal_density
+      ~CompositionWidget.modify_end_exclude
+      ~CompositionWidget.modify_onset
+      ~CompositionWidget.modify_start_exclude
+      ~CompositionWidget.plot
+      ~CompositionWidget.plot_regions
+      ~CompositionWidget.set_action
+      ~CompositionWidget.set_dataset
+      ~CompositionWidget.set_element
+      ~CompositionWidget.set_elements
+      ~CompositionWidget.set_figure_pane
+      ~CompositionWidget.set_fit_area
+      ~CompositionWidget.set_y_scale
+      ~CompositionWidget.show_edges
+      ~CompositionWidget.sort_elements
+      ~CompositionWidget.update
+      ~CompositionWidget.update_element
+   
+   
+
+   
+   
+   

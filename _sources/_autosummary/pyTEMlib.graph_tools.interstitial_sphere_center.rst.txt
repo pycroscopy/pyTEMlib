@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.interstitial\_sphere\_center
+==================================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: interstitial_sphere_center

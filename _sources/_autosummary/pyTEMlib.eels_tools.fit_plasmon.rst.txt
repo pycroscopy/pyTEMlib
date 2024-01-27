@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.fit\_plasmon
+=================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: fit_plasmon

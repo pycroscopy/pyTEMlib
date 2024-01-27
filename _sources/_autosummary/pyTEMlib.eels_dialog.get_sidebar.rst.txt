@@ -1,0 +1,6 @@
+pyTEMlib.eels\_dialog.get\_sidebar
+==================================
+
+.. currentmodule:: pyTEMlib.eels_dialog
+
+.. autofunction:: get_sidebar

@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.undistort\_stack\_sitk
+============================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: undistort_stack_sitk

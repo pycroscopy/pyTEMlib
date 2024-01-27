@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.kinematic_scattering &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../_autosummary/pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pyTEMlib.kinematic_scattering</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pyTEMlib.kinematic_scattering</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">kinematic_scattering</span>
+<span class="sd">Copyright by Gerd Duscher</span>
+
+<span class="sd">The University of Tennessee, Knoxville</span>
+<span class="sd">Department of Materials Science &amp; Engineering</span>
+
+<span class="sd">Sources:</span>
+<span class="sd">   Scattering Theory:</span>
+<span class="sd">   Zuo and Spence, &quot;Advanced TEM&quot;, 2017</span>
+
+<span class="sd">   Spence and Zuo, Electron Microdiffraction, Plenum 1992</span>
+
+<span class="sd">   Atomic Form Factor:</span>
+<span class="sd">       Kirkland: Advanced Computing in Electron Microscopy 2nd edition</span>
+<span class="sd">       Appendix C</span>
+
+<span class="sd">Units:</span>
+<span class="sd">    everything is in SI units, except length which is given in Angstrom.</span>
+
+<span class="sd">Usage:</span>
+<span class="sd">    See the notebooks for examples of these routines</span>
+
+<span class="sd">All the input and output is done through a ase.Atoms object and the dictionary in the info attribute</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># numerical packages used</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">scipy</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+
+<span class="kn">import</span> <span class="nn">ase</span>
+<span class="kn">import</span> <span class="nn">ase.build</span>
+
+<span class="c1"># plotting package used</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pylab</span> <span class="k">as</span> <span class="nn">plt</span>  <span class="c1"># basic plotting</span>
+
+<span class="kn">import</span> <span class="nn">pyTEMlib.file_tools</span> <span class="k">as</span> <span class="nn">ft</span>
+<span class="kn">from</span> <span class="nn">pyTEMlib.crystal_tools</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">pyTEMlib.diffraction_plot</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="n">_version_</span> <span class="o">=</span> <span class="s2">&quot;0.2022.1.0&quot;</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Using kinematic_scattering library version {_version_ }  by G.Duscher&#39;</span><span class="p">)</span>
+
+<span class="n">inputKeys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;acceleration_voltage_V&#39;</span><span class="p">,</span> <span class="s1">&#39;zone_hkl&#39;</span><span class="p">,</span> <span class="s1">&#39;Sg_max&#39;</span><span class="p">,</span> <span class="s1">&#39;hkl_max&#39;</span><span class="p">]</span>
+<span class="n">optional_inputKeys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;crystal&#39;</span><span class="p">,</span> <span class="s1">&#39;lattice_parameter_nm&#39;</span><span class="p">,</span> <span class="s1">&#39;convergence_angle_mrad&#39;</span><span class="p">,</span> <span class="s1">&#39;mistilt&#39;</span><span class="p">,</span> <span class="s1">&#39;thickness&#39;</span><span class="p">,</span>
+                      <span class="s1">&#39;dynamic correction&#39;</span><span class="p">,</span> <span class="s1">&#39;dynamic correction K0&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="read_poscar"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.read_poscar.html#pyTEMlib.kinematic_scattering.read_poscar">[docs]</a><span class="k">def</span> <span class="nf">read_poscar</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;read_poscar and read_cif moved to file_tools, </span><span class="se">\n</span><span class="s1">&#39;</span>
+          <span class="s1">&#39;please use that library in the future!&#39;</span><span class="p">)</span>
+    <span class="n">ft</span><span class="o">.</span><span class="n">read_poscar</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="example"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.example.html#pyTEMlib.kinematic_scattering.example">[docs]</a><span class="k">def</span> <span class="nf">example</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    same as Zuo_fig_3_18</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">##########################&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;# Start of Example Input #&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;##########################</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Define only mandatory input: &#39;</span><span class="p">,</span> <span class="n">inputKeys</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; Kinematic diffraction routine will set optional input : &#39;</span><span class="p">,</span> <span class="n">optional_inputKeys</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">Zuo_fig_3_18</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Zuo_fig_3_18"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.Zuo_fig_3_18.html#pyTEMlib.kinematic_scattering.Zuo_fig_3_18">[docs]</a><span class="k">def</span> <span class="nf">Zuo_fig_3_18</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Input for Figure 3.18 in Zuo and Spence \&quot;Advanced TEM\&quot;, 2017</span>
+
+<span class="sd">    This input acts as an example as well as a reference</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    -----------</span>
+<span class="sd">    verbose: boolean:</span>
+<span class="sd">        optional to see output</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        atoms: ase.Atoms</span>
+<span class="sd">            Silicon crystal structure</span>
+<span class="sd">        e</span>
+<span class="sd">        dictionary: tags is the dictionary of all input and output parameter needed to reproduce that figure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># INPUT</span>
+    <span class="c1"># Create Silicon structure (Could be produced with Silicon routine)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Sample Input for Figure 3.18 in Zuo and Spence </span><span class="se">\&quot;</span><span class="s1">Advanced TEM</span><span class="se">\&quot;</span><span class="s1">, 2017&#39;</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="mf">5.14</span>  <span class="c1"># A</span>
+    <span class="n">atoms</span> <span class="o">=</span> <span class="n">ase</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">bulk</span><span class="p">(</span><span class="s1">&#39;Si&#39;</span><span class="p">,</span> <span class="s1">&#39;diamond&#39;</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">cubic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">experiment</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;acceleration_voltage_V&#39;</span><span class="p">:</span> <span class="mf">99.2</span> <span class="o">*</span> <span class="mf">1000.0</span><span class="p">,</span>  <span class="c1"># V</span>
+                  <span class="s1">&#39;convergence_angle_mrad&#39;</span><span class="p">:</span> <span class="mf">7.15</span><span class="p">,</span>  <span class="c1"># mrad;</span>
+                  <span class="s1">&#39;zone_hkl&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+                  <span class="s1">&#39;mistilt&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]),</span>  <span class="c1"># mistilt in degrees</span>
+                  <span class="s1">&#39;Sg_max&#39;</span><span class="p">:</span> <span class="mf">.03</span><span class="p">,</span>  <span class="c1"># 1/A  maximum allowed excitation error</span>
+                  <span class="s1">&#39;hkl_max&#39;</span><span class="p">:</span> <span class="mi">9</span>  <span class="c1"># Highest evaluated Miller indices</span>
+                  <span class="p">}</span>
+    <span class="c1"># Define Experimental Conditions</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;###########################&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;# Experimental Conditions #&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;###########################&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">experiment</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;tags[</span><span class="se">\&#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="se">\&#39;</span><span class="s1">] =&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;##################&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;# Output Options #&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;##################&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Output options</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;background&#39;</span><span class="p">:</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span>  <span class="c1"># &#39;white&#39;  &#39;grey&#39;</span>
+              <span class="s1">&#39;color_map&#39;</span><span class="p">:</span> <span class="s1">&#39;plasma&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;plot_HOLZ&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+              <span class="s1">&#39;plot_HOLZ_excess&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+              <span class="s1">&#39;plot_Kikuchi&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+              <span class="s1">&#39;plot_reflections&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+              <span class="s1">&#39;label_HOLZ&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+              <span class="s1">&#39;label_Kikuchi&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+              <span class="s1">&#39;label_reflections&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+              <span class="s1">&#39;label_color&#39;</span><span class="p">:</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;label_size&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+              <span class="s1">&#39;color_Laue_Zones&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;green&#39;</span><span class="p">],</span>  <span class="c1"># for OLZ give a sequence</span>
+              <span class="s1">&#39;color_Kikuchi&#39;</span><span class="p">:</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;linewidth_HOLZ&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># -1: linewidth according to intensity (structure factor F^2)</span>
+              <span class="s1">&#39;linewidth_Kikuchi&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># -1: linewidth according to intensity (structure factor F^2)</span>
+              <span class="s1">&#39;color_reflections&#39;</span><span class="p">:</span> <span class="s1">&#39;intensity&#39;</span><span class="p">,</span>  <span class="c1"># &#39;Laue Zone&#39;</span>
+              <span class="s1">&#39;color_zero&#39;</span><span class="p">:</span> <span class="s1">&#39;white&#39;</span><span class="p">,</span>  <span class="c1"># &#39;None&#39;, &#39;white&#39;, &#39;blue&#39;</span>
+              <span class="s1">&#39;color_ring_zero&#39;</span><span class="p">:</span> <span class="s1">&#39;None&#39;</span>  <span class="c1"># &#39;Red&#39; #&#39;white&#39; #, &#39;None&#39;</span>
+              <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;tags[</span><span class="se">\&#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="se">\&#39;</span><span class="s1">] =&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;########################&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;# End of Example Input #&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;########################</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">atoms</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;experimental&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">experiment</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span>
+
+    <span class="k">return</span> <span class="n">atoms</span></div>
+
+
+<div class="viewcode-block" id="get_rotation_matrix"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.get_rotation_matrix.html#pyTEMlib.kinematic_scattering.get_rotation_matrix">[docs]</a><span class="k">def</span> <span class="nf">get_rotation_matrix</span><span class="p">(</span><span class="n">angles</span><span class="p">,</span> <span class="n">in_radians</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Rotation of zone axis by mistilt</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        angles: ist or numpy array of float</span>
+<span class="sd">            list of mistilt angles (default in degrees)</span>
+<span class="sd">        in_radians: boolean default False</span>
+<span class="sd">            default is angles in degrees</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        rotation_matrix: np.ndarray (3x3)</span>
+<span class="sd">            rotation matrix in 3d</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">angles</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;angles must be a list of float of length 3&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;angles must be a list of float of length 3&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">in_radians</span><span class="p">:</span>
+        <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span> <span class="o">=</span> <span class="n">angles</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">gamma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span>
+    <span class="c1"># first we rotate alpha about x-axis</span>
+    <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">alpha</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">rot_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="o">-</span><span class="n">s</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">c</span><span class="p">]])</span>
+
+    <span class="c1"># second we rotate beta about y-axis</span>
+    <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">beta</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">)</span>
+    <span class="n">rot_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">c</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">s</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="p">]])</span>
+
+    <span class="c1"># third we rotate gamma about z-axis</span>
+    <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">gamma</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">gamma</span><span class="p">)</span>
+    <span class="n">rot_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">c</span><span class="p">,</span> <span class="o">-</span><span class="n">s</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">rot_x</span><span class="p">,</span> <span class="n">rot_y</span><span class="p">),</span> <span class="n">rot_z</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="zone_mistilt"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.zone_mistilt.html#pyTEMlib.kinematic_scattering.zone_mistilt">[docs]</a><span class="k">def</span> <span class="nf">zone_mistilt</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">angles</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Rotation of zone axis by mistilt</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    zone: list or numpy array of int</span>
+<span class="sd">        zone axis in Miller indices</span>
+<span class="sd">    angles: ist or numpy array of float</span>
+<span class="sd">        list of mistilt angles in degree</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    new_zone_axis: np.ndarray (3)</span>
+<span class="sd">        new tilted zone axis</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Miller indices must be a list of int of length 3&#39;</span><span class="p">)</span>
+
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">get_rotation_matrix</span><span class="p">(</span><span class="n">angles</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_metric_tensor"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.get_metric_tensor.html#pyTEMlib.kinematic_scattering.get_metric_tensor">[docs]</a><span class="k">def</span> <span class="nf">get_metric_tensor</span><span class="p">(</span><span class="n">matrix</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The metric tensor of the lattice.&quot;&quot;&quot;</span>
+    <span class="n">metric_tensor2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">matrix</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">metric_tensor2</span></div>
+
+
+<div class="viewcode-block" id="vector_norm"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.vector_norm.html#pyTEMlib.kinematic_scattering.vector_norm">[docs]</a><span class="k">def</span> <span class="nf">vector_norm</span><span class="p">(</span><span class="n">g</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Length of vector</span>
+
+<span class="sd">    depreciated - use np.linalg.norm</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">g</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">g</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">g</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_wavelength"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.get_wavelength.html#pyTEMlib.kinematic_scattering.get_wavelength">[docs]</a><span class="k">def</span> <span class="nf">get_wavelength</span><span class="p">(</span><span class="n">acceleration_voltage</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the relativistic corrected de Broglie wavelength of an electron in Angstrom</span>
+
+<span class="sd">    Parameter:</span>
+<span class="sd">    ---------</span>
+<span class="sd">    acceleration_voltage: float</span>
+<span class="sd">        acceleration voltage in volt</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">    wavelength: float</span>
+<span class="sd">        wave length in Angstrom (= meter *10**10)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">acceleration_voltage</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Acceleration voltage has to be a real number&#39;</span><span class="p">)</span>
+
+    <span class="n">E</span> <span class="o">=</span> <span class="n">acceleration_voltage</span> <span class="o">*</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">elementary_charge</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">Planck</span>
+    <span class="n">m0</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">electron_mass</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">speed_of_light</span>
+    <span class="n">wavelength</span> <span class="o">=</span> <span class="n">h</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">m0</span> <span class="o">*</span> <span class="n">E</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">E</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">m0</span> <span class="o">*</span> <span class="n">c</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))))</span>
+    <span class="k">return</span> <span class="n">wavelength</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">10</span></div>
+
+
+<div class="viewcode-block" id="get_all_miller_indices"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.get_all_miller_indices.html#pyTEMlib.kinematic_scattering.get_all_miller_indices">[docs]</a><span class="k">def</span> <span class="nf">get_all_miller_indices</span><span class="p">(</span><span class="n">hkl_max</span><span class="p">):</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">hkl_max</span><span class="p">,</span> <span class="n">hkl_max</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">hkl_max</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># all evaluated single Miller Indices</span>
+    <span class="n">hkl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">)))</span>  <span class="c1"># all evaluated Miller indices</span>
+
+    <span class="c1"># delete [0,0,0]</span>
+    <span class="n">index_center</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hkl</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">hkl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">hkl</span><span class="p">,</span> <span class="n">index_center</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># delete [0,0,0]</span>
+    <span class="k">return</span> <span class="n">hkl</span></div>
+
+
+<div class="viewcode-block" id="find_nearest_zone_axis"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.find_nearest_zone_axis.html#pyTEMlib.kinematic_scattering.find_nearest_zone_axis">[docs]</a><span class="k">def</span> <span class="nf">find_nearest_zone_axis</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test all zone axis up to a maximum of hkl_max&quot;&quot;&quot;</span>
+    
+    <span class="n">hkl_max</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="c1"># Make all hkl indices</span>
+    <span class="n">zones_hkl</span> <span class="o">=</span> <span class="n">get_all_miller_indices</span><span class="p">(</span><span class="n">hkl_max</span><span class="p">)</span>
+
+    <span class="c1"># make zone axis in reciprocal space</span>
+    <span class="n">zones_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">zones_hkl</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;reciprocal_unit_cell&#39;</span><span class="p">])</span>  <span class="c1"># all evaluated reciprocal_unit_cell points</span>
+
+    <span class="c1"># make zone axis in microscope coordinates of reciprocal space</span>
+    <span class="n">zones_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">zones_g</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;rotation_matrix&#39;</span><span class="p">])</span>  <span class="c1"># rotate these reciprocal_unit_cell points</span>
+
+    <span class="c1"># calculate angles with z-axis</span>
+    <span class="n">zones_g_norm</span> <span class="o">=</span> <span class="n">vector_norm</span><span class="p">(</span><span class="n">zones_g</span><span class="p">)</span>
+    <span class="n">z_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">zones_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">((</span><span class="n">zones_g</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="n">zones_g_norm</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">z_axis</span><span class="p">)))</span>
+
+    <span class="c1"># get smallest angle</span>
+    <span class="n">smallest</span> <span class="o">=</span> <span class="p">(</span><span class="n">zones_angles</span> <span class="o">-</span> <span class="n">zones_angles</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mf">0.001</span>
+    <span class="k">if</span> <span class="n">smallest</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># multiples of Miller index of zone axis have same angle</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="n">zones_hkl</span><span class="p">[</span><span class="n">smallest</span><span class="p">]</span>
+        <span class="n">zone_index</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">zone_index</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+        <span class="n">zone_hkl</span> <span class="o">=</span> <span class="n">zone</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">zone_hkl</span> <span class="o">=</span> <span class="n">zones_hkl</span><span class="p">[</span><span class="n">smallest</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zone_hkl</span>
+
+    <span class="c1"># get other zone axes up to 5 degrees away</span>
+    <span class="n">others</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">smallest</span><span class="p">)</span>
+    <span class="n">next_smallest</span> <span class="o">=</span> <span class="p">(</span><span class="n">zones_angles</span><span class="p">[</span><span class="n">others</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="mf">5.</span><span class="p">)</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">((</span><span class="n">zones_angles</span><span class="p">[</span><span class="n">others</span><span class="p">])[</span><span class="n">next_smallest</span><span class="p">])</span>
+    
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;next_nearest_zone_axes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="n">zones_hkl</span><span class="p">[</span><span class="n">others</span><span class="p">])[</span><span class="n">next_smallest</span><span class="p">])[</span><span class="n">ind</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">zone_hkl</span></div>
+
+
+<div class="viewcode-block" id="find_angles"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.find_angles.html#pyTEMlib.kinematic_scattering.find_angles">[docs]</a><span class="k">def</span> <span class="nf">find_angles</span><span class="p">(</span><span class="n">zone</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Microscope stage coordinates of zone&quot;&quot;&quot;</span>
+
+    <span class="c1"># rotation around y-axis</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">zone</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">zone</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">zone</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">r</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">zone</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">-</span> <span class="n">alpha</span>
+    <span class="c1"># rotation around x-axis</span>
+    <span class="k">if</span> <span class="n">zone</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">zone</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">zone</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">zone</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span></div>
+
+
+<div class="viewcode-block" id="stage_rotation_matrix"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.stage_rotation_matrix.html#pyTEMlib.kinematic_scattering.stage_rotation_matrix">[docs]</a><span class="k">def</span> <span class="nf">stage_rotation_matrix</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Microscope stage coordinate system &quot;&quot;&quot;</span>
+
+    <span class="c1"># FIRST we rotate beta about x-axis</span>
+    <span class="n">angles</span> <span class="o">=</span> <span class="p">[</span><span class="n">beta</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">get_rotation_matrix</span><span class="p">(</span><span class="n">angles</span><span class="p">,</span> <span class="n">in_radians</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<span class="c1"># ##################</span>
+<span class="c1"># Determine rotation matrix to tilt zone axis onto z-axis</span>
+<span class="c1"># We determine spherical coordinates to do that</span>
+<span class="c1"># ##################</span>
+
+
+<div class="viewcode-block" id="get_zone_rotation"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.get_zone_rotation.html#pyTEMlib.kinematic_scattering.get_zone_rotation">[docs]</a><span class="k">def</span> <span class="nf">get_zone_rotation</span><span class="p">(</span><span class="n">tags</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;zone axis in global coordinate system&quot;&quot;&quot;</span>
+    
+    <span class="n">zone_hkl</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;zone_hkl&#39;</span><span class="p">]</span>
+    <span class="n">zone</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">zone_hkl</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;reciprocal_unit_cell&#39;</span><span class="p">])</span>
+
+    <span class="c1"># angle of zone with Z around x,y:</span>
+    <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">find_angles</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">+</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">]</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">+</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">]</span>
+
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;y-axis rotation alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;x-axis rotation beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">beta</span>
+
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;rotation_matrix&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">stage_rotation_matrix</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="o">-</span><span class="n">beta</span><span class="p">)</span>
+
+    <span class="c1"># the rotation now makes z-axis coincide with plane normal</span>
+
+    <span class="n">zone_nearest</span> <span class="o">=</span> <span class="n">find_nearest_zone_axis</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zone_nearest</span>
+
+    <span class="c1"># tilt angles of coordinates of nearest zone</span>
+    <span class="n">zone_nearest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">zone_nearest</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;reciprocal_unit_cell&#39;</span><span class="p">])</span>
+
+    <span class="n">alpha_nearest</span><span class="p">,</span> <span class="n">beta_nearest</span> <span class="o">=</span> <span class="n">find_angles</span><span class="p">(</span><span class="n">zone_nearest</span><span class="p">)</span>
+
+    <span class="c1"># calculate mistilt of nearest zone axis</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_nearest_zone alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">-</span> <span class="n">alpha_nearest</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_nearest_zone beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">-</span> <span class="n">beta_nearest</span>
+
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="s1">&#39;0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="s1">&#39;0&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axis&#39;</span><span class="p">]</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="s1">&#39;0&#39;</span><span class="p">][</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">-</span> <span class="n">alpha_nearest</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="s1">&#39;0&#39;</span><span class="p">][</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">-</span> <span class="n">beta_nearest</span>
+
+    <span class="c1"># find polar coordinates of next nearest zones</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="s1">&#39;amount&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;next_nearest_zone_axes&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;next_nearest_zone_axes&#39;</span><span class="p">])):</span>
+        <span class="n">zone_n</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;next_nearest_zone_axes&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zone_n</span>
+
+        <span class="n">zone_near</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">zone_n</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;reciprocal_unit_cell&#39;</span><span class="p">])</span>
+        <span class="c1"># zone_near_g = np.dot(zone_near,rotation_matrix)</span>
+
+        <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)][</span><span class="s1">&#39;g&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zone_near</span>
+        <span class="n">alpha_nearest</span><span class="p">,</span> <span class="n">beta_nearest</span> <span class="o">=</span> <span class="n">find_angles</span><span class="p">(</span><span class="n">zone_near</span><span class="p">)</span>
+
+        <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)][</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">-</span> <span class="n">alpha_nearest</span>
+        <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)][</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">-</span> <span class="n">beta_nearest</span>
+        <span class="c1"># print(&#39;other&#39; , i, np.rad2deg([alpha, alpha_nearest, beta, beta_nearest]))</span>
+
+    <span class="k">return</span> <span class="n">rotation_matrix</span></div>
+
+
+<div class="viewcode-block" id="check_sanity"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.check_sanity.html#pyTEMlib.kinematic_scattering.check_sanity">[docs]</a><span class="k">def</span> <span class="nf">check_sanity</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">verbose_level</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check sanity of input parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">stop</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">]</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;experimental&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;acceleration_voltage_V&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Necessary parameter </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1"> not defined&#39;</span><span class="p">)</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="s1">&#39;SpotPattern&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">output</span><span class="p">:</span>
+        <span class="n">output</span><span class="p">[</span><span class="s1">&#39;SpotPattern&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;SpotPattern&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="s1">&#39;zone_hkl&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; No zone_hkl defined&#39;</span><span class="p">)</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="s1">&#39;Sg_max&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; No Sg_max defined&#39;</span><span class="p">)</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="s1">&#39;hkl_max&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; No hkl_max defined&#39;</span><span class="p">)</span>
+        <span class="n">stop</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">stop</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Input is not complete, stopping&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Try </span><span class="se">\&#39;</span><span class="s1">example()</span><span class="se">\&#39;</span><span class="s1"> for example input&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="c1">############################################</span>
+    <span class="c1"># Check optional input</span>
+    <span class="c1">############################################</span>
+
+    <span class="k">if</span> <span class="n">output</span><span class="p">[</span><span class="s1">&#39;SpotPattern&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="s1">&#39;mistilt_alpha degree&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="c1"># mistilt is in microscope coordinates</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_alpha degree&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">if</span> <span class="n">verbose_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting undefined input:  tags[</span><span class="se">\&#39;</span><span class="s1">mistilt_alpha</span><span class="se">\&#39;</span><span class="s1">] = 0.0 &#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_alpha degree&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="s1">&#39;mistilt_beta degree&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="c1"># mistilt is in microscope coordinates</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_beta degree&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">if</span> <span class="n">verbose_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting undefined input:  tags[</span><span class="se">\&#39;</span><span class="s1">mistilt_beta</span><span class="se">\&#39;</span><span class="s1">] = 0.0&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_beta degree&#39;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="s1">&#39;convergence_angle_mrad&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;convergence_angle_mrad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="k">if</span> <span class="n">verbose_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting undefined input: tags[</span><span class="se">\&#39;</span><span class="s1">convergence_angle_mrad</span><span class="se">\&#39;</span><span class="s1">] = 0&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;thickness&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;thickness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="k">if</span> <span class="n">verbose_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting undefined input: tags[</span><span class="se">\&#39;</span><span class="s1">thickness</span><span class="se">\&#39;</span><span class="s1">] = 0&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;dynamic correction&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;dynamic correction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="k">if</span> <span class="n">verbose_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting undefined input: tags[</span><span class="se">\&#39;</span><span class="s1">dynamic correction</span><span class="se">\&#39;</span><span class="s1">] = False&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;dynamic correction K0&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;dynamic correction K0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+            <span class="k">if</span> <span class="n">verbose_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Setting undefined input: tags[</span><span class="se">\&#39;</span><span class="s1">dynamic correction k0</span><span class="se">\&#39;</span><span class="s1">] = False&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">stop</span></div>
+
+
+<div class="viewcode-block" id="scattering_matrix"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.scattering_matrix.html#pyTEMlib.kinematic_scattering.scattering_matrix">[docs]</a><span class="k">def</span> <span class="nf">scattering_matrix</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">verbose_level</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Scattering matrix&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">check_sanity</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">verbose_level</span><span class="p">):</span>
+        <span class="k">return</span>
+    <span class="c1"># ##</span>
+    <span class="c1"># Pair distribution Function</span>
+    <span class="c1"># ##</span>
+    <span class="n">unit_cell</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;unit_cell&#39;</span><span class="p">])</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span>
+
+    <span class="n">atom_coordinates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">unit_cell</span><span class="p">)</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="mi">20</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># all evaluated multiples of x</span>
+    <span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">)))</span>  <span class="c1"># all evaluated multiples in all direction</span>
+
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">unit_cell</span><span class="p">)</span>  <span class="c1"># all evaluated unit_cells</span>
+
+    <span class="n">atom</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atom_coordinates</span><span class="p">)):</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">mat</span> <span class="o">+</span> <span class="n">atom_coordinates</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">all_distances</span> <span class="o">=</span> <span class="n">distances</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">all_distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_distances</span><span class="p">,</span> <span class="n">distances</span><span class="p">)</span>
+        <span class="n">unique</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">atom</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">unique</span><span class="p">,</span> <span class="n">counts</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">atom</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)])</span>
+
+        <span class="n">all_distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">all_distances</span><span class="p">,</span> <span class="n">distances</span><span class="p">)</span>
+        <span class="n">unique</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">all_distances</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">unique</span><span class="p">,</span> <span class="n">counts</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ring_pattern_calculation"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.ring_pattern_calculation.html#pyTEMlib.kinematic_scattering.ring_pattern_calculation">[docs]</a><span class="k">def</span> <span class="nf">ring_pattern_calculation</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the ring diffraction pattern of a crystal structure</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    atoms: Crystal</span>
+<span class="sd">        crystal structure</span>
+<span class="sd">    verbose: verbose print-outs</span>
+<span class="sd">        set to False</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tags: dict</span>
+<span class="sd">        dictionary with diffraction information added</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Check sanity</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">check_sanity</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">verbose</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="n">tags</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;experimental&#39;</span><span class="p">]</span>
+    <span class="c1"># wavelength</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;wave_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_wavelength</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;acceleration_voltage_V&#39;</span><span class="p">])</span>
+
+    <span class="c1">#  volume of unit_cell</span>
+    <span class="n">unit_cell</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">array</span>
+    <span class="n">metric_tensor</span> <span class="o">=</span> <span class="n">get_metric_tensor</span><span class="p">(</span><span class="n">unit_cell</span><span class="p">)</span>  <span class="c1"># converts hkl to g vectors and back</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;metric_tensor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">metric_tensor</span>
+    <span class="c1"># volume_unit_cell = np.sqrt(np.linalg.det(metric_tensor))</span>
+
+    <span class="c1"># reciprocal_unit_cell</span>
+    
+    <span class="c1"># We use the linear algebra package of numpy to invert the unit_cell &quot;matrix&quot;</span>
+    <span class="n">reciprocal_unit_cell</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">reciprocal</span><span class="p">()</span>  <span class="c1"># np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;reciprocal_unit_cell&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reciprocal_unit_cell</span>
+    <span class="c1"># inverse_metric_tensor = get_metric_tensor(reciprocal_unit_cell)</span>
+
+    <span class="n">hkl_max</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;hkl_max&#39;</span><span class="p">]</span>
+    <span class="n">hkl</span> <span class="o">=</span> <span class="n">get_all_miller_indices</span><span class="p">(</span><span class="n">hkl_max</span><span class="p">)</span>
+
+    <span class="n">g_hkl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hkl</span><span class="p">,</span> <span class="n">reciprocal_unit_cell</span><span class="p">)</span>  <span class="c1"># all evaluated reciprocal_unit_cell points</span>
+
+    <span class="c1">##################################</span>
+    <span class="c1"># Calculate Structure Factors</span>
+    <span class="c1">#################################</span>
+
+    <span class="n">structure_factors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">g_hkl</span><span class="p">)):</span>
+        <span class="n">F</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">feq</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">g_hkl</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+            <span class="n">F</span> <span class="o">+=</span> <span class="n">f</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="p">(</span><span class="n">hkl</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_scaled_positions</span><span class="p">()[</span><span class="n">b</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+        <span class="n">structure_factors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>
+
+    <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">structure_factors</span><span class="p">)</span>  <span class="c1"># structure factors</span>
+
+    <span class="c1"># Sort reflection in allowed and forbidden #</span>
+    
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">F</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.000001</span>  <span class="c1"># allowed within numerical error</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Of the </span><span class="si">{0}</span><span class="s1"> possible reflection </span><span class="si">{1}</span><span class="s1"> are allowed.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hkl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">allowed</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+
+    <span class="c1"># information of allowed reflections</span>
+    <span class="n">hkl_allowed</span> <span class="o">=</span> <span class="n">hkl</span><span class="p">[</span><span class="n">allowed</span><span class="p">][:]</span>
+    <span class="n">g_allowed</span> <span class="o">=</span> <span class="n">g_hkl</span><span class="p">[</span><span class="n">allowed</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">F_allowed</span> <span class="o">=</span> <span class="n">F</span><span class="p">[</span><span class="n">allowed</span><span class="p">]</span>
+    <span class="n">g_norm_allowed</span> <span class="o">=</span> <span class="n">vector_norm</span><span class="p">(</span><span class="n">g_allowed</span><span class="p">)</span>  <span class="c1"># length of all vectors = 1/</span>
+
+    <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">g_norm_allowed</span><span class="p">)</span>
+    <span class="n">g_norm_sorted</span> <span class="o">=</span> <span class="n">g_norm_allowed</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+    <span class="n">hkl_sorted</span> <span class="o">=</span> <span class="n">hkl_allowed</span><span class="p">[</span><span class="n">ind</span><span class="p">][:]</span>
+    <span class="n">F_sorted</span> <span class="o">=</span> <span class="n">F_allowed</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span>
+
+    <span class="n">unique</span><span class="p">,</span> <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">g_norm_sorted</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Of the </span><span class="si">{0}</span><span class="s1"> allowed reflection </span><span class="si">{1}</span><span class="s1"> have unique distances.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">allowed</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)))</span>
+
+    <span class="n">reflections_d</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">reflections_m</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">reflections_F</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)):</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">counts</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">hkl_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">hkl_sorted</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="n">reflections_d</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g_norm_sorted</span><span class="p">[</span><span class="n">start</span><span class="p">])</span>
+        <span class="n">reflections_m</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hkl_sorted</span><span class="p">[</span><span class="n">start</span> <span class="o">+</span> <span class="n">hkl_max</span><span class="p">])</span>
+        <span class="n">reflections_F</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">F_sorted</span><span class="p">[</span><span class="n">start</span><span class="p">])</span>  <span class="c1"># :end].sum())</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">end</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1"> [hkl]  </span><span class="se">\t</span><span class="s1"> 1/d [1/nm] </span><span class="se">\t</span><span class="s1"> d [nm] </span><span class="se">\t</span><span class="s1"> F^2 &#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique</span><span class="p">)):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; </span><span class="si">{0}</span><span class="s1"> </span><span class="se">\t</span><span class="s1"> </span><span class="si">{1:.2f}</span><span class="s1"> </span><span class="se">\t</span><span class="s1">         </span><span class="si">{2:.4f}</span><span class="s1"> </span><span class="se">\t</span><span class="s1"> </span><span class="si">{3:.2f}</span><span class="s1"> &#39;</span>
+                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">reflections_m</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">unique</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mf">10.</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">unique</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="mf">10.</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">reflections_F</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;allowed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reflections_m</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;g norm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unique</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;structure factor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reflections_F</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;multiplicity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span>
+
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;profile_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">unique</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="mi">2048</span><span class="p">)</span>
+    <span class="n">step_size</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;profile_x&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">intensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2048</span><span class="p">)</span>
+    <span class="n">x_index</span> <span class="o">=</span> <span class="p">[(</span><span class="n">unique</span> <span class="o">/</span> <span class="n">step_size</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)]</span>
+    <span class="n">intensity</span><span class="p">[</span><span class="n">x_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">reflections_F</span><span class="p">))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">reflections_F</span><span class="p">))</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;profile_y delta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">intensity</span>
+
+    <span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">pp</span><span class="p">):</span>
+        <span class="n">s1</span> <span class="o">=</span> <span class="n">pp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">/</span> <span class="mf">2.3548</span>
+        <span class="n">prefactor</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">s1</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">pp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">prefactor</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">xx</span> <span class="o">-</span> <span class="n">pp</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">s1</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">y</span>
+
+    <span class="k">if</span> <span class="s1">&#39;thickness&#39;</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;thickness&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">1023</span><span class="p">,</span> <span class="mi">2048</span><span class="p">)</span> <span class="o">*</span> <span class="n">step_size</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;thickness&#39;</span><span class="p">]]</span>
+
+            <span class="n">gauss</span> <span class="o">=</span> <span class="n">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+            <span class="n">intensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">intensity</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gauss</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;profile_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">intensity</span>
+
+    <span class="c1"># Make pretty labels</span>
+    <span class="n">hkl_allowed</span> <span class="o">=</span> <span class="n">reflections_m</span>
+    <span class="n">hkl_label</span> <span class="o">=</span> <span class="n">make_pretty_labels</span><span class="p">(</span><span class="n">hkl_allowed</span><span class="p">)</span>
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;Ring_Pattern&#39;</span><span class="p">][</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hkl_label</span></div>
+
+
+<div class="viewcode-block" id="get_dynamically_allowed"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.get_dynamically_allowed.html#pyTEMlib.kinematic_scattering.get_dynamically_allowed">[docs]</a><span class="k">def</span> <span class="nf">get_dynamically_allowed</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">ase</span><span class="o">.</span><span class="n">Atoms</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;we need an ase atoms object as input&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;diffraction&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Run the kinematic_scattering function first&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Dynamically Allowed Reflection</span>
+
+    <span class="n">dif</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;diffraction&#39;</span><span class="p">]</span>
+    <span class="n">hkl_allowed</span> <span class="o">=</span> <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span>
+    <span class="n">hkl_forbidden</span> <span class="o">=</span> <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hkl_allowed</span><span class="p">))</span>
+    <span class="n">combinations</span> <span class="o">=</span> <span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">permutations</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
+    <span class="n">hkl_forbidden</span> <span class="o">=</span> <span class="n">hkl_forbidden</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+    <span class="n">dynamically_allowed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hkl_forbidden</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="ow">in</span> <span class="n">combinations</span><span class="p">:</span>
+        <span class="n">possible</span> <span class="o">=</span> <span class="p">(</span><span class="n">hkl_allowed</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">hkl_allowed</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">possible</span> <span class="ow">in</span> <span class="n">hkl_forbidden</span><span class="p">:</span>
+            <span class="n">dynamically_allowed</span><span class="p">[</span><span class="n">hkl_forbidden</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">possible</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;dynamically_allowed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dynamically_allowed</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Of the </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hkl_forbidden</span><span class="p">)</span><span class="si">}</span><span class="s2"> forbidden reflection </span><span class="si">{</span><span class="n">dynamically_allowed</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s2"> &quot;</span>
+              <span class="sa">f</span><span class="s2">&quot;can be dynamically activated.&quot;</span><span class="p">)</span></div>
+        <span class="c1"># print(dif[&#39;forbidden&#39;][&#39;hkl&#39;][dynamically_allowed])</span>
+
+
+<div class="viewcode-block" id="kinematic_scattering"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.kinematic_scattering.html#pyTEMlib.kinematic_scattering.kinematic_scattering">[docs]</a><span class="k">def</span> <span class="nf">kinematic_scattering</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        All kinematic scattering calculation</span>
+
+<span class="sd">        Calculates Bragg spots, Kikuchi lines, excess, and deficient HOLZ lines</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        atoms: ase.Atoms</span>
+<span class="sd">            object with crystal structure:</span>
+<span class="sd">            and with experimental parameters in info attribute:</span>
+<span class="sd">            &#39;acceleration_voltage_V&#39;, &#39;zone_hkl&#39;, &#39;Sg_max&#39;, &#39;hkl_max&#39;</span>
+<span class="sd">            Optional parameters are:</span>
+<span class="sd">            &#39;mistilt&#39;, convergence_angle_mrad&#39;, and &#39;crystal_name&#39;</span>
+<span class="sd">            verbose = True will give extended output of the calculation</span>
+<span class="sd">        verbose: boolean</span>
+<span class="sd">            default is False</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        atoms:</span>
+<span class="sd">            There are three sub_dictionaries in info attribute:</span>
+<span class="sd">            [&#39;allowed&#39;], [&#39;forbidden&#39;], and [&#39;HOLZ&#39;]</span>
+<span class="sd">            [&#39;allowed&#39;] and [&#39;forbidden&#39;] dictionaries contain:</span>
+<span class="sd">                [&#39;Sg&#39;], [&#39;hkl&#39;], [&#39;g&#39;], [&#39;structure factor&#39;], [&#39;intensities&#39;],</span>
+<span class="sd">                [&#39;ZOLZ&#39;], [&#39;FOLZ&#39;], [&#39;SOLZ&#39;], [&#39;HOLZ&#39;], [&#39;HHOLZ&#39;], [&#39;label&#39;], and [&#39;Laue_zone&#39;]</span>
+<span class="sd">            the [&#39;HOLZ&#39;] dictionary contains:</span>
+<span class="sd">                [&#39;slope&#39;], [&#39;distance&#39;], [&#39;theta&#39;], [&#39;g_deficient&#39;], [&#39;g_excess&#39;], [&#39;hkl&#39;], [&#39;intensities&#39;],</span>
+<span class="sd">                [&#39;ZOLZ&#39;], [&#39;FOLZ&#39;], [&#39;SOLZ&#39;], [&#39;HOLZ&#39;], and  [&#39;HHOLZ&#39;]</span>
+<span class="sd">            Please note that the Kikuchi lines are the HOLZ lines of ZOLZ</span>
+
+<span class="sd">            There are also a few parameters stored in the main dictionary:</span>
+<span class="sd">                [&#39;wave_length_nm&#39;], [&#39;reciprocal_unit_cell&#39;], [&#39;inner_potential_V&#39;], [&#39;incident_wave_vector&#39;],</span>
+<span class="sd">                [&#39;volume&#39;], [&#39;theta&#39;], [&#39;phi&#39;], and [&#39;incident_wave_vector_vacuum&#39;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check sanity</span>
+    <span class="k">if</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">atoms</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;output&#39;</span><span class="p">:</span> <span class="p">{},</span> <span class="s1">&#39;experimental&#39;</span><span class="p">:</span> <span class="p">{}}</span>
+    <span class="k">if</span> <span class="s1">&#39;output&#39;</span> <span class="ow">in</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;output&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">output</span><span class="p">[</span><span class="s1">&#39;SpotPattern&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="s1">&#39;experimental&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">:</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;experimental&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">check_sanity</span><span class="p">(</span><span class="n">atoms</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Input is not complete, stopping&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Try </span><span class="se">\&#39;</span><span class="s1">example()</span><span class="se">\&#39;</span><span class="s1"> for example input&#39;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">tags</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;experimental&#39;</span><span class="p">]</span>
+    
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;wave_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_wavelength</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;acceleration_voltage_V&#39;</span><span class="p">])</span>
+    
+    <span class="c1"># ###########################################</span>
+    <span class="c1"># reciprocal_unit_cell </span>
+    <span class="c1"># ###########################################</span>
+    <span class="n">unit_cell</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">array</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;unit_cell&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit_cell</span>
+    <span class="n">metric_tensor</span> <span class="o">=</span> <span class="n">get_metric_tensor</span><span class="p">(</span><span class="n">unit_cell</span><span class="p">)</span>  <span class="c1"># converts hkl to g vectors and back</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;metric_tensor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">metric_tensor</span>
+    <span class="n">volume_unit_cell</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">volume</span>
+
+    <span class="c1"># We use the linear algebra package of numpy to invert the unit_cell &quot;matrix&quot;</span>
+    <span class="n">reciprocal_unit_cell</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">reciprocal</span><span class="p">()</span>  <span class="c1"># np.linalg.inv(unit_cell).T  # transposed of inverted unit_cell</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;reciprocal_unit_cell&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">reciprocal_unit_cell</span>
+    <span class="n">inverse_metric_tensor</span> <span class="o">=</span> <span class="n">get_metric_tensor</span><span class="p">(</span><span class="n">reciprocal_unit_cell</span><span class="p">)</span>
+
+    <span class="c1"># ###########################################</span>
+    <span class="c1"># Incident wave vector k0 in vacuum and material </span>
+    <span class="c1"># ###########################################</span>
+
+    <span class="c1"># Incident wave vector K0 in vacuum and material </span>
+    <span class="n">u0</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># in (Ang)</span>
+    <span class="c1"># atom form factor of zero reflection angle is the inner potential in 1/A</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+        <span class="n">u0</span> <span class="o">+=</span> <span class="n">feq</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">angstrom_conversion</span> <span class="o">=</span> <span class="mf">1.0e10</span>  <span class="c1"># So [1A (in m)] * angstrom_conversion = 1</span>
+    <span class="c1"># NanometerConversion = 1.0e9</span>
+
+    <span class="n">e</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">elementary_charge</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">Planck</span>
+    <span class="n">m0</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">constants</span><span class="o">.</span><span class="n">electron_mass</span>
+
+    <span class="n">scattering_factor_to_volts</span> <span class="o">=</span> <span class="p">(</span><span class="n">h</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1e10</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">m0</span> <span class="o">*</span> <span class="n">e</span><span class="p">)</span> <span class="o">*</span> <span class="n">volume_unit_cell</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;inner_potential_V&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">u0</span> <span class="o">*</span> <span class="n">scattering_factor_to_volts</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;The inner potential is </span><span class="si">{</span><span class="n">u0</span><span class="si">:</span><span class="s1">.1f</span><span class="si">}</span><span class="s1"> V&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Calculating incident wave vector magnitude &#39;k0&#39; in material</span>
+    <span class="n">wl</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;wave_length&#39;</span><span class="p">]</span>
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;incident_wave_vector_vacuum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">wl</span>
+    
+    <span class="n">k_0</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;incident_wave_vector&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">wl</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">u0</span><span class="o">/</span><span class="n">volume_unit_cell</span><span class="p">)</span>  <span class="c1"># 1/Ang</span>
+
+    <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;convergence_angle_A-1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">k_0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;convergence_angle_mrad&#39;</span><span class="p">]</span><span class="o">/</span><span class="mf">1000.</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using an acceleration voltage of </span><span class="si">{</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;acceleration_voltage_V&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">kV&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Magnitude of incident wave vector in material: </span><span class="si">{</span><span class="n">k_0</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1"> 1/Ang and in vacuum: </span><span class="si">{</span><span class="mi">1</span><span class="o">/</span><span class="n">wl</span><span class="si">:</span><span class="s1">.4f</span><span class="si">}</span><span class="s1"> 1/Ang&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Which is an wave length of </span><span class="si">{</span><span class="mi">1</span><span class="o">/</span><span class="n">k_0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">100.</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> pm in the material and </span><span class="si">{</span><span class="n">wl</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">100.</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> pm &quot;</span>
+              <span class="sa">f</span><span class="s2">&quot;in the vacuum&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The convergence angle of </span><span class="si">{</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;convergence_angle_mrad&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">mrad &quot;</span>
+              <span class="sa">f</span><span class="s2">&quot;= </span><span class="si">{</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;convergence_angle_A-1&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> 1/A&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Magnitude of incident wave vector in material: </span><span class="si">{</span><span class="n">k_0</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> 1/A which is a wavelength </span><span class="si">{</span><span class="mi">100</span><span class="o">/</span><span class="n">k_0</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> pm&quot;</span><span class="p">)</span>
+
+    <span class="c1"># ############</span>
+    <span class="c1"># Rotate</span>
+    <span class="c1"># ############</span>
+    
+    <span class="c1"># get rotation matrix to rotate zone axis onto z-axis</span>
+    <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">get_zone_rotation</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rotation alpha </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;y-axis rotation alpha&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> degree, &quot;</span>
+              <span class="sa">f</span><span class="s2">&quot; beta </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;x-axis rotation beta&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> degree&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;from zone axis </span><span class="si">{</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;zone_hkl&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tilting </span><span class="si">{</span><span class="mi">1</span><span class="si">}</span><span class="s2"> by </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> &quot;</span> 
+              <span class="sa">f</span><span class="s2">&quot; in alpha and </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> in beta direction results in :&quot;</span><span class="p">)</span>
+        <span class="c1"># list(tags[&#39;zone_hkl&#39;])</span>
+        <span class="c1">#</span>
+        <span class="c1"># print(f&quot;zone axis {list(tags[&#39;nearest_zone_axis&#39;])} with a mistilt of &quot;</span>
+        <span class="c1">#      f&quot;{np.rad2deg(tags[&#39;mistilt_nearest_zone alpha&#39;]):.2f} in alpha &quot;</span>
+        <span class="c1">#      f&quot;and {np.rad2deg(tags[&#39;mistilt_nearest_zone beta&#39;]):.2f} in beta direction&quot;)</span>
+        <span class="n">nearest</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Next nearest zone axes are:&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">nearest</span><span class="p">[</span><span class="s1">&#39;amount&#39;</span><span class="p">]):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">nearest</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: mistilt: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">nearest</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)][</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2">, &quot;</span>
+                  <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">nearest</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)][</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">])</span><span class="si">:</span><span class="s2">6.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># rotate incident wave vector </span>
+    <span class="n">k0_unit_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>  <span class="c1"># incident unit wave vector</span>
+    <span class="n">k0_vector</span> <span class="o">=</span> <span class="n">k0_unit_vector</span> <span class="o">*</span> <span class="n">k_0</span>  <span class="c1"># incident  wave vector</span>
+    <span class="n">cent</span> <span class="o">=</span> <span class="n">k0_vector</span>  <span class="c1"># center of Ewald sphere</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Center of Ewald sphere &#39;</span><span class="p">,</span> <span class="n">k0_vector</span><span class="p">)</span>
+
+    <span class="c1"># #######################</span>
+    <span class="c1"># Find all Miller indices whose reciprocal point lies near the Ewald sphere with radius k_0</span>
+    <span class="c1"># within a maximum excitation error Sg</span>
+    <span class="c1"># #######################</span>
+    
+    <span class="n">hkl_max</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;hkl_max&#39;</span><span class="p">]</span>
+    <span class="n">Sg_max</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;Sg_max&#39;</span><span class="p">]</span>  <span class="c1"># 1/Ang  maximum allowed excitation error</span>
+    
+    <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">hkl_max</span><span class="p">,</span> <span class="n">hkl_max</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">hkl_max</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># all evaluated single Miller Indices</span>
+    <span class="n">hkl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">h</span><span class="p">)))</span>  <span class="c1"># all evaluated Miller indices</span>
+    <span class="n">g_non_rot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hkl</span><span class="p">,</span> <span class="n">reciprocal_unit_cell</span><span class="p">)</span>  <span class="c1"># all evaluated reciprocal_unit_cell points</span>
+    <span class="n">g_norm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">g_non_rot</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># length of all vectors</span>
+    <span class="n">not_zero</span> <span class="o">=</span> <span class="n">g_norm</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="n">g_non_rot</span> <span class="o">=</span> <span class="n">g_non_rot</span><span class="p">[</span><span class="n">not_zero</span><span class="p">]</span>  <span class="c1"># zero reflection will make problems further on, so we exclude it.</span>
+    <span class="n">g_norm</span> <span class="o">=</span> <span class="n">g_norm</span><span class="p">[</span><span class="n">not_zero</span><span class="p">]</span>
+    <span class="n">hkl_all</span> <span class="o">=</span> <span class="n">hkl</span><span class="p">[</span><span class="n">not_zero</span><span class="p">]</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_non_rot</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">)</span>
+    
+    <span class="c1"># #######################</span>
+    <span class="c1"># Calculate excitation errors for all reciprocal_unit_cell points</span>
+    <span class="c1"># #######################</span>
+    
+    <span class="c1"># Zuo and Spence, &#39;Adv TEM&#39;, 2017 -- Eq 3:14</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="p">(</span><span class="n">k_0</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">g</span> <span class="o">-</span> <span class="n">k0_vector</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">k_0</span><span class="p">)</span>
+    
+    <span class="c1"># g_mz = g - k0_vector</span>
+    <span class="c1"># in_sqrt = g_mz[:, 2]**2 + np.linalg.norm(g_mz, axis=1)**2 - k_0**2</span>
+    <span class="c1"># in_sqrt[in_sqrt &lt; 0] = 0.</span>
+    <span class="c1"># S = -g_mz[:, 2] - np.sqrt(in_sqrt)</span>
+    
+    <span class="c1"># #######################</span>
+    <span class="c1"># Determine reciprocal_unit_cell points with excitation error less than the maximum allowed one: Sg_max</span>
+    <span class="c1"># #######################</span>
+    
+    <span class="n">reflections</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">Sg_max</span>   <span class="c1"># This is now a boolean array with True for all possible reflections</span>
+    
+    <span class="n">Sg</span> <span class="o">=</span> <span class="n">S</span><span class="p">[</span><span class="n">reflections</span><span class="p">]</span>
+    <span class="n">g_hkl</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="n">reflections</span><span class="p">]</span>
+    <span class="n">g_hkl_non_rot</span> <span class="o">=</span> <span class="n">g_non_rot</span><span class="p">[</span><span class="n">reflections</span><span class="p">]</span>
+    <span class="n">hkl</span> <span class="o">=</span> <span class="n">hkl_all</span><span class="p">[</span><span class="n">reflections</span><span class="p">]</span>
+    <span class="n">g_norm</span> <span class="o">=</span> <span class="n">g_norm</span><span class="p">[</span><span class="n">reflections</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Of the </span><span class="si">{0}</span><span class="s1"> tested reciprocal_unit_cell points, </span><span class="si">{1}</span><span class="s1"> have an excitation error less than </span><span class="si">{2:.2f}</span><span class="s1"> 1/nm&#39;</span><span class="o">.</span>
+              <span class="nb">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">g_hkl</span><span class="p">),</span> <span class="n">Sg_max</span><span class="p">))</span>
+        
+    <span class="c1"># #################################</span>
+    <span class="c1"># Calculate Structure Factors</span>
+    <span class="c1"># ################################</span>
+    
+    <span class="n">structure_factors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">g_hkl</span><span class="p">)):</span>
+        <span class="n">F</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">feq</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span> <span class="n">g_norm</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>  <span class="c1"># Atomic form factor for element and momentum change (g vector)</span>
+            <span class="n">F</span> <span class="o">+=</span> <span class="n">f</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="p">(</span><span class="n">g_hkl_non_rot</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">b</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>        
+        <span class="n">structure_factors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>
+    <span class="n">F</span> <span class="o">=</span> <span class="n">structure_factors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">structure_factors</span><span class="p">)</span>
+    
+    <span class="c1"># ###########################################</span>
+    <span class="c1"># Sort reflection in allowed and forbidden #</span>
+    <span class="c1"># ###########################################</span>
+    
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">F</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.000001</span>    <span class="c1"># allowed within numerical error </span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Of the </span><span class="si">{0}</span><span class="s1"> possible reflection </span><span class="si">{1}</span><span class="s1"> are allowed.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hkl</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">allowed</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        
+    <span class="c1"># information of allowed reflections</span>
+    <span class="n">s_g_allowed</span> <span class="o">=</span> <span class="n">Sg</span><span class="p">[</span><span class="n">allowed</span><span class="p">]</span>
+    <span class="n">hkl_allowed</span> <span class="o">=</span> <span class="n">hkl</span><span class="p">[</span><span class="n">allowed</span><span class="p">][:]</span>
+    <span class="n">g_allowed</span> <span class="o">=</span> <span class="n">g_hkl</span><span class="p">[</span><span class="n">allowed</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">F_allowed</span> <span class="o">=</span> <span class="n">F</span><span class="p">[</span><span class="n">allowed</span><span class="p">]</span>
+    <span class="n">g_norm_allowed</span> <span class="o">=</span> <span class="n">g_norm</span><span class="p">[</span><span class="n">allowed</span><span class="p">]</span>
+
+    <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;diffraction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">dif</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;diffraction&#39;</span><span class="p">]</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;Sg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s_g_allowed</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hkl_allowed</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;g&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_allowed</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;structure factor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">F_allowed</span>
+
+    <span class="c1"># Calculate Extinction Distance  Reimer 7.23</span>
+    <span class="c1"># - makes only sense for non-zero F</span>
+
+    <span class="n">xi_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">volume_unit_cell</span> <span class="o">*</span> <span class="n">k_0</span> <span class="o">/</span> <span class="n">F_allowed</span><span class="p">)</span>
+
+    <span class="c1"># ###########################</span>
+    <span class="c1"># Calculate Intensities (of allowed reflections)</span>
+    <span class="c1"># ###########################</span>
+    
+    <span class="c1"># Calculate Intensity of beams  Reimer 7.25</span>
+    <span class="k">if</span> <span class="s1">&#39;thickness&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;thickness&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">thickness</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;thickness&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">thickness</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
+        <span class="n">I_g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">xi_g</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">thickness</span> <span class="o">*</span> <span class="n">s_g_allowed</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">s_g_allowed</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;Ig&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">I_g</span>
+
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;intensities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">intensities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">F_allowed</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    
+    <span class="c1"># information of forbidden reflections</span>
+    <span class="n">forbidden</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span>
+    <span class="n">Sg_forbidden</span> <span class="o">=</span> <span class="n">Sg</span><span class="p">[</span><span class="n">forbidden</span><span class="p">]</span>
+    <span class="n">hkl_forbidden</span> <span class="o">=</span> <span class="n">hkl</span><span class="p">[</span><span class="n">forbidden</span><span class="p">]</span>
+    <span class="n">g_forbidden</span> <span class="o">=</span> <span class="n">g_hkl</span><span class="p">[</span><span class="n">forbidden</span><span class="p">]</span>
+    <span class="c1"># F_forbidden = F[forbidden]</span>
+    
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;Sg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Sg_forbidden</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hkl_forbidden</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;g&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_forbidden</span>
+
+    <span class="c1"># ##########################</span>
+    <span class="c1"># Make pretty labels</span>
+    <span class="c1"># ##########################</span>
+    <span class="n">hkl_label</span> <span class="o">=</span> <span class="n">make_pretty_labels</span><span class="p">(</span><span class="n">hkl_allowed</span><span class="p">)</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hkl_label</span>
+    <span class="n">hkl_label</span> <span class="o">=</span> <span class="n">make_pretty_labels</span><span class="p">(</span><span class="n">hkl_forbidden</span><span class="p">)</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hkl_label</span>
+    
+    <span class="c1"># Center of Laue Circle</span>
+    <span class="n">laue_circle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axis&#39;</span><span class="p">],</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;reciprocal_unit_cell&#39;</span><span class="p">])</span>
+    <span class="n">laue_circle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">laue_circle</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">)</span>
+    <span class="n">laue_circle</span> <span class="o">=</span> <span class="n">laue_circle</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">laue_circle</span><span class="p">)</span> <span class="o">*</span> <span class="n">k_0</span>
+    <span class="n">laue_circle</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Laue_circle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">laue_circle</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Laue_circle&#39;</span><span class="p">,</span> <span class="n">laue_circle</span><span class="p">)</span>
+
+    <span class="c1"># ###########################</span>
+    <span class="c1"># Calculate Laue Zones (of allowed reflections)</span>
+    <span class="c1"># ###########################</span>
+    <span class="c1"># Below is the expression given in most books.</span>
+    <span class="c1"># However, that would only work for orthogonal crystal systems</span>
+    <span class="c1"># Laue_Zone = abs(np.dot(hkl_allowed,tags[&#39;zone_hkl&#39;]))  # works only for orthogonal systems</span>
+
+    <span class="c1"># This expression works for all crystal systems</span>
+    <span class="c1"># Remember we have already tilted, and so the dot product is trivial and gives only the z-component.</span>
+    <span class="n">length_zone_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">tags</span><span class="p">[</span><span class="s1">&#39;zone_hkl&#39;</span><span class="p">],</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;unit_cell&#39;</span><span class="p">]))</span>
+    <span class="n">laue_zone</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">hkl_allowed</span><span class="p">,</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axis&#39;</span><span class="p">]))</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;Laue_Zone&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">laue_zone</span>
+
+    <span class="n">ZOLZ_forbidden</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">g_forbidden</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">length_zone_axis</span><span class="o">+</span><span class="mf">0.5</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span>
+    
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;Laue_Zone&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ZOLZ_forbidden</span>
+    <span class="n">ZOLZ</span> <span class="o">=</span> <span class="n">laue_zone</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="n">FOLZ</span> <span class="o">=</span> <span class="n">laue_zone</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">SOLZ</span> <span class="o">=</span> <span class="n">laue_zone</span> <span class="o">==</span> <span class="mi">2</span>
+    <span class="n">HOLZ</span> <span class="o">=</span> <span class="n">laue_zone</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="n">HOLZp</span> <span class="o">=</span> <span class="n">laue_zone</span> <span class="o">&gt;</span> <span class="mi">2</span>
+
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;ZOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ZOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;FOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;SOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;HOLZ_plus&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;HHOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HOLZp</span>
+    
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; There are </span><span class="si">{0}</span><span class="s1"> allowed reflections in the zero order Laue Zone&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ZOLZ</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; There are </span><span class="si">{0}</span><span class="s1"> allowed reflections in the first order Laue Zone&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">laue_zone</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; There are </span><span class="si">{0}</span><span class="s1"> allowed reflections in the second order Laue Zone&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">laue_zone</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; There are </span><span class="si">{0}</span><span class="s1"> allowed reflections in the other higher order Laue Zones&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">((</span><span class="n">laue_zone</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        
+    <span class="k">if</span> <span class="n">verbose</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; hkl  </span><span class="se">\t</span><span class="s1"> Laue zone </span><span class="se">\t</span><span class="s1"> Intensity (*1 and </span><span class="se">\t</span><span class="s1"> log) </span><span class="se">\t</span><span class="s1"> length </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hkl_allowed</span><span class="p">)):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; </span><span class="si">{0}</span><span class="s1"> </span><span class="se">\t</span><span class="s1"> </span><span class="si">{1}</span><span class="s1"> </span><span class="se">\t</span><span class="s1"> </span><span class="si">{2:.3f}</span><span class="s1"> </span><span class="se">\t</span><span class="s1">  </span><span class="si">{3:.3f}</span><span class="s1"> </span><span class="se">\t</span><span class="s1">  </span><span class="si">{4:.3f}</span><span class="s1">   &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hkl_allowed</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">g_allowed</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> 
+                                                                             <span class="n">intensities</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">intensities</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> 
+                                                                             <span class="n">g_norm_allowed</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>  
+   
+    <span class="c1"># ##########################</span>
+    <span class="c1"># Dynamically Activated forbidden reflections</span>
+    <span class="c1"># ##########################</span>
+   
+    <span class="n">double_diffraction</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">hkl_allowed</span><span class="p">[</span><span class="n">ZOLZ</span><span class="p">],</span> <span class="mi">2</span><span class="p">))),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    
+    <span class="n">dynamical_allowed</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">still_forbidden</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">hkl</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">hkl_forbidden</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ZOLZ_forbidden</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">hkl</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="ow">in</span> <span class="n">double_diffraction</span><span class="o">.</span><span class="n">tolist</span><span class="p">():</span>
+                <span class="n">dynamical_allowed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">still_forbidden</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;dynamically_activated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dynamical_allowed</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;forbidden&#39;</span><span class="p">][</span><span class="s1">&#39;forbidden&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dynamical_allowed</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Length of zone axis vector in real space </span><span class="si">{0}</span><span class="s1"> nm&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">length_zone_axis</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;There are </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dynamical_allowed</span><span class="p">)</span><span class="si">}</span><span class="s1"> forbidden but dynamical activated diffraction spots:&#39;</span><span class="p">)</span>
+        <span class="c1"># print(tags[&#39;forbidden&#39;][&#39;hkl&#39;][dynamical_allowed])</span>
+
+    <span class="c1"># ###################################</span>
+    <span class="c1"># Calculate HOLZ and Kikuchi Lines #</span>
+    <span class="c1"># ###################################</span>
+
+    <span class="c1"># Dynamic Correction</span>
+
+    <span class="c1"># Equation Spence+Zuo 3.86a</span>
+    <span class="n">gamma_1</span> <span class="o">=</span> <span class="o">-</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">k_0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">intensities</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.</span><span class="o">*</span><span class="n">k_0</span><span class="o">*</span><span class="n">s_g_allowed</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="c1"># print(&#39;gamma_1&#39;,gamma_1)</span>
+
+    <span class="c1"># Equation Spence+Zuo 3.84</span>
+    <span class="n">Kg</span> <span class="o">=</span> <span class="n">k_0</span> <span class="o">-</span> <span class="n">k_0</span><span class="o">*</span><span class="n">gamma_1</span><span class="o">/</span><span class="p">(</span><span class="n">g_allowed</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mf">1e-15</span><span class="p">)</span>
+    <span class="n">Kg</span><span class="p">[</span><span class="n">ZOLZ</span><span class="p">]</span> <span class="o">=</span> <span class="n">k_0</span>
+    
+    <span class="c1"># Calculate angle between K0 and deficient cone vector</span>
+    <span class="c1"># For dynamic calculations K0 is replaced by Kg</span>
+    <span class="n">Kg</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">k_0</span>
+    <span class="n">d_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">g_norm_allowed</span><span class="o">/</span><span class="n">Kg</span><span class="o">/</span><span class="mf">2.</span><span class="p">)</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">g_allowed</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span><span class="o">/</span><span class="n">g_norm_allowed</span><span class="p">)</span>
+
+    <span class="c1"># calculate length of distance of deficient cone to K0 in ZOLZ plane</span>
+    <span class="n">gd_length</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">d_theta</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">k_0</span>
+    
+    <span class="c1"># Calculate nearest point of HOLZ and Kikuchi lines</span>
+    <span class="n">g_closest</span> <span class="o">=</span> <span class="n">g_allowed</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">g_closest</span> <span class="o">=</span> <span class="n">g_closest</span><span class="o">*</span><span class="p">(</span><span class="n">gd_length</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">g_closest</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    
+    <span class="n">g_closest</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+    
+    <span class="c1"># calculate and save line in Hough space coordinates (distance and theta)</span>
+    <span class="n">slope</span> <span class="o">=</span> <span class="n">g_closest</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">g_closest</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mf">1e-10</span><span class="p">)</span>
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">gd_length</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">g_allowed</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">g_allowed</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+    
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;slope&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">slope</span>
+    <span class="c1"># a line is now given by</span>
+    
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;distance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span>
+    
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;g_deficient&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_closest</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;g_excess&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_closest</span><span class="o">+</span><span class="n">g_allowed</span>
+    
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;ZOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ZOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;FOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;SOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SOLZ</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;HHOLZ&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">HOLZp</span>  <span class="c1"># even higher HOLZ</span>
+    
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;allowed&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span>
+    <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;HOLZ&#39;</span><span class="p">][</span><span class="s1">&#39;intensities&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">intensities</span>
+
+    <span class="c1">####################################</span>
+    <span class="c1"># Calculate HOLZ and Kikuchi Lines #</span>
+    <span class="c1">####################################</span>
+
+    <span class="n">tags_kikuchi</span> <span class="o">=</span> <span class="n">tags</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">tags_kikuchi</span><span class="p">[</span><span class="s1">&#39;mistilt_alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">tags_kikuchi</span><span class="p">[</span><span class="s1">&#39;mistilt_beta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>  <span class="c1"># tags[&#39;nearest_zone_axes&#39;][&#39;amount&#39;]):</span>
+
+        <span class="n">zone_tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">[</span><span class="s1">&#39;nearest_zone_axes&#39;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span>
+        <span class="n">tags_kikuchi</span><span class="p">[</span><span class="s1">&#39;zone_hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zone_tags</span><span class="p">[</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Calculating Kikuchi lines for zone: &#39;</span><span class="p">,</span> <span class="n">zone_tags</span><span class="p">[</span><span class="s1">&#39;hkl&#39;</span><span class="p">])</span>
+
+        <span class="n">tags_kikuchi</span><span class="p">[</span><span class="s1">&#39;Laue_circle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">laue_circle</span>
+        <span class="c1"># Rotate to nearest zone axis</span>
+        <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">get_zone_rotation</span><span class="p">(</span><span class="n">tags_kikuchi</span><span class="p">)</span>
+
+        <span class="n">g_kikuchi_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_non_rot</span><span class="p">,</span> <span class="n">rotation_matrix</span><span class="p">)</span>
+
+        <span class="n">ZOLZ</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">g_kikuchi_all</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">.1</span>
+
+        <span class="n">g_kikuchi</span> <span class="o">=</span> <span class="n">g_kikuchi_all</span><span class="p">[</span><span class="n">ZOLZ</span><span class="p">]</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="p">(</span><span class="n">k_0</span><span class="o">**</span><span class="mi">2</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">g_kikuchi</span> <span class="o">-</span> <span class="n">k0_vector</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">k_0</span><span class="p">)</span>
+        <span class="n">reflections</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">S</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">.01</span>  <span class="c1"># This is now a boolean array with True for all possible reflections</span>
+        <span class="n">g_kikuchi</span> <span class="o">=</span> <span class="n">g_kikuchi</span><span class="p">[</span><span class="n">reflections</span><span class="p">]</span>
+        <span class="n">hkl_kikuchi</span> <span class="o">=</span> <span class="p">(</span><span class="n">hkl_all</span><span class="p">[</span><span class="n">ZOLZ</span><span class="p">])[</span><span class="n">reflections</span><span class="p">]</span>
+
+        <span class="n">structure_factors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">g_kikuchi</span><span class="p">)):</span>
+            <span class="n">F</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">feq</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="n">b</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">g_kikuchi</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+                <span class="n">F</span> <span class="o">+=</span> <span class="n">f</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="mi">1</span><span class="n">j</span> <span class="o">*</span> <span class="p">(</span><span class="n">g_kikuchi</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">b</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">structure_factors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>
+
+        <span class="n">F</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">structure_factors</span><span class="p">)</span>
+
+        <span class="n">allowed_kikuchi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">F</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.000001</span>
+
+        <span class="n">g_kikuchi</span> <span class="o">=</span> <span class="n">g_kikuchi</span><span class="p">[</span><span class="n">allowed_kikuchi</span><span class="p">]</span>
+        <span class="n">hkl_kikuchi</span> <span class="o">=</span> <span class="n">hkl_kikuchi</span><span class="p">[</span><span class="n">allowed_kikuchi</span><span class="p">]</span>
+
+        <span class="n">gd2</span> <span class="o">=</span> <span class="n">g_kikuchi</span> <span class="o">/</span> <span class="mf">2.</span>
+        <span class="n">gd2</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.</span>
+
+        <span class="c1"># calculate and save line in Hough space coordinates (distance and theta)</span>
+        <span class="n">slope2</span> <span class="o">=</span> <span class="n">gd2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">gd2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1e-20</span><span class="p">)</span>
+        <span class="n">distance2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">gd2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">gd2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">gd2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">gd2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">theta2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">slope2</span><span class="p">)</span>
+
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">][</span><span class="s1">&#39;slope&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">slope2</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">][</span><span class="s1">&#39;distance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance2</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">][</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta2</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">][</span><span class="s1">&#39;hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hkl_kikuchi</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">][</span><span class="s1">&#39;g_hkl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_kikuchi</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">][</span><span class="s1">&#39;g_deficient&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gd2</span>
+        <span class="n">dif</span><span class="p">[</span><span class="s1">&#39;Kikuchi&#39;</span><span class="p">][</span><span class="s1">&#39;min_dist&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gd2</span> <span class="o">+</span> <span class="n">laue_circle</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;pyTEMlib</span><span class="se">\&#39;</span><span class="s1">s  </span><span class="se">\&quot;</span><span class="s1">kinematic_scattering</span><span class="se">\&quot;</span><span class="s1"> finished&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="make_pretty_labels"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.make_pretty_labels.html#pyTEMlib.kinematic_scattering.make_pretty_labels">[docs]</a><span class="k">def</span> <span class="nf">make_pretty_labels</span><span class="p">(</span><span class="n">hkls</span><span class="p">,</span> <span class="n">hex_label</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make pretty labels</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hkls: np.ndarray</span>
+<span class="sd">        a numpy array with all the Miller indices to be labeled</span>
+<span class="sd">    hex_label: boolean - optional</span>
+<span class="sd">        if True this will make for Miller indices.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    hkl_label: list</span>
+<span class="sd">        list of labels in Latex format</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">hkl_label</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hkls</span><span class="p">)):</span>
+        <span class="n">h</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">hkls</span><span class="p">)[</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">h</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">h_string</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;[$\bar {&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">h</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;},&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">h_string</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;[$\bar {&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;},&#39;</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">k_string</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\bar {&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">k</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;},&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">k_string</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span>
+        <span class="k">if</span> <span class="n">hex_label</span><span class="p">:</span>
+            <span class="n">ii</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="n">k</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ii</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">k_string</span> <span class="o">=</span> <span class="n">k_string</span> <span class="o">+</span> <span class="sa">r</span><span class="s1">&#39;\bar {&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">ii</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;},&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">k_string</span> <span class="o">=</span> <span class="n">k_string</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ii</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span>
+        <span class="k">if</span> <span class="n">l</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">l_string</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;\bar {&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="o">-</span><span class="n">l</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;} $]&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">l_string</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;} $]&#39;</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">h_string</span> <span class="o">+</span> <span class="n">k_string</span> <span class="o">+</span> <span class="n">l_string</span>
+        <span class="n">hkl_label</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hkl_label</span></div>
+
+
+<div class="viewcode-block" id="feq"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.kinematic_scattering.feq.html#pyTEMlib.kinematic_scattering.feq">[docs]</a><span class="k">def</span> <span class="nf">feq</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">q</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Atomic form factor parametrized in 1/Angstrom but converted to 1/Angstrom</span>
+
+<span class="sd">    The atomic form factor is from Kirkland: Advanced Computing in Electron Microscopy 2nd edition, Appendix C.</span>
+<span class="sd">    From Appendix C of Kirkland, &quot;Advanced Computing in Electron Microscopy&quot;, 3Ard ed.</span>
+<span class="sd">    Calculation of electron form factor for specific q:</span>
+<span class="sd">    Using equation Kirkland C.15</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    element: string</span>
+<span class="sd">        element name</span>
+<span class="sd">    q: float</span>
+<span class="sd">        magnitude of scattering vector in 1/Angstrom -- (=&gt; exp(-i*g.r), physics negative convention)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fL+fG: float</span>
+<span class="sd">        atomic scattering vector</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Element has to be a string&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">element</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">electronFF</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Please use standard convention for element abbreviation with not more than two letters&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Element </span><span class="si">{element}</span><span class="s1"> not known to electron diffraction should&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Magnitude of scattering vector has to be a number of type float&#39;</span><span class="p">)</span>
+
+    <span class="c1"># q is in magnitude of scattering vector in 1/A -- (=&gt; exp(-i*g.r), physics negative convention)</span>
+    <span class="n">param</span> <span class="o">=</span> <span class="n">electronFF</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>
+    <span class="n">f_lorentzian</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">f_gauss</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">f_lorentzian</span> <span class="o">+=</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fa&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">q</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fb&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">f_gauss</span> <span class="o">+=</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fc&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">q</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">param</span><span class="p">[</span><span class="s1">&#39;fd&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="c1"># Conversion factor from scattering factors to volts. h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5</span>
+    <span class="c1"># !NB RVolume is already in A unlike RPlanckConstant</span>
+    <span class="c1"># scattering_factor_to_volts=(PlanckConstant**2)*(AngstromConversion**2)/(2*np.pi*ElectronMass*ElectronCharge)</span>
+    <span class="k">return</span> <span class="n">f_lorentzian</span><span class="o">+</span><span class="n">f_gauss</span>  <span class="c1"># * scattering_factor_to_volts</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

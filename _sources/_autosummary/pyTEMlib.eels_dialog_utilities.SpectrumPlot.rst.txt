@@ -1,0 +1,26 @@
+pyTEMlib.eels\_dialog\_utilities.SpectrumPlot
+=============================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autoclass:: SpectrumPlot
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~SpectrumPlot.line_select_callback
+      ~SpectrumPlot.plot
+   
+   
+
+   
+   
+   

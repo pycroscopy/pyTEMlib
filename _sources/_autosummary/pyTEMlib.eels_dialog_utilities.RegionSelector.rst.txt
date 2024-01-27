@@ -1,0 +1,32 @@
+pyTEMlib.eels\_dialog\_utilities.RegionSelector
+===============================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autoclass:: RegionSelector
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~RegionSelector.click
+      ~RegionSelector.delete_region
+      ~RegionSelector.disconnect
+      ~RegionSelector.get_regions
+      ~RegionSelector.on_select1
+      ~RegionSelector.onresize
+      ~RegionSelector.set_regions
+      ~RegionSelector.update
+   
+   
+
+   
+   
+   

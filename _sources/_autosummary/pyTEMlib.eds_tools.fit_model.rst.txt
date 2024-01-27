@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.fit\_model
+==============================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: fit_model

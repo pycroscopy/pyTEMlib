@@ -1,0 +1,6 @@
+pyTEMlib.graph\_viz.plot\_supercell
+===================================
+
+.. currentmodule:: pyTEMlib.graph_viz
+
+.. autofunction:: plot_supercell

@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.identify\_edges
+====================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: identify_edges

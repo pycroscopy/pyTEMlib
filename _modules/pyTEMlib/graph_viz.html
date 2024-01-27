@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.graph_viz &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../_autosummary/pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pyTEMlib.graph_viz</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pyTEMlib.graph_viz</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">##################################################################</span>
+<span class="sd"># plotting functions for graph_tools</span>
+<span class="sd">##################################################################</span>
+
+<span class="sd">part of pyTEMlib</span>
+<span class="sd">a pycrosccopy package</span>
+
+<span class="sd">Author: Gerd Duscher</span>
+<span class="sd">First Version: 2022-01-08</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">ase</span>
+
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
+<span class="kn">import</span> <span class="nn">plotly.express</span> <span class="k">as</span> <span class="nn">px</span>
+
+<span class="kn">import</span> <span class="nn">pyTEMlib.crystal_tools</span>
+<span class="kn">import</span> <span class="nn">pyTEMlib.graph_tools</span>
+
+
+<div class="viewcode-block" id="plot_super_cell"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.plot_super_cell.html#pyTEMlib.graph_viz.plot_super_cell">[docs]</a><span class="k">def</span> <span class="nf">plot_super_cell</span><span class="p">(</span><span class="n">super_cell</span><span class="p">,</span> <span class="n">shift_x</span><span class="o">=</span><span class="mf">0.</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; make a super_cell to plot with extra atoms at periodic boundaries&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">super_cell</span><span class="p">,</span> <span class="n">ase</span><span class="o">.</span><span class="n">Atoms</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Need an ase Atoms object&#39;</span><span class="p">)</span>
+
+    <span class="n">plot_boundary</span> <span class="o">=</span> <span class="n">super_cell</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">plot_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">plot_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">super_cell</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">shift_x</span>
+
+    <span class="k">del</span> <span class="n">plot_boundary</span><span class="p">[</span><span class="n">plot_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">super_cell</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1.5</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">plot_boundary</span><span class="p">[</span><span class="n">plot_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">super_cell</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">plot_boundary</span><span class="p">[</span><span class="n">plot_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">super_cell</span><span class="o">.</span><span class="n">cell</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.1</span><span class="p">]</span>
+    <span class="k">del</span> <span class="n">plot_boundary</span><span class="p">[</span><span class="n">plot_boundary</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">]</span>
+    <span class="n">plot_boundary</span><span class="o">.</span><span class="n">cell</span> <span class="o">=</span> <span class="n">super_cell</span><span class="o">.</span><span class="n">cell</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">plot_boundary</span></div>
+
+
+<div class="viewcode-block" id="plot_polyhedron"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.plot_polyhedron.html#pyTEMlib.graph_viz.plot_polyhedron">[docs]</a><span class="k">def</span> <span class="nf">plot_polyhedron</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Information to plot polyhedra with plotly</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    polyhedra: dict</span>
+<span class="sd">        dictionary of all polyhedra</span>
+<span class="sd">    indices: list or integer</span>
+<span class="sd">        list or index of polyhedron to plot.</span>
+<span class="sd">    center: boolean</span>
+<span class="sd">        whether to center polyhedra on origin</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data: dict</span>
+<span class="sd">        instructions to plot for plotly</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Did not find any polyhedra&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="n">center_point</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="s1">&#39;vertices&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">center</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">center_point</span><span class="p">)</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="n">center_point</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+        <span class="n">polyhedron</span> <span class="o">=</span> <span class="n">polyhedra</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+        <span class="n">vertices</span> <span class="o">=</span> <span class="n">polyhedron</span><span class="p">[</span><span class="s1">&#39;vertices&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">center</span>
+        <span class="n">faces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">polyhedron</span><span class="p">[</span><span class="s1">&#39;triangles&#39;</span><span class="p">])</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">vertices</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">i_i</span><span class="p">,</span> <span class="n">j_j</span><span class="p">,</span> <span class="n">k_k</span> <span class="o">=</span> <span class="n">faces</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">mesh</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;mesh3d&#39;</span><span class="p">,</span>
+                    <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span>
+                    <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+                    <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+                    <span class="n">i</span><span class="o">=</span><span class="n">i_i</span><span class="p">,</span>
+                    <span class="n">j</span><span class="o">=</span><span class="n">j_j</span><span class="p">,</span>
+                    <span class="n">k</span><span class="o">=</span><span class="n">k_k</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                    <span class="n">opacity</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+                    <span class="n">color</span><span class="o">=</span><span class="n">px</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">qualitative</span><span class="o">.</span><span class="n">Light24</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">vertices</span><span class="p">)</span> <span class="o">%</span> <span class="mi">24</span><span class="p">]</span>
+                    <span class="p">)</span>
+        <span class="n">tri_vertices</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">faces</span><span class="p">]</span>
+        <span class="n">x_e</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">y_e</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">z_e</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t_v</span> <span class="ow">in</span> <span class="n">tri_vertices</span><span class="p">:</span>
+            <span class="n">x_e</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t_v</span><span class="p">[</span><span class="n">k</span> <span class="o">%</span> <span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+            <span class="n">y_e</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t_v</span><span class="p">[</span><span class="n">k</span> <span class="o">%</span> <span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+            <span class="n">z_e</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t_v</span><span class="p">[</span><span class="n">k</span> <span class="o">%</span> <span class="mi">3</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+
+        <span class="c1"># define the lines to be plotted</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;scatter3d&#39;</span><span class="p">,</span>
+                     <span class="n">x</span><span class="o">=</span><span class="n">x_e</span><span class="p">,</span>
+                     <span class="n">y</span><span class="o">=</span><span class="n">y_e</span><span class="p">,</span>
+                     <span class="n">z</span><span class="o">=</span><span class="n">z_e</span><span class="p">,</span>
+                     <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;lines&#39;</span><span class="p">,</span>
+                     <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                     <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;rgb(70,70,70)&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">1.5</span><span class="p">))</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="plot_bonds"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.plot_bonds.html#pyTEMlib.graph_viz.plot_bonds">[docs]</a><span class="k">def</span> <span class="nf">plot_bonds</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Information to plot bonds with plotly</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    polyhedra: dict</span>
+<span class="sd">        dictionary of all polyhedra</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    data: dict</span>
+<span class="sd">        instructions to plot for plotly</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">))</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+        <span class="n">polyhedron</span> <span class="o">=</span> <span class="n">polyhedra</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+
+        <span class="n">vertices</span> <span class="o">=</span> <span class="n">polyhedron</span><span class="p">[</span><span class="s1">&#39;vertices&#39;</span><span class="p">]</span>
+        <span class="n">faces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">polyhedron</span><span class="p">[</span><span class="s1">&#39;triangles&#39;</span><span class="p">])</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">vertices</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">i_i</span><span class="p">,</span> <span class="n">j_j</span><span class="p">,</span> <span class="n">k_k</span> <span class="o">=</span> <span class="n">faces</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">tri_vertices</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">faces</span><span class="p">]</span>
+        <span class="n">x_e</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">y_e</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">z_e</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">t_v</span> <span class="ow">in</span> <span class="n">tri_vertices</span><span class="p">:</span>
+            <span class="n">x_e</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t_v</span><span class="p">[</span><span class="n">k</span> <span class="o">%</span> <span class="mi">3</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+            <span class="n">y_e</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t_v</span><span class="p">[</span><span class="n">k</span> <span class="o">%</span> <span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+            <span class="n">z_e</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t_v</span><span class="p">[</span><span class="n">k</span> <span class="o">%</span> <span class="mi">3</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+
+        <span class="c1"># define the lines to be plotted</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="s1">&#39;scatter3d&#39;</span><span class="p">,</span>
+                     <span class="n">x</span><span class="o">=</span><span class="n">x_e</span><span class="p">,</span>
+                     <span class="n">y</span><span class="o">=</span><span class="n">y_e</span><span class="p">,</span>
+                     <span class="n">z</span><span class="o">=</span><span class="n">z_e</span><span class="p">,</span>
+                     <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;lines&#39;</span><span class="p">,</span>
+                     <span class="n">name</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                     <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;rgb(70,70,70)&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">1.5</span><span class="p">))</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="get_boundary_polyhedra"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.get_boundary_polyhedra.html#pyTEMlib.graph_viz.get_boundary_polyhedra">[docs]</a><span class="k">def</span> <span class="nf">get_boundary_polyhedra</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">boundary_x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">boundary_width</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">z_lim</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    get indices of polyhedra at boundary (assumed to be parallel to x-axis)</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    polyhedra: dict</span>
+<span class="sd">        dictionary of all polyhedra</span>
+<span class="sd">    boundary_x: float</span>
+<span class="sd">        position of boundary in Angstrom</span>
+<span class="sd">    boundary_width: float</span>
+<span class="sd">        width of boundary where center of polyhedra are considered in Angstrom</span>
+<span class="sd">    verbose: boolean</span>
+<span class="sd">        optional</span>
+<span class="sd">    z_lim: list</span>
+<span class="sd">        upper and lower limit of polyhedra to plot</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    boundary_polyhedra: list</span>
+<span class="sd">        list of polyhedra at boundary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">boundary_polyhedra</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">polyhedron</span> <span class="ow">in</span> <span class="n">polyhedra</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="n">polyhedron</span><span class="p">[</span><span class="s1">&#39;vertices&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">boundary_x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span> <span class="ow">and</span> <span class="p">(</span><span class="n">z_lim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">center</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">z_lim</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">boundary_polyhedra</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">polyhedron</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">],</span> <span class="n">center</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">boundary_polyhedra</span></div>
+
+
+<div class="viewcode-block" id="plot_with_polyhedra"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.plot_with_polyhedra.html#pyTEMlib.graph_viz.plot_with_polyhedra">[docs]</a><span class="k">def</span> <span class="nf">plot_with_polyhedra</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">atoms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    plot atoms and polyhedra with plotly</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    polyhedra: dict</span>
+<span class="sd">        dictionary of all polyhedra</span>
+<span class="sd">    indices: list or integer</span>
+<span class="sd">        list or index of polyhedron to plot.</span>
+<span class="sd">    atoms: ase.Atoms</span>
+<span class="sd">        optional structure info to plot atoms (with correct color)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: plotly.figure</span>
+<span class="sd">        plotly figure instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">plot_polyhedron</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">ase</span><span class="o">.</span><span class="n">Atoms</span><span class="p">):</span>
+        <span class="n">atoms</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;opacity&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">atoms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter3d</span><span class="p">(</span>
+            <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">z</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+            <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">color</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_atomic_numbers</span><span class="p">(),</span>
+                <span class="n">size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                <span class="n">sizemode</span><span class="o">=</span><span class="s1">&#39;diameter&#39;</span><span class="p">,</span>
+                <span class="n">colorscale</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;red&quot;</span><span class="p">])))</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_aspectmode</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                      <span class="n">scene_aspectratio</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">camera</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;up&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;center&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;eye&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}}</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_camera</span><span class="o">=</span><span class="n">camera</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_scenes</span><span class="p">(</span><span class="n">camera_projection_type</span><span class="o">=</span><span class="s2">&quot;orthographic&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="plot_supercell"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.plot_supercell.html#pyTEMlib.graph_viz.plot_supercell">[docs]</a><span class="k">def</span> <span class="nf">plot_supercell</span><span class="p">(</span><span class="n">supercell</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">shift_x</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    plot supercell with plotly</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    supercell: ase.Atoms</span>
+<span class="sd">        optional structure info to plot atoms (with correct color)</span>
+<span class="sd">    shift_x: float</span>
+<span class="sd">        amount of shift in x direction of supercell</span>
+<span class="sd">    title: str</span>
+<span class="sd">        title of plot</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: plotly.figure</span>
+<span class="sd">        plotly figure instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">plot_cell</span> <span class="o">=</span> <span class="n">pyTEMlib</span><span class="o">.</span><span class="n">graph_tools</span><span class="o">.</span><span class="n">plot_super_cell</span><span class="p">(</span><span class="n">supercell</span> <span class="o">*</span> <span class="n">size</span><span class="p">,</span> <span class="n">shift_x</span><span class="o">=</span><span class="n">shift_x</span><span class="p">)</span>
+
+    <span class="c1"># grain_boundary.cell.volume</span>
+    <span class="n">supercell_area</span> <span class="o">=</span> <span class="n">supercell</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">lengths</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">supercell</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">lengths</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">supercell</span><span class="o">.</span><span class="n">symbols</span><span class="p">)</span>
+    <span class="n">volume__bulk_atom</span> <span class="o">=</span> <span class="mf">16.465237835776012</span>
+    <span class="n">ideal_volume</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">supercell</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span> <span class="o">*</span> <span class="n">volume__bulk_atom</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">supercell</span><span class="o">.</span><span class="n">positions</span><span class="p">)</span> <span class="o">*</span> <span class="n">volume__bulk_atom</span><span class="p">,</span> <span class="n">supercell</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span>
+    <span class="n">x_0</span> <span class="o">=</span> <span class="n">ideal_volume</span> <span class="o">/</span> <span class="n">supercell</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">lengths</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">supercell</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">lengths</span><span class="p">()[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Zero volume expansion supercell length: </span><span class="si">{</span><span class="n">x_0</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">10</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> nm; &#39;</span>
+          <span class="sa">f</span><span class="s1">&#39; compared to actual </span><span class="si">{</span><span class="n">supercell</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">lengths</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">10</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1"> nm&#39;</span><span class="p">)</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">go</span><span class="o">.</span><span class="n">Scatter3d</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">plot_cell</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">plot_cell</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">z</span><span class="o">=</span><span class="n">plot_cell</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+                     <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+                     <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                         <span class="n">color</span><span class="o">=</span><span class="n">plot_cell</span><span class="o">.</span><span class="n">get_atomic_numbers</span><span class="p">(),</span>
+                         <span class="n">size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                         <span class="n">sizemode</span><span class="o">=</span><span class="s1">&#39;diameter&#39;</span><span class="p">,</span>
+                         <span class="n">colorscale</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;red&quot;</span><span class="p">]))])</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_aspectmode</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                      <span class="n">scene_aspectratio</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">camera</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">up</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">center</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">eye</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_camera</span><span class="o">=</span><span class="n">camera</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_scenes</span><span class="p">(</span><span class="n">camera_projection_type</span><span class="o">=</span><span class="s2">&quot;orthographic&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="plot_supercell_bonds"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.plot_supercell_bonds.html#pyTEMlib.graph_viz.plot_supercell_bonds">[docs]</a><span class="k">def</span> <span class="nf">plot_supercell_bonds</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">volumes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">atom_size</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    plot atoms and bonds with plotly</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    polyhedra: dict</span>
+<span class="sd">        dictionary of all polyhedra</span>
+<span class="sd">    atoms: ase.Atoms</span>
+<span class="sd">        optional structure info to plot atoms (with correct color)</span>
+<span class="sd">    volumes: list</span>
+<span class="sd">        list of volumes, optional structure</span>
+<span class="sd">    atoms_size: float</span>
+<span class="sd">        sie of atoms to plot</span>
+<span class="sd">    title: str</span>
+<span class="sd">        title of plot</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: plotly.figure</span>
+<span class="sd">        plotly figure instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">plot_bonds</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">volumes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">volumes</span> <span class="o">=</span> <span class="p">[</span><span class="n">atom_size</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_atomic_numbers</span><span class="p">())</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter3d</span><span class="p">(</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">z</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_atomic_numbers</span><span class="p">(),</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">volumes</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="n">sizemode</span><span class="o">=</span><span class="s1">&#39;diameter&#39;</span><span class="p">,</span>
+            <span class="n">colorscale</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;red&quot;</span><span class="p">])))</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_aspectmode</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                      <span class="n">scene_aspectratio</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">camera</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;up&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;center&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;eye&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}}</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_camera</span><span class="o">=</span><span class="n">camera</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_scenes</span><span class="p">(</span><span class="n">camera_projection_type</span><span class="o">=</span><span class="s2">&quot;orthographic&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="plot_supercell_polyhedra"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.plot_supercell_polyhedra.html#pyTEMlib.graph_viz.plot_supercell_polyhedra">[docs]</a><span class="k">def</span> <span class="nf">plot_supercell_polyhedra</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">volumes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    plot atoms and polyhedra with plotly</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    polyhedra: dict</span>
+<span class="sd">        dictionary of all polyhedra</span>
+<span class="sd">    indices: list</span>
+<span class="sd">        list of indices of polyhedra to plot</span>
+<span class="sd">    atoms: ase.Atoms</span>
+<span class="sd">        optional structure info to plot atoms (with correct color)</span>
+<span class="sd">    volumes: list</span>
+<span class="sd">        list of volumes, optional structure</span>
+<span class="sd">    title: str</span>
+<span class="sd">        title of plot</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: plotly.figure</span>
+<span class="sd">        plotly figure instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">plot_polyhedron</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">volumes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">volumes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_atomic_numbers</span><span class="p">())</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter3d</span><span class="p">(</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">z</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_atomic_numbers</span><span class="p">(),</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">volumes</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="n">sizemode</span><span class="o">=</span><span class="s1">&#39;diameter&#39;</span><span class="p">,</span>
+            <span class="n">colorscale</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;red&quot;</span><span class="p">])))</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_aspectmode</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                      <span class="n">scene_aspectratio</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">camera</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;up&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;center&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;eye&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}}</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_camera</span><span class="o">=</span><span class="n">camera</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_scenes</span><span class="p">(</span><span class="n">camera_projection_type</span><span class="o">=</span><span class="s2">&quot;orthographic&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="show_polyhedra"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.graph_viz.show_polyhedra.html#pyTEMlib.graph_viz.show_polyhedra">[docs]</a><span class="k">def</span> <span class="nf">show_polyhedra</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">boundary_polyhedra</span><span class="p">,</span> <span class="n">atoms</span><span class="p">,</span> <span class="n">volumes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    plot polyhedra and atoms of vertices with plotly</span>
+
+<span class="sd">    Parameter</span>
+<span class="sd">    ---------</span>
+<span class="sd">    polyhedra: dict</span>
+<span class="sd">        dictionary of all polyhedra</span>
+<span class="sd">    boundary_polyhedra: list</span>
+<span class="sd">        list of indices of polyhedra to plot</span>
+<span class="sd">    atoms: ase.Atoms</span>
+<span class="sd">        optional structure info to plot atoms (with correct color)</span>
+<span class="sd">    volumes: list</span>
+<span class="sd">        list of volumes, optional structure</span>
+<span class="sd">    title: str</span>
+<span class="sd">        title of plot</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: plotly.figure</span>
+<span class="sd">        plotly figure instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">plot_polyhedron</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">,</span> <span class="n">boundary_polyhedra</span><span class="p">)</span>
+    <span class="n">atom_indices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">poly</span> <span class="ow">in</span> <span class="n">boundary_polyhedra</span><span class="p">:</span>
+        <span class="n">atom_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">polyhedra</span><span class="p">[</span><span class="n">poly</span><span class="p">][</span><span class="s1">&#39;indices&#39;</span><span class="p">])</span>
+    <span class="n">atom_indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">atom_indices</span><span class="p">))</span>
+    <span class="n">atomic_numbers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">atomic_volumes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">atom_indices</span><span class="p">:</span>
+        <span class="n">atomic_numbers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="n">atom</span><span class="p">]</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+        <span class="n">atomic_volumes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">volumes</span><span class="p">[</span><span class="n">atoms</span><span class="p">[</span><span class="n">atom</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">volumes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">atomic_volumes</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_atomic_numbers</span><span class="p">())</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter3d</span><span class="p">(</span>
+        <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;markers&#39;</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">atom_indices</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">atom_indices</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">z</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[</span><span class="n">atom_indices</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">atomic_numbers</span><span class="p">,</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">atomic_volumes</span><span class="p">,</span>
+            <span class="n">sizemode</span><span class="o">=</span><span class="s1">&#39;diameter&#39;</span><span class="p">,</span>
+            <span class="n">colorscale</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span> <span class="s2">&quot;red&quot;</span><span class="p">])))</span>
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_aspectmode</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span>
+                      <span class="n">scene_aspectratio</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">camera</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;up&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;center&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">},</span>
+              <span class="s1">&#39;eye&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}}</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_camera</span><span class="o">=</span><span class="n">camera</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_scenes</span><span class="p">(</span><span class="n">camera_projection_type</span><span class="o">=</span><span class="s2">&quot;orthographic&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

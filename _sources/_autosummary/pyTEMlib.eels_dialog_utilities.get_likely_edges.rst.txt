@@ -1,0 +1,6 @@
+pyTEMlib.eels\_dialog\_utilities.get\_likely\_edges
+===================================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autofunction:: get_likely_edges

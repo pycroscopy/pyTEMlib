@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.eels_tools &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib.eels_tools</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/pyTEMlib.eels_tools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pyTEMlib.eels_tools">
+<span id="pytemlib-eels-tools"></span><h1>pyTEMlib.eels_tools<a class="headerlink" href="#module-pyTEMlib.eels_tools" title="Permalink to this heading">¶</a></h1>
+<p>eels_tools
+Model based quantification of electron energy-loss data
+Copyright by Gerd Duscher</p>
+<p>The University of Tennessee, Knoxville
+Department of Materials Science &amp; Engineering</p>
+<dl class="simple">
+<dt>Sources:</dt><dd><ol class="upperalpha simple" start="13">
+<li><p>Tian et al.</p></li>
+</ol>
+</dd>
+<dt>Units:</dt><dd><p>everything is in SI units, except length is given in nm and angles in mrad.</p>
+</dd>
+<dt>Usage:</dt><dd><p>See the notebooks for examples of these routines</p>
+</dd>
+</dl>
+<p>All the input and output is done through a dictionary which is to be found in the meta_data
+attribute of the sidpy.Dataset</p>
+<p>Update by Austin Houston, UTK 12-2023 : Parallization of spectrum images</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.add_element_to_dataset.html#pyTEMlib.eels_tools.add_element_to_dataset" title="pyTEMlib.eels_tools.add_element_to_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_element_to_dataset</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.add_peaks.html#pyTEMlib.eels_tools.add_peaks" title="pyTEMlib.eels_tools.add_peaks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_peaks</span></code></a></p></td>
+<td><p>add peaks to fitting parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.align_zero_loss.html#pyTEMlib.eels_tools.align_zero_loss" title="pyTEMlib.eels_tools.align_zero_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">align_zero_loss</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.assign_likely_edges.html#pyTEMlib.eels_tools.assign_likely_edges" title="pyTEMlib.eels_tools.assign_likely_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">assign_likely_edges</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.auto_chemical_composition.html#pyTEMlib.eels_tools.auto_chemical_composition" title="pyTEMlib.eels_tools.auto_chemical_composition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">auto_chemical_composition</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.auto_id_edges.html#pyTEMlib.eels_tools.auto_id_edges" title="pyTEMlib.eels_tools.auto_id_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">auto_id_edges</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.cl_model.html#pyTEMlib.eels_tools.cl_model" title="pyTEMlib.eels_tools.cl_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cl_model</span></code></a></p></td>
+<td><p>core loss model for fitting</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.drude.html#pyTEMlib.eels_tools.drude" title="pyTEMlib.eels_tools.drude"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drude</span></code></a></p></td>
+<td><p>dielectric function according to Drude theory</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.drude_lorentz.html#pyTEMlib.eels_tools.drude_lorentz" title="pyTEMlib.eels_tools.drude_lorentz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drude_lorentz</span></code></a></p></td>
+<td><p>dielectric function according to Drude-Lorentz theory</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.drude_simulation.html#pyTEMlib.eels_tools.drude_simulation" title="pyTEMlib.eels_tools.drude_simulation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drude_simulation</span></code></a></p></td>
+<td><p>probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.effective_collection_angle.html#pyTEMlib.eels_tools.effective_collection_angle" title="pyTEMlib.eels_tools.effective_collection_angle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">effective_collection_angle</span></code></a></p></td>
+<td><p>Calculates the effective collection angle in mrad:</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.find_all_edges.html#pyTEMlib.eels_tools.find_all_edges" title="pyTEMlib.eels_tools.find_all_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_all_edges</span></code></a></p></td>
+<td><p>Find all (major and minor) edges within an energy range</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.find_associated_edges.html#pyTEMlib.eels_tools.find_associated_edges" title="pyTEMlib.eels_tools.find_associated_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_associated_edges</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.find_edges.html#pyTEMlib.eels_tools.find_edges" title="pyTEMlib.eels_tools.find_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_edges</span></code></a></p></td>
+<td><p>find edges within a sidpy.Dataset</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.find_maxima.html#pyTEMlib.eels_tools.find_maxima" title="pyTEMlib.eels_tools.find_maxima"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_maxima</span></code></a></p></td>
+<td><p>find the first most prominent peaks</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.find_peaks.html#pyTEMlib.eels_tools.find_peaks" title="pyTEMlib.eels_tools.find_peaks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_peaks</span></code></a></p></td>
+<td><p>find peaks in spectrum</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.find_white_lines.html#pyTEMlib.eels_tools.find_white_lines" title="pyTEMlib.eels_tools.find_white_lines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_white_lines</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.fit_dataset.html#pyTEMlib.eels_tools.fit_dataset" title="pyTEMlib.eels_tools.fit_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_dataset</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.fit_edges.html#pyTEMlib.eels_tools.fit_edges" title="pyTEMlib.eels_tools.fit_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_edges</span></code></a></p></td>
+<td><p>fit edges for quantification</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.fit_edges2.html#pyTEMlib.eels_tools.fit_edges2" title="pyTEMlib.eels_tools.fit_edges2"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_edges2</span></code></a></p></td>
+<td><p>fit edges for quantification</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.fit_model.html#pyTEMlib.eels_tools.fit_model" title="pyTEMlib.eels_tools.fit_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_model</span></code></a></p></td>
+<td><p>model for fitting low-loss spectrum</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.fit_plasmon.html#pyTEMlib.eels_tools.fit_plasmon" title="pyTEMlib.eels_tools.fit_plasmon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_plasmon</span></code></a></p></td>
+<td><p>Fit plasmon peak positions and widths in a TEM dataset using a Drude model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.gauss.html#pyTEMlib.eels_tools.gauss" title="pyTEMlib.eels_tools.gauss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gauss</span></code></a></p></td>
+<td><p>Gaussian Function</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_channel_zero.html#pyTEMlib.eels_tools.get_channel_zero" title="pyTEMlib.eels_tools.get_channel_zero"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_channel_zero</span></code></a></p></td>
+<td><p>Determin shift of energy scale according to zero-loss peak position</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_resolution_functions.html#pyTEMlib.eels_tools.get_resolution_functions" title="pyTEMlib.eels_tools.get_resolution_functions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_resolution_functions</span></code></a></p></td>
+<td><p>Analyze and fit low-loss EELS data within a specified energy range to determine zero-loss peaks.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_spectrum.html#pyTEMlib.eels_tools.get_spectrum" title="pyTEMlib.eels_tools.get_spectrum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spectrum</span></code></a></p></td>
+<td><p>Parameter
+
+dataset: sidpy.Dataset object
+
+contains spectrum or spectrum image
+
+x: int default = 0
+
+x position of spectrum image
+
+y: int default = 0
+
+y position of spectrum
+
+bin_x: int default = 1
+
+binning of spectrum image in x-direction
+
+bin_y: int default = 1
+
+binning of spectrum image in y-direction</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_spectrum_eels_db.html#pyTEMlib.eels_tools.get_spectrum_eels_db" title="pyTEMlib.eels_tools.get_spectrum_eels_db"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_spectrum_eels_db</span></code></a></p></td>
+<td><p>get spectra from EELS database chemical formula and edge is accepted.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_wave_length.html#pyTEMlib.eels_tools.get_wave_length" title="pyTEMlib.eels_tools.get_wave_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_wave_length</span></code></a></p></td>
+<td><p>get deBroglie wavelength of electron accelerated by energy (in eV) e0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_x_sections.html#pyTEMlib.eels_tools.get_x_sections" title="pyTEMlib.eels_tools.get_x_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_x_sections</span></code></a></p></td>
+<td><p>Reads X-ray fluorescent cross-sections from a dictionary.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_z.html#pyTEMlib.eels_tools.get_z" title="pyTEMlib.eels_tools.get_z"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_z</span></code></a></p></td>
+<td><p>Returns the atomic number independent of input as a string or number</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.get_zero_loss_energy.html#pyTEMlib.eels_tools.get_zero_loss_energy" title="pyTEMlib.eels_tools.get_zero_loss_energy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_zero_loss_energy</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.identify_edges.html#pyTEMlib.eels_tools.identify_edges" title="pyTEMlib.eels_tools.identify_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identify_edges</span></code></a></p></td>
+<td><p>Using first derivative to determine edge onsets Any peak in first derivative higher than noise_level times standard deviation will be considered</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.kroeger_core.html#pyTEMlib.eels_tools.kroeger_core" title="pyTEMlib.eels_tools.kroeger_core"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kroeger_core</span></code></a></p></td>
+<td><p>This function calculates the differential scattering probability</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.list_all_edges.html#pyTEMlib.eels_tools.list_all_edges" title="pyTEMlib.eels_tools.list_all_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_all_edges</span></code></a></p></td>
+<td><p>List all ionization edges of an element with atomic number z</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.lorentz.html#pyTEMlib.eels_tools.lorentz" title="pyTEMlib.eels_tools.lorentz"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lorentz</span></code></a></p></td>
+<td><p>Lorentzian Function</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.make_cross_sections.html#pyTEMlib.eels_tools.make_cross_sections" title="pyTEMlib.eels_tools.make_cross_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_cross_sections</span></code></a></p></td>
+<td><p>Updates the edges dictionary with collection angle-integrated X-ray photo-absorption cross-sections</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.make_edges.html#pyTEMlib.eels_tools.make_edges" title="pyTEMlib.eels_tools.make_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_edges</span></code></a></p></td>
+<td><p>Makes the edges dictionary for quantification</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.model3.html#pyTEMlib.eels_tools.model3" title="pyTEMlib.eels_tools.model3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model3</span></code></a></p></td>
+<td><p>model for fitting low-loss spectrum</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.model_smooth.html#pyTEMlib.eels_tools.model_smooth" title="pyTEMlib.eels_tools.model_smooth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_smooth</span></code></a></p></td>
+<td><p>part of fit</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.plot_dispersion.html#pyTEMlib.eels_tools.plot_dispersion" title="pyTEMlib.eels_tools.plot_dispersion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_dispersion</span></code></a></p></td>
+<td><p>Plot loss function</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.power_law.html#pyTEMlib.eels_tools.power_law" title="pyTEMlib.eels_tools.power_law"><code class="xref py py-obj docutils literal notranslate"><span class="pre">power_law</span></code></a></p></td>
+<td><p>power law for power_law_background</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.power_law_background.html#pyTEMlib.eels_tools.power_law_background" title="pyTEMlib.eels_tools.power_law_background"><code class="xref py py-obj docutils literal notranslate"><span class="pre">power_law_background</span></code></a></p></td>
+<td><p>fit of power law to spectrum</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.read_msa.html#pyTEMlib.eels_tools.read_msa" title="pyTEMlib.eels_tools.read_msa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_msa</span></code></a></p></td>
+<td><p>read msa formated file</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.residuals_smooth.html#pyTEMlib.eels_tools.residuals_smooth" title="pyTEMlib.eels_tools.residuals_smooth"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals_smooth</span></code></a></p></td>
+<td><p>part of fit</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.second_derivative.html#pyTEMlib.eels_tools.second_derivative" title="pyTEMlib.eels_tools.second_derivative"><code class="xref py py-obj docutils literal notranslate"><span class="pre">second_derivative</span></code></a></p></td>
+<td><p>Calculates second derivative of a sidpy.dataset</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.set_default_metadata.html#pyTEMlib.eels_tools.set_default_metadata" title="pyTEMlib.eels_tools.set_default_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_default_metadata</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.shift_energy.html#pyTEMlib.eels_tools.shift_energy" title="pyTEMlib.eels_tools.shift_energy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shift_energy</span></code></a></p></td>
+<td><p>Align zero-loss peaks of any spectral sidpy dataset</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.sort_peaks.html#pyTEMlib.eels_tools.sort_peaks" title="pyTEMlib.eels_tools.sort_peaks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort_peaks</span></code></a></p></td>
+<td><p>sort fitting parameters by peak position</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.xsec_xrpa.html#pyTEMlib.eels_tools.xsec_xrpa" title="pyTEMlib.eels_tools.xsec_xrpa"><code class="xref py py-obj docutils literal notranslate"><span class="pre">xsec_xrpa</span></code></a></p></td>
+<td><p>Calculate momentum-integrated cross-section for EELS from X-ray photo-absorption cross-sections.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.zl.html#pyTEMlib.eels_tools.zl" title="pyTEMlib.eels_tools.zl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zl</span></code></a></p></td>
+<td><p>zero-loss function</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.eels_tools.zl_func.html#pyTEMlib.eels_tools.zl_func" title="pyTEMlib.eels_tools.zl_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">zl_func</span></code></a></p></td>
+<td><p>zero loss function as product of two lorentzians</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

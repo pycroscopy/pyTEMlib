@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.save\_dataset\_dictionary
+==============================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: save_dataset_dictionary

@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.find\_associated\_edges
+============================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: find_associated_edges

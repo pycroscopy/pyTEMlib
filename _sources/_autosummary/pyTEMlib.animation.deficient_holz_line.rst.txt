@@ -1,0 +1,6 @@
+pyTEMlib.animation.deficient\_holz\_line
+========================================
+
+.. currentmodule:: pyTEMlib.animation
+
+.. autofunction:: deficient_holz_line

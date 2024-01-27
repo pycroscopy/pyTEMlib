@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.plot\_atoms
+=================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: plot_atoms

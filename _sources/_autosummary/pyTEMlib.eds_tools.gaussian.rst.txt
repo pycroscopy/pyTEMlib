@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.gaussian
+============================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: gaussian

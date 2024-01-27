@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.zone\_mistilt
+============================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: zone_mistilt

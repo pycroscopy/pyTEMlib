@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.get\_eds\_xsection
+======================================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: get_eds_xsection

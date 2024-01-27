@@ -1,0 +1,67 @@
+pyTEMlib.file\_tools
+====================
+
+.. automodule:: pyTEMlib.file_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      add_dataset_from_file
+      add_to_dict
+      get_h5_filename
+      get_last_path
+      get_main_channel
+      get_start_channel
+      h5_add_crystal_structure
+      h5_add_to_structure
+      h5_get_crystal_structure
+      h5_group_to_dict
+      h5_tree
+      log_results
+      open_file
+      open_file_dialog_qt
+      read_cif
+      read_dm3_info
+      read_essential_metadata
+      read_nion_image_info
+      read_old_h5group
+      read_poscar
+      save_dataset
+      save_dataset_dictionary
+      save_file_dialog_qt
+      save_path
+      save_single_dataset
+      set_dimensions
+      update_directory_list
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      ChooseDataset
+      FileWidget
+   
+   
+
+   
+   
+   
+
+
+

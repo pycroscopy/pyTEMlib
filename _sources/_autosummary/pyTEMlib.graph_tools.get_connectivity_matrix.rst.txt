@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.get\_connectivity\_matrix
+===============================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: get_connectivity_matrix

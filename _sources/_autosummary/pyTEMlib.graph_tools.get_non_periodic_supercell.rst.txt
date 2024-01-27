@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.get\_non\_periodic\_supercell
+===================================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: get_non_periodic_supercell

@@ -1,0 +1,6 @@
+pyTEMlib.graph\_viz.plot\_super\_cell
+=====================================
+
+.. currentmodule:: pyTEMlib.graph_viz
+
+.. autofunction:: plot_super_cell

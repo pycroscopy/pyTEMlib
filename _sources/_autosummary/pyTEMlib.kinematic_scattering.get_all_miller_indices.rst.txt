@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.get\_all\_miller\_indices
+========================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: get_all_miller_indices

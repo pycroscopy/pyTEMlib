@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.assign\_likely\_edges
+==========================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: assign_likely_edges

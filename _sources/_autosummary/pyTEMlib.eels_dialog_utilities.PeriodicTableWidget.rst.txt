@@ -1,0 +1,26 @@
+pyTEMlib.eels\_dialog\_utilities.PeriodicTableWidget
+====================================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autoclass:: PeriodicTableWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~PeriodicTableWidget.get_output
+      ~PeriodicTableWidget.update
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.find\_overlapping\_spheres
+================================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: find_overlapping_spheres

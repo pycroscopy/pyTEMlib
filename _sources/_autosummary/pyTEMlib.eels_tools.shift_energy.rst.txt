@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.shift\_energy
+==================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: shift_energy

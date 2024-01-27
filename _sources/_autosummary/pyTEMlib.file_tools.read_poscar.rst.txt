@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.read\_poscar
+=================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: read_poscar

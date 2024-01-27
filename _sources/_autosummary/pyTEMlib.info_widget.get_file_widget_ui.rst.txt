@@ -1,0 +1,6 @@
+pyTEMlib.info\_widget.get\_file\_widget\_ui
+===========================================
+
+.. currentmodule:: pyTEMlib.info_widget
+
+.. autofunction:: get_file_widget_ui

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.viz &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../_autosummary/pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">pyTEMlib.viz</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for pyTEMlib.viz</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;plotting of sidpy Datasets with bokeh for google colab&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sidpy</span>
+<span class="kn">from</span> <span class="nn">sidpy.hdf.dtype_utils</span> <span class="kn">import</span> <span class="n">is_complex_dtype</span>
+
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
+<span class="kn">from</span> <span class="nn">plotly.subplots</span> <span class="kn">import</span> <span class="n">make_subplots</span>
+<span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">widgets</span>
+
+
+<span class="kn">import</span> <span class="nn">pyTEMlib.eels_tools</span> <span class="k">as</span> <span class="nn">eels</span>
+<span class="kn">import</span> <span class="nn">pyTEMlib.file_tools</span> <span class="k">as</span> <span class="nn">ft</span>
+
+
+<span class="sd">&quot;&quot;&quot;from bokeh.layouts import column</span>
+<span class="sd">from bokeh.plotting import figure  # , show, output_notebook</span>
+<span class="sd">from bokeh.models import CustomJS, Slider, Span</span>
+<span class="sd">from bokeh.models import LinearColorMapper, ColorBar, ColumnDataSource, BoxSelectTool</span>
+<span class="sd">from bokeh.palettes import Spectral11</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">pyTEMlib.sidpy_tools</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="c1"># from matplotlib.widgets import Slider, Button</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">patches</span>
+<span class="c1"># import matplotlib.animation as animation</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="o">.</span><span class="n">major</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="n">unicode</span> <span class="o">=</span> <span class="nb">str</span>
+
+<span class="n">default_cmap</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">viridis</span>
+
+
+
+<div class="viewcode-block" id="plot_stack"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.plot_stack.html#pyTEMlib.viz.plot_stack">[docs]</a><span class="k">def</span> <span class="nf">plot_stack</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;Viridis256&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plotting a stack of images</span>
+
+<span class="sd">    Plotting a stack of images contained in a sidpy.Dataset.</span>
+<span class="sd">    The images can be scrolled through with a slider widget.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset: sidpy.Dataset</span>
+<span class="sd">        sidpy dataset with data_type &#39;IMAGE_STACK&#39;</span>
+<span class="sd">    palette: bokeh palette</span>
+<span class="sd">        palette is optional</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p: bokeh plot</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt; import pyTEMlib</span>
+<span class="sd">    &gt;&gt; from bokeh.plotting import figure, show, output_notebook</span>
+<span class="sd">    &gt;&gt; output_notebook()</span>
+<span class="sd">    &gt;&gt; p = pyTEMlib.viz(dataset)</span>
+<span class="sd">    &gt;&gt; p.show(p)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Need a sidpy dataset for plotting&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;IMAGE_STACK&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Need an IMAGE_STACK for plotting a stack&#39;</span><span class="p">)</span>
+
+    <span class="n">stack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataset</span><span class="o">-</span><span class="n">dataset</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+    <span class="n">stack</span> <span class="o">=</span> <span class="n">stack</span><span class="o">/</span><span class="n">stack</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">*</span><span class="mi">256</span>
+    <span class="n">stack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">color_mapper</span> <span class="o">=</span> <span class="n">LinearColorMapper</span><span class="p">(</span><span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span><span class="n">match_aspect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_width</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">plot_height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+    <span class="n">im_plot</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="p">[</span><span class="n">stack</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">x</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dw</span><span class="o">=</span><span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">dh</span><span class="o">=</span><span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">color_mapper</span><span class="o">=</span><span class="n">color_mapper</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">x_range</span><span class="o">.</span><span class="n">range_padding</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">y_range</span><span class="o">.</span><span class="n">range_padding</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">axis_label</span> <span class="o">=</span> <span class="s1">&#39;distance (nm)&#39;</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">axis_label</span> <span class="o">=</span> <span class="s1">&#39;distance (nm)&#39;</span>
+
+    <span class="n">slider</span> <span class="o">=</span> <span class="n">Slider</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">stack</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;frame&quot;</span><span class="p">)</span>
+
+    <span class="n">update_curve</span> <span class="o">=</span> <span class="n">CustomJS</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">im_plot</span><span class="p">,</span> <span class="n">slider</span><span class="o">=</span><span class="n">slider</span><span class="p">,</span> <span class="n">stack</span><span class="o">=</span><span class="n">stack</span><span class="p">),</span>
+                            <span class="n">code</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;var f = slider.value;</span>
+<span class="s2">                                    source.data_source.data[&#39;image&#39;] = [stack[f]];</span>
+<span class="s2">                                    // necessary because we mutated source.data in-place</span>
+<span class="s2">                                    source.data_source.change.emit(); &quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="n">slider</span><span class="o">.</span><span class="n">js_on_change</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">update_curve</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">column</span><span class="p">(</span><span class="n">slider</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="plot_image"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.plot_image.html#pyTEMlib.viz.plot_image">[docs]</a><span class="k">def</span> <span class="nf">plot_image</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;Viridis256&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plotting an image</span>
+
+<span class="sd">    Plotting an image contained in a sidpy.Dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dataset: sidpy.Dataset</span>
+<span class="sd">        sidpy dataset with data_type &#39;IMAGE_STACK&#39;</span>
+<span class="sd">    palette: bokeh palette</span>
+<span class="sd">        palette is optional</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p: bokeh plot</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    &gt;&gt; import pyTEMlib</span>
+<span class="sd">    &gt;&gt; from bokeh.plotting import figure, show, output_notebook</span>
+<span class="sd">    &gt;&gt; output_notebook()</span>
+<span class="sd">    &gt;&gt; p = pyTEMlib.viz(dataset)</span>
+<span class="sd">    &gt;&gt; p.show(p)</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Need a sidpy dataset for plotting&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;IMAGE&#39;</span><span class="p">,</span> <span class="s1">&#39;IMAGE_STACK&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Need an IMAGE or IMAGE_STACK for plotting an image&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;IMAGE_STACK&#39;</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="s1">&#39;image&#39;</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">title</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">set_dimension</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">dim_1</span><span class="p">)</span>
+        <span class="n">image</span><span class="o">.</span><span class="n">set_dimension</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">dim_2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">dataset</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span><span class="n">tooltips</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;$x&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="s2">&quot;$y&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;@image&quot;</span><span class="p">)],</span> <span class="n">match_aspect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+               <span class="n">plot_width</span><span class="o">=</span><span class="mi">675</span><span class="p">,</span> <span class="n">plot_height</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="p">)</span>
+    <span class="n">color_mapper</span> <span class="o">=</span> <span class="n">LinearColorMapper</span><span class="p">(</span><span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">high</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
+
+    <span class="c1"># must give a vector of image data for image parameter</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="n">image</span><span class="o">=</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)],</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dw</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">dh</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">color_mapper</span><span class="o">=</span><span class="n">color_mapper</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="s2">&quot;image&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">x_range</span><span class="o">.</span><span class="n">range_padding</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">y_range</span><span class="o">.</span><span class="n">range_padding</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">p</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">grid_line_width</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">axis_label</span> <span class="o">=</span> <span class="s1">&#39;distance (nm)&#39;</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">axis_label</span> <span class="o">=</span> <span class="s1">&#39;distance (nm)&#39;</span>
+
+    <span class="n">color_bar</span> <span class="o">=</span> <span class="n">ColorBar</span><span class="p">(</span><span class="n">color_mapper</span><span class="o">=</span><span class="n">color_mapper</span><span class="p">,</span> <span class="n">major_label_text_font_size</span><span class="o">=</span><span class="s2">&quot;7pt&quot;</span><span class="p">,</span>
+                         <span class="n">label_standoff</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">border_line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_layout</span><span class="p">(</span><span class="n">color_bar</span><span class="p">,</span> <span class="s1">&#39;right&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span></div>
+
+
+<div class="viewcode-block" id="plot_spectrum"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.plot_spectrum.html#pyTEMlib.viz.plot_spectrum">[docs]</a><span class="k">def</span> <span class="nf">plot_spectrum</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">selected_range</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot spectrum&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Need a sidpy dataset for plotting&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;SPECTRUM&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Need an sidpy.Dataset of data_type SPECTRUM for plotting a spectrum &#39;</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">figure</span><span class="p">(</span><span class="n">x_axis_type</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">plot_width</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">plot_height</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
+               <span class="n">tooltips</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;index&quot;</span><span class="p">,</span> <span class="s2">&quot;$index&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;(x,y)&quot;</span><span class="p">,</span> <span class="s2">&quot;($x, $y)&quot;</span><span class="p">)],</span>
+               <span class="n">tools</span><span class="o">=</span><span class="s2">&quot;pan,wheel_zoom,box_zoom,reset, hover, lasso_select&quot;</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_tools</span><span class="p">(</span><span class="n">BoxSelectTool</span><span class="p">(</span><span class="n">dimensions</span><span class="o">=</span><span class="s2">&quot;width&quot;</span><span class="p">))</span>
+
+    <span class="c1"># first line is dataset</span>
+    <span class="n">spectrum</span> <span class="o">=</span> <span class="n">ColumnDataSource</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">dim_0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataset</span><span class="p">)))</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">spectrum</span><span class="p">,</span>
+              <span class="n">selection_color</span><span class="o">=</span><span class="s2">&quot;firebrick&quot;</span><span class="p">,</span> <span class="n">selection_alpha</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">spectrum</span><span class="p">,</span> <span class="n">legend_label</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">line_width</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c1"># add other lines if available</span>
+    <span class="k">if</span> <span class="s1">&#39;add2plot&#39;</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;add2plot&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">dim_0</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">line</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="n">legend_label</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;legend&#39;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">palette</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">line_width</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">legend</span><span class="o">.</span><span class="n">click_policy</span> <span class="o">=</span> <span class="s2">&quot;hide&quot;</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">axis_label</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">axis_label</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_descriptor</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">title</span>
+
+    <span class="n">my_span</span> <span class="o">=</span> <span class="n">Span</span><span class="p">(</span><span class="n">location</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">dimension</span><span class="o">=</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">add_layout</span><span class="p">(</span><span class="n">my_span</span><span class="p">)</span>
+
+    <span class="n">callback</span> <span class="o">=</span> <span class="n">CustomJS</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">s1</span><span class="o">=</span><span class="n">spectrum</span><span class="p">),</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        var inds = s1.selected.indices;</span>
+<span class="s2">        if (inds.length == 0)</span>
+<span class="s2">            return;</span>
+<span class="s2">        var kernel = IPython.notebook.kernel;</span>
+<span class="s2">        kernel.execute(&quot;selected_range = &quot; + [inds[0], inds[inds.length-1]]);&quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">spectrum</span><span class="o">.</span><span class="n">selected</span><span class="o">.</span><span class="n">js_on_change</span><span class="p">(</span><span class="s1">&#39;indices&#39;</span><span class="p">,</span> <span class="n">callback</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">p</span></div>
+
+
+<div class="viewcode-block" id="CurveVisualizer"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.CurveVisualizer.html#pyTEMlib.viz.CurveVisualizer">[docs]</a><span class="k">class</span> <span class="nc">CurveVisualizer</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plots a sidpy.Dataset with spectral dimension</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dset</span><span class="p">,</span> <span class="n">spectrum_number</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">leg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dset</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;dset should be a sidpy.Dataset object&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="n">axis</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">axis</span><span class="o">.</span><span class="n">figure</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dset</span> <span class="o">=</span> <span class="n">dset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_scale</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_dimensions_by_type</span><span class="p">(</span><span class="s1">&#39;spectral&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dset</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lined</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">line1</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_scale</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dset</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;spectrum&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">line1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">&#39;add2plot&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dset</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;add2plot&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">line_add</span><span class="p">,</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_scale</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>  <span class="n">line</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">line</span><span class="p">[</span><span class="s1">&#39;legend&#39;</span><span class="p">])</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_add</span><span class="p">)</span>
+
+            <span class="n">legend</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper right&#39;</span><span class="p">,</span> <span class="n">fancybox</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">shadow</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">legend</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mf">0.4</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">legline</span><span class="p">,</span> <span class="n">origline</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">legend</span><span class="o">.</span><span class="n">get_lines</span><span class="p">(),</span> <span class="n">lines</span><span class="p">):</span>
+                <span class="n">legline</span><span class="o">.</span><span class="n">set_picker</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">legline</span><span class="o">.</span><span class="n">set_pickradius</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># 5 pts tolerance</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lined</span><span class="p">[</span><span class="n">legline</span><span class="p">]</span> <span class="o">=</span> <span class="n">origline</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s1">&#39;pick_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">onpick</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dset</span><span class="o">.</span><span class="n">labels</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dset</span><span class="o">.</span><span class="n">data_descriptor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">ticklabel_format</span><span class="p">(</span><span class="n">style</span><span class="o">=</span><span class="s1">&#39;sci&#39;</span><span class="p">,</span> <span class="n">scilimits</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw_idle</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">x_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+        <span class="n">y_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x_limit</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y_limit</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">onpick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="c1"># on the pick event, find the orig line corresponding to the</span>
+        <span class="c1"># legend proxy line, and toggle the visibility</span>
+        <span class="n">legline</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">artist</span>
+        <span class="n">origline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lined</span><span class="p">[</span><span class="n">legline</span><span class="p">]</span>
+        <span class="n">vis</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">origline</span><span class="o">.</span><span class="n">get_visible</span><span class="p">()</span>
+        <span class="n">origline</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="n">vis</span><span class="p">)</span>
+        <span class="c1"># Change the alpha on the line in the legend so we can see what lines</span>
+        <span class="c1"># have been toggled</span>
+        <span class="k">if</span> <span class="n">vis</span><span class="p">:</span>
+            <span class="n">legline</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">legline</span><span class="o">.</span><span class="n">set_alpha</span><span class="p">(</span><span class="mf">0.2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="plot"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.plot.html#pyTEMlib.viz.plot">[docs]</a><span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s1">&#39;Viridis256&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;plot according to data_type&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;IMAGE_STACK&#39;</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">plot_stack</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;IMAGE&#39;</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">plot_image</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;SPECTRUM&#39;</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">plot_spectrum</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="n">palette</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">p</span></div>
+        
+<div class="viewcode-block" id="verify_spectrum_dataset"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.verify_spectrum_dataset.html#pyTEMlib.viz.verify_spectrum_dataset">[docs]</a><span class="k">def</span> <span class="nf">verify_spectrum_dataset</span><span class="p">(</span><span class="n">datasets</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">sidpy</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Channel_000&#39;</span><span class="p">:</span> <span class="n">datasets</span><span class="p">}</span>
+    
+    <span class="n">first_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">datasets</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">has_complex_dataset</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">dat</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+         <span class="k">if</span> <span class="n">is_complex_dtype</span><span class="p">(</span><span class="n">dat</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+             <span class="n">has_complex_dataset</span> <span class="o">=</span> <span class="kc">True</span>
+    
+             
+    <span class="k">if</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;SPECTRUM&#39;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;We need a spectrum dataset here&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Wrong dimensions for spectrum datasset&#39;</span><span class="p">)</span>
+    
+    <span class="n">energy_dim</span> <span class="o">=</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">get_spectrum_dims</span><span class="p">()</span>
+    <span class="n">energy_dim</span> <span class="o">=</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">get_dimension_by_number</span><span class="p">(</span><span class="n">energy_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">energy_dim</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">energy_dim</span><span class="o">.</span><span class="n">quantity</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">energy_dim</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s1">)&#39;</span>
+    
+    <span class="n">default_plot_dictionary</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;title&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;theme&#39;</span><span class="p">:</span> <span class="s2">&quot;plotly_white&quot;</span><span class="p">,</span>
+                                <span class="s1">&#39;y_scale&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                                <span class="s1">&#39;y_axis_label&#39;</span><span class="p">:</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">data_descriptor</span><span class="p">,</span>
+                                <span class="s1">&#39;x_axis_label&#39;</span><span class="p">:</span> <span class="n">energy_dim</span><span class="o">.</span><span class="n">label</span><span class="p">,</span>
+                                <span class="s1">&#39;show_legend&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                                <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+                                <span class="s1">&#39;figure_size&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                                <span class="s1">&#39;scale_bar&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                                <span class="s1">&#39;colorbar&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                                <span class="s1">&#39;set_title&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                                <span class="s1">&#39;has_complex_dataset&#39;</span><span class="p">:</span> <span class="n">has_complex_dataset</span><span class="p">}</span>
+        
+    
+    <span class="n">default_plot_dictionary</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;plot_parameter&#39;</span><span class="p">])</span>
+    <span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;plot_parameter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_plot_dictionary</span>
+            
+    <span class="k">return</span> <span class="n">datasets</span></div>
+
+<div class="viewcode-block" id="spectrum_view_plotly"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.spectrum_view_plotly.html#pyTEMlib.viz.spectrum_view_plotly">[docs]</a><span class="k">def</span> <span class="nf">spectrum_view_plotly</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">figure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+   
+    <span class="n">datasets</span> <span class="o">=</span>  <span class="n">verify_spectrum_dataset</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+    <span class="n">first_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">datasets</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">plot_dic</span> <span class="o">=</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;plot_parameter&#39;</span><span class="p">]</span>
+    
+    <span class="k">if</span> <span class="n">figure</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;has_complex_dataset&#39;</span><span class="p">]:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">make_subplots</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">subplot_titles</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Magnitude&quot;</span><span class="p">,</span> <span class="s2">&quot;Phase&quot;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">()</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">figure</span>
+
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">dat</span> <span class="ow">in</span> <span class="n">datasets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">dat</span><span class="o">.</span><span class="n">data_type</span> <span class="o">==</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">data_type</span><span class="p">:</span>
+            <span class="n">energy_dim</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">get_spectrum_dims</span><span class="p">()</span>
+            <span class="n">energy_dim</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">get_dimension_by_number</span><span class="p">(</span><span class="n">energy_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">is_complex_dtype</span><span class="p">(</span><span class="n">dat</span><span class="o">.</span><span class="n">dtype</span><span class="p">):</span>
+               <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">energy_dim</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">*</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_scale&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dat</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s1">-Magnitude&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;lines+markers&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span> <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+               <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">energy_dim</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">*</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_scale&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">dat</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s1">-Phase&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;lines+markers&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span> <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">energy_dim</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dat</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">*</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_scale&#39;</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="n">dat</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;lines+markers&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">)))</span>
+           
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span>
+        <span class="n">selectdirection</span><span class="o">=</span><span class="s1">&#39;h&#39;</span><span class="p">,</span>
+        <span class="n">showlegend</span> <span class="o">=</span> <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;show_legend&#39;</span><span class="p">],</span>
+        <span class="n">dragmode</span><span class="o">=</span><span class="s1">&#39;select&#39;</span><span class="p">,</span>
+        <span class="n">title_text</span><span class="o">=</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">],</span>
+        <span class="n">yaxis_title_text</span><span class="o">=</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_axis_label&#39;</span><span class="p">],</span>
+        <span class="n">xaxis_title_text</span><span class="o">=</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;x_axis_label&#39;</span><span class="p">],</span>
+        <span class="n">height</span><span class="o">=</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">],</span>
+        <span class="n">template</span><span class="o">=</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;theme&#39;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">hovermode</span><span class="o">=</span><span class="s1">&#39;x unified&#39;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;has_complex_dataset&#39;</span><span class="p">]:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">update_yaxes</span><span class="p">(</span><span class="n">title_text</span><span class="o">=</span><span class="s1">&#39;angle (rad)&#39;</span><span class="p">,</span> <span class="n">row</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">col</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">update_xaxes</span><span class="p">(</span><span class="n">title_text</span><span class="o">=</span><span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;x_axis_label&#39;</span><span class="p">],</span> <span class="n">row</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">col</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;displayModeBar&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="SpectrumView"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.SpectrumView.html#pyTEMlib.viz.SpectrumView">[docs]</a><span class="k">class</span> <span class="nc">SpectrumView</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">figure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">first_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">datasets</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">data_type</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;SPECTRUM&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;We need a spectrum dataset here&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Wrong dimensions for spectrum datasset&#39;</span><span class="p">)</span>
+        
+        <span class="n">energy_dim</span> <span class="o">=</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">get_spectrum_dims</span><span class="p">()</span>
+        <span class="n">energy_dim</span> <span class="o">=</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">get_dimension_by_number</span><span class="p">(</span><span class="n">energy_dim</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s1">&#39;plot_parameter&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+            <span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;plot_parameter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">plot_dic</span> <span class="o">=</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;plot_parameter&#39;</span><span class="p">]</span>
+        <span class="n">energy_dim</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">energy_dim</span><span class="o">.</span><span class="n">quantity</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">energy_dim</span><span class="o">.</span><span class="n">units</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+        <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;theme&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;theme&#39;</span><span class="p">,</span> <span class="s2">&quot;plotly_white&quot;</span><span class="p">)</span>
+        <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;y_scale&#39;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_axis_label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;y_axis_label&#39;</span><span class="p">,</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">data_descriptor</span><span class="p">)</span>
+        <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;x_axis_label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;x_axis_label&#39;</span><span class="p">,</span> <span class="n">energy_dim</span><span class="o">.</span><span class="n">label</span><span class="p">)</span>
+        <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+    
+
+        <span class="k">if</span> <span class="s1">&#39;incident_beam_current_counts&#39;</span> <span class="ow">in</span> <span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">]:</span>
+            <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1e6</span><span class="o">/</span><span class="n">first_dataset</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s1">&#39;experiment&#39;</span><span class="p">][</span><span class="s1">&#39;incident_beam_current_counts&#39;</span><span class="p">]</span>
+            <span class="n">plot_dic</span><span class="p">[</span><span class="s1">&#39;y_axis_label&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; probability (ppm)&#39;</span>
+        <span class="c1"># plot_dic[&#39;y_scale&#39;] = 1e6/first_dataset.sum()</span>
+
+        <span class="k">def</span> <span class="nf">selection_fn</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span><span class="n">points</span><span class="p">,</span><span class="n">selector</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">energy_selection</span> <span class="o">=</span> <span class="p">[</span><span class="n">points</span><span class="o">.</span><span class="n">point_inds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">points</span><span class="o">.</span><span class="n">point_inds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">spectrum_view_plotly</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">FigureWidget</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">on_selection</span><span class="p">(</span><span class="n">selection_fn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">on_click</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">identify_edges</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">edge_annotation</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edge_line</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_edge</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="o">=</span> <span class="n">display</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SpectrumView.initialize_edge"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.SpectrumView.html#pyTEMlib.viz.SpectrumView.initialize_edge">[docs]</a>    <span class="k">def</span> <span class="nf">initialize_edge</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; Intitalizes edge cursor</span>
+<span class="sd">            Should be run first so that edge cursor is first</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edge_annotation</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">annotations</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edge_line</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">shapes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">add_vline</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">line_dash</span><span class="o">=</span><span class="s2">&quot;dot&quot;</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">,</span>
+                    <span class="n">annotation_text</span><span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> 
+                    <span class="n">annotation_position</span><span class="o">=</span><span class="s2">&quot;top right&quot;</span><span class="p">,</span>
+                    <span class="n">visible</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">identify_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trace</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">selector</span><span class="p">):</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">edge_names</span> <span class="o">=</span> <span class="n">find_edge_names</span><span class="p">(</span><span class="n">points</span><span class="o">.</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_annotation</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="o">=</span><span class="n">energy</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_annotation</span><span class="p">]</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">edge_names</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;annotations&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_annotation</span><span class="p">]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;shapes&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_line</span><span class="p">]</span><span class="o">.</span><span class="n">x0</span> <span class="o">=</span> <span class="n">energy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;shapes&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_line</span><span class="p">]</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">energy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;shapes&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">edge_line</span><span class="p">]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">add_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>  <span class="n">text</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;blue&#39;</span><span class="p">):</span> 
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">regions</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">regions</span><span class="p">[</span><span class="n">text</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;annotation&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">annotations</span><span class="p">),</span>
+                                <span class="s1">&#39;shape&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">shapes</span><span class="p">),</span>
+                                <span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span>
+                                <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="n">end</span><span class="p">,</span>
+                                <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">add_vrect</span><span class="p">(</span><span class="n">x0</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> 
+                <span class="n">annotation_text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">annotation_position</span><span class="o">=</span><span class="s2">&quot;top left&quot;</span><span class="p">,</span>
+                <span class="n">fillcolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">opacity</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">line_width</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_region</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">update_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span> 
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">regions</span><span class="p">:</span>
+            <span class="n">region</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">regions</span><span class="p">[</span><span class="n">text</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span><span class="n">start</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;shapes&#39;</span><span class="p">][</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;shape&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">x0</span> <span class="o">=</span> <span class="n">start</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="p">[</span><span class="s1">&#39;shapes&#39;</span><span class="p">][</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;shape&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">x1</span> <span class="o">=</span> <span class="n">end</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">regions_visibility</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">regions</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">annotations</span><span class="p">[</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;annotation&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="n">visibility</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">spectrum_widget</span><span class="o">.</span><span class="n">layout</span><span class="o">.</span><span class="n">shapes</span><span class="p">[</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;shape&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="n">visibility</span></div>
+
+
+<div class="viewcode-block" id="find_edge_names"><a class="viewcode-back" href="../../_autosummary/pyTEMlib.viz.find_edge_names.html#pyTEMlib.viz.find_edge_names">[docs]</a><span class="k">def</span> <span class="nf">find_edge_names</span><span class="p">(</span><span class="n">energy_value</span><span class="p">):</span>
+
+    <span class="n">selected_edges</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">shift</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">]:</span>
+        <span class="n">selected_edge</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">eels</span><span class="o">.</span><span class="n">find_major_edges</span><span class="p">(</span><span class="n">energy_value</span><span class="p">,</span> <span class="n">shift</span><span class="p">)</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">edge</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">energy</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">selected_edge</span> <span class="o">=</span> <span class="n">name</span>
+
+            <span class="k">if</span> <span class="n">selected_edge</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">selected_edges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">selected_edge</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_edges</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">selected_edges</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

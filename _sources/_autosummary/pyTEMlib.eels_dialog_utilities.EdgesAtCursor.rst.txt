@@ -1,0 +1,28 @@
+pyTEMlib.eels\_dialog\_utilities.EdgesAtCursor
+==============================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autoclass:: EdgesAtCursor
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~EdgesAtCursor.click
+      ~EdgesAtCursor.del_edges
+      ~EdgesAtCursor.disconnect
+      ~EdgesAtCursor.mouse_move
+   
+   
+
+   
+   
+   

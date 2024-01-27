@@ -1,0 +1,6 @@
+pyTEMlib.info\_widget.get\_info\_sidebar
+========================================
+
+.. currentmodule:: pyTEMlib.info_widget
+
+.. autofunction:: get_info_sidebar

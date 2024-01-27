@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.stage\_rotation\_matrix
+======================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: stage_rotation_matrix

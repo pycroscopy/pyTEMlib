@@ -1,0 +1,41 @@
+pyTEMlib.peak\_dialog
+=====================
+
+.. automodule:: pyTEMlib.peak_dialog
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      get_sidebar
+      smooth
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      PeakFitWidget
+   
+   
+
+   
+   
+   
+
+
+

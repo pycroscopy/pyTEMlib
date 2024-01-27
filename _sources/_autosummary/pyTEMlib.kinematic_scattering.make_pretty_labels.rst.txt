@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.make\_pretty\_labels
+===================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: make_pretty_labels

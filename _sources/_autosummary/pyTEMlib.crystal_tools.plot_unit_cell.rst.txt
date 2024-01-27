@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.plot\_unit\_cell
+========================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: plot_unit_cell

@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.jmol\_viewer
+====================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: jmol_viewer

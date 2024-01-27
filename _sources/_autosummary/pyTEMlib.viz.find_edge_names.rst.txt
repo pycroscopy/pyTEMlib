@@ -1,0 +1,6 @@
+pyTEMlib.viz.find\_edge\_names
+==============================
+
+.. currentmodule:: pyTEMlib.viz
+
+.. autofunction:: find_edge_names

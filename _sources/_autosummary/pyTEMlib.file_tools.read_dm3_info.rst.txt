@@ -1,0 +1,6 @@
+pyTEMlib.file\_tools.read\_dm3\_info
+====================================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autofunction:: read_dm3_info

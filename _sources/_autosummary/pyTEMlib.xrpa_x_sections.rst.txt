@@ -1,0 +1,23 @@
+pyTEMlib.xrpa\_x\_sections
+==========================
+
+.. automodule:: pyTEMlib.xrpa_x_sections
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

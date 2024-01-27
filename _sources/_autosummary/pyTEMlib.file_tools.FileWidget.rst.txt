@@ -1,0 +1,85 @@
+pyTEMlib.file\_tools.FileWidget
+===============================
+
+.. currentmodule:: pyTEMlib.file_tools
+
+.. autoclass:: FileWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~FileWidget.add_class
+      ~FileWidget.add_dataset
+      ~FileWidget.add_traits
+      ~FileWidget.blur
+      ~FileWidget.class_own_trait_events
+      ~FileWidget.class_own_traits
+      ~FileWidget.class_trait_names
+      ~FileWidget.class_traits
+      ~FileWidget.close
+      ~FileWidget.close_all
+      ~FileWidget.focus
+      ~FileWidget.get_directory
+      ~FileWidget.get_file_name
+      ~FileWidget.get_manager_state
+      ~FileWidget.get_state
+      ~FileWidget.get_view_spec
+      ~FileWidget.handle_comm_opened
+      ~FileWidget.handle_control_comm_opened
+      ~FileWidget.has_trait
+      ~FileWidget.hold_sync
+      ~FileWidget.hold_trait_notifications
+      ~FileWidget.notify_change
+      ~FileWidget.observe
+      ~FileWidget.on_msg
+      ~FileWidget.on_trait_change
+      ~FileWidget.on_widget_constructed
+      ~FileWidget.open
+      ~FileWidget.remove_class
+      ~FileWidget.select_dataset
+      ~FileWidget.select_main
+      ~FileWidget.send
+      ~FileWidget.send_state
+      ~FileWidget.set_dir
+      ~FileWidget.set_options
+      ~FileWidget.set_state
+      ~FileWidget.set_trait
+      ~FileWidget.setup_instance
+      ~FileWidget.trait_defaults
+      ~FileWidget.trait_events
+      ~FileWidget.trait_has_value
+      ~FileWidget.trait_metadata
+      ~FileWidget.trait_names
+      ~FileWidget.trait_values
+      ~FileWidget.traits
+      ~FileWidget.unobserve
+      ~FileWidget.unobserve_all
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FileWidget.comm
+      ~FileWidget.cross_validation_lock
+      ~FileWidget.keys
+      ~FileWidget.layout
+      ~FileWidget.log
+      ~FileWidget.model_id
+      ~FileWidget.tabbable
+      ~FileWidget.tooltip
+      ~FileWidget.widget_types
+      ~FileWidget.widgets
+   
+   

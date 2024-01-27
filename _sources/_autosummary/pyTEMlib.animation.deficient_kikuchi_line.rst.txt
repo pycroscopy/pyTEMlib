@@ -1,0 +1,6 @@
+pyTEMlib.animation.deficient\_kikuchi\_line
+===========================================
+
+.. currentmodule:: pyTEMlib.animation
+
+.. autofunction:: deficient_kikuchi_line

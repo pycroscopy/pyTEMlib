@@ -1,0 +1,6 @@
+pyTEMlib.eds\_tools.detector\_response
+======================================
+
+.. currentmodule:: pyTEMlib.eds_tools
+
+.. autofunction:: detector_response

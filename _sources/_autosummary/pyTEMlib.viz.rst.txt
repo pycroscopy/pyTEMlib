@@ -1,0 +1,47 @@
+pyTEMlib.viz
+============
+
+.. automodule:: pyTEMlib.viz
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      find_edge_names
+      plot
+      plot_image
+      plot_spectrum
+      plot_stack
+      spectrum_view_plotly
+      verify_spectrum_dataset
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      CurveVisualizer
+      SpectrumView
+   
+   
+
+   
+   
+   
+
+
+

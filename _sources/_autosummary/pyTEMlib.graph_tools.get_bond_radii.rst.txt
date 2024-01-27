@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.get\_bond\_radii
+======================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: get_bond_radii

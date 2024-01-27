@@ -1,0 +1,6 @@
+pyTEMlib.crystal\_tools.set\_bond\_radii
+========================================
+
+.. currentmodule:: pyTEMlib.crystal_tools
+
+.. autofunction:: set_bond_radii

@@ -1,0 +1,6 @@
+pyTEMlib.eels\_dialog\_utilities.make\_box\_layout
+==================================================
+
+.. currentmodule:: pyTEMlib.eels_dialog_utilities
+
+.. autofunction:: make_box_layout

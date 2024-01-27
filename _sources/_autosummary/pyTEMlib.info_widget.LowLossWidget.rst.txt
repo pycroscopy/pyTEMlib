@@ -1,0 +1,46 @@
+pyTEMlib.info\_widget.LowLossWidget
+===================================
+
+.. currentmodule:: pyTEMlib.info_widget
+
+.. autoclass:: LowLossWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~LowLossWidget.add_dataset
+      ~LowLossWidget.fix_energy_scale
+      ~LowLossWidget.get_additional_spectrum
+      ~LowLossWidget.get_directory
+      ~LowLossWidget.get_file_name
+      ~LowLossWidget.get_resolution_function
+      ~LowLossWidget.get_spectrum
+      ~LowLossWidget.line_select_callback
+      ~LowLossWidget.plot
+      ~LowLossWidget.plot_spectrum
+      ~LowLossWidget.plot_spectrum_image
+      ~LowLossWidget.select_dataset
+      ~LowLossWidget.select_main
+      ~LowLossWidget.set_action
+      ~LowLossWidget.set_binning
+      ~LowLossWidget.set_dataset
+      ~LowLossWidget.set_dir
+      ~LowLossWidget.set_file_options
+      ~LowLossWidget.set_image
+      ~LowLossWidget.set_y_scale
+      ~LowLossWidget.update_dataset
+      ~LowLossWidget.update_sidebar
+   
+   
+
+   
+   
+   

@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.find\_polyhedra
+=====================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: find_polyhedra

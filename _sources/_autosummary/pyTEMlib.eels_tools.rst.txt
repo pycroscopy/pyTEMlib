@@ -1,0 +1,81 @@
+pyTEMlib.eels\_tools
+====================
+
+.. automodule:: pyTEMlib.eels_tools
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      add_element_to_dataset
+      add_peaks
+      align_zero_loss
+      assign_likely_edges
+      auto_chemical_composition
+      auto_id_edges
+      cl_model
+      drude
+      drude_lorentz
+      drude_simulation
+      effective_collection_angle
+      find_all_edges
+      find_associated_edges
+      find_edges
+      find_maxima
+      find_peaks
+      find_white_lines
+      fit_dataset
+      fit_edges
+      fit_edges2
+      fit_model
+      fit_plasmon
+      gauss
+      get_channel_zero
+      get_resolution_functions
+      get_spectrum
+      get_spectrum_eels_db
+      get_wave_length
+      get_x_sections
+      get_z
+      get_zero_loss_energy
+      identify_edges
+      kroeger_core
+      list_all_edges
+      lorentz
+      make_cross_sections
+      make_edges
+      model3
+      model_smooth
+      plot_dispersion
+      power_law
+      power_law_background
+      read_msa
+      residuals_smooth
+      second_derivative
+      set_default_metadata
+      shift_energy
+      sort_peaks
+      xsec_xrpa
+      zl
+      zl_func
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

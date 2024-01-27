@@ -1,0 +1,46 @@
+pyTEMlib.animation
+==================
+
+.. automodule:: pyTEMlib.animation
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      add_aperture
+      add_lens
+      deficient_holz_line
+      deficient_kikuchi_line
+      geometric_ray_diagram
+      propagate_beam
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+      :nosignatures:
+   
+      InteractiveAberration
+      InteractiveRonchigramMagnification
+   
+   
+
+   
+   
+   
+
+
+

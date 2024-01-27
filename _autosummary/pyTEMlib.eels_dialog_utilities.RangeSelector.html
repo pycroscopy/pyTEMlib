@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.eels_dialog_utilities.RangeSelector &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib.eels_dialog_utilities.RangeSelector</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/pyTEMlib.eels_dialog_utilities.RangeSelector.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pytemlib-eels-dialog-utilities-rangeselector">
+<h1>pyTEMlib.eels_dialog_utilities.RangeSelector<a class="headerlink" href="#pytemlib-eels-dialog-utilities-rangeselector" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyTEMlib.eels_dialog_utilities.</span></span><span class="sig-name descname"><span class="pre">RangeSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_select</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyTEMlib/eels_dialog_utilities.html#RangeSelector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://matplotlib.org/stable/api/widgets_api.html#matplotlib.widgets.RectangleSelector" title="(in Matplotlib v3.8.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RectangleSelector</span></code></a></p>
+<p>Select ranges of edge fitting interactively</p>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.add_state" title="pyTEMlib.eels_dialog_utilities.RangeSelector.add_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_state</span></code></a></p></td>
+<td><p>Add a state to define the widget's behavior.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.clear" title="pyTEMlib.eels_dialog_utilities.RangeSelector.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear</span></code></a></p></td>
+<td><p>Clear the selection and set the selector ready to make a new one.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.connect_default_events" title="pyTEMlib.eels_dialog_utilities.RangeSelector.connect_default_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connect_default_events</span></code></a></p></td>
+<td><p>Connect the major canvas events to methods.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.connect_event" title="pyTEMlib.eels_dialog_utilities.RangeSelector.connect_event"><code class="xref py py-obj docutils literal notranslate"><span class="pre">connect_event</span></code></a></p></td>
+<td><p>Connect a callback function with an event.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.disconnect_events" title="pyTEMlib.eels_dialog_utilities.RangeSelector.disconnect_events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">disconnect_events</span></code></a></p></td>
+<td><p>Disconnect all events created by this widget.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_shape</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.get_active" title="pyTEMlib.eels_dialog_utilities.RangeSelector.get_active"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_active</span></code></a></p></td>
+<td><p>Get whether the widget is active.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.get_visible" title="pyTEMlib.eels_dialog_utilities.RangeSelector.get_visible"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_visible</span></code></a></p></td>
+<td><p>Get the visibility of the selector artists.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.ignore" title="pyTEMlib.eels_dialog_utilities.RangeSelector.ignore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ignore</span></code></a></p></td>
+<td><p>Return whether <em>event</em> should be ignored.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_press" title="pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_press"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_key_press</span></code></a></p></td>
+<td><p>Key press event handler and validator for all selection widgets.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_release" title="pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_key_release</span></code></a></p></td>
+<td><p>Key release event handler and validator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.on_scroll" title="pyTEMlib.eels_dialog_utilities.RangeSelector.on_scroll"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_scroll</span></code></a></p></td>
+<td><p>Mouse scroll event handler and validator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.onmove" title="pyTEMlib.eels_dialog_utilities.RangeSelector.onmove"><code class="xref py py-obj docutils literal notranslate"><span class="pre">onmove</span></code></a></p></td>
+<td><p>Cursor move event handler and validator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.press" title="pyTEMlib.eels_dialog_utilities.RangeSelector.press"><code class="xref py py-obj docutils literal notranslate"><span class="pre">press</span></code></a></p></td>
+<td><p>Button press handler and validator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.release" title="pyTEMlib.eels_dialog_utilities.RangeSelector.release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">release</span></code></a></p></td>
+<td><p>Button release event handler and validator.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.remove_state" title="pyTEMlib.eels_dialog_utilities.RangeSelector.remove_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_state</span></code></a></p></td>
+<td><p>Remove a state to define the widget's behavior.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_active" title="pyTEMlib.eels_dialog_utilities.RangeSelector.set_active"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_active</span></code></a></p></td>
+<td><p>Set whether the widget is active.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_handle_props" title="pyTEMlib.eels_dialog_utilities.RangeSelector.set_handle_props"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_handle_props</span></code></a></p></td>
+<td><p>Set the properties of the handles selector artist.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_props" title="pyTEMlib.eels_dialog_utilities.RangeSelector.set_props"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_props</span></code></a></p></td>
+<td><p>Set the properties of the selector artist.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_visible" title="pyTEMlib.eels_dialog_utilities.RangeSelector.set_visible"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_visible</span></code></a></p></td>
+<td><p>Set the visibility of the selector artists.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.update" title="pyTEMlib.eels_dialog_utilities.RangeSelector.update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update</span></code></a></p></td>
+<td><p>Draw using blit() or draw_idle(), depending on <code class="docutils literal notranslate"><span class="pre">self.useblit</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.update_background" title="pyTEMlib.eels_dialog_utilities.RangeSelector.update_background"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_background</span></code></a></p></td>
+<td><p>Force an update of the background.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.active" title="pyTEMlib.eels_dialog_utilities.RangeSelector.active"><code class="xref py py-obj docutils literal notranslate"><span class="pre">active</span></code></a></p></td>
+<td><p>Is the widget active?</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.artists" title="pyTEMlib.eels_dialog_utilities.RangeSelector.artists"><code class="xref py py-obj docutils literal notranslate"><span class="pre">artists</span></code></a></p></td>
+<td><p>Tuple of the artists of the selector.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.center" title="pyTEMlib.eels_dialog_utilities.RangeSelector.center"><code class="xref py py-obj docutils literal notranslate"><span class="pre">center</span></code></a></p></td>
+<td><p>Center of rectangle in data coordinates.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.corners" title="pyTEMlib.eels_dialog_utilities.RangeSelector.corners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corners</span></code></a></p></td>
+<td><p>Corners of rectangle in data coordinates from lower left, moving clockwise.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">drawon</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.edge_centers" title="pyTEMlib.eels_dialog_utilities.RangeSelector.edge_centers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edge_centers</span></code></a></p></td>
+<td><p>Midpoint of rectangle edges in data coordinates from left, moving anti-clockwise.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">eventson</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.extents" title="pyTEMlib.eels_dialog_utilities.RangeSelector.extents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extents</span></code></a></p></td>
+<td><p>Return (xmin, xmax, ymin, ymax) in data coordinates as defined by the bounding box before rotation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.geometry" title="pyTEMlib.eels_dialog_utilities.RangeSelector.geometry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">geometry</span></code></a></p></td>
+<td><p>Return an array of shape (2, 5) containing the x (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[1,</span> <span class="pre">:]</span></code>) and y (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[0,</span> <span class="pre">:]</span></code>) data coordinates of the four corners of the rectangle starting and ending in the top left corner.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.rotation" title="pyTEMlib.eels_dialog_utilities.RangeSelector.rotation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rotation</span></code></a></p></td>
+<td><p>Rotation in degree in interval [-45°, 45°].</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_modifier_keys</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">visible</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.active">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">active</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is the widget active?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.add_state">
+<span class="sig-name descname"><span class="pre">add_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.add_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a state to define the widget’s behavior. See the
+<cite>state_modifier_keys</cite> parameters for details.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>state</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Must be a supported state of the selector. See the
+<cite>state_modifier_keys</cite> parameters for details.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.12)"><strong>ValueError</strong></a> – When the state is not supported by the selector.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.artists">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">artists</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.artists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tuple of the artists of the selector.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.center">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">center</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.center" title="Permalink to this definition">¶</a></dt>
+<dd><p>Center of rectangle in data coordinates.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear the selection and set the selector ready to make a new one.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.connect_default_events">
+<span class="sig-name descname"><span class="pre">connect_default_events</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.connect_default_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect the major canvas events to methods.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.connect_event">
+<span class="sig-name descname"><span class="pre">connect_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.connect_event" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect a callback function with an event.</p>
+<p>This should be used in lieu of <code class="docutils literal notranslate"><span class="pre">figure.canvas.mpl_connect</span></code> since this
+function stores callback ids for later clean up.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.corners">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">corners</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.corners" title="Permalink to this definition">¶</a></dt>
+<dd><p>Corners of rectangle in data coordinates from lower left,
+moving clockwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.disconnect_events">
+<span class="sig-name descname"><span class="pre">disconnect_events</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.disconnect_events" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disconnect all events created by this widget.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.edge_centers">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">edge_centers</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.edge_centers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Midpoint of rectangle edges in data coordinates from left,
+moving anti-clockwise.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.extents">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extents</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.extents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return (xmin, xmax, ymin, ymax) in data coordinates as defined by the
+bounding box before rotation.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.geometry">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">geometry</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an array of shape (2, 5) containing the
+x (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[1,</span> <span class="pre">:]</span></code>) and
+y (<code class="docutils literal notranslate"><span class="pre">RectangleSelector.geometry[0,</span> <span class="pre">:]</span></code>) data coordinates of the four
+corners of the rectangle starting and ending in the top left corner.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.get_active">
+<span class="sig-name descname"><span class="pre">get_active</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.get_active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get whether the widget is active.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.get_visible">
+<span class="sig-name descname"><span class="pre">get_visible</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.get_visible" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the visibility of the selector artists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.ignore">
+<span class="sig-name descname"><span class="pre">ignore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.ignore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return whether <em>event</em> should be ignored.</p>
+<p>This method should be called at the beginning of any event callback.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_press">
+<span class="sig-name descname"><span class="pre">on_key_press</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key press event handler and validator for all selection widgets.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_release">
+<span class="sig-name descname"><span class="pre">on_key_release</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.on_key_release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key release event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.on_scroll">
+<span class="sig-name descname"><span class="pre">on_scroll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.on_scroll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mouse scroll event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.onmove">
+<span class="sig-name descname"><span class="pre">onmove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.onmove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cursor move event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.press">
+<span class="sig-name descname"><span class="pre">press</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Button press handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.release">
+<span class="sig-name descname"><span class="pre">release</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Button release event handler and validator.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.remove_state">
+<span class="sig-name descname"><span class="pre">remove_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.remove_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove a state to define the widget’s behavior. See the
+<cite>state_modifier_keys</cite> parameters for details.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>state</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><em>str</em></a>) – Must be a supported state of the selector. See the
+<cite>state_modifier_keys</cite> parameters for details.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.12)"><strong>ValueError</strong></a> – When the state is not supported by the selector.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.rotation">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rotation</span></span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.rotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotation in degree in interval [-45°, 45°]. The rotation is limited in
+range to keep the implementation simple.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.set_active">
+<span class="sig-name descname"><span class="pre">set_active</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_active" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set whether the widget is active.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.set_handle_props">
+<span class="sig-name descname"><span class="pre">set_handle_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">handle_props</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_handle_props" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the properties of the handles selector artist. See the
+<cite>handle_props</cite> argument in the selector docstring to know which
+properties are supported.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.set_props">
+<span class="sig-name descname"><span class="pre">set_props</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">props</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_props" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the properties of the selector artist. See the <cite>props</cite> argument
+in the selector docstring to know which properties are supported.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.set_visible">
+<span class="sig-name descname"><span class="pre">set_visible</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">visible</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.set_visible" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the visibility of the selector artists.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw using blit() or draw_idle(), depending on <code class="docutils literal notranslate"><span class="pre">self.useblit</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyTEMlib.eels_dialog_utilities.RangeSelector.update_background">
+<span class="sig-name descname"><span class="pre">update_background</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pyTEMlib.eels_dialog_utilities.RangeSelector.update_background" title="Permalink to this definition">¶</a></dt>
+<dd><p>Force an update of the background.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

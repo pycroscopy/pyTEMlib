@@ -1,0 +1,6 @@
+pyTEMlib.dynamic\_scattering.potential\_2dim
+============================================
+
+.. currentmodule:: pyTEMlib.dynamic_scattering
+
+.. autofunction:: potential_2dim

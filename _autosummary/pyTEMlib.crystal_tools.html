@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pyTEMlib.crystal_tools &mdash; pyTEMlib 0.2024.01.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=d4dee072"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pyTEMlib
+          </a>
+              <div class="version">
+                0.2024.01.1
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">pyTEMlib</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../about.html">pyTEMlib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact.html">Contact us</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../revisions.html">Revisions</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyTEMlib.html">pyTEMlib</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pyTEMlib</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pyTEMlib.crystal_tools</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/pyTEMlib.crystal_tools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pyTEMlib.crystal_tools">
+<span id="pytemlib-crystal-tools"></span><h1>pyTEMlib.crystal_tools<a class="headerlink" href="#module-pyTEMlib.crystal_tools" title="Permalink to this heading">¶</a></h1>
+<p>crystal_tools</p>
+<p>part of pyTEMlib</p>
+<p>Author: Gerd Duscher</p>
+<p>Provides convenient functions to make most regular crystal structures</p>
+<p>Contains also a dictionary of crystal structures and atomic form factors</p>
+<dl class="simple">
+<dt>Units:</dt><dd><p>everything is in SI units, except length is given in nm.
+angles are assumed to be in degree but will be internally converted to rad</p>
+</dd>
+<dt>Usage:</dt><dd><p>See the notebooks for examples of these routines</p>
+</dd>
+</dl>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.atoms_from_dictionary.html#pyTEMlib.crystal_tools.atoms_from_dictionary" title="pyTEMlib.crystal_tools.atoms_from_dictionary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">atoms_from_dictionary</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.ball_and_stick.html#pyTEMlib.crystal_tools.ball_and_stick" title="pyTEMlib.crystal_tools.ball_and_stick"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ball_and_stick</span></code></a></p></td>
+<td><p>Calculates the data to plot a ball and stick model</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.get_dictionary.html#pyTEMlib.crystal_tools.get_dictionary" title="pyTEMlib.crystal_tools.get_dictionary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_dictionary</span></code></a></p></td>
+<td><p>structure dictionary from ase.Atoms object</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.get_projection.html#pyTEMlib.crystal_tools.get_projection" title="pyTEMlib.crystal_tools.get_projection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_projection</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.get_symmetry.html#pyTEMlib.crystal_tools.get_symmetry" title="pyTEMlib.crystal_tools.get_symmetry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_symmetry</span></code></a></p></td>
+<td><p>Symmetry analysis with spglib</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.jmol_viewer.html#pyTEMlib.crystal_tools.jmol_viewer" title="pyTEMlib.crystal_tools.jmol_viewer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">jmol_viewer</span></code></a></p></td>
+<td><p>jmol viewer of ase .Atoms object requires jupyter-jsmol to be installed (available through conda or pip)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.plot_super_cell.html#pyTEMlib.crystal_tools.plot_super_cell" title="pyTEMlib.crystal_tools.plot_super_cell"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_super_cell</span></code></a></p></td>
+<td><p>make a super_cell to plot with extra atoms at periodic boundaries</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.plot_unit_cell.html#pyTEMlib.crystal_tools.plot_unit_cell" title="pyTEMlib.crystal_tools.plot_unit_cell"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_unit_cell</span></code></a></p></td>
+<td><p>Simple plot of unit cell</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.set_bond_radii.html#pyTEMlib.crystal_tools.set_bond_radii" title="pyTEMlib.crystal_tools.set_bond_radii"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_bond_radii</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="pyTEMlib.crystal_tools.structure_by_name.html#pyTEMlib.crystal_tools.structure_by_name" title="pyTEMlib.crystal_tools.structure_by_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">structure_by_name</span></code></a></p></td>
+<td><p>Provides crystal structure in ase.Atoms format.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Gerd Duscher, and contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

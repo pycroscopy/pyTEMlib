@@ -1,0 +1,50 @@
+pyTEMlib.kinematic\_scattering
+==============================
+
+.. automodule:: pyTEMlib.kinematic_scattering
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+      :nosignatures:
+   
+      Zuo_fig_3_18
+      check_sanity
+      example
+      feq
+      find_angles
+      find_nearest_zone_axis
+      get_all_miller_indices
+      get_dynamically_allowed
+      get_metric_tensor
+      get_rotation_matrix
+      get_wavelength
+      get_zone_rotation
+      kinematic_scattering
+      make_pretty_labels
+      read_poscar
+      ring_pattern_calculation
+      scattering_matrix
+      stage_rotation_matrix
+      vector_norm
+      zone_mistilt
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

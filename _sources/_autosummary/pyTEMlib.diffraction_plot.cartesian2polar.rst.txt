@@ -1,0 +1,6 @@
+pyTEMlib.diffraction\_plot.cartesian2polar
+==========================================
+
+.. currentmodule:: pyTEMlib.diffraction_plot
+
+.. autofunction:: cartesian2polar

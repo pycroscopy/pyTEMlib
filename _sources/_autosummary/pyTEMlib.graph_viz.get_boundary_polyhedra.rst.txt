@@ -1,0 +1,6 @@
+pyTEMlib.graph\_viz.get\_boundary\_polyhedra
+============================================
+
+.. currentmodule:: pyTEMlib.graph_viz
+
+.. autofunction:: get_boundary_polyhedra

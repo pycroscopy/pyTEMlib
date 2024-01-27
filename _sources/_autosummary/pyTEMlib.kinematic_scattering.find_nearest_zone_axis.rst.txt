@@ -1,0 +1,6 @@
+pyTEMlib.kinematic\_scattering.find\_nearest\_zone\_axis
+========================================================
+
+.. currentmodule:: pyTEMlib.kinematic_scattering
+
+.. autofunction:: find_nearest_zone_axis

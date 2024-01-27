@@ -1,0 +1,6 @@
+pyTEMlib.probe\_tools.get\_source\_energy\_spread
+=================================================
+
+.. currentmodule:: pyTEMlib.probe_tools
+
+.. autofunction:: get_source_energy_spread

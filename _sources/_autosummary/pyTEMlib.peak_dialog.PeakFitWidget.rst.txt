@@ -1,0 +1,41 @@
+pyTEMlib.peak\_dialog.PeakFitWidget
+===================================
+
+.. currentmodule:: pyTEMlib.peak_dialog
+
+.. autoclass:: PeakFitWidget
+   :members:
+   :show-inheritance:
+   :inherited-members:
+   :special-members: __call__, __add__, __mul__
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :nosignatures:
+   
+      ~PeakFitWidget.find_peaks
+      ~PeakFitWidget.find_white_lines
+      ~PeakFitWidget.fit_peaks
+      ~PeakFitWidget.line_select_callback
+      ~PeakFitWidget.make_model
+      ~PeakFitWidget.modify_peak_amplitude
+      ~PeakFitWidget.modify_peak_position
+      ~PeakFitWidget.modify_peak_width
+      ~PeakFitWidget.peak_selection
+      ~PeakFitWidget.plot
+      ~PeakFitWidget.set_action
+      ~PeakFitWidget.set_dataset
+      ~PeakFitWidget.set_fit_area
+      ~PeakFitWidget.set_peak_list
+      ~PeakFitWidget.set_y_scale
+      ~PeakFitWidget.smooth
+      ~PeakFitWidget.update
+   
+   
+
+   
+   
+   

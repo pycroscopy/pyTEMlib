@@ -1,0 +1,6 @@
+pyTEMlib.graph\_viz.plot\_polyhedron
+====================================
+
+.. currentmodule:: pyTEMlib.graph_viz
+
+.. autofunction:: plot_polyhedron

@@ -1,0 +1,6 @@
+pyTEMlib.eels\_tools.set\_default\_metadata
+===========================================
+
+.. currentmodule:: pyTEMlib.eels_tools
+
+.. autofunction:: set_default_metadata

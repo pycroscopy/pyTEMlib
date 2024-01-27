@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.circum\_center
+====================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: circum_center

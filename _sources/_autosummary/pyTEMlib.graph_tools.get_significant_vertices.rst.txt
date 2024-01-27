@@ -1,0 +1,6 @@
+pyTEMlib.graph\_tools.get\_significant\_vertices
+================================================
+
+.. currentmodule:: pyTEMlib.graph_tools
+
+.. autofunction:: get_significant_vertices

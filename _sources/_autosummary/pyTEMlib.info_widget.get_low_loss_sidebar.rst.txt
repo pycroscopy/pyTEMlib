@@ -1,0 +1,6 @@
+pyTEMlib.info\_widget.get\_low\_loss\_sidebar
+=============================================
+
+.. currentmodule:: pyTEMlib.info_widget
+
+.. autofunction:: get_low_loss_sidebar
