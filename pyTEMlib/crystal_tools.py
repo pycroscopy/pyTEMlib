@@ -27,6 +27,7 @@ import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
 from scipy.spatial import cKDTree
+import scipy 
 _spglib_present = True
 try:
     import spglib
@@ -284,6 +285,7 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     bond_matrix = neighbor_list.get_connectivity_matrix()
 
     bond_matrix = np.triu(bond_matrix.toarray())
+    bond_matrix = scipy.sparse.dok_array(bond_matrix)
     if super_cell.info is None:
         super_cell.info = {}
     super_cell.info['plot_cell'] = {'bond_matrix': bond_matrix, 'corner_vectors': corner_vectors,

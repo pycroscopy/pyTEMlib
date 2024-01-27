@@ -43,7 +43,7 @@ class TestUtilityFunctions(unittest.TestCase):
                          [0, 0, 0, 0, 0, 0, 0, 0, 1],
                          [0, 0, 0, 0, 0, 0, 0, 0, 1],
                          [0, 0, 0, 0, 0, 0, 0, 0, 0]]
-        np.testing.assert_allclose(cell_2_plot.info['plot_cell']['bond_matrix'], bonds_desired)
+        np.testing.assert_allclose(cell_2_plot.info['plot_cell']['bond_matrix'].toarray(), bonds_desired)
 
     def test_from_dictionary(self):
         tags = {'unit_cell': np.array([[4.05, 0, 0], [0, 4.05, 0], [0, 0, 4.05]]),
