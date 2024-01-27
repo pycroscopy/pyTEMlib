@@ -211,3 +211,11 @@ notebooks/Imaging/data/lineweight.txt
 .pyTEMlib.files.pkl
 notebooks/EELS/relax.csv
 Untitled.ipynb
+example_data/GOLD-NP-DIFF-2-3.hf5
+example_data/GOLD-NP-DIFF-2-4.hf5
+notebooks/Imaging/EMDReader_Spectrum_FEI.emd
+notebooks/Imaging/EMDReader_Spectrum_FEI.emd.tmp
+notebooks/Imaging/DMReader_EELS_STO (1).dm3
+notebooks/Imaging/DMReader_EELS_STO.dm3
+notebooks/Imaging/EMDReader_Spectrum_FEI (1).emd
+notebooks/Imaging/NionReader_ImageStack_STO_HAADF.h5

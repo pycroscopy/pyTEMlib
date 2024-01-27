@@ -81,7 +81,7 @@ def get_wavelength(e0):
     return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
 
 
-def fourier_transform(dset):
+def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
     """
         Reads information into dictionary 'tags', performs 'FFT', and provides a smoothed FT and reciprocal
         and intensity limits for visualization.
@@ -115,7 +115,7 @@ def fourier_transform(dset):
         if len(image_dim) != 2:
             raise ValueError('need at least two SPATIAL dimension for an image stack')
 
-        for i in range(dset.dims):
+        for i in range(dset.ndim):
             if i in image_dim:
                 selection.append(slice(None))
             if len(stack_dim) == 0:
@@ -206,7 +206,7 @@ def power_spectrum(dset, smoothing=3):
     return power_spec
 
 
-def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
+def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     """Find spots in diffractogram and sort them by distance from center
 
     Uses blob_log from scipy.spatial
@@ -216,6 +216,10 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
     dset: sidpy.Dataset
         diffractogram
     spot_threshold: float
+        threshold for blob finder
+    return_center: bool, optional
+        return center of image if true
+    eps: float, optional
         threshold for blob finder
 
     Returns
@@ -247,7 +251,9 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
     # third row is angles
     spots[:, 2] = np.arctan2(spots[:, 0], spots[:, 1])
 
-    if return_center == True:
+    center = [0, 0]
+
+    if return_center:
         points = spots[:, 0:2]
 
         # Calculate the midpoints between all points
@@ -256,14 +262,14 @@ def diffractogram_spots(dset, spot_threshold, return_center = True, eps = 0.1):
         midpoints = midpoints.reshape(-1, 2)
 
         # Find the most dense cluster of midpoints
-        dbscan = DBSCAN(eps = eps, min_samples = 2)
+        dbscan = DBSCAN(eps=eps, min_samples=2)
         labels = dbscan.fit_predict(midpoints)
         cluster_counter = Counter(labels)
         largest_cluster_label = max(cluster_counter, key=cluster_counter.get)
         largest_cluster_points = midpoints[labels == largest_cluster_label]
 
         # Average of these midpoints must be the center
-        center = np.mean(largest_cluster_points,axis=0)
+        center = np.mean(largest_cluster_points, axis=0)
 
     return spots, center
 
@@ -367,16 +373,17 @@ def complete_registration(main_dataset, storage_channel=None):
     print('Rigid_Registration')
 
     rigid_registered_dataset = rigid_registration(main_dataset)
-    if storage_channel is None:
-        storage_channel = main_dataset.h5_dataset.parent.parent
 
-    registration_channel = ft.log_results(storage_channel, rigid_registered_dataset)
+    if storage_channel is not None:
+        registration_channel = ft.log_results(storage_channel, rigid_registered_dataset)
 
     print('Non-Rigid_Registration')
 
     non_rigid_registered = demon_registration(rigid_registered_dataset)
-    registration_channel = ft.log_results(storage_channel, non_rigid_registered)
+    if storage_channel is not None:
+        registration_channel = ft.log_results(storage_channel, non_rigid_registered)
 
+    non_rigid_registered.h5_dataset = registration_channel
     return non_rigid_registered, rigid_registered_dataset
 
 
@@ -435,8 +442,6 @@ def demon_registration(dataset, verbose=False):
     resampler.SetReferenceImage(fixed)
     resampler.SetInterpolator(sitk.sitkBSpline)
     resampler.SetDefaultPixelValue(0)
-
-    done = 0
 
     for i in trange(nimages):
 
@@ -515,7 +520,7 @@ def rigid_registration(dataset):
           ' pixels in y-direction')
     
     fixed = dataset[tuple(selection)].squeeze().compute()
-    fft_fixed =  np.fft.fft2(fixed)
+    fft_fixed = np.fft.fft2(fixed)
     
     relative_drift = [[0., 0.]]
     
@@ -525,12 +530,10 @@ def rigid_registration(dataset):
         fft_moving = np.fft.fft2(moving)
         image_product = fft_fixed * fft_moving.conj()
         cc_image = np.fft.fftshift(np.fft.ifft2(image_product))
-        shift =np.array(ndimage.maximum_position(cc_image.real))-cc_image.shape[0]/2
+        shift = np.array(ndimage.maximum_position(cc_image.real))-cc_image.shape[0]/2
         fft_fixed = fft_moving
         relative_drift.append(shift)
     rig_reg, drift = rig_reg_drift(dataset, relative_drift)
-
-    
     crop_reg, input_crop = crop_image_stack(rig_reg, drift)
     
     rigid_registered = dataset.like_data(crop_reg)
@@ -538,20 +541,11 @@ def rigid_registration(dataset):
     rigid_registered.source = dataset.title
     rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
                                  'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
-
-    # if hasattr(rigid_registered, 'z'):
-    #    del rigid_registered.z
-    # if hasattr(rigid_registered, 'x'):
-    #    del rigid_registered.x
-    # if hasattr(rigid_registered, 'y'):
-    #    del rigid_registered.y
-
-
-    # rigid_registered._axes = {}
     rigid_registered.set_dimension(0, dataset._axes[frame_dim[0]])
     rigid_registered.set_dimension(1, dataset._axes[spatial_dim[0]][input_crop[0]:input_crop[1]])
     rigid_registered.set_dimension(2, dataset._axes[spatial_dim[1]][input_crop[2]:input_crop[3]])
     return rigid_registered.rechunk({0: 'auto', 1: -1, 2: -1})
+
 
 def rig_reg_drift(dset, rel_drift):
     """ Shifting images on top of each other
@@ -605,7 +599,8 @@ def rig_reg_drift(dset, rel_drift):
     for i in range(rig_reg.shape[0]):
         selection[frame_dim[0]] = slice(i, i+1)
         # Now we shift
-        rig_reg[i, :, :] = ndimage.shift(dset[tuple(selection)].squeeze().compute(), [drift[i, 0], drift[i, 1]], order=3)
+        rig_reg[i, :, :] = ndimage.shift(dset[tuple(selection)].squeeze().compute(),
+                                         [drift[i, 0], drift[i, 1]], order=3)
     return rig_reg, drift
 
 
@@ -630,6 +625,7 @@ def crop_image_stack(rig_reg, drift):
     ypmax = int(rig_reg.shape[2] - np.ceil(np.max(np.array(drift)[:, 1])))
 
     return rig_reg[:, xpmin:xpmax, ypmin:ypmax], [xpmin, xpmax, ypmin, ypmax]
+
 
 class ImageWithLineProfile:
     """Image with line profile"""
@@ -702,18 +698,21 @@ class ImageWithLineProfile:
 class LineSelector(matplotlib.widgets.PolygonSelector):
     def __init__(self, ax, onselect, line_width=1, **kwargs):
         super().__init__(ax, onselect, **kwargs)
-        bounds  =ax.viewLim.get_points()
+        bounds = ax.viewLim.get_points()
         np.max(bounds[0])
-        self.line_verts = np.array( [[np.max(bounds[1])/2, np.max(bounds[0])/5], [np.max(bounds[1])/2, np.max(bounds[0])/5+1],  
-                                     [np.max(bounds[1])/5, np.max(bounds[0])/2], [np.max(bounds[1])/5, np.max(bounds[0])/2]])
+        self.line_verts = np.array([[np.max(bounds[1])/2, np.max(bounds[0])/5], [np.max(bounds[1])/2,
+                                                                                 np.max(bounds[0])/5+1],
+                                    [np.max(bounds[1])/5, np.max(bounds[0])/2], [np.max(bounds[1])/5,
+                                                                                 np.max(bounds[0])/2]])
         self.verts = self.line_verts
         self.line_width = line_width
 
-    def set_linewidth(self, line_width):
-        self.line_width = line_width
+    def set_linewidth(self, line_width=None):
+        if line_width is not None:
+            self.line_width = line_width
 
-        m = -(self.line_verts[0,1]-self.line_verts[3,1])/(self.line_verts[0,0]-self.line_verts[3,0])
-        c =  1/np.sqrt(1+m**2)
+        m = -(self.line_verts[0, 1]-self.line_verts[3, 1])/(self.line_verts[0, 0]-self.line_verts[3, 0])
+        c = 1/np.sqrt(1+m**2)
         s = c*m
         self.line_verts[1] = [self.line_verts[0, 0]+self.line_width*s, self.line_verts[0, 1]+self.line_width*c]
         self.line_verts[2] = [self.line_verts[3, 0]+self.line_width*s, self.line_verts[3, 1]+self.line_width*c]
@@ -722,20 +721,14 @@ class LineSelector(matplotlib.widgets.PolygonSelector):
 
     def onmove(self, event):
         super().onmove(event)
-        if np.max(np.linalg.norm(self.line_verts-self.verts, axis=1))>1:
+        if np.max(np.linalg.norm(self.line_verts-self.verts, axis=1)) > 1:
             self.moved_point = np.argmax(np.linalg.norm(self.line_verts-self.verts, axis=1))
             
             self.new_point = self.verts[self.moved_point]
             moved_point = int(np.floor(self.moved_point/2)*3)
             self.moved_point = moved_point
             self.line_verts[moved_point] = self.new_point
-            m = -(self.line_verts[0,1]-self.line_verts[3,1])/(self.line_verts[0,0]-self.line_verts[3,0])
-            c =  1/np.sqrt(1+m**2)
-            s = c*m
-            self.line_verts[1] = [self.line_verts[0, 0]+self.line_width*s, self.line_verts[0, 1]+self.line_width*c]
-            self.line_verts[2] = [self.line_verts[3, 0]+self.line_width*s, self.line_verts[3, 1]+self.line_width*c]
-                        
-            self.verts = self.line_verts.copy()
+            self.set_linewidth()
 
 
 def histogram_plot(image_tags):
@@ -752,10 +745,9 @@ def histogram_plot(image_tags):
     vmax = image_tags['maximum_intensity']
     if 'color_map' not in image_tags:
         image_tags['color_map'] = color_map_list[0]
+
     cmap = plt.cm.get_cmap(image_tags['color_map'])
-
     colors = cmap(np.linspace(0., 1., nbins))
-
     norm2 = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
     hist, bin_edges = np.histogram(data, np.linspace(vmin, vmax, nbins), density=True)
 
@@ -764,9 +756,7 @@ def histogram_plot(image_tags):
     def onselect(vmin, vmax):
         ax1.clear()
         cmap = plt.cm.get_cmap(image_tags['color_map'])
-
         colors = cmap(np.linspace(0., 1., nbins))
-
         norm2 = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
         hist2, bin_edges2 = np.histogram(data, np.linspace(vmin, vmax, nbins), density=True)
 
@@ -802,7 +792,7 @@ def histogram_plot(image_tags):
             else:
                 vmax = data.max()
                 vmin = data.min()
-        onselect(vmin, vmax)
+            onselect(vmin, vmax)
 
     fig2 = plt.figure()
 
@@ -961,8 +951,8 @@ def warp(diff):
     pix2nm = np.gradient(diff.u.values)[0]
     center_pixel = [abs(min(diff.u.values)), abs(min(diff.v.values))]//pix2nm
 
-    x = np.linspace(1, nx, nx, endpoint = True)-center_pixel[0]
-    y = np.linspace(1, ny, ny, endpoint = True)-center_pixel[1]
+    x = np.linspace(1, nx, nx, endpoint=True)-center_pixel[0]
+    y = np.linspace(1, ny, ny, endpoint=True)-center_pixel[1]
     z = diff
 
     # Define new polar grid
@@ -970,9 +960,9 @@ def warp(diff):
     nt = 360*3
 
     r = np.linspace(1, nr, nr)
-    t = np.linspace(0., np.pi, nt, endpoint = False)
+    t = np.linspace(0., np.pi, nt, endpoint=False)
 
-    return cartesian2polar(x,y, z, r, t, order=3)
+    return cartesian2polar(x, y, z, r, t, order=3)
 
 
 def calculate_ctf(wavelength, cs, defocus, k):
@@ -1028,15 +1018,14 @@ def get_rotation(experiment_spots, crystal_spots):
     
     # get crystal spots of same length and sort them by angle as well
     r_crystal, phi_crystal, crystal_indices = xy2polar(crystal_spots)
-    angle_index = np.argmin(np.abs(r_experiment-r_crystal[1]) )
-    rotation_angle = phi_experiment[angle_index]%(2*np.pi) - phi_crystal[1]
+    angle_index = np.argmin(np.abs(r_experiment-r_crystal[1]))
+    rotation_angle = phi_experiment[angle_index] % (2*np.pi) - phi_crystal[1]
     print(phi_experiment[angle_index])
     st = np.sin(rotation_angle)
     ct = np.cos(rotation_angle)
     rotation_matrix = np.array([[ct, -st], [st, ct]])
 
     return rotation_matrix, rotation_angle
-
 
 
 def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
@@ -1058,7 +1047,6 @@ def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
     x0 = [1.001, 0.999]
     [dg, sig] = optimization.leastsq(func, x0, args=(closest_exp_reflections[:, 0], closest_exp_reflections[:, 1]))
     return dg
-
 
 
 def align_crystal_reflections(spots, crystals):

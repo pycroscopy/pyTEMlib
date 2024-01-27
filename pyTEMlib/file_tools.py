@@ -47,8 +47,12 @@ Dimension = sidpy.Dimension
 get_slope = sidpy.base.num_utils.get_slope
 __version__ = '2022.3.3'
 
+from traitlets import Unicode, Bool, validate, TraitError
+import ipywidgets 
 
-class FileWidget(object):
+
+@ipywidgets.register
+class FileWidget(ipywidgets.DOMWidget):
     """Widget to select directories or widgets from a list
 
     Works in google colab.
@@ -95,7 +99,7 @@ class FileWidget(object):
         self.dir_list = ['.']
         self.extensions = extension
         self.file_name = ''
-        self.datasets ={}
+        self.datasets = {}
         self.dataset = None
 
         self.select_files = widgets.Select(
@@ -108,28 +112,29 @@ class FileWidget(object):
         )
         
         select_button = widgets.Button(description='Select Main',
-                     layout=widgets.Layout(width='auto', grid_area='header'),
-                     style=widgets.ButtonStyle(button_color='lightblue'))
+                                       layout=widgets.Layout(width='auto', grid_area='header'),
+                                       style=widgets.ButtonStyle(button_color='lightblue'))
         
         add_button = widgets.Button(description='Add',
-                     layout=widgets.Layout(width='auto', grid_area='header'),
-                     style=widgets.ButtonStyle(button_color='lightblue'))
+                                    layout=widgets.Layout(width='auto', grid_area='header'),
+                                    style=widgets.ButtonStyle(button_color='lightblue'))
         
         self.path_choice = widgets.Dropdown(options=['None'],
-                                             value='None',
-                                             description='directory:',
-                                             disabled=False,
-                                             button_style='',
-                                             layout=widgets.Layout(width='90%'))
+                                            value='None',
+                                            description='directory:',
+                                            disabled=False,
+                                            button_style='',
+                                            layout=widgets.Layout(width='90%'))
         self.dataset_list = ['None']
         self.loaded_datasets = widgets.Dropdown(options=self.dataset_list,
-                                             value=self.dataset_list[0],
-                                             description='loaded datasets:',
-                                             disabled=False,
-                                             button_style='')
+                                                value=self.dataset_list[0],
+                                                description='loaded datasets:',
+                                                disabled=False,
+                                                button_style='')
         
         self.set_options()
-        ui = widgets.VBox([self.path_choice, self.select_files, widgets.HBox([select_button, add_button, self.loaded_datasets])])
+        ui = widgets.VBox([self.path_choice, self.select_files, widgets.HBox([select_button, add_button,
+                                                                              self.loaded_datasets])])
         display(ui)
         
         self.select_files.observe(self.get_file_name, names='value')
@@ -137,14 +142,13 @@ class FileWidget(object):
 
         select_button.on_click(self.select_main)
         add_button.on_click(self.add_dataset)
-        self.loaded_datasets.observe(self.selected_dataset)
+        self.loaded_datasets.observe(self.select_dataset)
 
     def select_main(self, value=0):
         self.datasets = {}
         self.loaded_datasets.value = self.dataset_list[0]
         self.dataset_list = []
-        #self.loaded_datasets.options = self.dataset_list
-        
+
         self.datasets = open_file(self.file_name)
         self.dataset_list = []
         for key in self.datasets.keys():
@@ -171,11 +175,12 @@ class FileWidget(object):
         self.select_files.index = 0
         self.set_options()
 
-    def selected_dataset(self, value=0):
+    def select_dataset(self, value=0):
         
         key = self.loaded_datasets.value.split(':')[0]
         if key != 'None':
             self.selected_dataset = self.datasets[key]
+            self.selected_key = key
 
     def set_options(self):
         self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
@@ -371,6 +376,9 @@ def get_last_path():
 
     if len(path) < 2:
         path = '.'
+    else:
+        if not os.path.exists(path):
+            path = '.'
     return path
 
 
@@ -454,6 +462,7 @@ def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
         save_path(filename)
         return filename
 
+
 def save_file_dialog_qt(file_types=None):  # , multiple_files=False):
     """Opens a File dialog which is used in open_file() function
 
@@ -490,10 +499,6 @@ def save_file_dialog_qt(file_types=None):  # , multiple_files=False):
     elif file_types == 'TEM':
         file_types = 'TEM files (*.dm3 *.dm4 *.emd *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
                      'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
-
-        
-        # file_types = [("TEM files",["*.dm*","*.hf*","*.ndata" ]),("pyNSID files","*.hf5"),("DM files","*.dm*"),
-        # ("Nion files",["*.h5","*.ndata"]),("all files","*.*")]
 
     # Determine last path used
     path = get_last_path()
@@ -642,28 +647,15 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                     file = datasets[0].h5_dataset.file
                     master_group = datasets[0].h5_dataset.parent.parent.parent
             for key in master_group.keys():
-
                 if key not in dataset_dict:
                     dataset_dict[key] = h5_group_to_dict(master_group[key])
-                    print()
             if not write_hdf_file:
                 file.close()
-                # datasets[0].h5_dataset = None
             return dataset_dict
-
-        """ 
-        should go to no dataset found
-        if 'Raw_Data' in h5_group:
-            dataset = read_old_h5group(h5_group)
-            dataset.h5_dataset = h5_group['Raw_Data']
-        """
-
     elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi']:
-
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DMReader(filename)
-
         elif extension in ['.emi']:
             try:
                 import hyperspy.api as hs
@@ -676,12 +668,12 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                     dset = SciFiReaders.convert_hyperspy(datum)
                     if datum.data.ndim == 1:
                         dset.title = dset.title + f'_{spectrum_number}_Spectrum'
-                        spectrum_number +=1
+                        spectrum_number += 1
                     elif datum.data.ndim == 3:
-                        dset.title = dset.title +'_SI'
+                        dset.title = dset.title + '_SI'
                     dset = dset.T
                     dset.title = dset.title[11:]
-                    dataset_dict[f'Channel_{index:03d}']=dset
+                    dataset_dict[f'Channel_{index:03d}'] = dset
                 return dataset_dict
             except ImportError:
                 print('This file type needs hyperspy to be installed to be able to be read')
@@ -974,7 +966,7 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
         actual last used name of dictionary key
     """
 
-    datasets2 =  open_file(filename=filename)
+    datasets2 = open_file(filename=filename)
     first_dataset = datasets2[list(datasets2)[0]]
     if isinstance(first_dataset, sidpy.Dataset):
             
@@ -984,10 +976,10 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
                 if int(key[-3:]) >= index:
                     index = int(key[-3:])+1
         if single_dataset:
-            datasets[key_name+f'_{index:03}'] =  first_dataset
+            datasets[key_name+f'_{index:03}'] = first_dataset
         else:
             for dataset in datasets2.values():
-                datasets[key_name+f'_{index:03}'] =  dataset
+                datasets[key_name+f'_{index:03}'] = dataset
                 index += 1
             index -= 1
     else:

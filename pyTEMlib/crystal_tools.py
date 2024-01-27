@@ -137,26 +137,26 @@ def get_projection(crystal, layers=1):
     for pro in projected:
         atomic_numbers.append(projected_crystal.get_atomic_numbers()[pro].sum())
         
-    projected_crystal.rotate(np.degrees(angle)%360, 'z', rotate_cell=True)
+    projected_crystal.rotate(np.degrees(angle) % 360, 'z', rotate_cell=True)
     
-    near_base = np.array([projected_crystal.cell[0,:2], -projected_crystal.cell[0,:2],
-                          projected_crystal.cell[1,:2], -projected_crystal.cell[1,:2],
-                          projected_crystal.cell[0,:2] + projected_crystal.cell[1,:2],
-                          -(projected_crystal.cell[0,:2] + projected_crystal.cell[1,:2])])
-    lines = np.array( [[[0, near_base[0,0]],[0, near_base[0,1]]],
-                       [[0, near_base[2,0]],[0, near_base[2,1]]],
-                       [[near_base[0,0], near_base[4,0]],[near_base[0,1], near_base[4,1]]],
-                       [[near_base[2,0], near_base[4,0]],[near_base[2,1], near_base[4,1]]]])
+    near_base = np.array([projected_crystal.cell[0, :2], -projected_crystal.cell[0, :2],
+                          projected_crystal.cell[1, :2], -projected_crystal.cell[1, :2],
+                          projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2],
+                          -(projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2])])
+    lines = np.array([[[0, near_base[0, 0]], [0, near_base[0, 1]]],
+                      [[0, near_base[2, 0]], [0, near_base[2, 1]]],
+                      [[near_base[0, 0], near_base[4, 0]], [near_base[0, 1], near_base[4, 1]]],
+                      [[near_base[2, 0], near_base[4, 0]], [near_base[2, 1], near_base[4, 1]]]])
     projected_atoms = []
     for index in projected:
-       projected_atoms.append(index[0])
+        projected_atoms.append(index[0])
     
-    projected_crystal.info['projection']={'indices': projected, 
-                                          'projected': projected_atoms,
-                                          'projected_Z': atomic_numbers, 
-                                          'angle': np.degrees(angle)+180%360,
-                                          'near_base': near_base,
-                                          'lines': lines}    
+    projected_crystal.info['projection'] = {'indices': projected,
+                                            'projected': projected_atoms,
+                                            'projected_Z': atomic_numbers,
+                                            'angle': np.degrees(angle)+180 % 360,
+                                            'near_base': near_base,
+                                            'lines': lines}
     return projected_crystal
 
 
@@ -287,8 +287,11 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     for (k, s) in bond_matrix.keys():
         if k > s:
             del_double.append((k, s))
+    del_double.sort(reverse=False)
     for key in del_double:
-        bond_matrix.pop(key)
+        # Todo: why is ther a key error
+        # bond_matrix.pop(key)
+        pass
 
     if super_cell.info is None:
         super_cell.info = {}
@@ -298,7 +301,7 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     return super_cell
 
 
-def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax = None):
+def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax=None):
     """
     Simple plot of unit cell
     """
@@ -309,8 +312,8 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax = None):
     positions = super_cell.positions - super_cell.cell.lengths()/2
 
     if ax is None:
-       fig = plt.figure()
-       ax = fig.add_subplot(111, projection='3d')
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
     # draw unit_cell
 
     for line in super_cell.info['plot_cell']['corner_matrix'].keys():

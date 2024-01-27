@@ -12,10 +12,11 @@ except:
 
 
 import numpy as np
+import warnings
 
 import ipywidgets
 import IPython.display
-from IPython.display import display
+# from IPython.display import display
 import matplotlib
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
@@ -87,7 +88,11 @@ if Qt_available:
                                                                        initial_elements=initial_elements)
             self.pt_dialog.signal_selected[list].connect(self.set_elements)
 
-            self.dataset.plot()
+            if self.dataset.data_type.name =='SPECTRAL_IMAGE':
+                self.view = eels_dialog_utilities.SIPlot(self.dataset)
+            else:
+                self.view = eels_dialog_utilities.SpectrumPlot(self.dataset)    
+            self.dataset.view = self.view
 
             if hasattr(self.dataset.view, 'axes'):
                 self.axis = self.dataset.view.axes[-1]
@@ -811,7 +816,7 @@ if Qt_available:
             self.fig.canvas.draw()
 
 def get_sidebar():
-    side_bar = ipywidgets.GridspecLayout(13, 3,width='auto', grid_gap="0px")
+    side_bar = ipywidgets.GridspecLayout(14, 3,width='auto', grid_gap="0px")
 
     
     row = 0
@@ -896,23 +901,33 @@ def get_sidebar():
             tooltip='Changes y-axis to probability of flux is given', 
             layout=ipywidgets.Layout(width='100px')
         )
+    
+    row += 1
+    side_bar[row,0] = ipywidgets.ToggleButton(
+            description='Do All',
+            disabled=False,
+            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+            tooltip='Fits all spectra of spectrum image', 
+            layout=ipywidgets.Layout(width='100px')
+            )
+
+    side_bar[row,1] = ipywidgets.IntProgress(value=0, min=0, max=10, description=' ', bar_style='', # 'success', 'info', 'warning', 'danger' or ''
+                                             style={'bar_color': 'maroon'}, orientation='horizontal')
     return side_bar
 
 
-import ipywidgets
-
-
 class CompositionWidget(object):
-    def __init__(self, datasets=None, index=0):
+    def __init__(self, datasets=None, key=None):
         
         if not isinstance(datasets, dict):
             raise TypeError('dataset or first item has to be a sidpy dataset')
         self.datasets = datasets
-        self.dataset = datasets[list(datasets)[0]]
+
+        
         self.model = []
         self.sidebar = get_sidebar()
         
-        self.set_dataset()
+        self.set_dataset(key)
         
         self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.energy_scale)
         self.elements_cancel_button = ipywidgets.Button(description='Cancel')
@@ -931,12 +946,13 @@ class CompositionWidget(object):
             pane_widths=[4, 10, 0],
         )
         self.set_action()
-        display(self.app_layout)
+        IPython.display.display(self.app_layout)
 
         
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
             self.end_cursor.value = np.round(x_max, 3)
+
             self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
             self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
        
@@ -947,7 +963,7 @@ class CompositionWidget(object):
         self.energy_scale = self.dataset.energy_loss.values
         
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
-            spectrum = self.dataset.view.get_spectrum()
+            spectrum = self.view.get_spectrum()
         else:
             spectrum = self.dataset
         if len(self.model) > 1:
@@ -1012,7 +1028,24 @@ class CompositionWidget(object):
         
     
         
-    def set_dataset(self, index=0):    
+    def set_dataset(self, set_key):
+        spectrum_list = []
+        self.spectrum_keys_list = []
+        reference_list =[('None', -1)]
+        
+        for index, key in enumerate(self.datasets.keys()):
+            if 'Reference' not in key:
+                if 'SPECTR' in self.datasets[key].data_type.name:
+                    spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
+                    self.spectrum_keys_list.append(key)
+            reference_list.append((f'{key}: {self.datasets[key].title}', index))  
+        
+        if set_key in self.spectrum_keys_list:
+            self.key = set_key
+        else:
+            self.key = self.spectrum_keys_list[-1]
+        self.dataset = self.datasets[self.key]
+        
         spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
         self.spec_dim = self.dataset._axes[spec_dim[0]]
 
@@ -1285,7 +1318,7 @@ class CompositionWidget(object):
         edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, self.low_loss)
 
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
-            spectrum = self.dataset.view.get_spectrum()
+            spectrum = self.view.get_spectrum()
         else:
             spectrum = self.dataset
         self.edges = eels.fit_edges2(spectrum, self.energy_scale, edges)
@@ -1303,6 +1336,76 @@ class CompositionWidget(object):
         self.model = self.edges['model']['spectrum']
         self.update()
         self.plot()
+
+    def do_all_button_click(self, value=0):
+            if self.sidebar[13,0].value==False:
+                return
+            
+            if self.dataset.data_type.name != 'SPECTRAL_IMAGE':
+                self.do_fit()
+                return
+
+            if 'experiment' in self.dataset.metadata:
+                exp = self.dataset.metadata['experiment']
+                if 'convergence_angle' not in exp:
+                    raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
+                alpha = exp['convergence_angle']
+                beta = exp['collection_angle']
+                beam_kv = exp['acceleration_voltage']
+            else:
+                raise ValueError('need a experiment parameter in metadata dictionary')
+
+            eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
+
+            self.low_loss = None
+            if self.sidebar[12, 1].value:
+                for key in self.datasets.keys():
+                    if key != self.key:
+                        if isinstance(self.datasets[key], sidpy.Dataset):
+                            if 'SPECTR' in self.datasets[key].data_type.name:
+                                if self.datasets[key].energy_loss[0] < 0:
+                                    self.low_loss = self.datasets[key]/self.datasets[key].sum()
+
+            edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, self.low_loss)
+    
+            view = self.view
+            bin_x = view.bin_x
+            bin_y = view.bin_y
+
+            start_x = view.x
+            start_y = view.y
+
+            number_of_edges = 0
+            for key in self.edges:
+                if key.isdigit():
+                    number_of_edges += 1
+
+            results = np.zeros([int(self.dataset.shape[0]/bin_x), int(self.dataset.shape[1]/bin_y), number_of_edges])
+            total_spec = int(self.dataset.shape[0]/bin_x)*int(self.dataset.shape[1]/bin_y)
+            self.sidebar[13,1].max = total_spec
+            #self.ui.progress.setMaximum(total_spec)
+            #self.ui.progress.setValue(0)
+            ind = 0
+            for x in range(int(self.dataset.shape[0]/bin_x)):
+                for y in range(int(self.dataset.shape[1]/bin_y)):
+                    ind += 1
+                    self.sidebar[13,1].value = ind
+                    view.x = x*bin_x
+                    view.y = y*bin_y
+                    spectrum = view.get_spectrum()
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        edges = eels.fit_edges2(spectrum, self.energy_scale, edges)
+                    for key, edge in edges.items():
+                        if key.isdigit():
+                            # element.append(edge['element'])
+                            results[x, y, int(key)] = edge['areal_density']
+            edges['spectrum_image_quantification'] = results
+            self.sidebar[13,1].value = total_spec
+            view.x = start_x
+            view.y = start_y
+            self.sidebar[13,0].value = False
+            
     
     def modify_onset(self, value=-1):
         edge_index = self.sidebar[4, 0].value
@@ -1348,7 +1451,7 @@ class CompositionWidget(object):
         self.sidebar[2, 0].observe(self.set_fit_area, names='value')
         
         self.sidebar[3, 0].on_click(self.find_elements)
-        self.sidebar[4, 0].observe(self.update)
+        self.sidebar[4, 0].observe(self.update, names='value')
         self.sidebar[5, 0].observe(self.set_element, names='value')
 
         self.sidebar[7, 0].observe(self.modify_onset, names='value')
@@ -1357,10 +1460,10 @@ class CompositionWidget(object):
         self.sidebar[10, 0].observe(self.modify_areal_density, names='value')
         
         self.sidebar[11, 0].on_click(self.do_fit)
-        self.sidebar[12, 2].observe(self.plot)
-        self.sidebar[0, 0].observe(self.plot)
-
-        self.sidebar[12,0].observe(self.set_y_scale)
+        self.sidebar[12, 2].observe(self.plot, names='value')
+        self.sidebar[0, 0].observe(self.plot, names='value')
+        self.sidebar[12,0].observe(self.set_y_scale, names='value')
+        self.sidebar[13,0].observe(self.do_all_button_click, names='value')
 
         self.elements_cancel_button.on_click(self.set_figure_pane)
         self.elements_auto_button.on_click(self.auto_id)

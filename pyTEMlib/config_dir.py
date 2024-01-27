@@ -7,7 +7,6 @@
 config_dir: setup of directory ~/.pyTEMlib for custom sources and database
 """
 import os
-import numpy as np
 
 # import wget
 if os.name == 'posix':

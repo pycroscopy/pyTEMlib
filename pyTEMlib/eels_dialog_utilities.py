@@ -567,7 +567,10 @@ class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
         self.figure.canvas.toolbar_visible = True
 
         super().__init__(dset, spectrum_number=spectrum_number, figure=self.figure, **kwargs)
-        
+        try:
+            self.dataset = self.dset
+        except:
+            pass
         self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
         self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
         self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('',layout=ipywidgets.Layout(width='100px')), ipywidgets.Label('Cursor:'),
@@ -583,26 +586,26 @@ class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
     def line_select_callback(self, x_min, x_max):
         self.start_cursor.value = np.round(x_min, 3)
         self.end_cursor.value = np.round(x_max, 3)
-        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
-        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
+        self.start_channel = np.searchsorted(self.dataset.energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.dataset.energy_loss, self.end_cursor.value)
     
     def plot(self, scale=True, additional_spectra=None):
-        
-        self.energy_scale = self.dset.energy_loss.values
+        self.dataset = self.dset
+        self.energy_scale = self.dataset.energy_loss.values
         x_limit = self.axis.get_xlim()
         y_limit = np.array(self.axis.get_ylim())
         
         self.axis.clear()
 
-        self.axis.plot(self.energy_scale, self.dset*self.y_scale, label='spectrum')
+        self.axis.plot(self.energy_scale, self.dataset*self.y_scale, label='spectrum')
                 
         if additional_spectra is not None:
             if isinstance(additional_spectra, dict):
                 for key, spectrum in additional_spectra.items():
                     self.axis.plot(self.energy_scale, spectrum*self.y_scale, label=key)
 
-        self.axis.set_xlabel(self.dset.labels[0])
-        self.axis.set_ylabel(self.dset.data_descriptor)
+        self.axis.set_xlabel(self.dataset.labels[0])
+        self.axis.set_ylabel(self.dataset.data_descriptor)
         self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
         if scale:
             self.axis.set_ylim(np.array(y_limit)*self.change_y_scale)
@@ -617,8 +620,8 @@ class SpectrumPlot(sidpy.viz.dataset_viz.CurveVisualizer):
         self.axis.legend()
         self.figure.canvas.draw_idle()
         
-    
-class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
+
+class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizerBase):
     def __init__(self, dset, figure=None, horizontal=True, **kwargs):
         if figure is None:
             with plt.ioff():
@@ -627,8 +630,8 @@ class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
             self.figure = figure
         self.figure.canvas.toolbar_position = 'right'
         self.figure.canvas.toolbar_visible = True
-
-        super().__init__(dset, figure= self.figure, horizontal=horizontal, **kwargs)
+        self.dset = dset
+        super().__init__(self.dset, figure=self.figure, horizontal=horizontal, **kwargs)
         
         self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
         self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black', layout=ipywidgets.Layout(width='200px'))
@@ -645,8 +648,8 @@ class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
     def line_select_callback(self, x_min, x_max):
         self.start_cursor.value = np.round(x_min, 3)
         self.end_cursor.value = np.round(x_max, 3)
-        self.start_channel = np.searchsorted(self.dset.energy_loss, self.start_cursor.value)
-        self.end_channel = np.searchsorted(self.dset.energy_loss, self.end_cursor.value)
+        self.start_channel = np.searchsorted(self.dataset.energy_loss, self.start_cursor.value)
+        self.end_channel = np.searchsorted(self.dataset.energy_loss, self.end_cursor.value)
     
     def plot(self, scale=True, additional_spectra=None):
         
@@ -676,8 +679,6 @@ class SIPlot(sidpy.viz.dataset_viz.SpectralImageVisualizer):
         self.axes[1].set_ylabel(self.ylabel)
 
         self.fig.canvas.draw_idle()
-
-
 
 
 def get_periodic_table_widget(energy_scale=None):

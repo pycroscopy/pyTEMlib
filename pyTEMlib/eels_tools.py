@@ -17,30 +17,33 @@ Usage:
 
 All the input and output is done through a dictionary which is to be found in the meta_data
 attribute of the sidpy.Dataset
+
+Update by Austin Houston, UTK 12-2023 : Parallization of spectrum images
 """
+import typing
+from typing import Union
 import numpy as np
+import matplotlib.pyplot as plt
 
 import scipy
-from scipy.interpolate import interp1d, splrep  # splev, splint
+from scipy import constants
 from scipy import interpolate
+from scipy.interpolate import interp1d, splrep
 from scipy.signal import peak_prominences
 from scipy.ndimage import gaussian_filter
-
-from scipy import constants
-import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit, leastsq
 
 import requests
 
-from scipy.optimize import leastsq  # least square fitting routine fo scipy
-
-import pickle  # pkg_resources,
-
 # ## And we use the image tool library of pyTEMlib
-import pyTEMlib.file_tools as ft
 from pyTEMlib.xrpa_x_sections import x_sections
 
 import sidpy
+from sidpy.proc.fitter import SidFitter
 from sidpy.base.num_utils import get_slope
+
+# we have a function called find peaks - is it necessary?
+# or could we just use scipy.signal import find_peaks
 
 major_edges = ['K1', 'L3', 'M5', 'N5']
 all_edges = ['K1', 'L1', 'L2', 'L3', 'M1', 'M2', 'M3', 'M4', 'M5', 'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'O1', 'O2',
@@ -65,1596 +68,15 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
 # drude(ep, eb, gamma, e)
 # drude_lorentz(epsInf,leng, ep, eb, gamma, e, Amplitude)
 # zl_func( p,  x)
-
-###
-def set_previous_quantification(current_dataset):
-    """Set previous quantification from a sidpy.Dataset"""
-
-    current_channel = current_dataset.h5_dataset.parent
-    found_metadata = False
-    for key in current_channel:
-        if 'Log' in key:
-            if current_channel[key]['analysis'][()] == 'EELS_quantification':
-                current_dataset.metadata.update(current_channel[key].attrs)   # ToDo: find red dictionary
-                found_metadata = True
-                print('found previous quantification')
-
-    if not found_metadata:
-        # setting important experimental parameter
-        current_dataset.metadata['experiment'] = ft.read_dm3_info(current_dataset.original_metadata)
-
-        if 'experiment' not in current_dataset.metadata:
-            current_dataset.metadata['experiment'] = {}
-        if 'convergence_angle' not in current_dataset.metadata['experiment']:
-            current_dataset.metadata['experiment']['convergence_angle'] = 30
-        if 'collection_angle' not in current_dataset.metadata['experiment']:
-            current_dataset.metadata['experiment']['collection_angle'] = 50
-        if 'acceleration_voltage' not in current_dataset.metadata['experiment']:
-            current_dataset.metadata['experiment']['acceleration_voltage'] = 200000
-###
-
 # ###############################################################
-# Peak Fit Functions
+# Utility Functions
 # ################################################################
-
-
-def residuals_smooth(p, x, y, only_positive_intensity):
-    """part of fit"""
-
-    err = (y - model_smooth(x, p, only_positive_intensity))
-    return err
-
-
-def model_smooth(x, p, only_positive_intensity=False):
-    """part of fit"""
-
-    y = np.zeros(len(x))
-
-    number_of_peaks = int(len(p) / 3)
-    for i in range(number_of_peaks):
-        if only_positive_intensity:
-            p[i * 3 + 1] = abs(p[i * 3 + 1])
-        p[i * 3 + 2] = abs(p[i * 3 + 2])
-        if p[i * 3 + 2] > abs(p[i * 3]) * 4.29193 / 2.0:
-            p[i * 3 + 2] = abs(p[i * 3]) * 4.29193 / 2.  # ## width cannot extend beyond zero, maximum is FWTM/2
-
-        y = y + gauss(x, p[i * 3:])
-
-    return y
-
-
-def residuals_ll(p, x, y, only_positive_intensity):
-    """part of fit"""
-
-    err = (y - model_ll(x, p, only_positive_intensity)) / np.sqrt(np.abs(y))
-    return err
-
-
-def residuals_ll2(p, x, y, only_positive_intensity):
-    """part of fit"""
-
-    err = (y - model_ll(x, p, only_positive_intensity))
-    return err
-
-
-def model_ll(x, p, only_positive_intensity):
-    """part of fit"""
-
-    y = np.zeros(len(x))
-
-    number_of_peaks = int(len(p) / 3)
-    for i in range(number_of_peaks):
-        if only_positive_intensity:
-            p[i * 3 + 1] = abs(p[i * 3 + 1])
-        p[i * 3 + 2] = abs(p[i * 3 + 2])
-        if p[i * 3 + 2] > abs(p[i * 3]) * 4.29193 / 2.0:
-            p[i * 3 + 2] = abs(p[i * 3]) * 4.29193 / 2.  # ## width cannot extend beyond zero, maximum is FWTM/2
-
-        y = y + gauss(x, p[i * 3:])
-
-    return y
-
-
-def fit_peaks(spectrum, energy_scale, pin, start_fit, end_fit, only_positive_intensity=False):
-    """fit peaks to spectrum
-
-    Parameters
-    ----------
-    spectrum: numpy array
-        spectrum to be fitted
-    energy_scale: numpy array
-        energy scale of spectrum
-    pin: list of float
-        intial guess of peaks position amplitude width
-    start_fit: int
-        channel where fit starts
-    end_fit: int
-        channel where fit starts
-    only_positive_intensity: boolean
-        allows only for positive amplitudes if True; default = False
-
-    Returns
-    -------
-    p: list of float
-        fitting parameters
-    """
-
-    # TODO: remove zero_loss_fit_width add absolute
-
-    fit_energy = energy_scale[start_fit:end_fit]
-    spectrum = np.array(spectrum)
-    fit_spectrum = spectrum[start_fit:end_fit]
-
-    pin_flat = [item for sublist in pin for item in sublist]
-    [p_out, _] = leastsq(residuals_ll, np.array(pin_flat), ftol=1e-3, args=(fit_energy, fit_spectrum,
-                                                                            only_positive_intensity))
-    p = []
-    for i in range(len(pin)):
-        if only_positive_intensity:
-            p_out[i * 3 + 1] = abs(p_out[i * 3 + 1])
-        p.append([p_out[i * 3], p_out[i * 3 + 1], abs(p_out[i * 3 + 2])])
-    return p
-
-
-#################################################################
-# CORE - LOSS functions
-#################################################################
-
-
-def get_x_sections(z=0):
-    """Reads X-ray fluorescent cross-sections from a pickle file.
-
-    Parameters
-    ----------
-    z: int
-        atomic number if zero all cross-sections will be returned
-
-    Returns
-    -------
-    dictionary
-        cross-section of an element or of all elements if z = 0
-
-    """
-    # pkl_file = open(data_path + '/edges_db.pkl', 'rb')
-    # x_sections = pickle.load(pkl_file)
-    # pkl_file.close()
-    # x_sections = pyTEMlib.config_dir.x_sections
-    z = int(z)
-
-    if z < 1:
-        return x_sections
-    else:
-        z = str(z)
-        if z in x_sections:
-            return x_sections[z]
-        else:
-            return 0
-
-
-def get_z(z):
-    """Returns the atomic number independent of input as a string or number
-
-    Parameter
-    ---------
-    z: int, str
-        atomic number of chemical symbol (0 if not valid)
-    """
-    x_sections = get_x_sections()
-
-    z_out = 0
-    if str(z).isdigit():
-        z_out = int(z)
-    elif isinstance(z, str):
-        for key in x_sections:
-            if x_sections[key]['name'].lower() == z.lower():  # Well one really should know how to write elemental
-                z_out = int(key)
-    return z_out
-
-
-def list_all_edges(z, verbose=False):
-    """List all ionization edges of an element with atomic number z
-
-    Parameters
-    ----------
-    z: int
-        atomic number
-
-    Returns
-    -------
-    out_string: str
-        string with all major edges in energy range
-    """
-
-    element = str(z)
-    x_sections = get_x_sections()
-    out_string = ''
-    if verbose:
-        print('Major edges')
-    edge_list = {x_sections[element]['name']: {}}
-    
-    for key in all_edges:
-        if key in x_sections[element]:
-            if 'onset' in x_sections[element][key]:
-                if verbose:
-                    print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
-                out_string = out_string + f" {x_sections[element]['name']}-{key}: " \
-                                          f"{x_sections[element][key]['onset']:8.1f} eV /n"
-                edge_list[x_sections[element]['name']][key] =  x_sections[element][key]['onset']
-    return out_string, edge_list
-
-
-def find_major_edges(edge_onset, maximal_chemical_shift=5.):
-    """Find all major edges within an energy range
-
-    Parameters
-    ----------
-    edge_onset: float
-        approximate energy of ionization edge
-    maximal_chemical_shift: float
-        optional, range of energy window around edge_onset to look for major edges
-
-    Returns
-    -------
-    text: str
-        string with all major edges in energy range
-
-    """
-    text = ''
-    x_sections = get_x_sections()
-    for element in x_sections:
-        for key in x_sections[element]:
-
-            # if isinstance(x_sections[element][key], dict):
-            if key in major_edges:
-
-                if abs(x_sections[element][key]['onset'] - edge_onset) < maximal_chemical_shift:
-                    # print(element, x_sections[element]['name'], key, x_sections[element][key]['onset'])
-                    text = text + f"\n {x_sections[element]['name']:2s}-{key}: " \
-                                  f"{x_sections[element][key]['onset']:8.1f} eV "
-
-    return text
-
-
-def find_all_edges(edge_onset, maximal_chemical_shift=5):
-    """Find all (major and minor) edges within an energy range
-
-    Parameters
-    ----------
-    edge_onset: float
-        approximate energy of ionization edge
-    maximal_chemical_shift: float
-        optional, range of energy window around edge_onset to look for major edges
-
-    Returns
-    -------
-    text: str
-        string with all edges in energy range
-
-    """
-
-    text = ''
-    x_sections = get_x_sections()
-    for element in x_sections:
-        for key in x_sections[element]:
-
-            if isinstance(x_sections[element][key], dict):
-                if 'onset' in x_sections[element][key]:
-                    if abs(x_sections[element][key]['onset'] - edge_onset) < maximal_chemical_shift:
-                        # print(element, x_sections[element]['name'], key, x_sections[element][key]['onset'])
-                        text = text + f"\n {x_sections[element]['name']:2s}-{key}: " \
-                                      f"{x_sections[element][key]['onset']:8.1f} eV "
-    return text
-
-
-def find_associated_edges(dataset):
-    onsets = []
-    edges = []
-    if 'edges' in dataset.metadata:
-        for key, edge in dataset.metadata['edges'].items():
-            if key.isdigit():
-                element = edge['element']
-                pre_edge = 0. # edge['onset']-edge['start_exclude']
-                post_edge = edge['end_exclude'] - edge['onset']
-
-                for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
-                    onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift']-pre_edge)
-                    edges.append([key, f"{element}-{sym}", onsets[-1]])
-        for key, peak in dataset.metadata['peak_fit']['peaks'].items():
-            if key.isdigit():
-                distance = dataset.energy_loss[-1]
-                index = -1
-                for ii, onset in enumerate(onsets):
-                    if onset < peak['position'] < onset+post_edge:
-                        if distance > np.abs(peak['position'] - onset):
-                            distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
-                            distance_onset = peak['position'] - onset
-                            index = ii
-                if index >= 0:
-                    peak['associated_edge'] = edges[index][1]  # check if more info is necessary
-                    peak['distance_to_onset'] = distance_onset
-
-
-def find_white_lines(dataset):
-    if 'edges' in dataset.metadata:
-        white_lines = {}
-        for index, peak in dataset.metadata['peak_fit']['peaks'].items():
-            if index.isdigit():
-                if 'associated_edge' in peak:
-                    if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
-                        if peak['distance_to_onset'] < 10:
-                            area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
-                            if peak['associated_edge'] not in white_lines:
-                                white_lines[peak['associated_edge']] = 0.
-                            if area > 0:
-                                white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
-        white_line_ratios = {}
-        white_line_sum = {}
-        for sym, area in white_lines.items():
-            if sym[-2:] in ['L2', 'M4', 'M2']:
-                if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
-                    if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
-                        white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
-                            f"{sym[:-1]}{int(sym[-1]) + 1}"]
-                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
-                                    area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
-
-                        areal_density = 1.
-                        if 'edges' in dataset.metadata:
-                            for key, edge in dataset.metadata['edges'].items():
-                                if key.isdigit():
-                                    if edge['element'] == sym.split('-')[0]:
-                                        areal_density = edge['areal_density']
-                                        break
-                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
-
-        dataset.metadata['peak_fit']['white_lines'] = white_lines
-        dataset.metadata['peak_fit']['white_line_ratios'] = white_line_ratios
-        dataset.metadata['peak_fit']['white_line_sums'] = white_line_sum
-        
-
-def second_derivative(dataset, sensitivity):
-    """Calculates second derivative of a sidpy.dataset"""
-
-    dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
-    if dataset.data_type.name == 'SPECTRAL_IMAGE':
-        spectrum = dataset.view.get_spectrum()
-    else:
-        spectrum = np.array(dataset)
-
-    spec = scipy.ndimage.gaussian_filter(spectrum, 3)
-
-    dispersion = get_slope(energy_scale)
-    second_dif = np.roll(spec, -3) - 2 * spec + np.roll(spec, +3)
-    second_dif[:3] = 0
-    second_dif[-3:] = 0
-
-    # find if there is a strong edge at high energy_scale
-    noise_level = 2. * np.std(second_dif[3:50])
-    [indices, _] = scipy.signal.find_peaks(second_dif, noise_level)
-    width = 50 / dispersion
-    if width < 50:
-        width = 50
-    start_end_noise = int(len(energy_scale) - width)
-    for index in indices[::-1]:
-        if index > start_end_noise:
-            start_end_noise = index - 70
-
-    noise_level_start = sensitivity * np.std(second_dif[3:50])
-    noise_level_end = sensitivity * np.std(second_dif[start_end_noise: start_end_noise + 50])
-    slope = (noise_level_end - noise_level_start) / (len(energy_scale) - 400)
-    noise_level = noise_level_start + np.arange(len(energy_scale)) * slope
-    return second_dif, noise_level
-
-
-def find_edges(dataset, sensitivity=2.5):
-    """find edges within a sidpy.Dataset"""
-
-    dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
-
-    second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
-
-    [indices, peaks] = scipy.signal.find_peaks(second_dif, noise_level)
-
-    peaks['peak_positions'] = energy_scale[indices]
-    peaks['peak_indices'] = indices
-    edge_energies = [energy_scale[50]]
-    edge_indices = []
-
-    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
-    minima = energy_scale[indices]
-
-    for peak_number in range(len(peaks['peak_positions'])):
-        position = peaks['peak_positions'][peak_number]
-        if position - edge_energies[-1] > 20:
-            impossible = minima[minima < position]
-            impossible = impossible[impossible > position - 5]
-            if len(impossible) == 0:
-                possible = minima[minima > position]
-                possible = possible[possible < position + 5]
-                if len(possible) > 0:
-                    edge_energies.append((position + possible[0])/2)
-                    edge_indices.append(np.searchsorted(energy_scale, (position + possible[0])/2))
-
-    selected_edges = []
-    for peak in edge_indices:
-        if 525 < energy_scale[peak] < 533:
-            selected_edges.append('O-K1')
-        else:
-            selected_edge = ''
-            edges = find_major_edges(energy_scale[peak], 20)
-            edges = edges.split('\n')
-            minimum_dist = 100.
-            for edge in edges[1:]:
-                edge = edge[:-3].split(':')
-                name = edge[0].strip()
-                energy = float(edge[1].strip())
-                if np.abs(energy - energy_scale[peak]) < minimum_dist:
-                    minimum_dist = np.abs(energy - energy_scale[peak])
-                    selected_edge = name
-
-            if selected_edge != '':
-                selected_edges.append(selected_edge)
-
-    return selected_edges
-
-
-def assign_likely_edges(edge_channels, energy_scale): 
-    edges_in_list = []
-    result = {}
-    for channel in edge_channels: 
-        if channel not in edge_channels[edges_in_list]:
-            shift = 5
-            element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift)
-            while len(element_list) < 1:
-                shift+=1
-                element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift)
-
-            if len(element_list) > 1:
-                while len(element_list) > 0:
-                    shift-=1
-                    element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift)
-                element_list = find_major_edges(energy_scale[channel], maximal_chemical_shift=shift+1)
-            element = (element_list[:4]).strip()
-            z = get_z(element)
-            result[element] =[]
-            _, edge_list = list_all_edges(z)
-
-            for peak in edge_list:
-                for edge in edge_list[peak]:
-                    possible_minor_edge = np.argmin(np.abs(energy_scale[edge_channels]-edge_list[peak][edge]))
-                    if np.abs(energy_scale[edge_channels[possible_minor_edge]]-edge_list[peak][edge]) < 3:
-                        #print('nex', next_e)
-                        edges_in_list.append(possible_minor_edge)
-                        
-                        result[element].append(edge)
-                    
-    return result
-
-
-def auto_id_edges(dataset):
-    edge_channels = identify_edges(dataset)
-    dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
-    found_edges = assign_likely_edges(edge_channels, energy_scale)
-    return found_edges
-
-
-def identify_edges(dataset, noise_level=2.0):
-    """
-    Using first derivative to determine edge onsets
-    Any peak in first derivative higher than noise_level times standard deviation will be considered
-    
-    Parameters
-    ----------
-    dataset: sidpy.Dataset
-        the spectrum
-    noise_level: float
-        ths number times standard deviation in first derivative decides on whether an edge onset is significant
-        
-    Return
-    ------
-    edge_channel: numpy.ndarray
-    
-    """
-    dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
-    dispersion = get_slope(energy_scale)
-    spec = scipy.ndimage.gaussian_filter(dataset, 3/dispersion)  # smooth with 3eV wideGaussian
-
-    first_derivative = spec - np.roll(spec, +2) 
-    first_derivative[:3] = 0
-    first_derivative[-3:] = 0
-
-    # find if there is a strong edge at high energy_scale
-    noise_level = noise_level*np.std(first_derivative[3:50])
-    [edge_channels, _] = scipy.signal.find_peaks(first_derivative, noise_level)
-    
-    return edge_channels
-
-
-def add_element_to_dataset(dataset, z):
-    """
-    """
-    # We check whether this element is already in the
-    energy_scale = dataset.energy_loss
-    zz = get_z(z)
-    if 'edges' not in dataset.metadata:
-         dataset.metadata['edges'] = {'model': {}, 'use_low_loss': False}
-    index = 0
-    for key, edge in dataset.metadata['edges'].items():
-        if key.isdigit():
-            index += 1
-            if 'z' in edge:
-                if zz == edge['z']:
-                    index = int(key)
-                    break
-
-    major_edge = ''
-    minor_edge = ''
-    all_edges = {}
-    x_section = get_x_sections(zz)
-    edge_start = 10  # int(15./ft.get_slope(self.energy_scale)+0.5)
-    for key in x_section:
-        if len(key) == 2 and key[0] in ['K', 'L', 'M', 'N', 'O'] and key[1].isdigit():
-            if energy_scale[edge_start] < x_section[key]['onset'] < energy_scale[-edge_start]:
-                if key in ['K1', 'L3', 'M5', 'M3']:
-                    major_edge = key
-                
-                all_edges[key] = {'onset': x_section[key]['onset']}
-
-    if major_edge != '':
-        key = major_edge
-    elif minor_edge != '':
-        key = minor_edge
-    else:
-        print(f'Could not find no edge of {zz} in spectrum')
-        return False
-
-    
-    if str(index) not in dataset.metadata['edges']:
-        dataset.metadata['edges'][str(index)] = {}
-
-    start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
-    end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
-
-    dataset.metadata['edges'][str(index)] = {'z': zz, 'symmetry': key, 'element': elements[zz],
-                              'onset': x_section[key]['onset'], 'end_exclude': end_exclude,
-                              'start_exclude': start_exclude}
-    dataset.metadata['edges'][str(index)]['all_edges'] = all_edges
-    dataset.metadata['edges'][str(index)]['chemical_shift'] = 0.0
-    dataset.metadata['edges'][str(index)]['areal_density'] = 0.0
-    dataset.metadata['edges'][str(index)]['original_onset'] = dataset.metadata['edges'][str(index)]['onset']
-    return True
-
-
-def make_edges(edges_present, energy_scale, e_0, coll_angle, low_loss=None):
-    """Makes the edges dictionary for quantification
-
-    Parameters
-    ----------
-    edges_present: list
-        list of edges
-    energy_scale: numpy array
-        energy scale on which to make cross-section
-    e_0: float
-        acceleration voltage (in V)
-    coll_angle: float
-        collection angle in mrad
-    low_loss: numpy array with same length as energy_scale
-        low_less spectrum with which to convolve the cross-section (default=None)
-
-    Returns
-    -------
-    edges: dict
-        dictionary with all information on cross-section
-    """
-    x_sections = get_x_sections()
-    edges = {}
-    for i, edge in enumerate(edges_present):
-        element, symmetry = edge.split('-')
-        z = 0
-        for key in x_sections:
-            if element == x_sections[key]['name']:
-                z = int(key)
-        edges[i] = {}
-        edges[i]['z'] = z
-        edges[i]['symmetry'] = symmetry
-        edges[i]['element'] = element
-
-    for key in edges:
-        xsec = x_sections[str(edges[key]['z'])]
-        if 'chemical_shift' not in edges[key]:
-            edges[key]['chemical_shift'] = 0
-        if 'symmetry' not in edges[key]:
-            edges[key]['symmetry'] = 'K1'
-        if 'K' in edges[key]['symmetry']:
-            edges[key]['symmetry'] = 'K1'
-        elif 'L' in edges[key]['symmetry']:
-            edges[key]['symmetry'] = 'L3'
-        elif 'M' in edges[key]['symmetry']:
-            edges[key]['symmetry'] = 'M5'
-        else:
-            edges[key]['symmetry'] = edges[key]['symmetry'][0:2]
-
-        edges[key]['original_onset'] = xsec[edges[key]['symmetry']]['onset']
-        edges[key]['onset'] = edges[key]['original_onset'] + edges[key]['chemical_shift']
-        edges[key]['start_exclude'] = edges[key]['onset'] - xsec[edges[key]['symmetry']]['excl before']
-        edges[key]['end_exclude'] = edges[key]['onset'] + xsec[edges[key]['symmetry']]['excl after']
-
-    edges = make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss)
-
-    return edges
-
-def fit_dataset(dataset):
-    energy_scale = dataset.energy_loss
-    if 'fit_area' not in dataset.metadata['edges']:
-        dataset.metadata['edges']['fit_area'] = {}
-    if 'fit_start' not in dataset.metadata['edges']['fit_area']:
-        dataset.metadata['edges']['fit_area']['fit_start'] = energy_scale[50]
-    if 'fit_end' not in dataset.metadata['edges']['fit_area']:
-        dataset.metadata['edges']['fit_area']['fit_end'] = energy_scale[-2]
-    dataset.metadata['edges']['use_low_loss'] = False
-        
-    if 'experiment' in dataset.metadata:
-        exp = dataset.metadata['experiment']
-        if 'convergence_angle' not in exp:
-            raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
-        alpha = exp['convergence_angle']
-        beta = exp['collection_angle']
-        beam_kv = exp['acceleration_voltage']
-        energy_scale = dataset.energy_loss
-        eff_beta = effective_collection_angle(energy_scale, alpha, beta, beam_kv)
-        edges = make_cross_sections(dataset.metadata['edges'], np.array(energy_scale), beam_kv, eff_beta)
-        dataset.metadata['edges'] = fit_edges2(dataset, energy_scale, edges)
-        areal_density = []
-        elements = []
-        for key in edges:
-            if key.isdigit():  # only edges have numbers in that dictionary
-                elements.append(edges[key]['element'])
-                areal_density.append(edges[key]['areal_density'])
-        areal_density = np.array(areal_density)
-        out_string = '\nRelative composition: \n'
-        for i, element in enumerate(elements):
-            out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.1f}%  '
-
-        print(out_string)
-
-
-def auto_chemical_composition(dataset):
-
-    found_edges = auto_id_edges(dataset)
-    for key in found_edges:
-        add_element_to_dataset(dataset, key)
-    fit_dataset(dataset)
-
-
-def make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss=None):
-    """Updates the edges dictionary with collection angle-integrated X-ray photo-absorption cross-sections
-
-    """
-    for key in edges:
-        if str(key).isdigit():
-            edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['z'], coll_angle,
-                                           edges[key]['chemical_shift']) / 1e10  # from barnes to 1/nm^2
-            if low_loss is not None:
-                low_loss = np.roll(np.array(low_loss), 1024 - np.argmax(np.array(low_loss)))
-                edges[key]['data'] = scipy.signal.convolve(edges[key]['data'], low_loss/low_loss.sum(), mode='same')
-
-            edges[key]['onset'] = edges[key]['original_onset'] + edges[key]['chemical_shift']
-            edges[key]['X_section_type'] = 'XRPA'
-            edges[key]['X_section_source'] = 'pyTEMlib'
-
-    return edges
-
-
-def power_law(energy, a, r):
-    """power law for power_law_background"""
-    return a * np.power(energy, -r)
-
-
-def power_law_background(spectrum, energy_scale, fit_area, verbose=False):
-    """fit of power law to spectrum """
-
-    # Determine energy window  for background fit in pixels
-    startx = np.searchsorted(energy_scale, fit_area[0])
-    endx = np.searchsorted(energy_scale, fit_area[1])
-
-    x = np.array(energy_scale)[startx:endx]
-
-    y = np.array(spectrum)[startx:endx].flatten()
-
-    # Initial values of parameters
-    p0 = np.array([1.0E+20, 3])
-
-    # background fitting
-    def bgdfit(pp, yy, xx):
-        err = yy - power_law(xx, pp[0], pp[1])
-        return err
-
-    [p, _] = leastsq(bgdfit, p0, args=(y, x), maxfev=2000)
-
-    background_difference = y - power_law(x, p[0], p[1])
-    background_noise_level = std_dev = np.std(background_difference)
-    if verbose:
-        print(f'Power-law background with amplitude A: {p[0]:.1f} and exponent -r: {p[1]:.2f}')
-        print(background_difference.max() / background_noise_level)
-
-        print(f'Noise level in spectrum {std_dev:.3f} counts')
-
-    # Calculate background over the whole energy scale
-    background = power_law(energy_scale, p[0], p[1])
-    return background, p
-
-
-def cl_model(x, p, number_of_edges, xsec):
-    """ core loss model for fitting"""
-    y = (p[9] * np.power(x, (-p[10]))) + p[7] * x + p[8] * x * x
-    for i in range(number_of_edges):
-        y = y + p[i] * xsec[i, :]
-    return y
-
-
-def fit_edges2(spectrum, energy_scale, edges):
-    """fit edges for quantification"""
-
-    dispersion = energy_scale[1] - energy_scale[0]
-    # Determine fitting ranges and masks to exclude ranges
-    mask = np.ones(len(spectrum))
-
-    background_fit_start = edges['fit_area']['fit_start']
-    if edges['fit_area']['fit_end'] > energy_scale[-1]:
-        edges['fit_area']['fit_end'] = energy_scale[-1]
-    background_fit_end = edges['fit_area']['fit_end']
-
-    startx = np.searchsorted(energy_scale, background_fit_start)
-    endx = np.searchsorted(energy_scale, background_fit_end)
-    mask[0:startx] = 0.0
-    mask[endx:-1] = 0.0
-    for key in edges:
-        if key.isdigit():
-            if edges[key]['start_exclude'] > background_fit_start + dispersion:
-                if edges[key]['start_exclude'] < background_fit_end - dispersion * 2:
-                    if edges[key]['end_exclude'] > background_fit_end - dispersion:
-                        # we need at least one channel to fit.
-                        edges[key]['end_exclude'] = background_fit_end - dispersion
-                    startx = np.searchsorted(energy_scale, edges[key]['start_exclude'])
-                    if startx < 2:
-                        startx = 1
-                    endx = np.searchsorted(energy_scale, edges[key]['end_exclude'])
-                    mask[startx: endx] = 0.0
-
-    ########################
-    # Background Fit
-    ########################
-    bgd_fit_area = [background_fit_start, background_fit_end]
-    background, [A, r] = power_law_background(spectrum, energy_scale, bgd_fit_area, verbose=False)
-
-    #######################
-    # Edge Fit
-    #######################
-    x = energy_scale
-    blurred = gaussian_filter(spectrum, sigma=5)
-
-    y = blurred  # now in probability
-    y[np.where(y < 1e-8)] = 1e-8
-
-    xsec = []
-    number_of_edges = 0
-    for key in edges:
-        if key.isdigit():
-            xsec.append(edges[key]['data'])
-            number_of_edges += 1
-    xsec = np.array(xsec)
-
-    def model(xx, pp):
-        yy = background + pp[6] + pp[7] * xx + pp[8] * xx * xx
-        for i in range(number_of_edges):
-            pp[i] = np.abs(pp[i])
-            yy = yy + pp[i] * xsec[i, :]
-        return yy
-
-    def residuals(pp, xx, yy):
-        err = np.abs((yy - model(xx, pp)) * mask)  # / np.sqrt(np.abs(y))
-        return err
-
-    scale = y[100]
-    pin = np.array([scale / 5, scale / 5, scale / 5, scale / 5, scale / 5, scale / 5, -scale / 10, 1.0, 0.001])
-    [p, _] = leastsq(residuals, pin, args=(x, y))
-
-    for key in edges:
-        if key.isdigit():
-            edges[key]['areal_density'] = p[int(key)]
-
-    edges['model'] = {}
-    edges['model']['background'] = (background + p[6] + p[7] * x + p[8] * x * x)
-    edges['model']['background-poly_0'] = p[6]
-    edges['model']['background-poly_1'] = p[7]
-    edges['model']['background-poly_2'] = p[8]
-    edges['model']['background-A'] = A
-    edges['model']['background-r'] = r
-    edges['model']['spectrum'] = model(x, p)
-    edges['model']['blurred'] = blurred
-    edges['model']['mask'] = mask
-    edges['model']['fit_parameter'] = p
-    edges['model']['fit_area_start'] = edges['fit_area']['fit_start']
-    edges['model']['fit_area_end'] = edges['fit_area']['fit_end']
-
-    return edges
-
-
-def fit_edges(spectrum, energy_scale, region_tags, edges):
-    """fit edges for quantification"""
-
-    # Determine fitting ranges and masks to exclude ranges
-    mask = np.ones(len(spectrum))
-
-    background_fit_end = energy_scale[-1]
-    for key in region_tags:
-        end = region_tags[key]['start_x'] + region_tags[key]['width_x']
-
-        startx = np.searchsorted(energy_scale, region_tags[key]['start_x'])
-        endx = np.searchsorted(energy_scale, end)
-
-        if key == 'fit_area':
-            mask[0:startx] = 0.0
-            mask[endx:-1] = 0.0
-        else:
-            mask[startx:endx] = 0.0
-            if region_tags[key]['start_x'] < background_fit_end:  # Which is the onset of the first edge?
-                background_fit_end = region_tags[key]['start_x']
-
-    ########################
-    # Background Fit
-    ########################
-    bgd_fit_area = [region_tags['fit_area']['start_x'], background_fit_end]
-    background, [A, r] = power_law_background(spectrum, energy_scale, bgd_fit_area, verbose=False)
-
-    #######################
-    # Edge Fit
-    #######################
-    x = energy_scale
-    blurred = gaussian_filter(spectrum, sigma=5)
-
-    y = blurred  # now in probability
-    y[np.where(y < 1e-8)] = 1e-8
-
-    xsec = []
-    number_of_edges = 0
-    for key in edges:
-        if key.isdigit():
-            xsec.append(edges[key]['data'])
-            number_of_edges += 1
-    xsec = np.array(xsec)
-
-    def model(xx, pp):
-        yy = background + pp[6] + pp[7] * xx + pp[8] * xx * xx
-        for i in range(number_of_edges):
-            pp[i] = np.abs(pp[i])
-            yy = yy + pp[i] * xsec[i, :]
-        return yy
-
-    def residuals(pp, xx, yy):
-        err = np.abs((yy - model(xx, pp)) * mask)  # / np.sqrt(np.abs(y))
-        return err
-
-    scale = y[100]
-    pin = np.array([scale / 5, scale / 5, scale / 5, scale / 5, scale / 5, scale / 5, -scale / 10, 1.0, 0.001])
-    [p, _] = leastsq(residuals, pin, args=(x, y))
-
-    for key in edges:
-        if key.isdigit():
-            edges[key]['areal_density'] = p[int(key) - 1]
-
-    edges['model'] = {}
-    edges['model']['background'] = (background + p[6] + p[7] * x + p[8] * x * x)
-    edges['model']['background-poly_0'] = p[6]
-    edges['model']['background-poly_1'] = p[7]
-    edges['model']['background-poly_2'] = p[8]
-    edges['model']['background-A'] = A
-    edges['model']['background-r'] = r
-    edges['model']['spectrum'] = model(x, p)
-    edges['model']['blurred'] = blurred
-    edges['model']['mask'] = mask
-    edges['model']['fit_parameter'] = p
-    edges['model']['fit_area_start'] = region_tags['fit_area']['start_x']
-    edges['model']['fit_area_end'] = region_tags['fit_area']['start_x'] + region_tags['fit_area']['width_x']
-
-    return edges
-
-
-def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
-    """find peaks in spectrum"""
-
-    if dataset.data_type.name == 'SPECTRAL_IMAGE':
-        spectrum = dataset.view.get_spectrum()
-    else:
-        spectrum = np.array(dataset)
-
-    spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
-    energy_scale = np.array(spec_dim[1])
-
-    second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
-    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
-
-    start_channel = np.searchsorted(energy_scale, fit_start)
-    end_channel = np.searchsorted(energy_scale, fit_end)
-    peaks = []
-    for index in indices:
-        if start_channel < index < end_channel:
-            peaks.append(index - start_channel)
-
-    if 'model' in dataset.metadata:
-        model = dataset.metadata['model'][start_channel:end_channel]
-
-    elif energy_scale[0] > 0:
-        if 'edges' not in dataset.metadata:
-            return
-        if 'model' not in dataset.metadata['edges']:
-            return
-        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
-
-    else:
-        model = np.zeros(end_channel - start_channel)
-
-    energy_scale = energy_scale[start_channel:end_channel]
-
-    difference = np.array(spectrum)[start_channel:end_channel] - model
-    fit = np.zeros(len(energy_scale))
-    p_out = []
-    if len(peaks) > 0:
-        p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
-        [p_out, _] = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
-                                                                                     difference,
-                                                                                     False))
-        fit = fit + model_smooth(energy_scale, p_out, False)
-
-    peak_model = np.zeros(len(spec_dim[1]))
-    peak_model[start_channel:end_channel] = fit
-
-    return peak_model, p_out
-
-
-def find_maxima(y, number_of_peaks):
-    """ find the first most prominent peaks
-
-    peaks are then sorted by energy
-
-    Parameters
-    ----------
-    y: numpy array
-        (part) of spectrum
-    number_of_peaks: int
-
-    Returns
-    -------
-    numpy array
-        indices of peaks
-    """
-    blurred2 = gaussian_filter(y, sigma=2)
-    peaks, _ = scipy.signal.find_peaks(blurred2)
-    prominences = peak_prominences(blurred2, peaks)[0]
-    prominences_sorted = np.argsort(prominences)
-    peaks = peaks[prominences_sorted[-number_of_peaks:]]
-
-    peak_indices = np.argsort(peaks)
-    return peaks[peak_indices]
-
-
-def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
-    """Gaussian Function
-
-        p[0]==mean, p[1]= amplitude p[2]==fwhm
-        area = np.sqrt(2* np.pi)* p[1] * np.abs(p[2] / 2.3548)
-        FWHM = 2 * np.sqrt(2 np.log(2)) * sigma = 2.3548 * sigma
-        sigma = FWHM/3548
-    """
-    if p[2] == 0:
-        return x * 0.
-    else:
-        return p[1] * np.exp(-(x - p[0]) ** 2 / (2.0 * (p[2] / 2.3548) ** 2))
-
-
-def lorentz(x, p):
-    """lorentzian function"""
-    lorentz_peak = 0.5 * p[2] / np.pi / ((x - p[0]) ** 2 + (p[2] / 2) ** 2)
-    return p[1] * lorentz_peak / lorentz_peak.max()
-
-
-def zl(x, p, p_zl):
-    """zero-loss function"""
-    p_zl_local = p_zl.copy()
-    p_zl_local[2] += p[0]
-    p_zl_local[5] += p[0]
-    zero_loss = zl_func(p_zl_local, x)
-    return p[1] * zero_loss / zero_loss.max()
-
-
-def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, restrict_width=0):
-    """ model for fitting low-loss spectrum"""
-    if pin is None:
-        pin = p
-
-    # if len([restrict_pos]) == 1:
-    #    restrict_pos = [restrict_pos]*number_of_peaks
-    # if len([restrict_width]) == 1:
-    #    restrict_width = [restrict_width]*number_of_peaks
-    y = np.zeros(len(x))
-
-    for i in range(number_of_peaks):
-        index = int(i * 3)
-        if restrict_pos > 0:
-            if p[index] > pin[index] * (1.0 + restrict_pos):
-                p[index] = pin[index] * (1.0 + restrict_pos)
-            if p[index] < pin[index] * (1.0 - restrict_pos):
-                p[index] = pin[index] * (1.0 - restrict_pos)
-
-        p[index + 1] = abs(p[index + 1])
-        # print(p[index + 1])
-        p[index + 2] = abs(p[index + 2])
-        if restrict_width > 0:
-            if p[index + 2] > pin[index + 2] * (1.0 + restrict_width):
-                p[index + 2] = pin[index + 2] * (1.0 + restrict_width)
-
-        if peak_shape[i] == 'Lorentzian':
-            y = y + lorentz(x, p[index:])
-        elif peak_shape[i] == 'zl':
-
-            y = y + zl(x, p[index:], p_zl)
-        else:
-            y = y + gauss(x, p[index:])
-    return y
-
-
-def sort_peaks(p, peak_shape):
-    """sort fitting parameters by peak position"""
-    number_of_peaks = int(len(p) / 3)
-    p3 = np.reshape(p, (number_of_peaks, 3))
-    sort_pin = np.argsort(p3[:, 0])
-
-    p = p3[sort_pin].flatten()
-    peak_shape = np.array(peak_shape)[sort_pin].tolist()
-
-    return p, peak_shape
-
-
-def add_peaks(x, y, peaks, pin_in=None, peak_shape_in=None, shape='Gaussian'):
-    """ add peaks to fitting parameters"""
-    if pin_in is None:
-        return
-    if peak_shape_in is None:
-        return
-
-    pin = pin_in.copy()
-
-    peak_shape = peak_shape_in.copy()
-    if isinstance(shape, str):  # if peak_shape is only a string make a list of it.
-        shape = [shape]
-
-    if len(shape) == 1:
-        shape = shape * len(peaks)
-    for i, peak in enumerate(peaks):
-        pin.append(x[peak])
-        pin.append(y[peak])
-        pin.append(.3)
-        peak_shape.append(shape[i])
-
-    return pin, peak_shape
-
-
-def fit_model(x, y, pin, number_of_peaks, peak_shape, p_zl, restrict_pos=0, restrict_width=0):
-    """model for fitting low-loss spectrum"""
-
-    pin_original = pin.copy()
-
-    def residuals3(pp, xx, yy):
-        err = (yy - model3(xx, pp, number_of_peaks, peak_shape, p_zl, pin_original, restrict_pos,
-                           restrict_width)) / np.sqrt(np.abs(yy))
-        return err
-
-    [p, _] = leastsq(residuals3, pin, args=(x, y))
-    # p2 = p.tolist()
-    # p3 = np.reshape(p2, (number_of_peaks, 3))
-    # sort_pin = np.argsort(p3[:, 0])
-
-    # p = p3[sort_pin].flatten()
-    # peak_shape = np.array(peak_shape)[sort_pin].tolist()
-
-    return p, peak_shape
-
-
-def fix_energy_scale(spec, energy=None):    
-    """Shift energy scale according to zero-loss peak position
-    
-    This function assumes that the fzero loss peak is the maximum of the spectrum. 
-    """
-
-    # determine start and end fitting region in pixels
-    if isinstance(spec, sidpy.Dataset):
-        if energy is None:
-            energy = spec.energy_loss.values
-            spec = np.array(spec)
-           
-    else:
-        if energy is None:
-            return
-        if not isinstance(spec, np.ndarray):
-            return
-        
-    start = np.searchsorted(np.array(energy), -10)
-    end = np.searchsorted(np.array(energy), 10)
-    startx = np.argmax(spec[start:end]) + start
-
-    end = startx + 3
-    start = startx - 3
-    for i in range(10):
-        if spec[startx - i] < 0.3 * spec[startx]:
-            start = startx - i
-        if spec[startx + i] < 0.3 * spec[startx]:
-            end = startx + i
-    if end - start < 3:
-        end = startx + 2
-        start = startx - 2
-
-    x = np.array(energy[int(start):int(end)])
-    y = np.array(spec[int(start):int(end)]).copy()
-
-    y[np.nonzero(y <= 0)] = 1e-12
-
-    p0 = [energy[startx], 1000.0, (energy[end] - energy[start]) / 3.]  # Initial guess is a normal distribution
-
-    def errfunc(pp, xx, yy):
-        return (gauss(xx, pp) - yy) / np.sqrt(yy)  # Distance to the target function
-
-    [p1, _] = leastsq(errfunc, np.array(p0[:]), args=(x, y))
-    fit_mu, area, fwhm = p1
-
-    return fwhm, fit_mu
-
-def resolution_function2(dataset, width =0.3):
-    guess = [0.2, 1000, 0.02, 0.2, 1000, 0.2]
-    p0 = np.array(guess)
-
-    start = np.searchsorted(dataset.energy_loss, -width / 2.)
-    end = np.searchsorted(dataset.energy_loss, width / 2.)
-    x = dataset.energy_loss[start:end]
-    y = np.array(dataset)[start:end]
-    def zl2(pp, yy, xx):
-        eerr = (yy - zl_func(pp, xx))  # /np.sqrt(y)
-        return eerr
-    
-    [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
-
-    z_loss = zl_func(p_zl, dataset.energy_loss)
-    zero_loss = dataset.like_data(z_loss)
-    zero_loss.title = 'resolution_function'
-    zero_loss.metadata['zero_loss_parameter']=p_zl
-    
-    dataset.metadata['low_loss']['zero_loss'] = {'zero_loss_parameter': p_zl,
-                                                 'zero_loss_fit': 'Product2Lorentzians'}
-
-    return zero_loss, p_zl
-
-
-
-def resolution_function(energy_scale, spectrum, width, verbose=False):
-    """get resolution function (zero-loss peak shape) from low-loss spectrum"""
-
-    guess = [0.2, 1000, 0.02, 0.2, 1000, 0.2]
-    p0 = np.array(guess)
-
-    start = np.searchsorted(energy_scale, -width / 2.)
-    end = np.searchsorted(energy_scale, width / 2.)
-    x = energy_scale[start:end]
-    y = spectrum[start:end]
-
-    def zl2(pp, yy, xx):
-        eerr = (yy - zl_func(pp, xx))  # /np.sqrt(y)
-        return eerr
-
-    def zl_restrict(pp, yy, xx):
-
-        if pp[2] > xx[-1] * .8:
-            pp[2] = xx[-1] * .8
-        if pp[2] < xx[0] * .8:
-            pp[2] = xx[0] * .8
-
-        if pp[5] > xx[-1] * .8:
-            pp[5] = xx[-1] * .8
-        if pp[5] < x[0] * .8:
-            pp[5] = xx[0] * .8
-
-        if len(pp) > 6:
-            pp[7] = abs(pp[7])
-            if abs(pp[7]) > (pp[1] + pp[4]) / 10:
-                pp[7] = abs(pp[1] + pp[4]) / 10
-            if abs(pp[8]) > 1:
-                pp[8] = pp[8] / abs(pp[8])
-            pp[6] = abs(pp[6])
-            pp[9] = abs(pp[9])
-
-        pp[0] = abs(pp[0])
-        pp[3] = abs(pp[3])
-        if pp[0] > (xx[-1] - xx[0]) / 2.0:
-            pp[0] = xx[-1] - xx[0] / 2.0
-        if pp[3] > (xx[-1] - xx[0]) / 2.0:
-            pp[3] = xx[-1] - xx[0] / 2.0
-
-        yy[yy < 0] = 0.  # no negative numbers in sqrt below
-        eerr = (yy - zl_func(pp, xx)) / np.sqrt(yy)
-
-        return eerr
-
-    [p_zl, _] = leastsq(zl2, p0, args=(y, x), maxfev=2000)
-    if verbose:
-        print('Fit of a Product of two Lorentzian')
-        print('Positions: ', p_zl[2], p_zl[5], 'Distance: ', p_zl[2] - p_zl[5])
-        print('Width: ', p_zl[0], p_zl[3])
-        print('Areas: ', p_zl[1], p_zl[4])
-        err = (y - zl_func(p_zl, x)) / np.sqrt(y)
-        print(f'Goodness of Fit: {sum(err ** 2) / len(y) / sum(y) * 1e2:.5}%')
-
-    z_loss = zl_func(p_zl, energy_scale)
-
-    return z_loss, p_zl
-
-
-def get_energy_shifts(spectrum_image, energy_scale=None, zero_loss_fit_width=0.3):
-    """ get shift of spectrum from zero-loss peak position
-        better to use get resolution_functions 
-    """
-    resolution_functions = get_resolution_functions(spectrum_image, energy_scale=energy_scale, zero_loss_fit_width=zero_loss_fit_width)
-    return resolution_functions.metadata['low_loss']['shifts'], resolution_functions.metadata['low_loss']['widths']
-                                               
-def get_resolution_functions(spectrum_image, energy_scale=None, zero_loss_fit_width=0.3):
-    """get resolution_function and shift of spectra form zero-loss peak position"""
-    if isinstance(spectrum_image, sidpy.Dataset):
-        energy_dimension = spectrum_image.get_dimensions_by_type('spectral')
-        if len(energy_dimension) != 1:
-            raise TypeError('Dataset needs to have exactly one spectral dimension to analyze zero-loss peak') 
-        energy_dimension = spectrum_image.get_dimension_by_number(energy_dimension)[0]
-        energy_scale = energy_dimension.values
-        spatial_dimension = spectrum_image.get_dimensions_by_type('spatial')
-    if len(spatial_dimension) == 0:
-        fwhm, delta_e = fix_energy_scale(spectrum_image)
-        z_loss, p_zl = resolution_function(energy_scale - delta_e, spectrum_image, zero_loss_fit_width)
-        fwhm2, delta_e2 = fix_energy_scale(z_loss, energy_scale - delta_e)
-        spectrum_image.energy_loss -= delta_e+delta_e2
-        z_loss = zl_func(p_zl, spectrum_image.energy_loss)
-        zero_loss = spectrum_image.like_data(z_loss)
-        zero_loss.title = 'resolution_function'
-
-        spectrum_image.metadata['zero_loss'] = {'zero_loss_parameter': p_zl,
-                                                'zero_loss_fit': 'Product2Lorentzians'}
-        spectrum_image.metadata['low_loss'] = {'shift': delta_e+delta_e2,
-                                               'width': fwhm2}
-        zero_loss.metadata['zero_loss'] = spectrum_image.metadata['zero_loss']
-        zero_loss.metadata['low_loss'] = spectrum_image.metadata['low_loss']
-    
-        return zero_loss
-    
-    elif len(spatial_dimension) != 2:
-        return
-    shifts = np.zeros(spectrum_image.shape[0:2])
-    widths = np.zeros(spectrum_image.shape[0:2])
-    resolution_functions = spectrum_image.copy()
-    for x in range(spectrum_image.shape[0]):
-        for y in range(spectrum_image.shape[1]):
-            spectrum = np.array(spectrum_image[x, y])
-            fwhm, delta_e = fix_energy_scale(spectrum, energy_scale)
-            z_loss, p_zl = resolution_function(energy_scale - delta_e, spectrum, zero_loss_fit_width)
-            resolution_functions[x, y] = z_loss
-            fwhm2, delta_e2 = fix_energy_scale(z_loss, energy_scale - delta_e)
-            shifts[x, y] = delta_e + delta_e2
-            widths[x,y] = fwhm2
-
-    resolution_functions.metadata['low_loss'] = {'shifts': shifts,
-                                                 'widths': widths}
-    return resolution_functions
-
-
-def shift_on_same_scale(spectrum_image, shifts=None, energy_scale=None, master_energy_scale=None):
-    """shift spectrum in energy"""
-    if isinstance(spectrum_image, sidpy.Dataset):
-        if shifts is None:
-            if 'low_loss' in spectrum_image.metadata:
-                if 'shifts' in spectrum_image.metadata['low_loss']:
-                    shifts = spectrum_image.metadata['low_loss']['shifts']
-                else:
-                    resolution_functions = get_resolution_functions(spectrum_image)
-                    shifts = resolution_functions.metadata['low_loss']['shifts']
-        energy_dimension = spectrum_image.get_dimensions_by_type('spectral')
-        if len(energy_dimension) != 1:
-            raise TypeError('Dataset needs to have exactly one spectral dimension to analyze zero-loss peak') 
-        energy_dimension = spectrum_image.get_dimension_by_number(energy_dimension)[0]
-        energy_scale = energy_dimension.values
-        master_energy_scale = energy_scale.copy()
-                   
-    new_si = spectrum_image.copy()
-    new_si *= 0.0
-    for x in range(spectrum_image.shape[0]):
-        for y in range(spectrum_image.shape[1]):
-            tck = interpolate.splrep(np.array(energy_scale - shifts[x, y]), np.array(spectrum_image[x, y]), k=1, s=0)
-            new_si[x, y, :] = interpolate.splev(master_energy_scale, tck, der=0)
-    return new_si
-
 
 def get_wave_length(e0):
     """get deBroglie wavelength of electron accelerated by energy (in eV) e0"""
 
     ev = constants.e * e0
     return constants.h / np.sqrt(2 * constants.m_e * ev * (1 + ev / (2 * constants.m_e * constants.c ** 2)))
-
-
-def drude(peak_position, peak_width, gamma, energy_scale):
-    """dielectric function according to Drude theory"""
-
-    eps = 1 - (peak_position ** 2 - peak_width * energy_scale * 1j) / (energy_scale ** 2 + 2 * energy_scale * gamma * 1j)  # Mod drude term
-    return eps
-
-
-def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
-    """dielectric function according to Drude-Lorentz theory"""
-
-    eps = eps_inf
-    for i in range(leng):
-        eps = eps + amplitude[i] * (1 / (e + ep[i] + gamma[i] * 1j) - 1 / (e - ep[i] + gamma[i] * 1j))
-    return eps
-
-
-def plot_dispersion(plotdata, units, a_data, e_data, title, max_p, ee, ef=4., ep=16.8, es=0, ibt=[]):
-    """Plot loss function """
-
-    [x, y] = np.meshgrid(e_data + 1e-12, a_data[1024:2048] * 1000)
-
-    z = plotdata
-    lev = np.array([0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 3, 4, 4.9]) * max_p / 5
-
-    wavelength = get_wave_length(ee)
-    q = a_data[1024:2048] / (wavelength * 1e9)  # in [1/nm]
-    scale = np.array([0, a_data[-1], e_data[0], e_data[-1]])
-    ev2hertz = constants.value('electron volt-hertz relationship')
-
-    if units[0] == 'mrad':
-        units[0] = 'scattering angle [mrad]'
-        scale[1] = scale[1] * 1000.
-        light_line = constants.c * a_data  # for mrad
-    elif units[0] == '1/nm':
-        units[0] = 'scattering vector [1/nm]'
-        scale[1] = scale[1] / (wavelength * 1e9)
-        light_line = 1 / (constants.c / ev2hertz) * 1e-9
-
-    if units[1] == 'eV':
-        units[1] = 'energy loss [eV]'
-
-    if units[2] == 'ppm':
-        units[2] = 'probability [ppm]'
-    if units[2] == '1/eV':
-        units[2] = 'probability [eV$^{-1}$ srad$^{-1}$]'
-
-    alpha = 3. / 5. * ef / ep
-
-    ax2 = plt.gca()
-    fig2 = plt.gcf()
-    im = ax2.imshow(z.T, clim=(0, max_p), origin='lower', aspect='auto', extent=scale)
-    co = ax2.contour(y, x, z, levels=lev, colors='k', origin='lower')
-    # ,extent=(-ang*1000.,ang*1000.,e_data[0],e_data[-1]))#, vmin = p_vol.min(), vmax = 1000)
-
-    fig2.colorbar(im, ax=ax2, label=units[2])
-
-    ax2.plot(a_data, light_line, c='r', label='light line')
-    # ax2.plot(e_data*light_line*np.sqrt(np.real(eps_data)),e_data, color='steelblue',
-    # label='$\omega = c q \sqrt{\epsilon_2}$')
-
-    # ax2.plot(q, Ep_disp, c='r')
-    ax2.plot([11.5 * light_line, 0.12], [11.5, 11.5], c='r')
-
-    ax2.text(.05, 11.7, 'surface plasmon', color='r')
-    ax2.plot([0.0, 0.12], [16.8, 16.8], c='r')
-    ax2.text(.05, 17, 'volume plasmon', color='r')
-    ax2.set_xlim(0, scale[1])
-    ax2.set_ylim(0, 20)
-    # Interband transitions
-    ax2.plot([0.0, 0.25], [4.2, 4.2], c='g', label='interband transitions')
-    ax2.plot([0.0, 0.25], [5.2, 5.2], c='g')
-    ax2.set_ylabel(units[1])
-    ax2.set_xlabel(units[0])
-    ax2.legend(loc='lower right')
-
-
-def zl_func(p, x):
-    """zero-loss peak function"""
-
-    p[0] = abs(p[0])
-
-    gauss1 = np.zeros(len(x))
-    gauss2 = np.zeros(len(x))
-    lorentz3 = np.zeros(len(x))
-    lorentz = ((0.5 * p[0] * p[1] / 3.14) / ((x - p[2]) ** 2 + ((p[0] / 2) ** 2)))
-    lorentz2 = ((0.5 * p[3] * p[4] / 3.14) / ((x - (p[5])) ** 2 + ((p[3] / 2) ** 2)))
-    if len(p) > 6:
-        lorentz3 = (0.5 * p[6] * p[7] / 3.14) / ((x - p[8]) ** 2 + (p[6] / 2) ** 2)
-        gauss2 = p[10] * np.exp(-(x - p[11]) ** 2 / (2.0 * (p[9] / 2.3548) ** 2))
-        # ((0.5 *  p[9]* p[10]/3.14)/((x- (p[11]))**2+(( p[9]/2)**2)))
-    y = (lorentz * lorentz2) + gauss1 + gauss2 + lorentz3
-
-    return y
-
-
-def drude2(tags, e, p):
-    """dielectric function according to Drude theory for fitting"""
-
-    return drude(e, p[0], p[1], p[2], p[3])
-
-
-def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
-    """ Calculate momentum-integrated cross-section for EELS from X-ray photo-absorption cross-sections.
-
-    X-ray photo-absorption cross-sections from NIST.
-    Momentum-integrated cross-section for EELS according to Egerton Ultramicroscopy 50 (1993) 13-28 equation (4)
-
-    Parameters
-    ----------
-    energy_scale: numpy array
-        energy scale of spectrum to be analyzed
-    e0: float
-        acceleration voltage in keV
-    z: int
-        atomic number of element
-    beta: float
-        effective collection angle in mrad
-    shift: float
-        chemical shift of edge in eV
-    """
-    beta = beta * 0.001  # collection half angle theta [rad]
-    # theta_max = self.parent.spec[0].convAngle * 0.001  # collection half angle theta [rad]
-    dispersion = energy_scale[1] - energy_scale[0]
-
-    x_sections = get_x_sections(z)
-    enexs = x_sections['ene']
-    datxs = x_sections['dat']
-
-    # enexs = enexs[:len(datxs)]
-
-    #####
-    # Cross Section according to Egerton Ultramicroscopy 50 (1993) 13-28 equation (4)
-    #####
-
-    # Relativistic correction factors
-    t = 511060.0 * (1.0 - 1.0 / (1.0 + e0 / 511.06) ** 2) / 2.0
-    gamma = 1 + e0 / 511.06
-    a = 6.5  # e-14 *10**14
-    b = beta
-
-    theta_e = enexs / (2 * gamma * t)
-
-    g = 2 * np.log(gamma) - np.log((b ** 2 + theta_e ** 2) / (b ** 2 + theta_e ** 2 / gamma ** 2)) - (
-            gamma - 1) * b ** 2 / (b ** 2 + theta_e ** 2 / gamma ** 2)
-    datxs = datxs * (a / enexs / t) * (np.log(1 + b ** 2 / theta_e ** 2) + g) / 1e8
-
-    datxs = datxs * dispersion  # from per eV to per dispersion
-    coeff = splrep(enexs, datxs, s=0)  # now in areal density atoms / m^2
-    xsec = np.zeros(len(energy_scale))
-    # shift = 0# int(ek -onsetXRPS)#/dispersion
-    lin = interp1d(enexs, datxs, kind='linear')  # Linear instead of spline interpolation to avoid oscillations.
-    if energy_scale[0] < enexs[0]:
-        start = np.searchsorted(energy_scale, enexs[0])+1
-    else:
-        start = 0
-    xsec[start:] = lin(energy_scale[start:] - shift)
-
-    return xsec
-
-
-def drude_simulation(dset, e, ep, ew, tnm, eb):
-    """probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)
-
-    Gives probabilities of dielectric function eps relative to zero-loss integral (i0 = 1) per eV
-    Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
-
-    # function drude(ep,ew,eb,epc,e0,beta,nn,tnm)
-    # Given the plasmon energy (ep), plasmon fwhm (ew) and binding energy(eb),
-    # this program generates:
-    # EPS1, EPS2 from modified Eq. (3.40), ELF=Im(-1/EPS) from Eq. (3.42),
-    # single scattering from Eq. (4.26) and SRFINT from Eq. (4.31)
-    # The output is e, ssd into the file drude.ssd (for use in Flog etc.)
-    # and e,eps1 ,eps2 into drude.eps (for use in Kroeger etc.)
-    # Gives probabilities relative to zero-loss integral (i0 = 1) per eV
-    # Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
-    # Version 10.11.26
-
-
-    b.7 drude Simulation of a Low-Loss Spectrum
-    The program DRUDE calculates a single-scattering plasmon-loss spectrum for
-    a specimen of a given thickness tnm (in nm), recorded with electrons of a
-    specified incident energy e0 by a spectrometer that accepts scattering up to a
-    specified collection semi-angle beta. It is based on the extended drude model
-    (Section 3.3.2), with a volume energy-loss function elf in accord with Eq. (3.64) and
-    a surface-scattering energy-loss function srelf as in Eq. (4.31). Retardation effects
-    and coupling between the two surface modes are not included. The surface term can
-    be made negligible by entering a large specimen thickness (tnm > 1000).
-    Surface intensity srfint and volume intensity volint are calculated from
-    Eqs. (4.31) and (4.26), respectively. The total spectral intensity ssd is written to
-    the file DRUDE.SSD, which can be used as input for KRAKRO. These intensities are
-    all divided by i0, to give relative probabilities (per eV). The real and imaginary parts
-    of the dielectric function are written to DRUDE.EPS and can be used for comparison
-    with the results of Kramers–Kronig analysis (KRAKRO.DAT).
-    Written output includes the surface-loss probability Ps, obtained by integrating
-    srfint (a value that relates to two surfaces but includes the negative begrenzungs
-    term), for comparison with the analytical integration represented by Eq. (3.77). The
-    volume-loss probability p_v is obtained by integrating volint and is used to calculate
-    the volume plasmon mean free path (lam = tnm/p_v). The latter is listed and
-    compared with the MFP obtained from Eq. (3.44), which represents analytical integration
-    assuming a zero-width plasmon peak. The total probability (Pt = p_v+Ps) is
-    calculated and used to evaluate the thickness (lam.Pt) that would be given by the formula
-    t/λ = ln(It/i0), ignoring the surface-loss probability. Note that p_v will exceed
-    1 for thicker specimens (t/λ > 1), since it represents the probability of plasmon
-    scattering relative to that of no inelastic scattering.
-    The command-line usage is drude(ep,ew,eb,epc,beta,e0,tnm,nn), where ep is the
-    plasmon energy, ew the plasmon width, eb the binding energy of the electrons (0 for
-    a metal), and nn is the number of channels in the output spectrum. An example of
-    the output is shown in Fig. b.1a,b.
-
-    """
-    
-    epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
-    
-    b = dset.metadata['collection_angle']/ 1000.  # rad
-    epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
-    e0 = dset.metadata['acceleration_voltage'] / 1000.  # input('incident energy e0(kev) : ');
-
-    # effective kinetic energy: T = m_o v^2/2,
-    t = 1000.0 * e0 * (1. + e0 / 1022.12) / (1.0 + e0 / 511.06) ** 2  # eV # equ.5.2a or Appendix E p 427
-    
-    # 2 gamma T
-    tgt = 1000 * e0 * (1022.12 + e0) / (511.06 + e0)  # eV  Appendix E p 427
-    
-    rk0 = 2590 * (1.0 + e0 / 511.06) * np.sqrt(2.0 * t / 511060)
-    
-    os = e[0]
-    ew_mod = eb
-    tags = dset.metadata
-   
-    eps = 1 - (ep ** 2 - ew_mod * e * 1j) / (e ** 2 + 2 * e * ew * 1j)  # Mod drude term
-    
-    eps[np.nonzero(eps == 0.0)] = 1e-19
-    elf = np.imag(-1 / eps)
-
-    the = e / tgt  # varies with energy loss! # Appendix E p 427
-    # srfelf = 4..*eps2./((1+eps1).^2+eps2.^2) - elf; %equivalent
-    srfelf = np.imag(-4. / (1.0 + eps)) - elf  # for 2 surfaces
-    angdep = np.arctan(b / the) / the - b / (b * b + the * the)
-    srfint = angdep * srfelf / (3.1416 * 0.05292 * rk0 * t)  # probability per eV
-    anglog = np.log(1.0 + b * b / the / the)
-    i0 = dset.sum()  # *tags['counts2e']
-    
-
-    # 2 * t = m_0 v**2 !!!  a_0 = 0.05292 nm
-    volint = abs(tnm / (np.pi * 0.05292 * t * 2.0) * elf * anglog)  # S equ 4.26% probability per eV
-    volint = volint * i0 / epc  # S probability per channel
-    ssd = volint  # + srfint;
-
-    if e[0] < -1.0:
-        xs = int(abs(-e[0] / epc))
-
-        ssd[0:xs] = 0.0
-        volint[0:xs] = 0.0
-        srfint[0:xs] = 0.0
-
-        # if os <0:
-        p_s = np.trapz(e, srfint)  # 2 surfaces but includes negative Begrenzung contribution.
-        p_v = abs(np.trapz(e, abs(volint / tags['spec'].sum())))  # integrated volume probability
-        p_v = (volint / i0).sum()  # our data have he same epc and the trapez formula does not include
-        lam = tnm / p_v  # does NOT depend on free-electron approximation (no damping).
-        lamfe = 4.0 * 0.05292 * t / ep / np.log(1 + (b * tgt / ep) ** 2)  # Eq.(3.44) approximation
-
-        tags['eps'] = eps
-        tags['lam'] = lam
-        tags['lamfe'] = lamfe
-        tags['p_v'] = p_v
-
-    return ssd  # /np.pi
 
 
 def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
@@ -1783,140 +205,496 @@ def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
     return beta
 
 
-def kroeger_core(e_data, a_data, eps_data, ee, thick, relativistic=True):
-    """This function calculates the differential scattering probability
+def set_default_metadata(current_dataset: sidpy.Dataset) -> None:
 
-     .. math::
-        \\frac{d^2P}{d \\Omega d_e}
-    of the low-loss region for total loss and volume plasmon loss
+    if 'experiment' not in current_dataset.metadata:
+        current_dataset.metadata['experiment'] = {}
+    if 'convergence_angle' not in current_dataset.metadata['experiment']:
+        current_dataset.metadata['experiment']['convergence_angle'] = 30
+    if 'collection_angle' not in current_dataset.metadata['experiment']:
+        current_dataset.metadata['experiment']['collection_angle'] = 50
+    if 'acceleration_voltage' not in current_dataset.metadata['experiment']:
+        current_dataset.metadata['experiment']['acceleration_voltage'] = 200000
 
-    Args:
-       e_data (array): energy scale [eV]
-       a_data (array): angle or momentum range [rad]
-       eps_data (array): dielectric function data
-       ee (float): acceleration voltage [keV]
-       thick (float): thickness in m
-       relativistic: boolean include relativistic corrections
+###
 
-    Returns:
-       P (numpy array 2d): total loss probability
-       p_vol (numpy array 2d): volume loss probability
+# ###############################################################
+# Peak Fit Functions
+# ################################################################
+
+
+def residuals_smooth(p, x, y, only_positive_intensity):
+    """part of fit"""
+
+    err = (y - model_smooth(x, p, only_positive_intensity))
+    return err
+
+
+def model_smooth(x, p, only_positive_intensity=False):
+    """part of fit"""
+
+    y = np.zeros(len(x))
+
+    number_of_peaks = int(len(p) / 3)
+    for i in range(number_of_peaks):
+        if only_positive_intensity:
+            p[i * 3 + 1] = abs(p[i * 3 + 1])
+        p[i * 3 + 2] = abs(p[i * 3 + 2])
+        if p[i * 3 + 2] > abs(p[i * 3]) * 4.29193 / 2.0:
+            p[i * 3 + 2] = abs(p[i * 3]) * 4.29193 / 2.  # ## width cannot extend beyond zero, maximum is FWTM/2
+
+        y = y + gauss(x, p[i * 3:])
+
+    return y
+
+
+def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
+    """Gaussian Function
+
+        p[0]==mean, p[1]= amplitude p[2]==fwhm
+        area = np.sqrt(2* np.pi)* p[1] * np.abs(p[2] / 2.3548)
+        FWHM = 2 * np.sqrt(2 np.log(2)) * sigma = 2.3548 * sigma
+        sigma = FWHM/3548
+    """
+    if p[2] == 0:
+        return x * 0.
+    else:
+        return p[1] * np.exp(-(x - p[0]) ** 2 / (2.0 * (p[2] / 2.3548) ** 2))
+
+
+def lorentz(x, center, amplitude, width):
+    """ Lorentzian Function """
+    lorentz_peak = 0.5 * width / np.pi / ((x - center) ** 2 + (width / 2) ** 2)
+    return amplitude * lorentz_peak / lorentz_peak.max()
+
+
+def zl_func(x, center1, amplitude1, width1, center2, amplitude2, width2):
+    """ zero loss function as product of two lorentzians """
+    return lorentz(x, center1, amplitude1, width1) * lorentz(x, center2, amplitude2, width2)
+
+
+def zl(x, p, p_zl):
+    """zero-loss function"""
+    p_zl_local = p_zl.copy()
+    p_zl_local[2] += p[0]
+    p_zl_local[5] += p[0]
+    zero_loss = zl_func(x, p_zl_local)
+    return p[1] * zero_loss / zero_loss.max()
+
+
+def get_channel_zero(spectrum: np.ndarray, energy: np.ndarray, width: int = 8):
+    """Determin shift of energy scale according to zero-loss peak position
+    
+    This function assumes that the zero loss peak is the maximum of the spectrum. 
     """
 
-    # $d^2P/(dEd\Omega) = \frac{1}{\pi^2 a_0 m_0 v^2} \Im \left[ \frac{t\mu^2}{\varepsilon \phi^2 } \right] $ \
+    zero = scipy.signal.find_peaks(spectrum/np.max(spectrum), height=0.98)[0][0]
+    width = int(width/2)
+    x = np.array(energy[int(zero-width):int(zero+width)])
+    y = np.array(spectrum[int(zero-width):int(zero+width)]).copy()
 
-    # ee = 200 #keV
-    # thick = 32.0# nm
-    thick = thick * 1e-9  # input thickness now in m
-    # Define constants
-    # ec = 14.4;
-    m_0 = constants.value(u'electron mass')  # REST electron mass in kg
-    # h = constants.Planck  # Planck's constant
-    hbar = constants.hbar
+    y[np.nonzero(y <= 0)] = 1e-12
 
-    c = constants.speed_of_light  # speed of light m/s
-    bohr = constants.value(u'Bohr radius')  # Bohr radius in meters
-    e = constants.value(u'elementary charge')  # electron charge in Coulomb
-    print('hbar =', hbar, ' [Js] =', hbar / e, '[ eV s]')
+    p0 = [energy[zero], spectrum.max(), .5]  # Initial guess is a normal distribution
 
-    # Calculate fixed terms of equation
-    va = 1 - (511. / (511. + ee)) ** 2  # ee is incident energy in keV
-    v = c * np.sqrt(va)
-    beta = v / c  # non-relativistic for =1
+    def errfunc(pp, xx, yy):
+        return (gauss(xx, pp) - yy) / np.sqrt(yy)  # Distance to the target function
+    
+    [p1, _] = leastsq(errfunc, np.array(p0[:]), args=(x, y))
+    fit_mu, area, fwhm = p1
 
-    if relativistic:
-        gamma = 1. / np.sqrt(1 - beta ** 2)
+    return fwhm, fit_mu
+
+
+def get_zero_loss_energy(dataset):
+
+    spectrum = dataset.sum(axis=tuple(range(dataset.ndim - 1)))
+
+    startx = scipy.signal.find_peaks(spectrum/np.max(spectrum), height=0.98)[0][0]
+
+    end = startx + 3
+    start = startx - 3
+    for i in range(10):
+        if spectrum[startx - i] < 0.3 * spectrum[startx]:
+            start = startx - i
+        if spectrum[startx + i] < 0.3 * spectrum[startx]:
+            end = startx + i
+    if end - start < 3:
+        end = startx + 2
+        start = startx - 2
+    width = int((end-start)/2+0.5)
+
+    energy = dataset.get_spectral_dims(return_axis=True)[0].values
+
+    if dataset.ndim == 1:  # single spectrum
+        _, shifts = get_channel_zero(np.array(dataset), energy, width)
+        shifts = np.array([shifts])
+    elif dataset.ndim == 2:  # line scan
+        shifts = np.zeros(dataset.shape[:1])
+        for x in range(dataset.shape[0]):
+            _, shifts[x] = get_channel_zero(dataset[x, :], energy, width)
+    elif dataset.ndim == 3:  # spectral image
+        shifts = np.zeros(dataset.shape[:2])
+        for x in range(dataset.shape[0]):
+            for y in range(dataset.shape[1]):
+                _, shifts[x, y] = get_channel_zero(dataset[x, y, :], energy, width)
+    return shifts
+
+
+def shift_energy(dataset: sidpy.Dataset, shifts: np.ndarray) -> sidpy.Dataset:
+    """ Align zero-loss peaks of any spectral sidpy dataset """
+
+    new_si = dataset.copy()
+    new_si *= 0.0
+
+    image_dims = dataset.get_image_dims()
+    if len(image_dims) == 0:
+        image_dims =[0]
+    if len(image_dims) != shifts.ndim:
+        raise TypeError('array of energy shifts have to have same dimension as dataset')
+    if not isinstance(dataset, sidpy.Dataset):
+        raise TypeError('This function needs a sidpy Dataset to shift energy scale')
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+    if dataset.ndim == 1:  # single spectrum
+        tck = interpolate.splrep(np.array(energy_scale - shifts), np.array(dataset), k=1, s=0)
+        new_si[:] = interpolate.splev(energy_scale, tck, der=0)
+        new_si.data_type = 'Spectrum'
+    elif dataset.ndim == 2:  # line scan
+        for x in range(dataset.shape[0]):
+            tck = interpolate.splrep(np.array(energy_scale - shifts[x]), np.array(dataset[x, :]), k=1, s=0)
+            new_si[x, :] = interpolate.splev(energy_scale, tck, der=0)
+    elif dataset.ndim == 3:  # spectral image
+        for x in range(dataset.shape[0]):
+            for y in range(dataset.shape[1]):
+                tck = interpolate.splrep(np.array(energy_scale - shifts[x, y]), np.array(dataset[x, y]), k=1, s=0)
+                new_si[x, y, :] = interpolate.splev(energy_scale, tck, der=0)
+
+    return new_si
+
+
+def align_zero_loss(dataset: sidpy.Dataset) -> sidpy.Dataset:
+
+    shifts = get_zero_loss_energy(dataset)
+    print(shifts, dataset)
+    new_si = shift_energy(dataset, shifts)    
+    new_si.metadata.update({'zero_loss': {'shifted': shifts}})
+    return new_si
+
+
+def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endFitEnergy: float=+1,
+                             n_workers: int=1, n_threads: int=8):
+    """
+    Analyze and fit low-loss EELS data within a specified energy range to determine zero-loss peaks.
+
+    This function processes a low-loss EELS dataset from transmission electron microscopy (TEM) data, 
+    focusing on a specified energy range for analyzing and fitting the spectrum. 
+    It determines fitting parameters and applies these to extract zero-loss peak information 
+    from the dataset. The function handles both 2D and 3D datasets.
+
+    Parameters:
+        dset: sidpy.Dataset
+            The dataset containing TEM spectral data.
+        startFitEnergy: float
+            The start energy of the fitting window.
+        endFitEnergy: float
+            The end energy of the fitting window.
+        n_workers: int, optional
+            The number of workers for parallel processing (default is 1).
+        n_threads: int, optional
+            The number of threads for parallel processing (default is 8).
+
+    Returns:
+        tuple: A tuple containing:
+            - z_loss_dset (sidpy.Dataset): The dataset with added zero-loss peak information.
+            - z_loss_params (numpy.ndarray): Array of parameters used for the zero-loss peak fitting.
+
+    Raises:
+        ValueError: If the input dataset does not have the expected dimensions or format.
+
+    Notes:
+        - The function expects `dset` to have specific dimensionalities and will raise an error if they are not met.
+        - Parallel processing is employed to enhance performance, particularly for large datasets.
+    """
+    energy = dset.get_spectral_dims(return_axis=True)[0].values
+    start_fit_pixel = np.searchsorted(energy, startFitEnergy)
+    end_fit_pixel = np.searchsorted(energy, endFitEnergy)
+    guess_width = (endFitEnergy - startFitEnergy)/2
+    
+    def get_good_guess(zl_func, energy, spectrum):
+        popt, pcov = curve_fit(zl_func, energy, spectrum,
+                               p0=[0, guess_amplitude, guess_width,
+                                   0, guess_amplitude, guess_width])
+        return popt
+
+    fit_energy = energy[start_fit_pixel:end_fit_pixel]
+    # get a good guess for the fit parameters
+    if len(dset.shape) == 3:
+        fit_dset = dset[:, :, start_fit_pixel:end_fit_pixel]
+        guess_amplitude = np.sqrt(fit_dset.max())
+        guess_params = get_good_guess(zl_func, fit_energy, fit_dset.sum(axis=(0, 1))/fit_dset.shape[0]/fit_dset.shape[1])
+    elif len(dset.shape) == 2:
+        fit_dset = dset[:, start_fit_pixel:end_fit_pixel]
+        fit_energy = energy[start_fit_pixel:end_fit_pixel]
+        guess_amplitude = np.sqrt(fit_dset.max())
+        guess_params = get_good_guess(zl_func, fit_energy, fit_dset.sum(axis=0)/fit_dset.shape[0])
+    elif len(dset.shape) == 1:
+        fit_dset = dset[start_fit_pixel:end_fit_pixel]
+        fit_energy = energy[start_fit_pixel:end_fit_pixel]
+        guess_amplitude = np.sqrt(fit_dset.max())
+        guess_params = get_good_guess(zl_func, fit_energy, fit_dset)
+        z_loss_dset = dset.copy()
+        z_loss_dset *= 0.0
+        z_loss_dset += zl_func(energy, *guess_params)
+        if 'zero_loss' not in z_loss_dset.metadata:
+            z_loss_dset.metadata['zero_loss'] = {}
+        z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
+                                                  'endFitEnergy': endFitEnergy,
+                                                  'fit_parameter': guess_params,
+                                                  'original_low_loss': dset.title})
+        return z_loss_dset
     else:
-        gamma = 1  # set = 1 to correspond to E+B & Siegle
+        print('Error: need a spectrum or spectral image sidpy dataset')
+        print('Not dset.shape = ', dset.shape)
+        return None
 
-    momentum = m_0 * v * gamma  # used for xya, E&B have no gamma
+    # define guess function for SidFitter
+    def guess_function(xvec, yvec):
+        return guess_params
+    
+    # apply to all spectra
+    zero_loss_fitter = SidFitter(fit_dset, zl_func, num_workers=n_workers, guess_fn=guess_function, threads=n_threads,
+                                 return_cov=False, return_fit=False, return_std=False, km_guess=False, num_fit_parms=6)
+    
+    [z_loss_params] = zero_loss_fitter.do_fit()
+    z_loss_dset = dset.copy()
+    z_loss_dset *= 0.0
 
-    # ##### Define mapped variables
+    energy_grid = np.broadcast_to(energy.reshape((1, 1, -1)), (z_loss_dset.shape[0],
+                                                               z_loss_dset.shape[1], energy.shape[0]))
+    z_loss_peaks = zl_func(energy_grid, *z_loss_params)
+    z_loss_dset += z_loss_peaks
 
-    # Define independent variables E, theta
-    a_data = np.array(a_data)
-    e_data = np.array(e_data)
-    [energy, theta] = np.meshgrid(e_data + 1e-12, a_data)
-    # Define CONJUGATE dielectric function variable eps
-    [eps, _] = np.meshgrid(np.conj(eps_data), a_data)
+    shifts = z_loss_params[:, :, 0] * z_loss_params[:, :, 3]
+    widths = z_loss_params[:, :, 2] * z_loss_params[:, :, 5]
 
-    # ##### Calculate lambda in equation EB 2.3
-    theta2 = theta ** 2 + 1e-15
-    theta_e = energy * e / momentum / v
-    theta_e2 = theta_e ** 2
-
-    lambda2 = theta2 - eps * theta_e2 * beta ** 2  # Eq 2.3
-
-    lambd = np.sqrt(lambda2)
-    if (np.real(lambd) < 0).any():
-        print(' error negative lambda')
-
-    # ##### Calculate lambda0 in equation EB 2.4
-    # According to Kröger real(lambda0) is defined as positive!
-
-    phi2 = lambda2 + theta_e2  # Eq. 2.2
-    lambda02 = theta2 - theta_e2 * beta ** 2  # eta=1 Eq 2.4
-    lambda02[lambda02 < 0] = 0
-    lambda0 = np.sqrt(lambda02)
-    if not (np.real(lambda0) >= 0).any():
-        print(' error negative lambda0')
-
-    de = thick * energy * e / 2.0 / hbar / v  # Eq 2.5
-
-    xya = lambd * de / theta_e  # used in Eqs 2.6, 2.7, 4.4
-
-    lplus = lambda0 * eps + lambd * np.tanh(xya)  # eta=1 %Eq 2.6
-    lminus = lambda0 * eps + lambd / np.tanh(xya)  # eta=1 %Eq 2.7
-
-    mue2 = 1 - (eps * beta ** 2)  # Eq. 4.5
-    phi20 = lambda02 + theta_e2  # Eq 4.6
-    phi201 = theta2 + theta_e2 * (1 - (eps + 1) * beta ** 2)  # eta=1, eps-1 in E+B Eq.(4.7)
-
-    # Eq 4.2
-    a1 = phi201 ** 2 / eps
-    a2 = np.sin(de) ** 2 / lplus + np.cos(de) ** 2 / lminus
-    a = a1 * a2
-
-    # Eq 4.3
-    b1 = beta ** 2 * lambda0 * theta_e * phi201
-    b2 = (1. / lplus - 1. / lminus) * np.sin(2. * de)
-    b = b1 * b2
-
-    # Eq 4.4
-    c1 = -beta ** 4 * lambda0 * lambd * theta_e2
-    c2 = np.cos(de) ** 2 * np.tanh(xya) / lplus
-    c3 = np.sin(de) ** 2 / np.tanh(xya) / lminus
-    c = c1 * (c2 + c3)
-
-    # Put all the pieces together...
-    p_coef = e / (bohr * np.pi ** 2 * m_0 * v ** 2)
-
-    p_v = thick * mue2 / eps / phi2
-
-    p_s1 = 2. * theta2 * (eps - 1) ** 2 / phi20 ** 2 / phi2 ** 2  # ASSUMES eta=1
-    p_s2 = hbar / momentum
-    p_s3 = a + b + c
-
-    p_s = p_s1 * p_s2 * p_s3
-
-    # print(p_v.min(),p_v.max(),p_s.min(),p_s.max())
-    # Calculate P and p_vol (volume only)
-    dtheta = a_data[1] - a_data[0]
-    scale = np.sin(np.abs(theta)) * dtheta * 2 * np.pi
-
-    p = p_coef * np.imag(p_v - p_s)  # Eq 4.1
-    p_vol = p_coef * np.imag(p_v) * scale
-
-    # lplus_min = e_data[np.argmin(np.real(lplus), axis=1)]
-    # lminus_min = e_data[np.argmin(np.imag(lminus), axis=1)]
-
-    p_simple = p_coef * np.imag(1 / eps) * thick / (
-            theta2 + theta_e2) * scale  # Watch it eps is conjugated dielectric function
-
-    return p, p * scale * 1e2, p_vol * 1e2, p_simple * 1e2  # ,lplus_min,lminus_min
+    z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
+                                              'endFitEnergy': endFitEnergy,
+                                              'fit_parameter': z_loss_params,
+                                              'original_low_loss': dset.title})
 
 
-def kroeger_core2(e_data, a_data, eps_data, acceleration_voltage_kev, thickness, relativistic=True):
+    return z_loss_dset
+
+
+def drude(energy_scale, peak_position, peak_width, gamma):
+    """dielectric function according to Drude theory"""
+
+    eps = (1 - (peak_position ** 2 - peak_width * energy_scale * 1j) /
+           (energy_scale ** 2 + 2 * energy_scale * gamma * 1j))  # Mod drude term
+    return eps
+
+
+def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
+    """dielectric function according to Drude-Lorentz theory"""
+
+    eps = eps_inf
+    for i in range(leng):
+        eps = eps + amplitude[i] * (1 / (e + ep[i] + gamma[i] * 1j) - 1 / (e - ep[i] + gamma[i] * 1j))
+    return eps
+
+
+def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result=False, number_workers=4, number_threads=8):
+    """
+    Fit plasmon peak positions and widths in a TEM dataset using a Drude model.
+
+    This function applies the Drude model to fit plasmon peaks in a dataset obtained 
+    from transmission electron microscopy (TEM). It processes the dataset to determine 
+    peak positions, widths, and amplitudes within a specified energy range. The function 
+    can handle datasets with different dimensions and offers parallel processing capabilities.
+
+    Parameters:
+        dataset: sidpy.Dataset or numpy.ndarray
+            The dataset containing TEM spectral data.
+        startFitEnergy: float
+            The start energy of the fitting window.
+        endFitEnergy: float
+            The end energy of the fitting window.
+        plot_result: bool, optional
+            If True, plots the fitting results (default is False).
+        number_workers: int, optional
+            The number of workers for parallel processing (default is 4).
+        number_threads: int, optional
+            The number of threads for parallel processing (default is 8).
+
+    Returns:
+        fitted_dataset: sidpy.Dataset or numpy.ndarray
+            The dataset with fitted plasmon peak parameters. The dimensions and 
+            format depend on the input dataset.
+
+    Raises:
+        ValueError: If the input dataset does not have the expected dimensions or format.
+
+    Notes:
+        - The function uses the Drude model to fit plasmon peaks.
+        - The fitting parameters are peak position (Ep), peak width (Ew), and amplitude (A).
+        - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
+    """
+    # define Drude function for plasmon fitting
+    def energy_loss_function(E, Ep, Ew, A):
+        E = E/E.max()
+        eps = 1 - Ep**2/(E**2+Ew**2) + 1j * Ew * Ep**2/E/(E**2+Ew**2)
+        elf = (-1/eps).imag
+        return A*elf
+
+    # define window for fitting
+    energy = dataset.get_spectral_dims(return_axis=True)[0].values
+    start_fit_pixel = np.searchsorted(energy, startFitEnergy)
+    end_fit_pixel = np.searchsorted(energy, endFitEnergy)
+
+    # rechunk dataset
+    if dataset.ndim == 3:
+        dataset = dataset.rechunk(chunks=(1, 1, -1))
+        fit_dset = dataset[:, :, start_fit_pixel:end_fit_pixel]
+    elif dataset.ndim == 2:
+        dataset = dataset.rechunk(chunks=(1, -1))
+        fit_dset = dataset[:, start_fit_pixel:end_fit_pixel]
+    else:
+        fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
+        guess_pos = np.argmax(fit_dset)
+        guess_amplitude = fit_dset[guess_pos]
+        guess_width = (endFitEnergy - startFitEnergy)/2
+        popt, pcov = curve_fit(energy_loss_function, energy, dataset,
+                               p0=[guess_pos, guess_width, guess_amplitude])
+        return popt
+    
+    # if it can be parallelized:
+    fitter = SidFitter(fit_dset, energy_loss_function, num_workers=number_workers,
+                       threads=number_threads, return_cov=False, return_fit=False, return_std=False,
+                       km_guess=False, num_fit_parms=3)
+    [fitted_dataset] = fitter.do_fit()
+
+    if plot_result:
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
+        ax1.imshow(fitted_dataset[:, :, 0], cmap='jet')
+        ax1.set_title('Ep - Peak Position')
+        ax2.imshow(fitted_dataset[:, :, 1], cmap='jet')
+        ax2.set_title('Ew - Peak Width')
+        ax3.imshow(fitted_dataset[:, :, 2], cmap='jet')
+        ax3.set_title('A - Amplitude')
+        plt.show()
+    return fitted_dataset
+
+
+def drude_simulation(dset, e, ep, ew, tnm, eb):
+    """probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)
+
+    Gives probabilities of dielectric function eps relative to zero-loss integral (i0 = 1) per eV
+    Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
+
+    # function drude(ep,ew,eb,epc,e0,beta,nn,tnm)
+    # Given the plasmon energy (ep), plasmon fwhm (ew) and binding energy(eb),
+    # this program generates:
+    # EPS1, EPS2 from modified Eq. (3.40), ELF=Im(-1/EPS) from Eq. (3.42),
+    # single scattering from Eq. (4.26) and SRFINT from Eq. (4.31)
+    # The output is e, ssd into the file drude.ssd (for use in Flog etc.)
+    # and e,eps1 ,eps2 into drude.eps (for use in Kroeger etc.)
+    # Gives probabilities relative to zero-loss integral (i0 = 1) per eV
+    # Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
+    # Version 10.11.26
+
+
+    b.7 drude Simulation of a Low-Loss Spectrum
+    The program DRUDE calculates a single-scattering plasmon-loss spectrum for
+    a specimen of a given thickness tnm (in nm), recorded with electrons of a
+    specified incident energy e0 by a spectrometer that accepts scattering up to a
+    specified collection semi-angle beta. It is based on the extended drude model
+    (Section 3.3.2), with a volume energy-loss function elf in accord with Eq. (3.64) and
+    a surface-scattering energy-loss function srelf as in Eq. (4.31). Retardation effects
+    and coupling between the two surface modes are not included. The surface term can
+    be made negligible by entering a large specimen thickness (tnm > 1000).
+    Surface intensity srfint and volume intensity volint are calculated from
+    Eqs. (4.31) and (4.26), respectively. The total spectral intensity ssd is written to
+    the file DRUDE.SSD, which can be used as input for KRAKRO. These intensities are
+    all divided by i0, to give relative probabilities (per eV). The real and imaginary parts
+    of the dielectric function are written to DRUDE.EPS and can be used for comparison
+    with the results of Kramers–Kronig analysis (KRAKRO.DAT).
+    Written output includes the surface-loss probability Ps, obtained by integrating
+    srfint (a value that relates to two surfaces but includes the negative begrenzungs
+    term), for comparison with the analytical integration represented by Eq. (3.77). The
+    volume-loss probability p_v is obtained by integrating volint and is used to calculate
+    the volume plasmon mean free path (lam = tnm/p_v). The latter is listed and
+    compared with the MFP obtained from Eq. (3.44), which represents analytical integration
+    assuming a zero-width plasmon peak. The total probability (Pt = p_v+Ps) is
+    calculated and used to evaluate the thickness (lam.Pt) that would be given by the formula
+    t/λ = ln(It/i0), ignoring the surface-loss probability. Note that p_v will exceed
+    1 for thicker specimens (t/λ > 1), since it represents the probability of plasmon
+    scattering relative to that of no inelastic scattering.
+    The command-line usage is drude(ep,ew,eb,epc,beta,e0,tnm,nn), where ep is the
+    plasmon energy, ew the plasmon width, eb the binding energy of the electrons (0 for
+    a metal), and nn is the number of channels in the output spectrum. An example of
+    the output is shown in Fig. b.1a,b.
+
+    """
+    
+    epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
+    
+    b = dset.metadata['collection_angle'] / 1000.  # rad
+    epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
+    e0 = dset.metadata['acceleration_voltage'] / 1000.  # input('incident energy e0(kev) : ');
+
+    # effective kinetic energy: T = m_o v^2/2,
+    t = 1000.0 * e0 * (1. + e0 / 1022.12) / (1.0 + e0 / 511.06) ** 2  # eV # equ.5.2a or Appendix E p 427
+    
+    # 2 gamma T
+    tgt = 1000 * e0 * (1022.12 + e0) / (511.06 + e0)  # eV  Appendix E p 427
+    
+    rk0 = 2590 * (1.0 + e0 / 511.06) * np.sqrt(2.0 * t / 511060)
+    
+    os = e[0]
+    ew_mod = eb
+    tags = dset.metadata
+   
+    eps = 1 - (ep ** 2 - ew_mod * e * 1j) / (e ** 2 + 2 * e * ew * 1j)  # Mod drude term
+    
+    eps[np.nonzero(eps == 0.0)] = 1e-19
+    elf = np.imag(-1 / eps)
+
+    the = e / tgt  # varies with energy loss! # Appendix E p 427
+    # srfelf = 4..*eps2./((1+eps1).^2+eps2.^2) - elf; %equivalent
+    srfelf = np.imag(-4. / (1.0 + eps)) - elf  # for 2 surfaces
+    angdep = np.arctan(b / the) / the - b / (b * b + the * the)
+    srfint = angdep * srfelf / (3.1416 * 0.05292 * rk0 * t)  # probability per eV
+    anglog = np.log(1.0 + b * b / the / the)
+    i0 = dset.sum()  # *tags['counts2e']
+
+    # 2 * t = m_0 v**2 !!!  a_0 = 0.05292 nm
+    volint = abs(tnm / (np.pi * 0.05292 * t * 2.0) * elf * anglog)  # S equ 4.26% probability per eV
+    volint = volint * i0 / epc  # S probability per channel
+    ssd = volint  # + srfint;
+
+    if e[0] < -1.0:
+        xs = int(abs(-e[0] / epc))
+
+        ssd[0:xs] = 0.0
+        volint[0:xs] = 0.0
+        srfint[0:xs] = 0.0
+
+        # if os <0:
+        p_s = np.trapz(e, srfint)  # 2 surfaces but includes negative Begrenzung contribution.
+        p_v = abs(np.trapz(e, abs(volint / tags['spec'].sum())))  # integrated volume probability
+        p_v = (volint / i0).sum()  # our data have he same epc and the trapez formula does not include
+        lam = tnm / p_v  # does NOT depend on free-electron approximation (no damping).
+        lamfe = 4.0 * 0.05292 * t / ep / np.log(1 + (b * tgt / ep) ** 2)  # Eq.(3.44) approximation
+
+        tags['eps'] = eps
+        tags['lam'] = lam
+        tags['lamfe'] = lamfe
+        tags['p_v'] = p_v
+
+    return ssd  # /np.pi
+
+
+def kroeger_core(e_data, a_data, eps_data, acceleration_voltage_kev, thickness, relativistic=True):
     """This function calculates the differential scattering probability
 
      .. math::
@@ -2057,6 +835,1091 @@ def kroeger_core2(e_data, a_data, eps_data, acceleration_voltage_kev, thickness,
     return p, p * scale * 1e2, p_vol * 1e2, p_simple * 1e2  # ,lplus_min,lminus_min
 
 
+#################################################################
+# CORE - LOSS functions
+#################################################################
+
+def get_z(z: Union[int, str]) -> int:
+    """Returns the atomic number independent of input as a string or number
+
+    Parameter
+    ---------
+    z: int, str
+        atomic number of chemical symbol (0 if not valid)
+    Return:
+    ------
+    z_out: int
+        atomic number
+    """
+    x_sections = get_x_sections()
+
+    z_out = 0
+    if str(z).isdigit():
+        z_out = int(z)
+    elif isinstance(z, str):
+        for key in x_sections:
+            if x_sections[key]['name'].lower() == z.lower():  # Well one really should know how to write elemental
+                z_out = int(key)
+    else:
+        raise TypeError('A string or number is required')
+    return z_out
+
+
+def get_x_sections(z: int=0) -> dict:
+    """Reads X-ray fluorescent cross-sections from a dictionary.
+
+    Parameters
+    ----------
+    z: int
+        atomic number if zero all cross-sections will be returned
+
+    Returns
+    -------
+    dictionary
+        cross-section of an element or of all elements if z = 0
+
+    """
+    if z < 1:
+        return x_sections
+    else:
+        z = str(z)
+        if z in x_sections:
+            return x_sections[z]
+        else:
+            return 0
+
+
+def list_all_edges(z: Union[str, int]=0, verbose=False)->[str, dict]:
+    """List all ionization edges of an element with atomic number z
+
+    Parameters
+    ----------
+    z: int
+        atomic number
+    verbose: bool, optional
+        more info if set to True
+
+    Returns
+    -------
+    out_string: str
+        string with all major edges in energy range
+    """
+
+    element = str(get_z(z))
+    x_sections = get_x_sections()
+    out_string = ''
+    if verbose:
+        print('Major edges')
+    edge_list = {x_sections[element]['name']: {}}
+    
+    for key in all_edges:
+        if key in x_sections[element]:
+            if 'onset' in x_sections[element][key]:
+                if verbose:
+                    print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
+                out_string = out_string + f" {x_sections[element]['name']}-{key}: " \
+                                          f"{x_sections[element][key]['onset']:8.1f} eV /n"
+                edge_list[x_sections[element]['name']][key] = x_sections[element][key]['onset']
+    return out_string, edge_list
+
+
+def find_all_edges(edge_onset: float, maximal_chemical_shift: float=5.0, major_edges_only: bool=False) -> str:
+    """Find all (major and minor) edges within an energy range
+
+    Parameters
+    ----------
+    edge_onset: float
+        approximate energy of ionization edge
+    maximal_chemical_shift: float, default = 5eV
+        range of energy window around edge_onset to look for major edges
+    major_edges_only: boolean, default = False
+        only major edges are considered if True
+    Returns
+    -------
+    text: str
+        string with all edges in energy range
+
+    """
+
+    text = ''
+    x_sections = get_x_sections()
+    for element in x_sections:
+        for key in x_sections[element]:
+            if isinstance(x_sections[element][key], dict):
+                if 'onset' in x_sections[element][key]:
+                    if abs(x_sections[element][key]['onset'] - edge_onset) < maximal_chemical_shift:
+                        # print(element, x_sections[element]['name'], key, x_sections[element][key]['onset'])
+                        new_text = f"\n {x_sections[element]['name']:2s}-{key}: " \
+                                        f"{x_sections[element][key]['onset']:8.1f} eV "
+                        if major_edges_only:
+                            if key in major_edges:
+                                text += new_text
+                        else:
+                            text += new_text
+
+    return text
+
+
+def find_associated_edges(dataset: sidpy.Dataset) -> None:
+    onsets = []
+    edges = []
+    if 'edges' in dataset.metadata:
+        for key, edge in dataset.metadata['edges'].items():
+            if key.isdigit():
+                element = edge['element']
+                pre_edge = 0.  # edge['onset']-edge['start_exclude']
+                post_edge = edge['end_exclude'] - edge['onset']
+
+                for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
+                    onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift']-pre_edge)
+                    edges.append([key, f"{element}-{sym}", onsets[-1]])
+        for key, peak in dataset.metadata['peak_fit']['peaks'].items():
+            if key.isdigit():
+                distance = dataset.get_spectral_dims(return_axis=True)[0].values[-1]
+                index = -1
+                for ii, onset in enumerate(onsets):
+                    if onset < peak['position'] < onset+post_edge:
+                        if distance > np.abs(peak['position'] - onset):
+                            distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
+                            distance_onset = peak['position'] - onset
+                            index = ii
+                if index >= 0:
+                    peak['associated_edge'] = edges[index][1]  # check if more info is necessary
+                    peak['distance_to_onset'] = distance_onset
+
+
+def find_white_lines(dataset: sidpy.Dataset) -> None:
+    if 'edges' in dataset.metadata:
+        white_lines = {}
+        for index, peak in dataset.metadata['peak_fit']['peaks'].items():
+            if index.isdigit():
+                if 'associated_edge' in peak:
+                    if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
+                        if peak['distance_to_onset'] < 10:
+                            area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
+                            if peak['associated_edge'] not in white_lines:
+                                white_lines[peak['associated_edge']] = 0.
+                            if area > 0:
+                                white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
+        white_line_ratios = {}
+        white_line_sum = {}
+        for sym, area in white_lines.items():
+            if sym[-2:] in ['L2', 'M4', 'M2']:
+                if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
+                    if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
+                        white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
+                            f"{sym[:-1]}{int(sym[-1]) + 1}"]
+                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
+                                    area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
+
+                        areal_density = 1.
+                        if 'edges' in dataset.metadata:
+                            for key, edge in dataset.metadata['edges'].items():
+                                if key.isdigit():
+                                    if edge['element'] == sym.split('-')[0]:
+                                        areal_density = edge['areal_density']
+                                        break
+                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
+
+        dataset.metadata['peak_fit']['white_lines'] = white_lines
+        dataset.metadata['peak_fit']['white_line_ratios'] = white_line_ratios
+        dataset.metadata['peak_fit']['white_line_sums'] = white_line_sum
+        
+
+def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
+    """Calculates second derivative of a sidpy.dataset"""
+
+    dim = dataset.get_spectral_dims()
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+    if dataset.data_type.name == 'SPECTRAL_IMAGE':
+        spectrum = dataset.view.get_spectrum()
+    else:
+        spectrum = np.array(dataset)
+
+    spec = scipy.ndimage.gaussian_filter(spectrum, 3)
+
+    dispersion = get_slope(energy_scale)
+    second_dif = np.roll(spec, -3) - 2 * spec + np.roll(spec, +3)
+    second_dif[:3] = 0
+    second_dif[-3:] = 0
+
+    # find if there is a strong edge at high energy_scale
+    noise_level = 2. * np.std(second_dif[3:50])
+    [indices, _] = scipy.signal.find_peaks(second_dif, noise_level)
+    width = 50 / dispersion
+    if width < 50:
+        width = 50
+    start_end_noise = int(len(energy_scale) - width)
+    for index in indices[::-1]:
+        if index > start_end_noise:
+            start_end_noise = index - 70
+
+    noise_level_start = sensitivity * np.std(second_dif[3:50])
+    noise_level_end = sensitivity * np.std(second_dif[start_end_noise: start_end_noise + 50])
+    slope = (noise_level_end - noise_level_start) / (len(energy_scale) - 400)
+    noise_level = noise_level_start + np.arange(len(energy_scale)) * slope
+    return second_dif, noise_level
+
+
+def find_edges(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
+    """find edges within a sidpy.Dataset"""
+
+    dim = dataset.get_spectral_dims()
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+
+    second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
+
+    [indices, peaks] = scipy.signal.find_peaks(second_dif, noise_level)
+
+    peaks['peak_positions'] = energy_scale[indices]
+    peaks['peak_indices'] = indices
+    edge_energies = [energy_scale[50]]
+    edge_indices = []
+
+    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
+    minima = energy_scale[indices]
+
+    for peak_number in range(len(peaks['peak_positions'])):
+        position = peaks['peak_positions'][peak_number]
+        if position - edge_energies[-1] > 20:
+            impossible = minima[minima < position]
+            impossible = impossible[impossible > position - 5]
+            if len(impossible) == 0:
+                possible = minima[minima > position]
+                possible = possible[possible < position + 5]
+                if len(possible) > 0:
+                    edge_energies.append((position + possible[0])/2)
+                    edge_indices.append(np.searchsorted(energy_scale, (position + possible[0])/2))
+
+    selected_edges = []
+    for peak in edge_indices:
+        if 525 < energy_scale[peak] < 533:
+            selected_edges.append('O-K1')
+        else:
+            selected_edge = ''
+            edges = find_all_edges(energy_scale[peak], 20, major_edges_only=True)
+            edges = edges.split('\n')
+            minimum_dist = 100.
+            for edge in edges[1:]:
+                edge = edge[:-3].split(':')
+                name = edge[0].strip()
+                energy = float(edge[1].strip())
+                if np.abs(energy - energy_scale[peak]) < minimum_dist:
+                    minimum_dist = np.abs(energy - energy_scale[peak])
+                    selected_edge = name
+
+            if selected_edge != '':
+                selected_edges.append(selected_edge)
+
+    return selected_edges
+
+
+def assign_likely_edges(edge_channels: Union[list, np.ndarray], energy_scale: np.ndarray):
+    edges_in_list = []
+    result = {}
+    for channel in edge_channels: 
+        if channel not in edge_channels[edges_in_list]:
+            shift = 5
+            element_list = find_all_edges(energy_scale[channel], maximal_chemical_shift=shift, major_edges_only=True)
+            while len(element_list) < 1:
+                shift += 1
+                element_list = find_all_edges(energy_scale[channel], maximal_chemical_shift=shift, major_edges_only=True)
+
+            if len(element_list) > 1:
+                while len(element_list) > 0:
+                    shift-=1
+                    element_list = find_all_edges(energy_scale[channel], maximal_chemical_shift=shift, major_edges_only=True)
+                element_list = find_all_edges(energy_scale[channel], maximal_chemical_shift=shift+1, major_edges_only=True)
+            element = (element_list[:4]).strip()
+            z = get_z(element)
+            result[element] =[]
+            _, edge_list = list_all_edges(z)
+
+            for peak in edge_list:
+                for edge in edge_list[peak]:
+                    possible_minor_edge = np.argmin(np.abs(energy_scale[edge_channels]-edge_list[peak][edge]))
+                    if np.abs(energy_scale[edge_channels[possible_minor_edge]]-edge_list[peak][edge]) < 3:
+                        #print('nex', next_e)
+                        edges_in_list.append(possible_minor_edge)
+                        
+                        result[element].append(edge)
+                    
+    return result
+
+
+def auto_id_edges(dataset):
+    edge_channels = identify_edges(dataset)
+    dim = dataset.get_spectral_dims()
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+    found_edges = assign_likely_edges(edge_channels, energy_scale)
+    return found_edges
+
+
+def identify_edges(dataset: sidpy.Dataset, noise_level: float=2.0):
+    """
+    Using first derivative to determine edge onsets
+    Any peak in first derivative higher than noise_level times standard deviation will be considered
+    
+    Parameters
+    ----------
+    dataset: sidpy.Dataset
+        the spectrum
+    noise_level: float
+        ths number times standard deviation in first derivative decides on whether an edge onset is significant
+        
+    Return
+    ------
+    edge_channel: numpy.ndarray
+    
+    """
+    dim = dataset.get_spectral_dims()
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+    dispersion = get_slope(energy_scale)
+    spec = scipy.ndimage.gaussian_filter(dataset, 3/dispersion)  # smooth with 3eV wideGaussian
+
+    first_derivative = spec - np.roll(spec, +2) 
+    first_derivative[:3] = 0
+    first_derivative[-3:] = 0
+
+    # find if there is a strong edge at high energy_scale
+    noise_level = noise_level*np.std(first_derivative[3:50])
+    [edge_channels, _] = scipy.signal.find_peaks(first_derivative, noise_level)
+    
+    return edge_channels
+
+
+def add_element_to_dataset(dataset: sidpy.Dataset, z: Union[int, str]):
+    """
+    """
+    # We check whether this element is already in the
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
+
+    zz = get_z(z)
+    if 'edges' not in dataset.metadata:
+         dataset.metadata['edges'] = {'model': {}, 'use_low_loss': False}
+    index = 0
+    for key, edge in dataset.metadata['edges'].items():
+        if key.isdigit():
+            index += 1
+            if 'z' in edge:
+                if zz == edge['z']:
+                    index = int(key)
+                    break
+
+    major_edge = ''
+    minor_edge = ''
+    all_edges = {}
+    x_section = get_x_sections(zz)
+    edge_start = 10  # int(15./ft.get_slope(self.energy_scale)+0.5)
+    for key in x_section:
+        if len(key) == 2 and key[0] in ['K', 'L', 'M', 'N', 'O'] and key[1].isdigit():
+            if energy_scale[edge_start] < x_section[key]['onset'] < energy_scale[-edge_start]:
+                if key in ['K1', 'L3', 'M5', 'M3']:
+                    major_edge = key
+                
+                all_edges[key] = {'onset': x_section[key]['onset']}
+
+    if major_edge != '':
+        key = major_edge
+    elif minor_edge != '':
+        key = minor_edge
+    else:
+        print(f'Could not find no edge of {zz} in spectrum')
+        return False
+
+    
+    if str(index) not in dataset.metadata['edges']:
+        dataset.metadata['edges'][str(index)] = {}
+
+    start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
+    end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
+
+    dataset.metadata['edges'][str(index)] = {'z': zz, 'symmetry': key, 'element': elements[zz],
+                              'onset': x_section[key]['onset'], 'end_exclude': end_exclude,
+                              'start_exclude': start_exclude}
+    dataset.metadata['edges'][str(index)]['all_edges'] = all_edges
+    dataset.metadata['edges'][str(index)]['chemical_shift'] = 0.0
+    dataset.metadata['edges'][str(index)]['areal_density'] = 0.0
+    dataset.metadata['edges'][str(index)]['original_onset'] = dataset.metadata['edges'][str(index)]['onset']
+    return True
+
+
+def make_edges(edges_present: dict, energy_scale: np.ndarray, e_0:float, coll_angle:float, low_loss:np.ndarray=None)->dict:
+    """Makes the edges dictionary for quantification
+
+    Parameters
+    ----------
+    edges_present: list
+        list of edges
+    energy_scale: numpy array
+        energy scale on which to make cross-section
+    e_0: float
+        acceleration voltage (in V)
+    coll_angle: float
+        collection angle in mrad
+    low_loss: numpy array with same length as energy_scale
+        low_less spectrum with which to convolve the cross-section (default=None)
+
+    Returns
+    -------
+    edges: dict
+        dictionary with all information on cross-section
+    """
+    x_sections = get_x_sections()
+    edges = {}
+    for i, edge in enumerate(edges_present):
+        element, symmetry = edge.split('-')
+        z = 0
+        for key in x_sections:
+            if element == x_sections[key]['name']:
+                z = int(key)
+        edges[i] = {}
+        edges[i]['z'] = z
+        edges[i]['symmetry'] = symmetry
+        edges[i]['element'] = element
+
+    for key in edges:
+        xsec = x_sections[str(edges[key]['z'])]
+        if 'chemical_shift' not in edges[key]:
+            edges[key]['chemical_shift'] = 0
+        if 'symmetry' not in edges[key]:
+            edges[key]['symmetry'] = 'K1'
+        if 'K' in edges[key]['symmetry']:
+            edges[key]['symmetry'] = 'K1'
+        elif 'L' in edges[key]['symmetry']:
+            edges[key]['symmetry'] = 'L3'
+        elif 'M' in edges[key]['symmetry']:
+            edges[key]['symmetry'] = 'M5'
+        else:
+            edges[key]['symmetry'] = edges[key]['symmetry'][0:2]
+
+        edges[key]['original_onset'] = xsec[edges[key]['symmetry']]['onset']
+        edges[key]['onset'] = edges[key]['original_onset'] + edges[key]['chemical_shift']
+        edges[key]['start_exclude'] = edges[key]['onset'] - xsec[edges[key]['symmetry']]['excl before']
+        edges[key]['end_exclude'] = edges[key]['onset'] + xsec[edges[key]['symmetry']]['excl after']
+
+    edges = make_cross_sections(edges, energy_scale, e_0, coll_angle, low_loss)
+
+    return edges
+
+def fit_dataset(dataset: sidpy.Dataset):
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
+    if 'fit_area' not in dataset.metadata['edges']:
+        dataset.metadata['edges']['fit_area'] = {}
+    if 'fit_start' not in dataset.metadata['edges']['fit_area']:
+        dataset.metadata['edges']['fit_area']['fit_start'] = energy_scale[50]
+    if 'fit_end' not in dataset.metadata['edges']['fit_area']:
+        dataset.metadata['edges']['fit_area']['fit_end'] = energy_scale[-2]
+    dataset.metadata['edges']['use_low_loss'] = False
+        
+    if 'experiment' in dataset.metadata:
+        exp = dataset.metadata['experiment']
+        if 'convergence_angle' not in exp:
+            raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
+        alpha = exp['convergence_angle']
+        beta = exp['collection_angle']
+        beam_kv = exp['acceleration_voltage']
+        energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
+        eff_beta = effective_collection_angle(energy_scale, alpha, beta, beam_kv)
+        edges = make_cross_sections(dataset.metadata['edges'], np.array(energy_scale), beam_kv, eff_beta)
+        dataset.metadata['edges'] = fit_edges2(dataset, energy_scale, edges)
+        areal_density = []
+        elements = []
+        for key in edges:
+            if key.isdigit():  # only edges have numbers in that dictionary
+                elements.append(edges[key]['element'])
+                areal_density.append(edges[key]['areal_density'])
+        areal_density = np.array(areal_density)
+        out_string = '\nRelative composition: \n'
+        for i, element in enumerate(elements):
+            out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.1f}%  '
+
+        print(out_string)
+
+
+def auto_chemical_composition(dataset:sidpy.Dataset)->None:
+
+    found_edges = auto_id_edges(dataset)
+    for key in found_edges:
+        add_element_to_dataset(dataset, key)
+    fit_dataset(dataset)
+
+
+def make_cross_sections(edges:dict, energy_scale:np.ndarray, e_0:float, coll_angle:float, low_loss:np.ndarray=None)->dict:
+    """Updates the edges dictionary with collection angle-integrated X-ray photo-absorption cross-sections
+
+    """
+    for key in edges:
+        if str(key).isdigit():
+            edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['z'], coll_angle,
+                                           edges[key]['chemical_shift']) / 1e10  # from barnes to 1/nm^2
+            if low_loss is not None:
+                low_loss = np.roll(np.array(low_loss), 1024 - np.argmax(np.array(low_loss)))
+                edges[key]['data'] = scipy.signal.convolve(edges[key]['data'], low_loss/low_loss.sum(), mode='same')
+
+            edges[key]['onset'] = edges[key]['original_onset'] + edges[key]['chemical_shift']
+            edges[key]['X_section_type'] = 'XRPA'
+            edges[key]['X_section_source'] = 'pyTEMlib'
+
+    return edges
+
+
+def power_law(energy: np.ndarray, a:float, r:float)->np.ndarray:
+    """power law for power_law_background"""
+    return a * np.power(energy, -r)
+
+
+def power_law_background(spectrum:np.ndarray, energy_scale:np.ndarray, fit_area:list, verbose:bool=False):
+    """fit of power law to spectrum """
+
+    # Determine energy window  for background fit in pixels
+    startx = np.searchsorted(energy_scale, fit_area[0])
+    endx = np.searchsorted(energy_scale, fit_area[1])
+
+    x = np.array(energy_scale)[startx:endx]
+    y = np.array(spectrum)[startx:endx].flatten()
+
+    # Initial values of parameters
+    p0 = np.array([1.0E+20, 3])
+
+    # background fitting
+    def bgdfit(pp, yy, xx):
+        err = yy - power_law(xx, pp[0], pp[1])
+        return err
+
+    [p, _] = leastsq(bgdfit, p0, args=(y, x), maxfev=2000)
+
+    background_difference = y - power_law(x, p[0], p[1])
+    background_noise_level = std_dev = np.std(background_difference)
+    if verbose:
+        print(f'Power-law background with amplitude A: {p[0]:.1f} and exponent -r: {p[1]:.2f}')
+        print(background_difference.max() / background_noise_level)
+
+        print(f'Noise level in spectrum {std_dev:.3f} counts')
+
+    # Calculate background over the whole energy scale
+    background = power_law(energy_scale, p[0], p[1])
+    return background, p
+
+
+def cl_model(x, p, number_of_edges, xsec):
+    """ core loss model for fitting"""
+    y = (p[9] * np.power(x, (-p[10]))) + p[7] * x + p[8] * x * x
+    for i in range(number_of_edges):
+        y = y + p[i] * xsec[i, :]
+    return y
+
+
+def fit_edges2(spectrum, energy_scale, edges):
+    """fit edges for quantification"""
+
+    dispersion = energy_scale[1] - energy_scale[0]
+    # Determine fitting ranges and masks to exclude ranges
+    mask = np.ones(len(spectrum))
+
+    background_fit_start = edges['fit_area']['fit_start']
+    if edges['fit_area']['fit_end'] > energy_scale[-1]:
+        edges['fit_area']['fit_end'] = energy_scale[-1]
+    background_fit_end = edges['fit_area']['fit_end']
+
+    startx = np.searchsorted(energy_scale, background_fit_start)
+    endx = np.searchsorted(energy_scale, background_fit_end)
+    mask[0:startx] = 0.0
+    mask[endx:-1] = 0.0
+    for key in edges:
+        if key.isdigit():
+            if edges[key]['start_exclude'] > background_fit_start + dispersion:
+                if edges[key]['start_exclude'] < background_fit_end - dispersion * 2:
+                    if edges[key]['end_exclude'] > background_fit_end - dispersion:
+                        # we need at least one channel to fit.
+                        edges[key]['end_exclude'] = background_fit_end - dispersion
+                    startx = np.searchsorted(energy_scale, edges[key]['start_exclude'])
+                    if startx < 2:
+                        startx = 1
+                    endx = np.searchsorted(energy_scale, edges[key]['end_exclude'])
+                    mask[startx: endx] = 0.0
+
+    ########################
+    # Background Fit
+    ########################
+    bgd_fit_area = [background_fit_start, background_fit_end]
+    background, [A, r] = power_law_background(spectrum, energy_scale, bgd_fit_area, verbose=False)
+
+    #######################
+    # Edge Fit
+    #######################
+    x = energy_scale
+    blurred = gaussian_filter(spectrum, sigma=5)
+
+    y = blurred  # now in probability
+    y[np.where(y < 1e-8)] = 1e-8
+
+    xsec = []
+    number_of_edges = 0
+    for key in edges:
+        if key.isdigit():
+            xsec.append(edges[key]['data'])
+            number_of_edges += 1
+    xsec = np.array(xsec)
+
+
+    def model(xx, pp):
+        yy = pp[0] + x**pp[1] + pp[2] + pp[3] * xx + pp[4] * xx * xx
+        for i in range(number_of_edges):
+            pp[i+5] = np.abs(pp[i+5])
+            yy = yy + pp[i+5] * xsec[i, :]
+        return yy
+
+    def residuals(pp, xx, yy):
+        err = np.abs((yy - model(xx, pp)) * mask)  # / np.sqrt(np.abs(y))
+        return err
+
+    scale = y[100]
+    pin = np.array([A,r, 10., 1., 0.00] + [scale/5] * number_of_edges)
+    [p, _] = leastsq(residuals, pin, args=(x, y))
+
+    for key in edges:
+        if key.isdigit():
+            edges[key]['areal_density'] = p[int(key)+5]
+
+    edges['model'] = {}
+    edges['model']['background'] = (background + p[6] + p[7] * x + p[8] * x * x)
+    edges['model']['background-poly_0'] = p[6]
+    edges['model']['background-poly_1'] = p[7]
+    edges['model']['background-poly_2'] = p[8]
+    edges['model']['background-A'] = A
+    edges['model']['background-r'] = r
+    edges['model']['spectrum'] = model(x, p)
+    edges['model']['blurred'] = blurred
+    edges['model']['mask'] = mask
+    edges['model']['fit_parameter'] = p
+    edges['model']['fit_area_start'] = edges['fit_area']['fit_start']
+    edges['model']['fit_area_end'] = edges['fit_area']['fit_end']
+
+    return edges
+
+
+def fit_edges(spectrum, energy_scale, region_tags, edges):
+    """fit edges for quantification"""
+
+    # Determine fitting ranges and masks to exclude ranges
+    mask = np.ones(len(spectrum))
+
+    background_fit_end = energy_scale[-1]
+    for key in region_tags:
+        end = region_tags[key]['start_x'] + region_tags[key]['width_x']
+
+        startx = np.searchsorted(energy_scale, region_tags[key]['start_x'])
+        endx = np.searchsorted(energy_scale, end)
+
+        if key == 'fit_area':
+            mask[0:startx] = 0.0
+            mask[endx:-1] = 0.0
+        else:
+            mask[startx:endx] = 0.0
+            if region_tags[key]['start_x'] < background_fit_end:  # Which is the onset of the first edge?
+                background_fit_end = region_tags[key]['start_x']
+
+    ########################
+    # Background Fit
+    ########################
+    bgd_fit_area = [region_tags['fit_area']['start_x'], background_fit_end]
+    background, [A, r] = power_law_background(spectrum, energy_scale, bgd_fit_area, verbose=False)
+
+    #######################
+    # Edge Fit
+    #######################
+    x = energy_scale
+    blurred = gaussian_filter(spectrum, sigma=5)
+
+    y = blurred  # now in probability
+    y[np.where(y < 1e-8)] = 1e-8
+
+    xsec = []
+    number_of_edges = 0
+    for key in edges:
+        if key.isdigit():
+            xsec.append(edges[key]['data'])
+            number_of_edges += 1
+    xsec = np.array(xsec)
+
+    def model(xx, pp):
+        yy = background + pp[6] + pp[7] * xx + pp[8] * xx * xx
+        for i in range(number_of_edges):
+            pp[i] = np.abs(pp[i])
+            yy = yy + pp[i] * xsec[i, :]
+        return yy
+
+    def residuals(pp, xx, yy):
+        err = np.abs((yy - model(xx, pp)) * mask)  # / np.sqrt(np.abs(y))
+        return err
+
+    scale = y[100]
+    pin = np.array([scale / 5, scale / 5, scale / 5, scale / 5, scale / 5, scale / 5, -scale / 10, 1.0, 0.001])
+    [p, _] = leastsq(residuals, pin, args=(x, y))
+
+    for key in edges:
+        if key.isdigit():
+            edges[key]['areal_density'] = p[int(key) - 1]
+
+    edges['model'] = {}
+    edges['model']['background'] = (background + p[6] + p[7] * x + p[8] * x * x)
+    edges['model']['background-poly_0'] = p[6]
+    edges['model']['background-poly_1'] = p[7]
+    edges['model']['background-poly_2'] = p[8]
+    edges['model']['background-A'] = A
+    edges['model']['background-r'] = r
+    edges['model']['spectrum'] = model(x, p)
+    edges['model']['blurred'] = blurred
+    edges['model']['mask'] = mask
+    edges['model']['fit_parameter'] = p
+    edges['model']['fit_area_start'] = region_tags['fit_area']['start_x']
+    edges['model']['fit_area_end'] = region_tags['fit_area']['start_x'] + region_tags['fit_area']['width_x']
+
+    return edges
+
+
+
+def get_spectrum(dataset, x=0, y=0, bin_x=1, bin_y=1):
+    """
+    Parameter
+    ---------
+    dataset: sidpy.Dataset object
+        contains spectrum or spectrum image
+    x: int default = 0
+        x position of spectrum image
+    y: int default = 0
+        y position of spectrum
+    bin_x: int default = 1
+        binning of spectrum image in x-direction
+    bin_y: int default = 1
+        binning of spectrum image in y-direction
+
+    Returns:
+    --------
+    spectrum: sidpy.Dataset object
+
+    """
+    if dataset.data_type.name == 'SPECTRUM':
+        spectrum = dataset.copy()
+    else:
+        image_dims = dataset.get_image_dims()
+        if x > dataset.shape[image_dims[0]] - bin_x:
+            x = dataset.shape[image_dims[0]] - bin_x
+        if y > dataset.shape[image_dims[1]] - bin_y:
+            y = dataset.shape[image_dims[1]] - bin_y
+        selection = []
+        dimensions = dataset.get_dimension_types()
+        for dim, dimension_type in enumerate(dimensions):
+            # print(dim, axis.dimension_type)
+            if dimension_type == 'SPATIAL':
+                if dim == image_dims[0]:
+                    selection.append(slice(x, x + bin_x))
+                else:
+                    selection.append(slice(y, y + bin_y))
+            elif dimension_type == 'SPECTRAL':
+                selection.append(slice(None))
+            elif dimension_type == 'CHANNEL':
+                selection.append(slice(None))
+            else:
+                selection.append(slice(0, 1))
+
+        spectrum = dataset[tuple(selection)].mean(axis=tuple(image_dims))
+        spectrum.squeeze().compute()
+        spectrum.data_type = 'Spectrum'
+    return spectrum
+
+def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
+    """find peaks in spectrum"""
+
+    if dataset.data_type.name == 'SPECTRAL_IMAGE':
+        spectrum = dataset.view.get_spectrum()
+    else:
+        spectrum = np.array(dataset)
+
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+
+    second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
+    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
+
+    start_channel = np.searchsorted(energy_scale, fit_start)
+    end_channel = np.searchsorted(energy_scale, fit_end)
+    peaks = []
+    for index in indices:
+        if start_channel < index < end_channel:
+            peaks.append(index - start_channel)
+
+    if 'model' in dataset.metadata:
+        model = dataset.metadata['model'][start_channel:end_channel]
+
+    elif energy_scale[0] > 0:
+        if 'edges' not in dataset.metadata:
+            return
+        if 'model' not in dataset.metadata['edges']:
+            return
+        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
+
+    else:
+        model = np.zeros(end_channel - start_channel)
+
+    energy_scale = energy_scale[start_channel:end_channel]
+
+    difference = np.array(spectrum)[start_channel:end_channel] - model
+    fit = np.zeros(len(energy_scale))
+    p_out = []
+    if len(peaks) > 0:
+        p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
+        [p_out, _] = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
+                                                                                     difference,
+                                                                                     False))
+        fit = fit + model_smooth(energy_scale, p_out, False)
+
+    peak_model = np.zeros(len(spectrum))
+    peak_model[start_channel:end_channel] = fit
+
+    return peak_model, p_out
+
+
+def find_maxima(y, number_of_peaks):
+    """ find the first most prominent peaks
+
+    peaks are then sorted by energy
+
+    Parameters
+    ----------
+    y: numpy array
+        (part) of spectrum
+    number_of_peaks: int
+
+    Returns
+    -------
+    numpy array
+        indices of peaks
+    """
+    blurred2 = gaussian_filter(y, sigma=2)
+    peaks, _ = scipy.signal.find_peaks(blurred2)
+    prominences = peak_prominences(blurred2, peaks)[0]
+    prominences_sorted = np.argsort(prominences)
+    peaks = peaks[prominences_sorted[-number_of_peaks:]]
+
+    peak_indices = np.argsort(peaks)
+    return peaks[peak_indices]
+
+
+# 
+def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, restrict_width=0):
+    """ model for fitting low-loss spectrum"""
+    if pin is None:
+        pin = p
+
+    # if len([restrict_pos]) == 1:
+    #    restrict_pos = [restrict_pos]*number_of_peaks
+    # if len([restrict_width]) == 1:
+    #    restrict_width = [restrict_width]*number_of_peaks
+    y = np.zeros(len(x))
+
+    for i in range(number_of_peaks):
+        index = int(i * 3)
+        if restrict_pos > 0:
+            if p[index] > pin[index] * (1.0 + restrict_pos):
+                p[index] = pin[index] * (1.0 + restrict_pos)
+            if p[index] < pin[index] * (1.0 - restrict_pos):
+                p[index] = pin[index] * (1.0 - restrict_pos)
+
+        p[index + 1] = abs(p[index + 1])
+        # print(p[index + 1])
+        p[index + 2] = abs(p[index + 2])
+        if restrict_width > 0:
+            if p[index + 2] > pin[index + 2] * (1.0 + restrict_width):
+                p[index + 2] = pin[index + 2] * (1.0 + restrict_width)
+
+        if peak_shape[i] == 'Lorentzian':
+            y = y + lorentz(x, p[index:])
+        elif peak_shape[i] == 'zl':
+
+            y = y + zl(x, p[index:], p_zl)
+        else:
+            y = y + gauss(x, p[index:])
+    return y
+
+
+def sort_peaks(p, peak_shape):
+    """sort fitting parameters by peak position"""
+    number_of_peaks = int(len(p) / 3)
+    p3 = np.reshape(p, (number_of_peaks, 3))
+    sort_pin = np.argsort(p3[:, 0])
+
+    p = p3[sort_pin].flatten()
+    peak_shape = np.array(peak_shape)[sort_pin].tolist()
+
+    return p, peak_shape
+
+
+def add_peaks(x, y, peaks, pin_in=None, peak_shape_in=None, shape='Gaussian'):
+    """ add peaks to fitting parameters"""
+    if pin_in is None:
+        return
+    if peak_shape_in is None:
+        return
+
+    pin = pin_in.copy()
+
+    peak_shape = peak_shape_in.copy()
+    if isinstance(shape, str):  # if peak_shape is only a string make a list of it.
+        shape = [shape]
+
+    if len(shape) == 1:
+        shape = shape * len(peaks)
+    for i, peak in enumerate(peaks):
+        pin.append(x[peak])
+        pin.append(y[peak])
+        pin.append(.3)
+        peak_shape.append(shape[i])
+
+    return pin, peak_shape
+
+
+def fit_model(x, y, pin, number_of_peaks, peak_shape, p_zl, restrict_pos=0, restrict_width=0):
+    """model for fitting low-loss spectrum"""
+
+    pin_original = pin.copy()
+
+    def residuals3(pp, xx, yy):
+        err = (yy - model3(xx, pp, number_of_peaks, peak_shape, p_zl, pin_original, restrict_pos,
+                           restrict_width)) / np.sqrt(np.abs(yy))
+        return err
+
+    [p, _] = leastsq(residuals3, pin, args=(x, y))
+    # p2 = p.tolist()
+    # p3 = np.reshape(p2, (number_of_peaks, 3))
+    # sort_pin = np.argsort(p3[:, 0])
+
+    # p = p3[sort_pin].flatten()
+    # peak_shape = np.array(peak_shape)[sort_pin].tolist()
+
+    return p, peak_shape
+
+
+
+def plot_dispersion(plotdata, units, a_data, e_data, title, max_p, ee, ef=4., ep=16.8, es=0, ibt=[]):
+    """Plot loss function """
+
+    [x, y] = np.meshgrid(e_data + 1e-12, a_data[1024:2048] * 1000)
+
+    z = plotdata
+    lev = np.array([0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 3, 4, 4.9]) * max_p / 5
+
+    wavelength = get_wave_length(ee)
+    q = a_data[1024:2048] / (wavelength * 1e9)  # in [1/nm]
+    scale = np.array([0, a_data[-1], e_data[0], e_data[-1]])
+    ev2hertz = constants.value('electron volt-hertz relationship')
+
+    if units[0] == 'mrad':
+        units[0] = 'scattering angle [mrad]'
+        scale[1] = scale[1] * 1000.
+        light_line = constants.c * a_data  # for mrad
+    elif units[0] == '1/nm':
+        units[0] = 'scattering vector [1/nm]'
+        scale[1] = scale[1] / (wavelength * 1e9)
+        light_line = 1 / (constants.c / ev2hertz) * 1e-9
+
+    if units[1] == 'eV':
+        units[1] = 'energy loss [eV]'
+
+    if units[2] == 'ppm':
+        units[2] = 'probability [ppm]'
+    if units[2] == '1/eV':
+        units[2] = 'probability [eV$^{-1}$ srad$^{-1}$]'
+
+    alpha = 3. / 5. * ef / ep
+
+    ax2 = plt.gca()
+    fig2 = plt.gcf()
+    im = ax2.imshow(z.T, clim=(0, max_p), origin='lower', aspect='auto', extent=scale)
+    co = ax2.contour(y, x, z, levels=lev, colors='k', origin='lower')
+    # ,extent=(-ang*1000.,ang*1000.,e_data[0],e_data[-1]))#, vmin = p_vol.min(), vmax = 1000)
+
+    fig2.colorbar(im, ax=ax2, label=units[2])
+
+    ax2.plot(a_data, light_line, c='r', label='light line')
+    # ax2.plot(e_data*light_line*np.sqrt(np.real(eps_data)),e_data, color='steelblue',
+    # label='$\omega = c q \sqrt{\epsilon_2}$')
+
+    # ax2.plot(q, Ep_disp, c='r')
+    ax2.plot([11.5 * light_line, 0.12], [11.5, 11.5], c='r')
+
+    ax2.text(.05, 11.7, 'surface plasmon', color='r')
+    ax2.plot([0.0, 0.12], [16.8, 16.8], c='r')
+    ax2.text(.05, 17, 'volume plasmon', color='r')
+    ax2.set_xlim(0, scale[1])
+    ax2.set_ylim(0, 20)
+    # Interband transitions
+    ax2.plot([0.0, 0.25], [4.2, 4.2], c='g', label='interband transitions')
+    ax2.plot([0.0, 0.25], [5.2, 5.2], c='g')
+    ax2.set_ylabel(units[1])
+    ax2.set_xlabel(units[0])
+    ax2.legend(loc='lower right')
+
+
+def xsec_xrpa(energy_scale, e0, z, beta, shift=0):
+    """ Calculate momentum-integrated cross-section for EELS from X-ray photo-absorption cross-sections.
+
+    X-ray photo-absorption cross-sections from NIST.
+    Momentum-integrated cross-section for EELS according to Egerton Ultramicroscopy 50 (1993) 13-28 equation (4)
+
+    Parameters
+    ----------
+    energy_scale: numpy array
+        energy scale of spectrum to be analyzed
+    e0: float
+        acceleration voltage in keV
+    z: int
+        atomic number of element
+    beta: float
+        effective collection angle in mrad
+    shift: float
+        chemical shift of edge in eV
+    """
+    beta = beta * 0.001  # collection half angle theta [rad]
+    # theta_max = self.parent.spec[0].convAngle * 0.001  # collection half angle theta [rad]
+    dispersion = energy_scale[1] - energy_scale[0]
+
+    x_sections = get_x_sections(z)
+    enexs = x_sections['ene']
+    datxs = x_sections['dat']
+
+    # enexs = enexs[:len(datxs)]
+
+    #####
+    # Cross Section according to Egerton Ultramicroscopy 50 (1993) 13-28 equation (4)
+    #####
+
+    # Relativistic correction factors
+    t = 511060.0 * (1.0 - 1.0 / (1.0 + e0 / 511.06) ** 2) / 2.0
+    gamma = 1 + e0 / 511.06
+    a = 6.5  # e-14 *10**14
+    b = beta
+
+    theta_e = enexs / (2 * gamma * t)
+
+    g = 2 * np.log(gamma) - np.log((b ** 2 + theta_e ** 2) / (b ** 2 + theta_e ** 2 / gamma ** 2)) - (
+            gamma - 1) * b ** 2 / (b ** 2 + theta_e ** 2 / gamma ** 2)
+    datxs = datxs * (a / enexs / t) * (np.log(1 + b ** 2 / theta_e ** 2) + g) / 1e8
+
+    datxs = datxs * dispersion  # from per eV to per dispersion
+    coeff = splrep(enexs, datxs, s=0)  # now in areal density atoms / m^2
+    xsec = np.zeros(len(energy_scale))
+    # shift = 0# int(ek -onsetXRPS)#/dispersion
+    lin = interp1d(enexs, datxs, kind='linear')  # Linear instead of spline interpolation to avoid oscillations.
+    if energy_scale[0] < enexs[0]:
+        start = np.searchsorted(energy_scale, enexs[0])+1
+    else:
+        start = 0
+    xsec[start:] = lin(energy_scale[start:] - shift)
+
+    return xsec
+
+
 ##########################
 # EELS Database
 ##########################
@@ -2180,126 +2043,3 @@ def get_spectrum_eels_db(formula=None, edge=None, title=None, element=None):
     print(f'found {len(reference_spectra.keys())} spectra in EELS database)')
 
     return reference_spectra
-
-
-    # ### To Delete
-
-def smooth(dataset, fit_start, fit_end, peaks=None, iterations=2, sensitivity=2.):
-    """Using Gaussian mixture model (non-Bayesian) to fit spectrum
-
-    Set up to fit lots of Gaussian to spectrum
-
-    Parameter
-    ---------
-    dataset: sidpy dataset
-    fit_start: float
-        start of energy window of fitting
-    fit_end: float
-        start of energy window of fitting
-    peaks: numpy array float
-    iterations: int
-    sensitivity: float
-    """
-
-    if dataset.data_type.name == 'SPECTRAL_IMAGE':
-        spectrum = dataset.view.get_spectrum()
-    else:
-        spectrum = np.array(dataset)
-
-    spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
-    energy_scale = np.array(spec_dim[1])
-    start_channel = np.searchsorted(energy_scale, fit_start)
-    end_channel = np.searchsorted(energy_scale, fit_end)
-
-    if peaks is None:
-        second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
-        [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
-
-        peaks = []
-        for index in indices:
-            if start_channel < index < end_channel:
-                peaks.append(index - start_channel)
-    else:
-        peaks = peaks[::3]
-
-    if energy_scale[0] > 0:
-        if 'edges' not in dataset.metadata:
-            return
-        if 'model' not in dataset.metadata['edges']:
-            return
-        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
-
-    else:
-        model = np.zeros(end_channel - start_channel)
-
-    if 'model' in dataset.metadata:
-        model = dataset.metadata['model'][start_channel:end_channel]
-    energy_scale = energy_scale[start_channel:end_channel]
-
-    difference = np.array(spectrum)[start_channel:end_channel] - model
-
-    peak_model, peak_out_list = gaussian_mixing(difference, energy_scale, iterations=iterations, n_pks=30, peaks=peaks)
-    peak_model2 = np.zeros(len(spec_dim[1]))
-    peak_model2[start_channel:end_channel] = peak_model
-
-    return peak_model2, peak_out_list
-
-
-def gaussian_mixing(difference, energy_scale, iterations=2, n_pks=30, peaks=None):
-    """Gaussian mixture model (non-Bayesian) """
-    original_difference = np.array(difference)
-    peak_out_list = []
-    fit = np.zeros(len(energy_scale))
-    if peaks is not None:
-        if len(peaks) > 0:
-            p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
-            p_out, cov = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
-                                                                                              difference,
-                                                                                              False))
-            peak_out_list.append(p_out)
-            fit = fit + model_smooth(energy_scale, p_out, False)
-
-    difference = np.array(original_difference - fit)
-
-    for i in range(iterations):
-        i_pk = scipy.signal.find_peaks_cwt(np.abs(difference), widths=range(3, len(energy_scale) // n_pks))
-        p_in = np.ravel([[energy_scale[i], difference[i], 1.0] for i in i_pk])  # starting guess for fit
-
-        p_out, cov = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale, difference,
-                                                                                          False))
-        peak_out_list.append(p_out)
-        fit = fit + model_smooth(energy_scale, p_out, False)
-        difference = np.array(original_difference - fit)
-
-    return fit, peak_out_list
-
-
-def smooth2(dataset, iterations, advanced_present):
-    """Gaussian mixture model (non-Bayesian)
-
-    Fit lots of Gaussian to spectrum and let the program sort it out
-    We sort the peaks by area under the Gaussians, assuming that small areas mean noise.
-
-    """
-
-    # TODO: add sensitivity to dialog and the two functions below
-    peaks = dataset.metadata['peak_fit']
-
-    if advanced_present and iterations > 1:
-        # peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
-        #                                                       peaks['fit_end'], iterations=iterations)
-        pass
-    else:
-        peak_model, peak_out_list = find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
-        peak_out_list = [peak_out_list]
-
-    flat_list = [item for sublist in peak_out_list for item in sublist]
-    new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
-    area = np.sqrt(2 * np.pi) * np.abs(new_list[:, 1]) * np.abs(new_list[:, 2] / np.sqrt(2 * np.log(2)))
-    arg_list = np.argsort(area)[::-1]
-    area = area[arg_list]
-    peak_out_list = new_list[arg_list]
-
-    number_of_peaks = np.searchsorted(area * -1, -np.average(area))
-
-    return peak_model, peak_out_list, number_of_peaks
