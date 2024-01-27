@@ -952,6 +952,7 @@ class CompositionWidget(object):
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
             self.end_cursor.value = np.round(x_max, 3)
+
             self.start_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.start_cursor.value)
             self.end_channel = np.searchsorted(self.datasets[self.key].energy_loss, self.end_cursor.value)
        

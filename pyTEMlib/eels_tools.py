@@ -36,7 +36,6 @@ from scipy.optimize import curve_fit, leastsq
 import requests
 
 # ## And we use the image tool library of pyTEMlib
-import pyTEMlib.file_tools as ft
 from pyTEMlib.xrpa_x_sections import x_sections
 
 import sidpy
@@ -69,7 +68,6 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
 # drude(ep, eb, gamma, e)
 # drude_lorentz(epsInf,leng, ep, eb, gamma, e, Amplitude)
 # zl_func( p,  x)
-
 # ###############################################################
 # Utility Functions
 # ################################################################
@@ -207,10 +205,10 @@ def effective_collection_angle(energy_scale, alpha, beta, beam_kv):
     return beta
 
 
-def set_default_metadata(current_dataset: sidpy.Dataset)->None:
+def set_default_metadata(current_dataset: sidpy.Dataset) -> None:
 
     if 'experiment' not in current_dataset.metadata:
-            current_dataset.metadata['experiment'] = {}
+        current_dataset.metadata['experiment'] = {}
     if 'convergence_angle' not in current_dataset.metadata['experiment']:
         current_dataset.metadata['experiment']['convergence_angle'] = 30
     if 'collection_angle' not in current_dataset.metadata['experiment']:
@@ -284,7 +282,7 @@ def zl(x, p, p_zl):
     return p[1] * zero_loss / zero_loss.max()
 
 
-def get_channel_zero(spectrum: np.ndarray, energy: np.ndarray, width: int=8):    
+def get_channel_zero(spectrum: np.ndarray, energy: np.ndarray, width: int = 8):
     """Determin shift of energy scale according to zero-loss peak position
     
     This function assumes that the zero loss peak is the maximum of the spectrum. 
@@ -307,7 +305,8 @@ def get_channel_zero(spectrum: np.ndarray, energy: np.ndarray, width: int=8):
 
     return fwhm, fit_mu
 
-def get_zero_loss_energy(dataset):   
+
+def get_zero_loss_energy(dataset):
 
     spectrum = dataset.sum(axis=tuple(range(dataset.ndim - 1)))
 
@@ -325,45 +324,46 @@ def get_zero_loss_energy(dataset):
         start = startx - 2
     width = int((end-start)/2+0.5)
 
-    energy = dataset.energy_loss.values
-    offset = energy[0]
-    dispersion = energy[1]-energy[0]
+    energy = dataset.get_spectral_dims(return_axis=True)[0].values
 
-    if dataset.ndim == 1: # single spectrum
-        _ , shifts = get_channel_zero(np.array(dataset), energy, width)
+    if dataset.ndim == 1:  # single spectrum
+        _, shifts = get_channel_zero(np.array(dataset), energy, width)
         shifts = np.array([shifts])
-    elif dataset.ndim == 2: # line scan
+    elif dataset.ndim == 2:  # line scan
         shifts = np.zeros(dataset.shape[:1])
         for x in range(dataset.shape[0]):
-            shifts[x] = get_channel_zero(dataset[x, :], energy, width)
-    elif dataset.ndim == 3: # spectral image
+            _, shifts[x] = get_channel_zero(dataset[x, :], energy, width)
+    elif dataset.ndim == 3:  # spectral image
         shifts = np.zeros(dataset.shape[:2])
         for x in range(dataset.shape[0]):
             for y in range(dataset.shape[1]):
-                shifts[x,y] = get_channel_zero(dataset[x, y, :], energy, width)
-
+                _, shifts[x, y] = get_channel_zero(dataset[x, y, :], energy, width)
     return shifts
 
-def shift_energy(dataset: sidpy.Dataset, shifts: np.ndarray)->sidpy.Dataset:
+
+def shift_energy(dataset: sidpy.Dataset, shifts: np.ndarray) -> sidpy.Dataset:
     """ Align zero-loss peaks of any spectral sidpy dataset """
 
     new_si = dataset.copy()
     new_si *= 0.0
 
-    if dataset.ndim != shifts.ndim:
+    image_dims = dataset.get_image_dims()
+    if image_dims == 0:
+        image_dims =[0]
+    if len(image_dims) != shifts.ndim:
         raise TypeError('array of energy shifts have to have same dimension as dataset')
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('This function needs a sidpy Dataset to shift energy scale')
-    energy_scale = dataset.energy_loss.values
-    if dataset.ndim == 1: # single spectrum
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+    if dataset.ndim == 1:  # single spectrum
         tck = interpolate.splrep(np.array(energy_scale - shifts), np.array(dataset), k=1, s=0)
         new_si[:] = interpolate.splev(energy_scale, tck, der=0)
         new_si.data_type = 'Spectrum'
-    elif dataset.ndim == 2: # line scan
+    elif dataset.ndim == 2:  # line scan
         for x in range(dataset.shape[0]):
-            tck = interpolate.splrep(np.array(energy_scale - shifts[x]), np.array(dataset[x,:]), k=1, s=0)
-            new_si[x,:] = interpolate.splev(energy_scale, tck, der=0)
-    elif dataset.ndim == 3: # spectral image
+            tck = interpolate.splrep(np.array(energy_scale - shifts[x]), np.array(dataset[x, :]), k=1, s=0)
+            new_si[x, :] = interpolate.splev(energy_scale, tck, der=0)
+    elif dataset.ndim == 3:  # spectral image
         for x in range(dataset.shape[0]):
             for y in range(dataset.shape[1]):
                 tck = interpolate.splrep(np.array(energy_scale - shifts[x, y]), np.array(dataset[x, y]), k=1, s=0)
@@ -372,7 +372,7 @@ def shift_energy(dataset: sidpy.Dataset, shifts: np.ndarray)->sidpy.Dataset:
     return new_si
 
 
-def align_zero_loss(dataset: sidpy.Dataset)->sidpy.Dataset:
+def align_zero_loss(dataset: sidpy.Dataset) -> sidpy.Dataset:
 
     shifts = get_zero_loss_energy(dataset)
 
@@ -381,7 +381,8 @@ def align_zero_loss(dataset: sidpy.Dataset)->sidpy.Dataset:
     return new_si
 
 
-def get_resolution_functions(dset:sidpy.Dataset, startFitEnergy:float=-1, endFitEnergy:float=+1, n_workers:int=1, n_threads:int=8):
+def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endFitEnergy: float=+1,
+                             n_workers: int=1, n_threads: int=8):
     """
     Analyze and fit low-loss EELS data within a specified energy range to determine zero-loss peaks.
 
@@ -414,69 +415,80 @@ def get_resolution_functions(dset:sidpy.Dataset, startFitEnergy:float=-1, endFit
         - The function expects `dset` to have specific dimensionalities and will raise an error if they are not met.
         - Parallel processing is employed to enhance performance, particularly for large datasets.
     """
-    energy = dset.energy_loss.values
-    startFitPixel =np.argmin(abs(energy-startFitEnergy))
-    endFitPixel = np.argmin(abs(energy-endFitEnergy))
-    guess_width = endFitEnergy - startFitEnergy
+    energy = dset.get_spectral_dims(return_axis=True)[0].values
+    start_fit_pixel = np.searchsorted(energy, startFitEnergy)
+    end_fit_pixel = np.searchsorted(energy, endFitEnergy)
+    guess_width = (endFitEnergy - startFitEnergy)/2
     
-    def get_good_guess(zl_func, spectrum):
-        popt, pcov = curve_fit(zl_func, spectrum.energy_loss.values, spectrum, 
-                           p0=[0, guess_amplitude, guess_width, 
-                               0, guess_amplitude, guess_width])
+    def get_good_guess(zl_func, energy, spectrum):
+        popt, pcov = curve_fit(zl_func, energy, spectrum,
+                               p0=[0, guess_amplitude, guess_width,
+                                   0, guess_amplitude, guess_width])
         return popt
 
+    fit_energy = energy[start_fit_pixel:end_fit_pixel]
     # get a good guess for the fit parameters
     if len(dset.shape) == 3:
-        fit_dset = dset[:,:,startFitPixel:endFitPixel]
+        fit_dset = dset[:, :, start_fit_pixel:end_fit_pixel]
         guess_amplitude = np.sqrt(fit_dset.max())
-        guess_params = get_good_guess(zl_func, fit_dset.sum(axis=(0,1))/fit_dset.shape[0]/fit_dset.shape[1])
+        guess_params = get_good_guess(zl_func, fit_energy, fit_dset.sum(axis=(0, 1))/fit_dset.shape[0]/fit_dset.shape[1])
     elif len(dset.shape) == 2:
-        fit_dset = dset[:,startFitPixel:endFitPixel]
+        fit_dset = dset[:, start_fit_pixel:end_fit_pixel]
+        fit_energy = energy[start_fit_pixel:end_fit_pixel]
         guess_amplitude = np.sqrt(fit_dset.max())
-        guess_params = get_good_guess(zl_func, fit_dset.sum(axis=0)/fit_dset.shape[0])
+        guess_params = get_good_guess(zl_func, fit_energy, fit_dset.sum(axis=0)/fit_dset.shape[0])
     elif len(dset.shape) == 1:
-        fit_dset = dset[startFitPixel:endFitPixel]
+        fit_dset = dset[start_fit_pixel:end_fit_pixel]
+        fit_energy = energy[start_fit_pixel:end_fit_pixel]
         guess_amplitude = np.sqrt(fit_dset.max())
-        guess_params = get_good_guess(zl_func, fit_dset)
+        guess_params = get_good_guess(zl_func, fit_energy, fit_dset)
         z_loss_dset = dset.copy()
         z_loss_dset *= 0.0
         z_loss_dset += zl_func(energy, *guess_params)
-        return z_loss_dset, guess_params
+        z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
+                                                  'endFitEnergy': endFitEnergy,
+                                                  'fit_parameter': guess_params,
+                                                  'original_low_loss': dset.title})
+        return z_loss_dset
     else:
         print('Error: need a spectrum or spectral image sidpy dataset')
         print('Not dset.shape = ', dset.shape)
         return None
 
     # define guess function for SidFitter
-    def guess_function(xvec,yvec):
+    def guess_function(xvec, yvec):
         return guess_params
     
     # apply to all spectra
-    zero_loss_fitter = SidFitter(fit_dset, zl_func, num_workers = n_workers, guess_fn = guess_function,
-                           threads = n_threads, return_cov = False, return_fit = False, return_std = False,
-                           km_guess = False, num_fit_parms = 6)
+    zero_loss_fitter = SidFitter(fit_dset, zl_func, num_workers=n_workers, guess_fn=guess_function, threads=n_threads,
+                                 return_cov=False, return_fit=False, return_std=False, km_guess=False, num_fit_parms=6)
     
     [z_loss_params] = zero_loss_fitter.do_fit()
     z_loss_dset = dset.copy()
     z_loss_dset *= 0.0
 
-    energy_grid = np.broadcast_to(energy.reshape((1, 1, -1)), (z_loss_dset.shape[0], z_loss_dset.shape[1], energy.shape[0]))
+    energy_grid = np.broadcast_to(energy.reshape((1, 1, -1)), (z_loss_dset.shape[0],
+                                                               z_loss_dset.shape[1], energy.shape[0]))
     z_loss_peaks = zl_func(energy_grid, *z_loss_params)
     z_loss_dset += z_loss_peaks
 
-    shifts = z_loss_params[:,:,0] * z_loss_params[:,:,3]
-    widths = z_loss_params[:,:,2] * z_loss_params[:,:,5]
-    
-    z_loss_dset.metadata['low_loss'] = {'shifts': shifts,
-                                        'widths': widths}
+    shifts = z_loss_params[:, :, 0] * z_loss_params[:, :, 3]
+    widths = z_loss_params[:, :, 2] * z_loss_params[:, :, 5]
 
-    return z_loss_dset, z_loss_params
+    z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
+                                              'endFitEnergy': endFitEnergy,
+                                              'fit_parameter': z_loss_params,
+                                              'original_low_loss': dset.title})
+
+
+    return z_loss_dset
 
 
 def drude(energy_scale, peak_position, peak_width, gamma):
     """dielectric function according to Drude theory"""
 
-    eps = 1 - (peak_position ** 2 - peak_width * energy_scale * 1j) / (energy_scale ** 2 + 2 * energy_scale * gamma * 1j)  # Mod drude term
+    eps = (1 - (peak_position ** 2 - peak_width * energy_scale * 1j) /
+           (energy_scale ** 2 + 2 * energy_scale * gamma * 1j))  # Mod drude term
     return eps
 
 
@@ -489,7 +501,7 @@ def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
     return eps
 
 
-def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result = False, number_workers=4, number_threads=8):
+def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result=False, number_workers=4, number_threads=8):
     """
     Fit plasmon peak positions and widths in a TEM dataset using a Drude model.
 
@@ -526,50 +538,49 @@ def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result = False, numb
         - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
     """
     # define Drude function for plasmon fitting
-    def energy_loss_function(E,Ep,Ew,A):
+    def energy_loss_function(E, Ep, Ew, A):
         E = E/E.max()
-        eps = 1 - Ep**2/(E**2+Ew**2) +1j* Ew* Ep**2/E/(E**2+Ew**2)
+        eps = 1 - Ep**2/(E**2+Ew**2) + 1j * Ew * Ep**2/E/(E**2+Ew**2)
         elf = (-1/eps).imag
         return A*elf
 
     # define window for fitting
-    energy = dataset.energy_loss.values
-    startFitPixel =np.argmin(abs(energy-startFitEnergy))
-    endFitPixel = np.argmin(abs(energy-endFitEnergy))
+    energy = dataset.get_spectral_dims(return_axis=True)[0].values
+    start_fit_pixel = np.searchsorted(energy, startFitEnergy)
+    end_fit_pixel = np.searchsorted(energy, endFitEnergy)
 
     # rechunk dataset
     if dataset.ndim == 3:
-        dataset = dataset.rechunk(chunks = (1,1,-1))
-        fit_dset = dataset[:,:,startFitPixel:endFitPixel]
+        dataset = dataset.rechunk(chunks=(1, 1, -1))
+        fit_dset = dataset[:, :, start_fit_pixel:end_fit_pixel]
     elif dataset.ndim == 2:
-        dataset = dataset.rechunk(chunks = (1,-1))
-        fit_dset = dataset[:, startFitPixel:endFitPixel]
+        dataset = dataset.rechunk(chunks=(1, -1))
+        fit_dset = dataset[:, start_fit_pixel:end_fit_pixel]
     else:
-        fit_dset = np.array(dataset[startFitPixel:endFitPixel])
+        fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
         guess_pos = np.argmax(fit_dset)
         guess_amplitude = fit_dset[guess_pos]
         guess_width = (endFitEnergy - startFitEnergy)/2
-        popt, pcov = curve_fit(energy_loss_function, dataset.energy_loss.values, dataset, 
-                           p0=[guess_pos, guess_width, guess_amplitude])
+        popt, pcov = curve_fit(energy_loss_function, energy, dataset,
+                               p0=[guess_pos, guess_width, guess_amplitude])
         return popt
     
     # if it can be parallelized:
     fitter = SidFitter(fit_dset, energy_loss_function, num_workers=number_workers,
-                           threads=number_threads, return_cov=False, return_fit=False, return_std=False,
-                           km_guess=False, num_fit_parms=3)
+                       threads=number_threads, return_cov=False, return_fit=False, return_std=False,
+                       km_guess=False, num_fit_parms=3)
     [fitted_dataset] = fitter.do_fit()
 
     if plot_result:
-        fig, (ax1,ax2,ax3) = plt.subplots(1,3, sharex=True, sharey=True)
-        ax1.imshow(fitted_dataset[:,:,0], cmap='jet')
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
+        ax1.imshow(fitted_dataset[:, :, 0], cmap='jet')
         ax1.set_title('Ep - Peak Position')
-        ax2.imshow(fitted_dataset[:,:,1], cmap='jet')
+        ax2.imshow(fitted_dataset[:, :, 1], cmap='jet')
         ax2.set_title('Ew - Peak Width')
-        ax3.imshow(fitted_dataset[:,:,2], cmap='jet')
+        ax3.imshow(fitted_dataset[:, :, 2], cmap='jet')
         ax3.set_title('A - Amplitude')
         plt.show()
     return fitted_dataset
-
 
 
 def drude_simulation(dset, e, ep, ew, tnm, eb):
@@ -625,7 +636,7 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
     
     epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
     
-    b = dset.metadata['collection_angle']/ 1000.  # rad
+    b = dset.metadata['collection_angle'] / 1000.  # rad
     epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
     e0 = dset.metadata['acceleration_voltage'] / 1000.  # input('incident energy e0(kev) : ');
 
@@ -653,7 +664,6 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
     srfint = angdep * srfelf / (3.1416 * 0.05292 * rk0 * t)  # probability per eV
     anglog = np.log(1.0 + b * b / the / the)
     i0 = dset.sum()  # *tags['counts2e']
-    
 
     # 2 * t = m_0 v**2 !!!  a_0 = 0.05292 nm
     volint = abs(tnm / (np.pi * 0.05292 * t * 2.0) * elf * anglog)  # S equ 4.26% probability per eV
@@ -680,7 +690,6 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
         tags['p_v'] = p_v
 
     return ssd  # /np.pi
-
 
 
 def kroeger_core(e_data, a_data, eps_data, acceleration_voltage_kev, thickness, relativistic=True):
@@ -828,7 +837,7 @@ def kroeger_core(e_data, a_data, eps_data, acceleration_voltage_kev, thickness, 
 # CORE - LOSS functions
 #################################################################
 
-def get_z(z:Union[int,str])->int:
+def get_z(z: Union[int, str]) -> int:
     """Returns the atomic number independent of input as a string or number
 
     Parameter
@@ -854,7 +863,7 @@ def get_z(z:Union[int,str])->int:
     return z_out
 
 
-def get_x_sections(z: int=0)->dict:
+def get_x_sections(z: int=0) -> dict:
     """Reads X-ray fluorescent cross-sections from a dictionary.
 
     Parameters
@@ -868,8 +877,6 @@ def get_x_sections(z: int=0)->dict:
         cross-section of an element or of all elements if z = 0
 
     """
-    
-
     if z < 1:
         return x_sections
     else:
@@ -880,13 +887,15 @@ def get_x_sections(z: int=0)->dict:
             return 0
 
 
-def list_all_edges(z:Union[str, int]=0, verbose=False)->[str, dict]:
+def list_all_edges(z: Union[str, int]=0, verbose=False)->[str, dict]:
     """List all ionization edges of an element with atomic number z
 
     Parameters
     ----------
     z: int
         atomic number
+    verbose: bool, optional
+        more info if set to True
 
     Returns
     -------
@@ -908,12 +917,11 @@ def list_all_edges(z:Union[str, int]=0, verbose=False)->[str, dict]:
                     print(f" {x_sections[element]['name']}-{key}: {x_sections[element][key]['onset']:8.1f} eV ")
                 out_string = out_string + f" {x_sections[element]['name']}-{key}: " \
                                           f"{x_sections[element][key]['onset']:8.1f} eV /n"
-                edge_list[x_sections[element]['name']][key] =  x_sections[element][key]['onset']
+                edge_list[x_sections[element]['name']][key] = x_sections[element][key]['onset']
     return out_string, edge_list
 
 
-
-def find_all_edges(edge_onset:float, maximal_chemical_shift:float=5.0, major_edges_only:bool=False)->str:
+def find_all_edges(edge_onset: float, maximal_chemical_shift: float=5.0, major_edges_only: bool=False) -> str:
     """Find all (major and minor) edges within an energy range
 
     Parameters
@@ -950,14 +958,14 @@ def find_all_edges(edge_onset:float, maximal_chemical_shift:float=5.0, major_edg
     return text
 
 
-def find_associated_edges(dataset: sidpy.Dataset)->None:
+def find_associated_edges(dataset: sidpy.Dataset) -> None:
     onsets = []
     edges = []
     if 'edges' in dataset.metadata:
         for key, edge in dataset.metadata['edges'].items():
             if key.isdigit():
                 element = edge['element']
-                pre_edge = 0. # edge['onset']-edge['start_exclude']
+                pre_edge = 0.  # edge['onset']-edge['start_exclude']
                 post_edge = edge['end_exclude'] - edge['onset']
 
                 for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
@@ -965,7 +973,7 @@ def find_associated_edges(dataset: sidpy.Dataset)->None:
                     edges.append([key, f"{element}-{sym}", onsets[-1]])
         for key, peak in dataset.metadata['peak_fit']['peaks'].items():
             if key.isdigit():
-                distance = dataset.energy_loss[-1]
+                distance = dataset.get_spectral_dims(return_axis=True)[0].values[-1]
                 index = -1
                 for ii, onset in enumerate(onsets):
                     if onset < peak['position'] < onset+post_edge:
@@ -978,7 +986,7 @@ def find_associated_edges(dataset: sidpy.Dataset)->None:
                     peak['distance_to_onset'] = distance_onset
 
 
-def find_white_lines(dataset: sidpy.Dataset)->None:
+def find_white_lines(dataset: sidpy.Dataset) -> None:
     if 'edges' in dataset.metadata:
         white_lines = {}
         for index, peak in dataset.metadata['peak_fit']['peaks'].items():
@@ -1016,11 +1024,11 @@ def find_white_lines(dataset: sidpy.Dataset)->None:
         dataset.metadata['peak_fit']['white_line_sums'] = white_line_sum
         
 
-def second_derivative(dataset: sidpy.Dataset, sensitivity:float=2.5)->None:
+def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
     """Calculates second derivative of a sidpy.dataset"""
 
     dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
         spectrum = dataset.view.get_spectrum()
     else:
@@ -1051,11 +1059,11 @@ def second_derivative(dataset: sidpy.Dataset, sensitivity:float=2.5)->None:
     return second_dif, noise_level
 
 
-def find_edges(dataset: sidpy.Dataset, sensitivity:float=2.5)->None:
+def find_edges(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
     """find edges within a sidpy.Dataset"""
 
     dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
 
     second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
 
@@ -1104,7 +1112,7 @@ def find_edges(dataset: sidpy.Dataset, sensitivity:float=2.5)->None:
     return selected_edges
 
 
-def assign_likely_edges(edge_channels:Union[list, np.ndarray], energy_scale:np.ndarray): 
+def assign_likely_edges(edge_channels: Union[list, np.ndarray], energy_scale: np.ndarray):
     edges_in_list = []
     result = {}
     for channel in edge_channels: 
@@ -1112,7 +1120,7 @@ def assign_likely_edges(edge_channels:Union[list, np.ndarray], energy_scale:np.n
             shift = 5
             element_list = find_all_edges(energy_scale[channel], maximal_chemical_shift=shift, major_edges_only=True)
             while len(element_list) < 1:
-                shift+=1
+                shift += 1
                 element_list = find_all_edges(energy_scale[channel], maximal_chemical_shift=shift, major_edges_only=True)
 
             if len(element_list) > 1:
@@ -1140,7 +1148,7 @@ def assign_likely_edges(edge_channels:Union[list, np.ndarray], energy_scale:np.n
 def auto_id_edges(dataset):
     edge_channels = identify_edges(dataset)
     dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     found_edges = assign_likely_edges(edge_channels, energy_scale)
     return found_edges
 
@@ -1163,7 +1171,7 @@ def identify_edges(dataset: sidpy.Dataset, noise_level: float=2.0):
     
     """
     dim = dataset.get_spectrum_dims()
-    energy_scale = np.array(dataset._axes[dim[0]])
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     dispersion = get_slope(energy_scale)
     spec = scipy.ndimage.gaussian_filter(dataset, 3/dispersion)  # smooth with 3eV wideGaussian
 
@@ -1182,7 +1190,8 @@ def add_element_to_dataset(dataset: sidpy.Dataset, z: Union[int, str]):
     """
     """
     # We check whether this element is already in the
-    energy_scale = dataset.energy_loss
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
+
     zz = get_z(z)
     if 'edges' not in dataset.metadata:
          dataset.metadata['edges'] = {'model': {}, 'use_low_loss': False}
@@ -1292,7 +1301,7 @@ def make_edges(edges_present: dict, energy_scale: np.ndarray, e_0:float, coll_an
     return edges
 
 def fit_dataset(dataset: sidpy.Dataset):
-    energy_scale = dataset.energy_loss
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
     if 'fit_area' not in dataset.metadata['edges']:
         dataset.metadata['edges']['fit_area'] = {}
     if 'fit_start' not in dataset.metadata['edges']['fit_area']:
@@ -1308,7 +1317,7 @@ def fit_dataset(dataset: sidpy.Dataset):
         alpha = exp['convergence_angle']
         beta = exp['collection_angle']
         beam_kv = exp['acceleration_voltage']
-        energy_scale = dataset.energy_loss
+        energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
         eff_beta = effective_collection_angle(energy_scale, alpha, beta, beam_kv)
         edges = make_cross_sections(dataset.metadata['edges'], np.array(energy_scale), beam_kv, eff_beta)
         dataset.metadata['edges'] = fit_edges2(dataset, energy_scale, edges)
@@ -1568,6 +1577,56 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
     return edges
 
 
+
+def get_spectrum(dataset, x=0, y=0, bin_x=1, bin_y=1):
+    """
+    Parameter
+    ---------
+    dataset: sidpy.Dataset object
+        contains spectrum or spectrum image
+    x: int default = 0
+        x position of spectrum image
+    y: int default = 0
+        y position of spectrum
+    bin_x: int default = 1
+        binning of spectrum image in x-direction
+    bin_y: int default = 1
+        binning of spectrum image in y-direction
+
+    Returns:
+    --------
+    spectrum: sidpy.Dataset object
+
+    """
+    if dataset.data_type.name == 'SPECTRUM':
+        spectrum = dataset.copy()
+    else:
+        image_dims = dataset.get_image_dims()
+        if x > dataset.shape[image_dims[0]] - bin_x:
+            x = dataset.shape[image_dims[0]] - bin_x
+        if y > dataset.shape[image_dims[1]] - bin_y:
+            y = dataset.shape[image_dims[1]] - bin_y
+        selection = []
+        dimensions = dataset.get_dimension_types()
+        for dim, dimension_type in enumerate(dimensions):
+            # print(dim, axis.dimension_type)
+            if dimension_type == 'SPATIAL':
+                if dim == image_dims[0]:
+                    selection.append(slice(x, x + bin_x))
+                else:
+                    selection.append(slice(y, y + bin_y))
+            elif dimension_type == 'SPECTRAL':
+                selection.append(slice(None))
+            elif dimension_type == 'CHANNEL':
+                selection.append(slice(None))
+            else:
+                selection.append(slice(0, 1))
+
+        spectrum = dataset[tuple(selection)].mean(axis=tuple(image_dims))
+        spectrum.squeeze().compute()
+        spectrum.data_type = 'Spectrum'
+    return spectrum
+
 def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
     """find peaks in spectrum"""
 
@@ -1576,8 +1635,7 @@ def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
     else:
         spectrum = np.array(dataset)
 
-    spec_dim = ft.get_dimensions_by_type('SPECTRAL', dataset)[0]
-    energy_scale = np.array(spec_dim[1])
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
 
     second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
     [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
@@ -1614,7 +1672,7 @@ def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
                                                                                      False))
         fit = fit + model_smooth(energy_scale, p_out, False)
 
-    peak_model = np.zeros(len(spec_dim[1]))
+    peak_model = np.zeros(len(spectrum))
     peak_model[start_channel:end_channel] = fit
 
     return peak_model, p_out
