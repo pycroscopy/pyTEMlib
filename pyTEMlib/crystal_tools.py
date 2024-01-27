@@ -287,7 +287,7 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     for (k, s) in bond_matrix.keys():
         if k > s:
             del_double.append((k, s))
-    for key in del_double:
+    for key in del_double[::-1]:
         bond_matrix.pop(key)
 
     if super_cell.info is None:
