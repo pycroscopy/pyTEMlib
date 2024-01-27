@@ -348,7 +348,7 @@ def shift_energy(dataset: sidpy.Dataset, shifts: np.ndarray) -> sidpy.Dataset:
     new_si *= 0.0
 
     image_dims = dataset.get_image_dims()
-    if image_dims == 0:
+    if len(image_dims) == 0:
         image_dims =[0]
     if len(image_dims) != shifts.ndim:
         raise TypeError('array of energy shifts have to have same dimension as dataset')
@@ -375,7 +375,7 @@ def shift_energy(dataset: sidpy.Dataset, shifts: np.ndarray) -> sidpy.Dataset:
 def align_zero_loss(dataset: sidpy.Dataset) -> sidpy.Dataset:
 
     shifts = get_zero_loss_energy(dataset)
-
+    print(shifts, dataset)
     new_si = shift_energy(dataset, shifts)    
     new_si.metadata.update({'zero_loss': {'shifted': shifts}})
     return new_si
@@ -446,7 +446,7 @@ def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endF
         z_loss_dset *= 0.0
         z_loss_dset += zl_func(energy, *guess_params)
         if 'zero_loss' not in z_loss_dset.metadata:
-            z_loss_dset.metadata = {}
+            z_loss_dset.metadata['zero_loss'] = {}
         z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
                                                   'endFitEnergy': endFitEnergy,
                                                   'fit_parameter': guess_params,

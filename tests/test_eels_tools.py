@@ -138,7 +138,7 @@ class TestFileFunctions(unittest.TestCase):
         datasets = ft.open_file(file_name)
         dataset = datasets['Channel_000']
 
-        z_loss, p_zl = eels.get_resolution_functions(dataset)
+        z_loss = eels.get_resolution_functions(dataset)
 
         self.assertTrue(len(z_loss) == len(dataset))
 
