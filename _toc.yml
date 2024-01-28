@@ -4,6 +4,9 @@
 format: jb-book
 root: intro
 chapters:
-- file: markdown
-- file: notebooks
-- file: markdown-notebooks
+- file: installation
+- file: notebooks/1_Diffraction_Tools
+- file: notebooks/2_Image_Tools
+  sections:
+    - file: notebooks/Imaging/Adaptive_Fourier_Filter
+- file: notebooks/3_EELS_Tools

@@ -27,7 +27,7 @@ import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
 from scipy.spatial import cKDTree
-import scipy 
+import scipy
 _spglib_present = True
 try:
     import spglib
