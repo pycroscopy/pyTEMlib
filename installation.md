@@ -13,7 +13,7 @@ as well as an [interactive development environment](https://en.wikipedia.org/wik
 Please note that any other python installation will work too and that pypi will install all missing packages.
 
 Compatibility
-~~~~~~~~~~~~~
+
 * pyTEMlib is compatible with python 3.8 onwards. Please raise an issue if you find a bug.
 * We do not support 32 bit architectures
 * We only support text that is UTF-8 compliant due to restrictions posed by HDF5
