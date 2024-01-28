@@ -219,3 +219,4 @@ notebooks/Imaging/DMReader_EELS_STO (1).dm3
 notebooks/Imaging/DMReader_EELS_STO.dm3
 notebooks/Imaging/EMDReader_Spectrum_FEI (1).emd
 notebooks/Imaging/NionReader_ImageStack_STO_HAADF.h5
+example_data/p1-3-hr3-1.hf5
