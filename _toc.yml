@@ -9,4 +9,4 @@ chapters:
 - file: notebooks/2_Image_Tools
   sections:
     - file: notebooks/Imaging/Adaptive_Fourier_Filter
-- file: notebooks/3_EELS_Tools
+- file: notebooks/3_Spectroscopy_Tools

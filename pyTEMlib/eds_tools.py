@@ -184,11 +184,11 @@ def get_x_ray_lines(spectrum, elements):
     out_tags = {}
     alpha_K = 1e6
     alpha_L = 6.5e7
-    alpha_M = 8*1e8#2.2e10
+    alpha_M = 8*1e8  # 2.2e10
     # My Fit
     alpha_K = .9e6
     alpha_L = 6.e7
-    alpha_M = 6*1e8#2.2e10
+    alpha_M = 6*1e8 #  2.2e10
     # omega_K = Z**4/(alpha_K+Z**4)
     # omega_L = Z**4/(alpha_L+Z**4)
     # omega_M = Z**4/(alpha_M+Z**4)
@@ -196,9 +196,10 @@ def get_x_ray_lines(spectrum, elements):
 
         atomic_number = elements_list.index(element)
         out_tags[element] ={'Z': atomic_number}
-        energy_scale = spectrum.energy
+        energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
+
         if 'K-L3' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['K-L3']['position'] < 1.9e4:
+            if x_sections[str(atomic_number)]['lines']['K-L3']['position'] < energy_scale[-1]:
                 height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['K-L3']['position'] )].compute()
                 out_tags[element]['K-family'] = {'height': height}
                 if 'K' in x_sections[str(atomic_number)]['fluorescent_yield']:
@@ -207,7 +208,7 @@ def get_x_ray_lines(spectrum, elements):
                     out_tags[element]['K-family']['yield'] = atomic_number**4/(alpha_K+atomic_number**4)/4/1.4
 
         if 'L3-M5' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['L3-M5']['position'] < 1.9e4:
+            if x_sections[str(atomic_number)]['lines']['L3-M5']['position'] < energy_scale[-1]:
                 height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['L3-M5']['position'] )].compute()
                 out_tags[element]['L-family'] = {'height': height}
                 if 'L' in x_sections[str(atomic_number)]['fluorescent_yield']:
@@ -216,8 +217,8 @@ def get_x_ray_lines(spectrum, elements):
                     out_tags[element]['L-family']['yield'] = (atomic_number**4/(alpha_L+atomic_number**4))**2
 
         if 'M5-N6' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['M5-N6']['position'] < 1.9e4:
-                height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['M5-N7']['position'] )].compute()
+            if x_sections[str(atomic_number)]['lines']['M5-N6']['position'] < energy_scale[-1]:
+                height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['M5-N6']['position'] )].compute()
                 out_tags[element]['M-family'] = {'height': height}
                 if 'M' in x_sections[str(atomic_number)]['fluorescent_yield']:
                     out_tags[element]['M-family']['yield'] = x_sections[str(atomic_number)]['fluorescent_yield']['M']
@@ -276,7 +277,7 @@ def getFWHM(E, E_ref, FWHM_ref):
 
 def gaussian(enrgy_scale, mu, FWHM):
     sig = FWHM/2/np.sqrt(2*np.log(2))
-    return np.exp(-np.power(enrgy_scale - mu, 2.) / (2 * np.power(sig, 2.)))
+    return np.exp(-np.power(np.array(enrgy_scale) - mu, 2.) / (2 * np.power(sig, 2.)))
 
 def get_peak(E, energy_scale):
     E_ref = 5895.0
@@ -289,7 +290,7 @@ def get_peak(E, energy_scale):
 
 def get_model(tags, spectrum):
 
-    energy_scale = spectrum.energy
+    energy_scale = spectrum.get_spectral_dims()
     p = []
     peaks = []
     keys = []
@@ -337,8 +338,8 @@ def fit_model(spectrum, elements,  detector_Efficiency=None ):
     out_tags = get_x_ray_lines(spectrum, elements)
     
     peaks, pin, keys = get_model(out_tags, spectrum)
-    start = np.searchsorted(spectrum.energy, 100)
-    energy_scale = spectrum.energy[start:]
+    start = np.searchsorted(spectrum.get_spectral_dims(return_axis=True)[0], 100)
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0][start:]
     
     p = np.array([1, 37, .3])/100000*3
     E_0= 200000
@@ -349,12 +350,13 @@ def fit_model(spectrum, elements,  detector_Efficiency=None ):
         for i in range(len(pp)-3):
             model += peaks[i]*pp[i]
         if detector_Efficiency is not None:
-            model[start:] += detector_Efficiency * (pp[-3] + pp[-2]*(E_0-energy_scale)/energy_scale + pp[-1]*(E_0-energy_scale)**2/energy_scale)
+            model[start:] += detector_Efficiency[start:] * (pp[-3] + pp[-2]*(E_0-energy_scale)/energy_scale +
+                                                    pp[-1]*(E_0-energy_scale)**2/energy_scale)
 
         err = np.abs((yy - model)[start:]) / np.sqrt(np.abs(yy[start:]))
         return err
 
-    y = spectrum.compute()
+    y = np.array(spectrum)  # .compute()
     [p, _] = leastsq(residuals, pin, args=(y))
     update_fit_values(out_tags, p)
 

@@ -585,6 +585,7 @@ def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result=False, number
     return fitted_dataset
 
 
+
 def drude_simulation(dset, e, ep, ew, tnm, eb):
     """probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)
 

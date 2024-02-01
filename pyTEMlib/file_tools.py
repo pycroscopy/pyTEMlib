@@ -146,16 +146,17 @@ class FileWidget(ipywidgets.DOMWidget):
 
     def select_main(self, value=0):
         self.datasets = {}
-        self.loaded_datasets.value = self.dataset_list[0]
+        #self.loaded_datasets.value = self.dataset_list[0]
         self.dataset_list = []
-
         self.datasets = open_file(self.file_name)
         self.dataset_list = []
         for key in self.datasets.keys():
             self.dataset_list.append(f'{key}: {self.datasets[key].title}')
         self.loaded_datasets.options = self.dataset_list
         self.loaded_datasets.value = self.dataset_list[0]
+        self.debug = 5
         self.dataset = self.datasets[list(self.datasets.keys())[0]]
+        self.debug = 6
         self.selected_dataset = self.dataset
         
     def add_dataset(self, value=0):
@@ -652,7 +653,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
             if not write_hdf_file:
                 file.close()
             return dataset_dict
-    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi']:
+    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5']:
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DMReader(filename)
@@ -681,7 +682,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
         elif extension == '.emd':
             reader = SciFiReaders.EMDReader(filename)
 
-        elif 'edax' in filename.lower():
+        elif 'edax' in extension.lower():
             if 'h5' in extension:
                 reader = SciFiReaders.EDAXReader(filename)
 
