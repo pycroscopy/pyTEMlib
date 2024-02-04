@@ -1025,8 +1025,9 @@ def smooth(dataset, iterations, advanced_present):
     # TODO: add sensitivity to dialog and the two functions below
     peaks = dataset.metadata['peak_fit']
 
-    peak_model, peak_out_list = eels_tools.smooth(dataset, peaks['fit_start'],
-                                                    peaks['fit_end'], iterations=iterations)
+    peak_model, peak_out_list = eels_tools.find_peaks(dataset,
+                                                                       peaks['fit_start'],
+                                                                       peaks['fit_end'])
     # 
     #cif advanced_present and iterations > 1:
     # peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
@@ -1035,8 +1036,7 @@ def smooth(dataset, iterations, advanced_present):
     #    peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
     #    peak_out_list = [peak_out_list]
 
-    flat_list = [item for sublist in peak_out_list for item in sublist]
-    new_list = np.reshape(flat_list, [len(flat_list) // 3, 3])
+    new_list = np.reshape(peak_out_list, [len(peak_out_list) // 3, 3])
     area = np.sqrt(2 * np.pi) * np.abs(new_list[:, 1]) * np.abs(new_list[:, 2] / np.sqrt(2 * np.log(2)))
     arg_list = np.argsort(area)[::-1]
     area = area[arg_list]

@@ -48,12 +48,27 @@ from pyTEMlib.xrpa_x_sections import x_sections
 
 elements_list = pyTEMlib.eels_tools.elements
 
-shell_occupancy={'K1':2, 'L1':2, 'L2':2, 'L3':4, 'M1':2, 'M2':2, 'M3':4,'M4':4,'M5':6, 
-                 'N1':2, 'N2':2,' N3':4,'N4':4,'N5':6, 'N6':6,'N7':8,
-                 'O1':2, 'O2':2,' O3':4,'O4':4,'O5':6, 'O6':6,'O7':8, 'O8':8, 'O9': 10 }
+shell_occupancy = {'K1': 2, 'L1': 2, 'L2': 2, 'L3': 4, 'M1': 2, 'M2': 2, 'M3': 4, 'M4': 4, 'M5': 6,
+                   'N1': 2, 'N2': 2, 'N3': 4, 'N4': 4, 'N5': 6, 'N6': 6, 'N7': 8,
+                   'O1': 2, 'O2': 2, 'O3': 4, 'O4': 4, 'O5': 6, 'O6': 6, 'O7': 8, 'O8': 8, 'O9': 10}
 
 
-def detector_response(detector_definition, energy_scale):
+def detector_response(dataset):
+    tags = dataset.metadata['experiment']
+
+    tags['acceleration_voltage_V'] = tags['microscope']['acceleration_voltage_V']
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
+    if 'start_channel' not in tags['detector']:
+        tags['detector']['start_channel'] = np.searchsorted(energy_scale, 100)
+
+    start = tags['detector']['start_channel']
+    detector_efficiency = np.zeros(len(dataset))
+    detector_efficiency[start:] += get_detector_response(tags, energy_scale[start:])
+    tags['detector']['detector_efficiency'] = detector_efficiency
+    return detector_efficiency
+
+
+def get_detector_response(detector_definition, energy_scale):
     """
     Calculates response of Si drift detector for EDS spectrum background based on detector parameters
 
@@ -112,7 +127,7 @@ def detector_response(detector_definition, energy_scale):
     def get_absorption(Z, t):
         photoabsorption = x_sections[str(Z)]['dat']/1e10/x_sections[str(Z)]['photoabs_to_sigma']
         lin = interp1d(x_sections[str(Z)]['ene'], photoabsorption, kind='linear') 
-        mu = lin(energy_scale) * x_sections[str(Z)]['nominal_density']*100. #1/cm -> 1/m
+        mu = lin(energy_scale) * x_sections[str(Z)]['nominal_density']*100.  #1/cm -> 1/m
         return np.exp(-mu * t)
     
     if 'Al_thickness' in  detector_definition['detector']:
@@ -128,23 +143,28 @@ def detector_response(detector_definition, energy_scale):
         
     if 'SiLiveThickness' in  detector_definition['detector']:
         response *= 1-get_absorption(14, detector_definition['detector']['SiLiveThickness'])
-       
     return response
+
 
 def detect_peaks(dataset, minimum_number_of_peaks=30):
     if not isinstance(dataset, sidpy.Dataset):
         raise TypeError('Needs an sidpy dataset')
     if not dataset.data_type.name == 'SPECTRUM':
         raise TypeError('Need a spectrum')
-    resolution = 138
-    if 'EDS' in dataset.metadata:
-        if 'energy_resolution' in dataset.metadata['EDS']:
-            resolution = dataset.metadata['EDS']['energy_resolution']
-    start = np.searchsorted(dataset.energy_scale, 125)
+
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
+    if 'detector' not in dataset.metadata:
+        if 'energy_resolution' not in dataset.metadata['detector']:
+            dataset.metadata['detector']['energy_resolution'] = 138
+            print('Using energy resolution of 138 eV')
+        if 'start_channel' not in dataset.metadata['detector']:
+            dataset.metadata['detector']['start_channel'] = start = np.searchsorted(energy_scale, 100)
+    resolution = dataset.metadata['detector']['energy_resolution']
+
+    start = dataset.metadata['detector']['start_channel']
     ## we use half the width of the resolution for smearing
-    width = int(np.ceil(125/(dataset.energy_scale[1]-dataset.energy_scale[0])/2)+1)
-    new_spectrum =  scipy.signal.savgol_filter(dataset[start:], width, 2) ## we use half the width of the resolution for smearing
-    #new_energy_scale = dataset.energy_scale[start:]
+    width = int(np.ceil(resolution/(energy_scale[1]-energy_scale[0])/2)+1)
+    new_spectrum =  scipy.signal.savgol_filter(np.array(dataset)[start:], width, 2) ## we use half the width of the resolution for smearing
     prominence = 10
     minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
     
@@ -156,7 +176,7 @@ def detect_peaks(dataset, minimum_number_of_peaks=30):
 def find_elements(spectrum, minor_peaks):
     if not isinstance(spectrum, sidpy.Dataset):
         raise TypeError(' Need a sidpy dataset')
-    energy_scale = spectrum.energy_scale
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
     elements = []
     for peak in minor_peaks:
         found = False
@@ -184,21 +204,21 @@ def get_x_ray_lines(spectrum, elements):
     out_tags = {}
     alpha_K = 1e6
     alpha_L = 6.5e7
-    alpha_M = 8*1e8#2.2e10
+    alpha_M = 8*1e8  # 2.2e10
     # My Fit
     alpha_K = .9e6
     alpha_L = 6.e7
-    alpha_M = 6*1e8#2.2e10
+    alpha_M = 6*1e8 #  2.2e10
     # omega_K = Z**4/(alpha_K+Z**4)
     # omega_L = Z**4/(alpha_L+Z**4)
     # omega_M = Z**4/(alpha_M+Z**4)
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
     for element in elements:
-
         atomic_number = elements_list.index(element)
         out_tags[element] ={'Z': atomic_number}
-        energy_scale = spectrum.energy
+
         if 'K-L3' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['K-L3']['position'] < 1.9e4:
+            if x_sections[str(atomic_number)]['lines']['K-L3']['position'] < energy_scale[-1]:
                 height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['K-L3']['position'] )].compute()
                 out_tags[element]['K-family'] = {'height': height}
                 if 'K' in x_sections[str(atomic_number)]['fluorescent_yield']:
@@ -207,7 +227,7 @@ def get_x_ray_lines(spectrum, elements):
                     out_tags[element]['K-family']['yield'] = atomic_number**4/(alpha_K+atomic_number**4)/4/1.4
 
         if 'L3-M5' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['L3-M5']['position'] < 1.9e4:
+            if x_sections[str(atomic_number)]['lines']['L3-M5']['position'] < energy_scale[-1]:
                 height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['L3-M5']['position'] )].compute()
                 out_tags[element]['L-family'] = {'height': height}
                 if 'L' in x_sections[str(atomic_number)]['fluorescent_yield']:
@@ -216,8 +236,8 @@ def get_x_ray_lines(spectrum, elements):
                     out_tags[element]['L-family']['yield'] = (atomic_number**4/(alpha_L+atomic_number**4))**2
 
         if 'M5-N6' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['M5-N6']['position'] < 1.9e4:
-                height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['M5-N7']['position'] )].compute()
+            if x_sections[str(atomic_number)]['lines']['M5-N6']['position'] < energy_scale[-1]:
+                height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['M5-N6']['position'] )].compute()
                 out_tags[element]['M-family'] = {'height': height}
                 if 'M' in x_sections[str(atomic_number)]['fluorescent_yield']:
                     out_tags[element]['M-family']['yield'] = x_sections[str(atomic_number)]['fluorescent_yield']['M']
@@ -255,6 +275,7 @@ def get_x_ray_lines(spectrum, elements):
             out_tags[element]['M-family']['ionization_x_section'] = xs['M']
 
     """
+    We really should use the sum of the family
     for key, x_lines in out_tags.items():
         if 'K-family' in x_lines:
             xs = pyTEMlib.eels_tools.xsec_xrpa(np.arange(100)+x_sections[str(x_lines['Z'])]['K1']['onset'], 200,x_lines['Z'], 100).sum()
@@ -268,6 +289,10 @@ def get_x_ray_lines(spectrum, elements):
             xs = pyTEMlib.eels_tools.xsec_xrpa(np.arange(100)+x_sections[str(x_lines['Z'])]['M5']['onset'], 200,x_lines['Z'], 100).sum()
             x_lines['M-family']['ionization_x_section'] = xs
     """
+    if 'EDS' not in spectrum.metadata:
+        spectrum.metadata['EDS'] = {}
+
+    spectrum.metadata['EDS']['lines'] = out_tags
     return out_tags
 
 
@@ -276,7 +301,7 @@ def getFWHM(E, E_ref, FWHM_ref):
 
 def gaussian(enrgy_scale, mu, FWHM):
     sig = FWHM/2/np.sqrt(2*np.log(2))
-    return np.exp(-np.power(enrgy_scale - mu, 2.) / (2 * np.power(sig, 2.)))
+    return np.exp(-np.power(np.array(enrgy_scale) - mu, 2.) / (2 * np.power(sig, 2.)))
 
 def get_peak(E, energy_scale):
     E_ref = 5895.0
@@ -284,12 +309,12 @@ def get_peak(E, energy_scale):
     FWHM  = getFWHM(E, E_ref, FWHM_ref)
     gaus = gaussian(energy_scale, E, FWHM)
 
-    return gaus /gaus.sum()
+    return gaus /(gaus.sum()+1e-12)
 
 
-def get_model(tags, spectrum):
-
-    energy_scale = spectrum.energy
+def initial_model_parameter(spectrum):
+    tags = spectrum.metadata['EDS']['lines']
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
     p = []
     peaks = []
     keys = []
@@ -331,32 +356,78 @@ def get_model(tags, spectrum):
                 peaks.append(info['peak'])
                 p.append(info['height'])
                 keys.append(element+':other:'+line)
+
+    #p.extend([300, 10, 1.e-04])
+    # p.extend([1, 300, -.02])
+    p.extend([1e7, 1e-3, 1500, 20])
     return np.array(peaks), np.array(p), keys
 
-def fit_model(spectrum, elements,  detector_Efficiency=None ):
-    out_tags = get_x_ray_lines(spectrum, elements)
-    
-    peaks, pin, keys = get_model(out_tags, spectrum)
-    start = np.searchsorted(spectrum.energy, 100)
-    energy_scale = spectrum.energy[start:]
-    
-    p = np.array([1, 37, .3])/100000*3
-    E_0= 200000
-    pin = np.concatenate((pin, p))
-    
-    def residuals(pp, yy):
-        model = np.zeros(len(yy))
-        for i in range(len(pp)-3):
-            model += peaks[i]*pp[i]
-        if detector_Efficiency is not None:
-            model[start:] += detector_Efficiency * (pp[-3] + pp[-2]*(E_0-energy_scale)/energy_scale + pp[-1]*(E_0-energy_scale)**2/energy_scale)
+def get_model(spectrum, start=100):
 
-        err = np.abs((yy - model)[start:]) / np.sqrt(np.abs(yy[start:]))
+    peaks, pp, keys = initial_model_parameter(spectrum)
+    model = np.zeros(len(spectrum))
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    pp= spectrum.metadata['EDS']['parameters']
+    for i in range(len(pp) - 3):
+        model += peaks[i] * pp[i]
+    if 'detector_efficiency' in spectrum.metadata['experiment']['detector'].keys():
+        detector_efficiency = spectrum.metadata['experiment']['detector']['detector_efficiency']
+    else:
+        detector_efficiency = None
+    E_0 = spectrum.metadata['experiment']['acceleration_voltage_V']
+
+    if detector_efficiency is not None:
+        model[start:] += detector_efficiency[start:] * (pp[-3] + pp[-2] * (E_0 - energy_scale) / energy_scale +
+                                                        pp[-1] * (E_0 - energy_scale) ** 2 / energy_scale)
+
+    return model
+
+def fit_model(spectrum, elements, use_detector_efficiency=False):
+    out_tags = get_x_ray_lines(spectrum, elements)
+    peaks, pin, keys = initial_model_parameter(spectrum)
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+
+    if 'detector' in spectrum.metadata['experiment'].keys():
+        if 'start_channel' not in spectrum.metadata['experiment']['detector']:
+            spectrum.metadata['experiment']['detector']['start_channel'] = np.searchsorted(energy_scale, 100)
+        if 'detector_efficiency' in spectrum.metadata['experiment']['detector'].keys():
+            if use_detector_efficiency:
+                detector_efficiency = spectrum.metadata['experiment']['detector']['detector_efficiency']
+        else:
+            use_detector_efficiency = False
+    else:
+        print('need detector information to fit spectrum')
+        return
+    start = spectrum.metadata['experiment']['detector']['start_channel']
+    energy_scale = energy_scale[start:]
+
+    E_0= spectrum.metadata['experiment']['acceleration_voltage_V']
+
+    def residuals(pp, yy):
+        #get_model(peaks, pp, detector_efficiency=None)
+        model = np.zeros(len(yy))
+        for i in range(len(pp)-4):
+            model += peaks[i]*pp[i]
+        # pp[-3:] = np.abs(pp[-3:])
+
+        if use_detector_efficiency:
+            bremsstrahlung = pp[-4] / (energy_scale + pp[-3] * energy_scale**2 + pp[-2] * energy_scale**.5) - pp[-1]
+
+            model[start:] += detector_efficiency[start:] * bremsstrahlung
+            #(pp[-3] + pp[-2] * (E_0 - energy_scale) / energy_scale +
+            #                                                pp[-1] * (E_0-energy_scale) ** 2 / energy_scale))
+
+        err = np.abs((yy - model)[start:])  # /np.sqrt(np.abs(yy[start:])+1e-12)
+
         return err
 
-    y = spectrum.compute()
+    y = np.array(spectrum)  # .compute()
     [p, _] = leastsq(residuals, pin, args=(y))
+
+    print(pin[-6:], p[-6:])
+
     update_fit_values(out_tags, p)
+
 
     if 'EDS' not in spectrum.metadata:
         spectrum.metadata['EDS'] = {}

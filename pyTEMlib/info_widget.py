@@ -173,6 +173,9 @@ class EELSWidget(object):
         self.bin_x = 0
         self.bin_y = 0
 
+        self.start_channel = -1
+        self.end_channel = -2
+
         self.file_bar = get_file_widget_ui()
         if isinstance(sidebar, dict):
             tab = ipywidgets.Tab()
@@ -234,10 +237,10 @@ class EELSWidget(object):
         select_button.on_click(self.select_main)
         add_button.on_click(self.add_dataset)
         self.loaded_datasets.observe(self.select_dataset, names='value')
-        self.file_bar[4,0].observe(self.plot, names='value')
+        self.file_bar[4, 0].observe(self.plot, names='value')
 
     def set_image(self, key=None):
-        if self.file_bar[4,0].value == 'Sum':
+        if self.file_bar[4, 0].value == 'Sum':
             spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
             if len(spec_dim) != 1:
                 raise ValueError('Only one spectral dimension')
@@ -252,7 +255,7 @@ class EELSWidget(object):
             else:
                 self.image = self.dataset.mean(axis=(spec_dim[0]))
         else:
-            image_key = self.file_bar[4,0].value.split(':')[0]
+            image_key = self.file_bar[4, 0].value.split(':')[0]
             self.image = self.datasets[image_key]
 
     def plot(self, scale=True):
@@ -414,7 +417,7 @@ class EELSWidget(object):
         self.start_cursor.value = np.round(x_min, 3)
         self.end_cursor.value = np.round(x_max, 3)
 
-        energy_scale = self.dataset[self.key].get_spectral_dims(return_axis=True)[0]
+        energy_scale = self.dataset.get_spectral_dims(return_axis=True)[0]
         self.start_channel = np.searchsorted(energy_scale, self.start_cursor.value)
         self.end_channel = np.searchsorted(energy_scale, self.end_cursor.value)
 
@@ -458,8 +461,7 @@ class EELSWidget(object):
         self.update_sidebar()
         
     def update_sidebar(self):
-        pass    
-        
+        pass
 
     def select_main(self, value=0):
         self.datasets = {}
@@ -497,7 +499,6 @@ class EELSWidget(object):
         self.file_bar[3, 0].options = self.dataset_list
         self.loaded_datasets.options = self.dataset_list
         self.loaded_datasets.value = self.dataset_list[0]
-
 
     def add_dataset(self, value=0):
         key = file_tools.add_dataset_from_file(self.datasets, self.file_name, 'Channel')
@@ -614,7 +615,7 @@ class InfoWidget(EELSWidget):
             number_of_pixels = 1
             for index, dimension in enumerate(self.dataset.shape):
                 if index not in spectrum_dimensions:
-                   number_of_pixels *= dimension
+                    number_of_pixels *= dimension
             if self.datasets[key].metadata['experiment']['exposure_time'] == 0.0:
                 if self.datasets[key].metadata['experiment']['single_exposure_time'] == 0.0:
                     return
@@ -630,7 +631,6 @@ class InfoWidget(EELSWidget):
                 self.info_tab[14, 0].disabled = False
         self.info_tab[11, 0].value = np.round(self.datasets[self.key].metadata['experiment']['flux_ppm'], 2)
 
-        
     def set_microscope_parameter(self, value):
         self.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
         self.datasets[self.key].metadata['experiment']['collection_angle'] = self.info_tab[6, 0].value
@@ -638,13 +638,11 @@ class InfoWidget(EELSWidget):
     
     def cursor2energy_scale(self, value):
         self.energy_scale = self.datasets[self.key].get_spectral_dims(return_axis=True)[0]
-        start_channel = np.searchsorted(self.energy_scale, self.start_cursor.value)
-        end_channel = np.searchsorted(self.energy_scale, self.end_cursor.value)
-        dispersion = (self.end_cursor.value - self.start_cursor.value) / (end_channel - start_channel)
+        dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
 
         self.energy_scale *= (self.info_tab[3, 0].value/dispersion)
         self.info_tab[3, 0].value = dispersion
-        offset = self.start_cursor.value - start_channel * dispersion
+        offset = self.start_cursor.value - self.start_channel * dispersion
         self.energy_scale += (self.info_tab[2, 0].value-self.energy_scale[0])
         self.info_tab[2, 0].value = offset
         self.plot()
@@ -723,8 +721,9 @@ class InfoWidget(EELSWidget):
                 if 'shifted' in self.datasets[self.datasets['_relationship']['low_loss']].metadata['zero_loss'].keys():
                     self.info_tab[14, 1].disabled = False
                     print('shifted')
+
     def shift_spectrum(self,  value=0):
-        shifts = (self.dataset.shape)
+        shifts = self.dataset.shape
         if 'low_loss' in self.datasets['_relationship']:
             if 'zero_loss' in self.datasets[self.datasets['_relationship']['low_loss']].metadata:
                 if 'shifted' in self.datasets[self.datasets['_relationship']['low_loss']].metadata['zero_loss'].keys():
@@ -760,7 +759,7 @@ class InfoWidget(EELSWidget):
 
         resolution_key = self.dataset_list.append(f'resolution_function: resolution_function')
         if resolution_key not in self.dataset_list:
-                self.dataset_list.append(resolution_key)
+            self.dataset_list.append(resolution_key)
         self.loaded_datasets.options = self.dataset_list
         self.info_tab[0, 0].options = self.dataset_list
 
