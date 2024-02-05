@@ -221,3 +221,9 @@ notebooks/Imaging/EMDReader_Spectrum_FEI (1).emd
 notebooks/Imaging/NionReader_ImageStack_STO_HAADF.h5
 example_data/p1-3-hr3-1.hf5
 notebooks/Spectroscopy/EDS-Copy1.ipynb
+_autosummary/pyTEMlib.atom_tools.rst
+_autosummary/pyTEMlib.eels_tools.rst
+_autosummary/pyTEMlib.file_tools.rst
+_autosummary/pyTEMlib.image_tools.rst
+_autosummary/pyTEMlib.info_widget.rst
+_autosummary/pyTEMlib.kinematic_scattering.rst

@@ -10,3 +10,8 @@ chapters:
   sections:
     - file: notebooks/Imaging/Adaptive_Fourier_Filter
 - file: notebooks/3_Spectroscopy_Tools
+  sections:
+    - file: notebooks/Spectroscopy/Analyse_Low_Loss
+    - file: notebooks/Spectroscopy/EDS
+
+- file: api
