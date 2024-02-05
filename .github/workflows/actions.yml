@@ -67,15 +67,6 @@ jobs:
         fail_ci_if_error: true
         # path_to_write_report: ./coverage/codecov_report.txt
         verbose: true
-
-    - name: Deploy to GitHub Pages
-      if: ${{ matrix.python-version == env.PYTHON_MAIN_VERSION && github.ref == 'refs/heads/main'}}
-      uses: crazy-max/ghaction-github-pages@v3
-      with:
-        target_branch: gh-pages
-        build_dir: docs/_build/html
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
       
     - name: Upload to PyPi
       if: startsWith( github.ref, 'refs/tags') && matrix.python-version == env.PYTHON_MAIN_VERSION
