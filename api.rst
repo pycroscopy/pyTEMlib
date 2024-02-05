@@ -11,5 +11,4 @@ The package structure is simple, with 4 main modules: `diffraction`: , `imaging`
    :toctree: _autosummary
    :recursive:
 
-   pyTEMlib
-   
+   ./pyTEMlib/file_tools
