@@ -15,6 +15,18 @@ logo                        : logo.png  # A path to the book logo
 execute:
   execute_notebooks: force
 
+sphinx:
+  extra_extensions:
+  - 'sphinx.ext.autodoc'
+  - 'sphinx.ext.doctest'
+  - 'sphinx.ext.intersphinx'
+  - 'sphinx.ext.todo'
+  - 'sphinx.ext.mathjax'
+  - 'sphinx.ext.napoleon'
+  - 'sphinx.ext.viewcode'
+  - 'sphinx.ext.autosummary'
+
+
 # Define the name of the latex output file for PDF builds
 latex:
   latex_documents:
