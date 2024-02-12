@@ -424,7 +424,7 @@ def fit_model(spectrum, elements, use_detector_efficiency=False):
     y = np.array(spectrum)  # .compute()
     [p, _] = leastsq(residuals, pin, args=(y))
 
-    print(pin[-6:], p[-6:])
+    # print(pin[-6:], p[-6:])
 
     update_fit_values(out_tags, p)
 

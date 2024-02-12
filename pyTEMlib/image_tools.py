@@ -23,6 +23,7 @@ from tqdm.auto import trange, tqdm
 from itertools import product
 
 from scipy import fftpack
+import scipy
 # from scipy import signal
 from scipy.interpolate import interp1d  # , interp2d
 import scipy.optimize as optimization
@@ -729,6 +730,76 @@ class LineSelector(matplotlib.widgets.PolygonSelector):
             self.moved_point = moved_point
             self.line_verts[moved_point] = self.new_point
             self.set_linewidth()
+
+def get_profile(dataset, line):
+    xv, yv = get_line_selection_points(line)
+    
+    
+    if dataset.data_type.name == 'IMAGE':
+        dataset.get_image_dims()
+        xv /= (dataset.x[1] - dataset.x[0])
+        yv /= (dataset.y[1] - dataset.y[0])
+        profile = scipy.ndimage.map_coordinates(np.array(dataset), [xv,yv])
+        
+        profile_dataset = sidpy.Dataset.from_array(profile.sum(axis=0))
+        profile_dataset.data_type='spectrum'
+        profile_dataset.units = dataset.units
+        profile_dataset.quantity = dataset.quantity
+        profile_dataset.set_dimension(0, sidpy.Dimension(np.linspace(xv[0,0], xv[-1,-1], profile_dataset.shape[0]), 
+                                                  name='x', units=dataset.x.units, quantity=dataset.x.quantity,
+                                                  dimension_type='spatial'))
+
+        profile_dataset
+
+    if dataset.data_type.name == 'SPECTRAL_IMAGE':
+        spectral_axis = dataset.get_spectral_dims(return_axis=True)[0]
+        profile = np.zeros([xv.shape[1], 2, len(spectral_axis)])
+        data =np.array(dataset)
+
+        for index_x in range(xv.shape[1]):
+            for  index_y  in range(xv.shape[0]):
+                x = xv[index_y, index_x]
+                y = yv[index_y, index_x]
+                profile[index_x, 0] +=data[int(x),int(y)]
+        profile_dataset = sidpy.Dataset.from_array(profile)
+        profile_dataset.data_type='spectral_image'
+        profile_dataset.units = dataset.units
+        profile_dataset.quantity = dataset.quantity
+        profile_dataset.set_dimension(0, sidpy.Dimension(np.linspace(xv[0,0], xv[-1,-1], profile_dataset.shape[0]), 
+                                                  name='x', units=dataset.x.units, quantity=dataset.x.quantity,
+                                                  dimension_type='spatial'))
+        profile_dataset.set_dimension(1, sidpy.Dimension([0, 1], 
+                                                  name='y', units=dataset.x.units, quantity=dataset.x.quantity,
+                                                  dimension_type='spatial'))
+        
+        profile_dataset.set_dimension(2, spectral_axis)
+    return profile_dataset
+
+
+def get_line_selection_points(line):
+    
+    start_point = line.line_verts[3]
+    right_point = line.line_verts[0]
+    low_point = line.line_verts[2]
+
+    if start_point[0] > right_point[0]:
+        start_point = line.line_verts[0]
+        right_point = line.line_verts[3]
+        low_point = line.line_verts[1]
+    m = (right_point[1] - start_point[1]) / (right_point[0] - start_point[0])
+    length_x = int(abs(start_point[0]-right_point[0]))
+    length_v = int(np.linalg.norm(start_point-right_point))
+    
+    linewidth = int(abs(start_point[1]-low_point[1]))
+    x = np.linspace(0,length_x, length_v)
+    y = np.linspace(0,linewidth, line.line_width)
+    xv, yv = np.meshgrid(x, y)
+    
+    yy = yv +x*m+start_point[1] 
+    xx = (xv.T -y*m ).T + start_point[0]
+    
+    return xx, yy
+
 
 
 def histogram_plot(image_tags):
