@@ -82,11 +82,12 @@ class FileWidget(ipywidgets.DOMWidget):
 
     """
 
-    def __init__(self, dir_name=None, extension=['*']):
+    def __init__(self, dir_name=None, extension=['*'], sum_frames=False):
         self.save_path = False
         self.dir_dictionary = {}
         self.dir_list = ['.', '..']
         self.display_list = ['.', '..']
+        self.sum_frames = sum_frames
 
         self.dir_name = '.'
         if dir_name is None:
@@ -148,7 +149,7 @@ class FileWidget(ipywidgets.DOMWidget):
         self.datasets = {}
         #self.loaded_datasets.value = self.dataset_list[0]
         self.dataset_list = []
-        self.datasets = open_file(self.file_name)
+        self.datasets = open_file(self.file_name, sum_frames=self.sum_frames)
         self.dataset_list = []
         for key in self.datasets.keys():
             self.dataset_list.append(f'{key}: {self.datasets[key].title}')
@@ -593,7 +594,7 @@ def h5_group_to_dict(group, group_dict={}):
     return group_dict
 
 
-def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file=False,
+def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=False):  # save_file=False,
     """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
 
     If no filename is provided the QT open_file windows opens (if QT_available==True)
@@ -680,7 +681,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False):  # save_file
                 print('This file type needs hyperspy to be installed to be able to be read')
                 return
         elif extension == '.emd':
-            reader = SciFiReaders.EMDReader(filename)
+            reader = SciFiReaders.EMDReader(filename, sum_frames=sum_frames)
 
         elif 'edax' in extension.lower():
             if 'h5' in extension:
