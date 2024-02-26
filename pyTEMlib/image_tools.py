@@ -731,15 +731,27 @@ class LineSelector(matplotlib.widgets.PolygonSelector):
             self.line_verts[moved_point] = self.new_point
             self.set_linewidth()
 
-def get_profile(dataset, line):
+def get_profile(dataset, line, spline_order=-1):
+    """
+    This function extracts a line profile from a given dataset. The line profile is a representation of the data values 
+    along a specified line in the dataset. This function works for both image and spectral image data types.
+
+    Args:
+        dataset (sidpy.Dataset): The input dataset from which to extract the line profile.
+        line (list): A list specifying the line along which the profile should be extracted.
+        spline_order (int, optional): The order of the spline interpolation to use. Default is -1, which means no interpolation.
+
+    Returns:
+        profile_dataset (sidpy.Dataset): A new sidpy.Dataset containing the line profile.
+
+
+    """
     xv, yv = get_line_selection_points(line)
-    
-    
     if dataset.data_type.name == 'IMAGE':
         dataset.get_image_dims()
         xv /= (dataset.x[1] - dataset.x[0])
         yv /= (dataset.y[1] - dataset.y[0])
-        profile = scipy.ndimage.map_coordinates(np.array(dataset), [xv,yv])
+        profile = scipy.ndimage.map_coordinates(np.array(dataset), [xv, yv])
         
         profile_dataset = sidpy.Dataset.from_array(profile.sum(axis=0))
         profile_dataset.data_type='spectrum'
@@ -753,19 +765,21 @@ def get_profile(dataset, line):
 
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
         spectral_axis = dataset.get_spectral_dims(return_axis=True)[0]
-        profile = np.zeros([xv.shape[1], 2, len(spectral_axis)])
-        data =np.array(dataset)
-
-        for index_x in range(xv.shape[1]):
-            for  index_y  in range(xv.shape[0]):
-                x = xv[index_y, index_x]
-                y = yv[index_y, index_x]
-                profile[index_x, 0] +=data[int(x),int(y)]
+        if spline_order > -1:
+            xv, yv, zv = get_line_selection_points_interpolated(line, z_length=dataset.shape[2])
+            profile = scipy.ndimage.map_coordinates(np.array(dataset), [xv, yv, zv], order=spline_order)
+            profile = profile.sum(axis=0)
+            profile = np.stack([profile, profile], axis=1)
+            start = xv[0, 0, 0]
+        else:
+            profile = get_line_profile(np.array(dataset), xv, yv, len(spectral_axis))
+            start = xv[0, 0]
+        print(profile.shape)
         profile_dataset = sidpy.Dataset.from_array(profile)
         profile_dataset.data_type='spectral_image'
         profile_dataset.units = dataset.units
         profile_dataset.quantity = dataset.quantity
-        profile_dataset.set_dimension(0, sidpy.Dimension(np.linspace(xv[0,0], xv[-1,-1], profile_dataset.shape[0]), 
+        profile_dataset.set_dimension(0, sidpy.Dimension(np.arange(profile_dataset.shape[0])+start, 
                                                   name='x', units=dataset.x.units, quantity=dataset.x.quantity,
                                                   dimension_type='spatial'))
         profile_dataset.set_dimension(1, sidpy.Dimension([0, 1], 
@@ -774,6 +788,42 @@ def get_profile(dataset, line):
         
         profile_dataset.set_dimension(2, spectral_axis)
     return profile_dataset
+
+
+
+def get_line_selection_points_interpolated(line, z_length=1):
+    
+    start_point = line.line_verts[3]
+    right_point = line.line_verts[0]
+    low_point = line.line_verts[2]
+
+    if start_point[0] > right_point[0]:
+        start_point = line.line_verts[0]
+        right_point = line.line_verts[3]
+        low_point = line.line_verts[1]
+    m = (right_point[1] - start_point[1]) / (right_point[0] - start_point[0])
+    length_x = int(abs(start_point[0]-right_point[0]))
+    length_v = int(np.linalg.norm(start_point-right_point))
+    
+    linewidth = int(abs(start_point[1]-low_point[1]))
+    x = np.linspace(0,length_x, length_v)
+    y = np.linspace(0,linewidth, line.line_width)
+    if z_length > 1:
+        z = np.linspace(0, z_length, z_length)
+        xv, yv, zv = np.meshgrid(x, y, np.arange(z_length))
+        x = np.atleast_2d(x).repeat(z_length, axis=0).T
+        y = np.atleast_2d(y).repeat(z_length, axis=0).T
+    else:
+        xv, yv = np.meshgrid(x, y)
+    
+    
+    yv = yv + x*m + start_point[1] 
+    xv = (xv.swapaxes(0,1) -y*m ).swapaxes(0,1) + start_point[0]
+
+    if z_length > 1:
+        return xv, yv, zv
+    else:   
+        return xv, yv
 
 
 def get_line_selection_points(line):
@@ -801,6 +851,16 @@ def get_line_selection_points(line):
     return xx, yy
 
 
+def get_line_profile(data, xv, yv, z_length):
+    profile = np.zeros([len(xv[0]), 2, z_length])
+    for index_x in range(xv.shape[1]):
+        for  index_y  in range(xv.shape[0]):
+            x = int(xv[index_y, index_x])
+            y = int(yv[index_y, index_x])
+            if x< data.shape[0] and x>0 and y < data.shape[1] and y>0:
+                profile[index_x, 0] +=data[x, y]
+    return profile
+     
 
 def histogram_plot(image_tags):
     """interactive histogram"""
