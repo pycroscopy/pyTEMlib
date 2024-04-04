@@ -280,57 +280,63 @@ def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     return spots, center
 
 
-def center_diffractogram(dset, return_plot = True, histogram_factor = None):
-    diff = np.array(dset).T.astype(np.float16)
-    diff[diff < 0] = 0
+def center_diffractogram(dset, return_plot = True, histogram_factor = None, smoothing = 1, min_samples = 100):
+    try:
+        diff = np.array(dset).T.astype(np.float16)
+        diff[diff < 0] = 0
+        
+        if histogram_factor is not None:
+            hist, bins = np.histogram(np.ravel(diff), bins=256, range=(0, 1), density=True)
+            threshold = threshold_otsu(diff, hist = hist * histogram_factor)
+        else:
+            threshold = threshold_otsu(diff)
+        binary = (diff > threshold).astype(float)
+        smoothed_image = ndimage.gaussian_filter(binary, sigma=smoothing) # Smooth before edge detection
+        smooth_threshold = threshold_otsu(smoothed_image)
+        smooth_binary = (smoothed_image > smooth_threshold).astype(float)
+        # Find the edges using the Sobel operator
+        edges = sobel(smooth_binary)
+        edge_points = np.argwhere(edges)
+
+        # Use DBSCAN to cluster the edge points
+        db = DBSCAN(eps=10, min_samples=min_samples).fit(edge_points)
+        labels = db.labels_
+        if len(set(labels)) == 1:
+            raise ValueError("DBSCAN clustering resulted in only one group, check the parameters.")
+
+        # Get the largest group of edge points
+        unique, counts = np.unique(labels, return_counts=True)
+        counts = dict(zip(unique, counts))
+        largest_group = max(counts, key=counts.get)
+        edge_points = edge_points[labels == largest_group]
+
+        # Fit a circle to the diffraction ring
+        def calc_distance(c, x, y):
+            Ri = np.sqrt((x - c[0])**2 + (y - c[1])**2)
+            return Ri - Ri.mean()
+        x_m = np.mean(edge_points[:, 1])
+        y_m = np.mean(edge_points[:, 0])
+        center_guess = x_m, y_m
+        center, ier = leastsq(calc_distance, center_guess, args=(edge_points[:, 1], edge_points[:, 0]))
+        mean_radius = np.mean(calc_distance(center, edge_points[:, 1], edge_points[:, 0])) + np.sqrt((edge_points[:, 1] - center[0])**2 + (edge_points[:, 0] - center[1])**2).mean()
     
-    if histogram_factor is not None:
-        hist, bins = np.histogram(np.ravel(diff), bins=256, range=(0, 1), density=True)
-        threshold = threshold_otsu(diff, hist = hist * histogram_factor)
-    else:
-        threshold = threshold_otsu(diff)
-    binary = (diff > threshold).astype(float)
-
-    # Find the edges using the Sobel operator
-    edges = sobel(binary)
-    edge_points = np.argwhere(edges)
-
-    # Use DBSCAN to cluster the edge points
-    db = DBSCAN(eps=10, min_samples=100).fit(edge_points)
-    labels = db.labels_
-    if len(set(labels)) == 1:
-        raise ValueError("DBSCAN clustering resulted in only one group, check the parameters.")
-
-    # Get the largest group of edge points
-    unique, counts = np.unique(labels, return_counts=True)
-    counts = dict(zip(unique, counts))
-    largest_group = max(counts, key=counts.get)
-    edge_points = edge_points[labels == largest_group]
-
-    # Fit a circle to the diffraction ring
-    def calc_distance(c, x, y):
-        Ri = np.sqrt((x - c[0])**2 + (y - c[1])**2)
-        return Ri - Ri.mean()
-    x_m = np.mean(edge_points[:, 1])
-    y_m = np.mean(edge_points[:, 0])
-    center_guess = x_m, y_m
-    center, ier = leastsq(calc_distance, center_guess, args=(edge_points[:, 1], edge_points[:, 0]))
-    mean_radius = np.mean(calc_distance(center, edge_points[:, 1], edge_points[:, 0])) + np.sqrt((edge_points[:, 1] - center[0])**2 + (edge_points[:, 0] - center[1])**2).mean()
-
-    if return_plot:
-        fig, ax = plt.subplots(1, 3, figsize=(10, 4))
-        circle = plt.Circle(center, mean_radius, color='red', fill=False)
-        ax[0].set_title('Diffractogram')
-        ax[0].imshow(dset.T, cmap='viridis')
-        ax[1].set_title('Otsu Binary Image')
-        ax[1].imshow(binary, cmap='gray')
-        ax[2].set_title('Edge Detection and Fitting')
-        ax[2].imshow(edges, cmap='gray')
-        ax[2].scatter(center[0], center[1], c='r', s=10)
-        ax[2].add_artist(circle)
-        for axis in ax:
-            axis.axis('off')
-        fig.tight_layout()
+    finally:
+        if return_plot:
+            fig, ax = plt.subplots(1, 4, figsize=(10, 4))
+            ax[0].set_title('Diffractogram')
+            ax[0].imshow(dset.T, cmap='viridis')
+            ax[1].set_title('Otsu Binary Image')
+            ax[1].imshow(binary, cmap='gray')
+            ax[2].set_title('Smoothed Binary Image')
+            ax[2].imshow(smooth_binary, cmap='gray')
+            ax[3].set_title('Edge Detection and Fitting')
+            ax[3].imshow(edges, cmap='gray')
+            ax[3].scatter(center[0], center[1], c='r', s=10)
+            circle = plt.Circle(center, mean_radius, color='red', fill=False)
+            ax[3].add_artist(circle)
+            for axis in ax:
+                axis.axis('off')
+            fig.tight_layout()
           
     return center
 
