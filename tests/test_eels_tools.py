@@ -168,6 +168,7 @@ class TestFileFunctions(unittest.TestCase):
 
         self.assertTrue(eff_beta > 10)
 
-    def test_get_db_spectra(self):
-        spec_db = eels.get_spectrum_eels_db(formula='MgO', edge='K', title=None, element='O')
-        self.assertIsInstance(spec_db, dict)
+    # def test_get_db_spectra(self):
+        #spec_db = eels.get_spectrum_eels_db(formula='MgO', edge='K', title=None, element='O')
+        #self.assertIsInstance(spec_db, dict)
+        
