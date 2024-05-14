@@ -375,16 +375,10 @@ def complete_registration(main_dataset, storage_channel=None):
 
     rigid_registered_dataset = rigid_registration(main_dataset)
 
-    if storage_channel is not None:
-        registration_channel = ft.log_results(storage_channel, rigid_registered_dataset)
-
+    
     print('Non-Rigid_Registration')
 
     non_rigid_registered = demon_registration(rigid_registered_dataset)
-    if storage_channel is not None:
-        registration_channel = ft.log_results(storage_channel, non_rigid_registered)
-
-    non_rigid_registered.h5_dataset = registration_channel
     return non_rigid_registered, rigid_registered_dataset
 
 
@@ -473,7 +467,7 @@ def demon_registration(dataset, verbose=False):
 ###############################
 # Rigid Registration New 05/09/2020
 
-def rigid_registration(dataset):
+def rigid_registration(dataset, sub_pixel=True):
     """
     Rigid registration of image stack with pixel accuracy
 
@@ -529,9 +523,13 @@ def rigid_registration(dataset):
         selection[frame_dim[0]] = slice(i, i+1)
         moving = dataset[tuple(selection)].squeeze().compute()
         fft_moving = np.fft.fft2(moving)
-        image_product = fft_fixed * fft_moving.conj()
-        cc_image = np.fft.fftshift(np.fft.ifft2(image_product))
-        shift = np.array(ndimage.maximum_position(cc_image.real))-cc_image.shape[0]/2
+        if sub_pixel:
+            shift = skimage.registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000,
+                                                                 space='fourier')[0]
+        else:    
+            image_product = fft_fixed * fft_moving.conj()
+            cc_image = np.fft.fftshift(np.fft.ifft2(image_product))
+            shift = np.array(ndimage.maximum_position(cc_image.real))-cc_image.shape[0]/2
         fft_fixed = fft_moving
         relative_drift.append(shift)
     rig_reg, drift = rig_reg_drift(dataset, relative_drift)
@@ -589,6 +587,7 @@ def rig_reg_drift(dset, rel_drift):
     rig_reg = np.zeros([dset.shape[frame_dim[0]], dset.shape[spatial_dim[0]], dset.shape[spatial_dim[1]]])
 
     # absolute drift
+    print(rel_drift)
     drift = np.array(rel_drift).copy()
 
     drift[0] = [0, 0]
@@ -1093,7 +1092,7 @@ def warp(diff):
     r = np.linspace(1, nr, nr)
     t = np.linspace(0., np.pi, nt, endpoint=False)
 
-    return cartesian2polar(x, y, z, r, t, order=3)
+    return cartesian2polar(x, y, z, r, t, order=3).T
 
 
 def calculate_ctf(wavelength, cs, defocus, k):

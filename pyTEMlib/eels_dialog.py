@@ -312,11 +312,12 @@ class CompositionWidget(object):
         reference_list =[('None', -1)]
         
         for index, key in enumerate(self.datasets.keys()):
-            if 'Reference' not in key:
-                if 'SPECTR' in self.datasets[key].data_type.name:
-                    spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
-                    self.spectrum_keys_list.append(key)
-            reference_list.append((f'{key}: {self.datasets[key].title}', index))  
+            if '_rel' not in key:
+                if 'Reference' not in key :
+                    if 'SPECTR' in self.datasets[key].data_type.name:
+                        spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
+                        self.spectrum_keys_list.append(key)
+                reference_list.append((f'{key}: {self.datasets[key].title}', index))  
         
         if set_key in self.spectrum_keys_list:
             self.key = set_key
@@ -324,10 +325,11 @@ class CompositionWidget(object):
             self.key = self.spectrum_keys_list[-1]
         self.dataset = self.datasets[self.key]
         
-        spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
-        self.spec_dim = self.dataset._axes[spec_dim[0]]
+        self.spec_dim = self.dataset.get_spectral_dims(return_axis=True)[0]
 
         self.energy_scale = self.spec_dim.values
+        self.dd = (self.energy_scale[0], self.energy_scale[1])
+
         self.dataset.metadata['experiment']['offset'] = self.energy_scale[0]
         self.dataset.metadata['experiment']['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
         if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
@@ -634,7 +636,7 @@ class CompositionWidget(object):
                 raise ValueError('need a experiment parameter in metadata dictionary')
 
             eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
-
+            eff_beta = beta
             self.low_loss = None
             if self.sidebar[12, 1].value:
                 for key in self.datasets.keys():

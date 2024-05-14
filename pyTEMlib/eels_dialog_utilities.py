@@ -1033,13 +1033,12 @@ class EdgesAtCursor(object):
             self.label.remove()
             self.line.remove()
         if event.button == 1:
-            self.label = self.ax.text(x, y_max, eels.find_major_edges(event.xdata, self.maximal_chemical_shift),
+            self.label = self.ax.text(x, y_max, eels.find_all_edges(event.xdata, self.maximal_chemical_shift, major_edges_only=True),
                                       verticalalignment='top')
             self.line, = self.ax.plot([x, x], [y_min, y_max], color='black')
         if event.button == 3:
             self.line, = self.ax.plot([x, x], [y_min, y_max], color='black')
-            self.label = self.ax.text(x, y_max, eels.find_all_edges(event.xdata, self.maximal_chemical_shift),
-                                      verticalalignment='top')
+            self.label = self.ax.text(x, y_max, eels.find_all_edges(event.xdata, self.maximal_chemical_shift), verticalalignment='top')
         self.ax.set_ylim(y_min, y_max)
 
     def mouse_move(self, event):
