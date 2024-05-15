@@ -1,6 +1,4 @@
 """
-QT dialog window for EELS compositional analysis
-
 Author: Gerd Duscher
 """
 
@@ -22,82 +20,16 @@ from pyTEMlib import eels_dialog_utilities
 import sidpy
 
 
-class CurveVisualizer(object):
-    """Plots a sidpy.Dataset with spectral dimension-type
-
-    """
-    def __init__(self, dset, spectrum_number=None, axis=None, leg=None, **kwargs):
-        if not isinstance(dset, sidpy.Dataset):
-            raise TypeError('dset should be a sidpy.Dataset object')
-        if axis is None:
-            self.fig = plt.figure()
-            self.axis = self.fig.add_subplot(1, 1, 1)
-        else:
-            self.axis = axis
-            self.fig = axis.figure
-
-        self.dset = dset
-        self.selection = []
-        [self.spec_dim, self.energy_scale] = ft.get_dimensions_by_type('spectral', self.dset)[0]
-
-        self.lined = dict()
-        self.plot(**kwargs)
-
-    def plot(self, **kwargs):
-        if self.dset.data_type.name == 'IMAGE_STACK':
-            line1, = self.axis.plot(self.energy_scale.values, self.dset[0, 0], label='spectrum', **kwargs)
-        else:
-            line1, = self.axis.plot(self.energy_scale.values, self.dset, label='spectrum', **kwargs)
-        lines = [line1]
-        if 'add2plot' in self.dset.metadata:
-            data = self.dset.metadata['add2plot']
-            for key, line in data.items():
-                line_add, = self.axis.plot(self.energy_scale.values,  line['data'], label=line['legend'])
-                lines.append(line_add)
-
-            legend = self.axis.legend(loc='upper right', fancybox=True, shadow=True)
-            legend.get_frame().set_alpha(0.4)
-
-            for legline, origline in zip(legend.get_lines(), lines):
-                legline.set_picker(True)
-                legline.set_pickradius(5)  # 5 pts tolerance
-                self.lined[legline] = origline
-            self.fig.canvas.mpl_connect('pick_event', self.onpick)
-
-        self.axis.axhline(0, color='gray', alpha=0.6)
-        self.axis.set_xlabel(self.dset.labels[0])
-        self.axis.set_ylabel(self.dset.data_descriptor)
-        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
-        self.fig.canvas.draw_idle()
-
-    def update(self, **kwargs):
-        x_limit = self.axis.get_xlim()
-        y_limit = self.axis.get_ylim()
-        self.axis.clear()
-        self.plot(**kwargs)
-        self.axis.set_xlim(x_limit)
-        self.axis.set_ylim(y_limit)
-
-    def onpick(self, event):
-        # on the pick event, find the orig line corresponding to the
-        # legend proxy line, and toggle the visibility
-        legline = event.artist
-        origline = self.lined[legline]
-        vis = not origline.get_visible()
-        origline.set_visible(vis)
-        # Change the alpha on the line in the legend, so we can see what lines
-        # have been toggled
-        if vis:
-            legline.set_alpha(1.0)
-        else:
-            legline.set_alpha(0.2)
-        self.fig.canvas.draw()
-
 def get_core_loss_sidebar():
-    side_bar = ipywidgets.GridspecLayout(14, 3,width='auto', grid_gap="0px")
+    side_bar = ipywidgets.GridspecLayout(15, 3,width='auto', grid_gap="0px")
 
+    side_bar[0, :2] = ipywidgets.Dropdown(
+            options=[('None', 0)],
+            value=0,
+            description='Main Dataset:',
+            disabled=False)
     
-    row = 0
+    row = 1
     side_bar[row, :3] = ipywidgets.ToggleButton(description='Fit Area',
                      layout=ipywidgets.Layout(width='auto', grid_area='header'),
                      tooltip='Shows fit regions and regions excluded from fit', 
@@ -195,38 +127,35 @@ def get_core_loss_sidebar():
 
 
 
-class CompositionWidget(object):
-    def __init__(self, datasets=None, key=None):
-        
-        if not isinstance(datasets, dict):
-            raise TypeError('dataset or first item has to be a sidpy dataset')
-        self.datasets = datasets
-
+class CoreLoss(object):
+    def __init__(self, sidebar=None, parent=None):
+        self.parent = parent
+        self.dataset = parent.dataset
+        self.core_loss_tab = sidebar
         
         self.model = []
-        self.sidebar = get_core_loss_sidebar()
+        self.edges = {}
         
-        self.set_dataset(key)
-        
-        self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.energy_scale)
+        self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.parent.energy_scale)
         self.elements_cancel_button = ipywidgets.Button(description='Cancel')
         self.elements_select_button = ipywidgets.Button(description='Select')
         self.elements_auto_button = ipywidgets.Button(description='Auto ID')
        
         self.periodic_table_panel = ipywidgets.VBox([self.periodic_table.periodic_table,
                                                      ipywidgets.HBox([self.elements_cancel_button, self.elements_auto_button, self.elements_select_button])])
+        self.set_cl_action()
+        self.update_cl_sidebar()
         
-                                      
-        self.app_layout = ipywidgets.AppLayout(
-            left_sidebar=self.sidebar,
-            center=self.view.panel,
-            footer=None,#message_bar,
-            pane_heights=[0, 10, 0],
-            pane_widths=[4, 10, 0],
-        )
-        self.set_action()
-        IPython.display.display(self.app_layout)
-
+    def update_cl_sidebar(self):
+        spectrum_list = ['None']
+        for index, key in enumerate(self.parent.datasets.keys()):
+            if isinstance(self.parent.datasets[key], sidpy.Dataset):
+                if 'SPECTR' in self.parent.datasets[key].data_type.name:
+                    energy_offset = self.parent.datasets[key].get_spectral_dims(return_axis=True)[0][0]
+                    if energy_offset < 0:
+                        spectrum_list.append(f'{key}: {self.parent.datasets[key].title}') 
+        
+        self.core_loss_tab[0, 0].options = spectrum_list
         
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
@@ -237,31 +166,20 @@ class CompositionWidget(object):
        
             
     def plot(self, scale=True):
-        self.view.change_y_scale = self.change_y_scale
-        self.view.y_scale = self.y_scale
-        self.energy_scale = self.dataset.energy_loss.values
-        
-        if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
-            spectrum = self.view.get_spectrum()
-        else:
-            spectrum = self.dataset
+        self.parent.plot(scale=scale)
         if len(self.model) > 1:
-            additional_spectra = {'model': self.model,
-                                  'difference': spectrum-self.model}   
-        else:
-            additional_spectra = None
-        self.view.plot(scale=True, additional_spectra=additional_spectra )
-        self.change_y_scale = 1.
+            self.parent.axis.plot(self.parent.energy_scale, self.model, label='model')
+            self.parent.axis.plot(self.parent.energy_scale, self.dataset-self.model, label='difference')
     
-        if self.sidebar[12, 2].value:
+        if self.core_loss_tab[13, 2].value:
             self.show_edges()
-        if self.sidebar[0, 0].value:
+        if self.core_loss_tab[1, 0].value:
             self.plot_regions()
-        self.view.figure.canvas.draw_idle()
+        self.parent.figure.canvas.draw_idle()
         
         
     def plot_regions(self):
-        axis = self.view.figure.gca()
+        axis = self.parent.figure.gca()
         y_min, y_max = axis.get_ylim()
         height = y_max - y_min
 
@@ -288,7 +206,7 @@ class CompositionWidget(object):
                 axis.text(x_min, y_max, f"exclude\n edge {int(key)+1}", verticalalignment='top')
 
     def show_edges(self):
-        axis = self.view.figure.gca()
+        axis = self.parent.figure.gca()
         x_min, x_max = axis.get_xlim()
         y_min, y_max = axis.get_ylim()
         
@@ -305,75 +223,10 @@ class CompositionWidget(object):
                         i += 1
 
         
-    
-        
-    def set_dataset(self, set_key):
-        spectrum_list = []
-        self.spectrum_keys_list = []
-        reference_list =[('None', -1)]
-        
-        for index, key in enumerate(self.datasets.keys()):
-            if '_rel' not in key:
-                if 'Reference' not in key :
-                    if 'SPECTR' in self.datasets[key].data_type.name:
-                        spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
-                        self.spectrum_keys_list.append(key)
-                reference_list.append((f'{key}: {self.datasets[key].title}', index))  
-        
-        if set_key in self.spectrum_keys_list:
-            self.key = set_key
-        else:
-            self.key = self.spectrum_keys_list[-1]
-        self.dataset = self.datasets[self.key]
-        
-        self.spec_dim = self.dataset.get_spectral_dims(return_axis=True)[0]
-
-        self.energy_scale = self.spec_dim.values
-        self.dd = (self.energy_scale[0], self.energy_scale[1])
-
-        self.dataset.metadata['experiment']['offset'] = self.energy_scale[0]
-        self.dataset.metadata['experiment']['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
-        if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
-            self.dataset.metadata['edges'] = {'0': {}, 'model': {}, 'use_low_loss': False}
-       
-        self.edges = self.dataset.metadata['edges']
-        if '0' not in self.edges:
-            self.edges['0'] = {}
-        
-        if 'fit_area' not in self.edges:
-            self.edges['fit_area'] = {}
-        if 'fit_start' not in self.edges['fit_area']:
-            self.sidebar[1,0].value = np.round(self.energy_scale[50], 3)
-            self.edges['fit_area']['fit_start'] = self.sidebar[1,0].value 
-        else:
-            self.sidebar[1,0].value = np.round(self.edges['fit_area']['fit_start'],3)
-        if 'fit_end' not in self.edges['fit_area']:
-            self.sidebar[2,0].value = np.round(self.energy_scale[-2], 3)
-            self.edges['fit_area']['fit_end'] = self.sidebar[2,0].value 
-        else:
-            self.sidebar[2,0].value = np.round(self.edges['fit_area']['fit_end'],3)
-        
-        if self.dataset.data_type.name == 'SPECTRAL_IMAGE':
-            if 'SI_bin_x' not in self.dataset.metadata['experiment']:
-                self.dataset.metadata['experiment']['SI_bin_x'] = 1
-                self.dataset.metadata['experiment']['SI_bin_y'] = 1
-
-            bin_x = self.dataset.metadata['experiment']['SI_bin_x']
-            bin_y = self.dataset.metadata['experiment']['SI_bin_y']
-            # self.dataset.view.set_bin([bin_x, bin_y])
-        if self.dataset.data_type.name =='SPECTRAL_IMAGE':
-            self.view = eels_dialog_utilities.SIPlot(self.dataset)
-        else:
-            self.view = eels_dialog_utilities.SpectrumPlot(self.dataset)    
-        self.y_scale = 1.0
-        self.change_y_scale = 1.0
-        
-        self.update()
-        
     def update_element(self, z=0, index=-1):
         # We check whether this element is already in the
         if z == 0:
-            z = self.sidebar[5,0].value
+            z = self.core_loss_tab[6, 0].value
     
         zz = eels.get_z(z)
         for key, edge in self.edges.items():
@@ -389,10 +242,10 @@ class CompositionWidget(object):
         edge_start = 10  # int(15./ft.get_slope(self.energy_scale)+0.5)
         for key in x_section:
             if len(key) == 2 and key[0] in ['K', 'L', 'M', 'N', 'O'] and key[1].isdigit():
-                if self.energy_scale[edge_start] < x_section[key]['onset'] < self.energy_scale[-edge_start]:
+                if self.parent.energy_scale[edge_start] < x_section[key]['onset'] < self.parent.energy_scale[-edge_start]:
                     if key in ['K1', 'L3', 'M5']:
                         major_edge = key
-                    elif key in self.sidebar[6,0].options:
+                    elif key in self.core_loss_tab[7, 0].options:
                         if minor_edge == '':
                             minor_edge = key
                         if int(key[-1]) % 2 > 0:
@@ -409,7 +262,7 @@ class CompositionWidget(object):
             print(f'Could not find no edge of {zz} in spectrum')
             return False
         if index == -1:
-            index = self.sidebar[4, 0].value
+            index = self.core_loss_tab[5, 0].value
         # self.ui.dialog.setWindowTitle(f'{index}, {zz}')
 
         if str(index) not in self.edges:
@@ -440,7 +293,7 @@ class CompositionWidget(object):
 
         index = 0
         edge = self.edges['0']
-        dispersion = self.energy_scale[1]-self.energy_scale[0]
+        dispersion = self.parent.energy_scale[1]-self.parent.energy_scale[0]
 
         while str(index + 1) in self.edges:
             next_edge = self.edges[str(index + 1)]
@@ -449,8 +302,8 @@ class CompositionWidget(object):
             edge = next_edge
             index += 1
 
-        if edge['end_exclude'] > self.energy_scale[-3]:
-            edge['end_exclude'] = self.energy_scale[-3]
+        if edge['end_exclude'] > self.parent.energy_scale[-3]:
+            edge['end_exclude'] = self.parent.energy_scale[-3]
 
     def set_elements(self, value=0):
         selected_elements = self.periodic_table.get_output()
@@ -460,8 +313,9 @@ class CompositionWidget(object):
         if len(selected_elements) > 0:
             for key in self.edges:
                 if key.isdigit():
-                    to_delete.append(key)
-                    old_elements.append(self.edges[key]['element'])
+                    if 'element' in self.edges[key]:
+                        to_delete.append(key)
+                        old_elements.append(self.edges[key]['element'])
 
         for key in to_delete:
             edges[key] = self.edges[key]
@@ -477,42 +331,25 @@ class CompositionWidget(object):
         self.set_figure_pane()
 
     def set_element(self, elem):
-        self.update_element(self.sidebar[5, 0].value)
+        self.update_element(self.core_loss_tab[6, 0].value)
         # self.sort_elements()
         self.update()
        
-    def cursor2energy_scale(self, value):
-        dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
-        self.datasets[self.key].energy_loss *= (self.sidebar[3, 0].value/dispersion)
-        self.sidebar[3, 0].value = dispersion
-        offset = self.start_cursor.value - self.start_channel * dispersion
-        self.datasets[self.key].energy_loss += (self.sidebar[2, 0].value-self.datasets[self.key].energy_loss[0])
-        self.sidebar[2, 0].value = offset
-        self.plot()
-        
+    
     def set_fit_area(self, value):
-        if self.sidebar[1,0].value > self.sidebar[2,0].value:
-            self.sidebar[1,0].value = self.sidebar[2,0].value -1
-        if self.sidebar[1,0].value < self.energy_scale[0]:
-            self.sidebar[1,0].value = self.energy_scale[0]
-        if self.sidebar[2,0].value > self.energy_scale[-1]:
-            self.sidebar[2,0].value = self.energy_scale[-1]
-        self.edges['fit_area']['fit_start'] = self.sidebar[1,0].value 
-        self.edges['fit_area']['fit_end'] = self.sidebar[2,0].value 
+        if self.core_loss_tab[2, 0].value > self.core_loss_tab[3, 0].value:
+            self.core_loss_tab[2, 0].value = self.core_loss_tab[3, 0].value -1
+        if self.core_loss_tab[2, 0].value < self.parent.energy_scale[0]:
+            self.core_loss_tab[2, 0].value = self.parent.energy_scale[0]
+        if self.core_loss_tab[3, 0].value > self.parent.energy_scale[-1]:
+            self.core_loss_tab[3, 0].value = self.parent.energy_scale[-1]
+        if 'fit_area' not in self.edges:    
+            self.edges['fit_area'] = {}
+        self.edges['fit_area']['fit_start'] = self.core_loss_tab[2, 0].value 
+        self.edges['fit_area']['fit_end'] = self.core_loss_tab[3, 0].value 
         
-        self.plot()
+        self.parent.plot()
         
-    def set_y_scale(self, value):  
-        self.change_y_scale = 1/self.y_scale
-        self.y_scale = 1.0
-        if self.dataset.metadata['experiment']['flux_ppm'] > 0:
-            if self.sidebar[12, 0].value:
-                dispersion = self.energy_scale[1] - self.energy_scale[0]
-                self.y_scale = 1/self.dataset.metadata['experiment']['flux_ppm'] * dispersion
-            
-        self.change_y_scale *= self.y_scale
-        self.update()
-        self.plot()
 
     def auto_id(self, value=0):
         found_edges = eels.auto_id_edges(self.dataset)
@@ -536,20 +373,19 @@ class CompositionWidget(object):
                     selected_elements.append(self.edges[key]['element'])
         self.periodic_table.elements_selected = selected_elements
         self.periodic_table.update()
-        self.app_layout.center = self.periodic_table_panel # self.periodic_table.periodic_table
+        self.parent.app_layout.center = self.periodic_table_panel # self.periodic_table.periodic_table
 
     def set_figure_pane(self, value=0):
-        
-        self.app_layout.center = self.view.panel
+        self.parent.app_layout.center = self.parent.panel
     
     def update(self, index=0):
         
-        index = self.sidebar[4,0].value  # which edge
+        index = self.core_loss_tab[5,0].value  # which edge
         if index < 0:
-            options  = list(self.sidebar[4,0].options)
-            options.insert(-1, (f'Edge {len(self.sidebar[4,0].options)}', len(self.sidebar[4,0].options)-1))
-            self.sidebar[4,0].options= options
-            self.sidebar[4,0].value = len(self.sidebar[4,0].options)-2
+            options  = list(self.core_loss_tab[5, 0].options)
+            options.insert(-1, (f'Edge {len(self.core_loss_tab[5, 0].options)}', len(self.sidebar[4,0].options)-1))
+            self.core_loss_tab[5, 0].options= options
+            self.core_loss_tab[5, 0].value = len(self.core_loss_tab[5, 0].options)-2
         if str(index) not in self.edges:
             self.edges[str(index)] = {'z': 0,  'element': 'x', 'symmetry': 'K1', 'onset': 0, 'start_exclude': 0, 'end_exclude':0,
                                      'areal_density': 0, 'chemical_shift':0}
@@ -558,21 +394,21 @@ class CompositionWidget(object):
                                       'areal_density': 0, 'chemical_shift':0}
         edge = self.edges[str(index)]
             
-        self.sidebar[5,0].value = edge['z']
-        self.sidebar[5,2].value = edge['element']
-        self.sidebar[6,0].value = edge['symmetry']
-        self.sidebar[7,0].value = edge['onset']
-        self.sidebar[8,0].value = edge['start_exclude']
-        self.sidebar[9,0].value = edge['end_exclude']
-        if self.y_scale == 1.0:
-            self.sidebar[10, 0].value = edge['areal_density']
-            self.sidebar[10, 2].value =  'a.u.'
+        self.core_loss_tab[6,0].value = edge['z']
+        self.core_loss_tab[6,2].value = edge['element']
+        self.core_loss_tab[7,0].value = edge['symmetry']
+        self.core_loss_tab[8,0].value = edge['onset']
+        self.core_loss_tab[9,0].value = edge['start_exclude']
+        self.core_loss_tab[10,0].value = edge['end_exclude']
+        self.core_loss_tab[13, 0].value = self.parent.info_tab[9, 2].value
+        if self.parent.y_scale == 1.0:
+            self.core_loss_tab[11, 0].value = edge['areal_density']
+            self.core_loss_tab[11, 2].value =  'a.u.'
         else:
-            dispersion = self.energy_scale[1]-self.energy_scale[0]
-            self.sidebar[10, 0].value = np.round(edge['areal_density']/self.dataset.metadata['experiment']['flux_ppm']*1e-6, 2)
-            self.sidebar[10, 2].value = 'atoms/nm²'
+            dispersion = self.parent.energy_scale[1]-self.parent.energy_scale[0]
+            self.core_loss_tab[11, 0].value = np.round(edge['areal_density']/self.dataset.metadata['experiment']['flux_ppm']*1e-6, 2)
+            self.core_loss_tab[11, 2].value = 'atoms/nm²'
         
-    
     def do_fit(self, value=0):
         if 'experiment' in self.dataset.metadata:
             exp = self.dataset.metadata['experiment']
@@ -585,10 +421,10 @@ class CompositionWidget(object):
         else:
             raise ValueError('need a experiment parameter in metadata dictionary')
         
-        eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
+        eff_beta = eels.effective_collection_angle(self.parent.energy_scale, alpha, beta, beam_kv)
 
         self.low_loss = None
-        if self.sidebar[12, 1].value:
+        if self.core_loss_tab[13, 1].value:
             for key in self.datasets.keys():
                 if key != self.key:
                     if isinstance(self.datasets[key], sidpy.Dataset):
@@ -596,13 +432,13 @@ class CompositionWidget(object):
                             if self.datasets[key].energy_loss[0] < 0:
                                 self.low_loss = self.datasets[key]/self.datasets[key].sum()
 
-        edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, self.low_loss)
+        edges = eels.make_cross_sections(self.edges, np.array(self.parent.energy_scale), beam_kv, eff_beta, self.low_loss)
 
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
-            spectrum = self.view.get_spectrum()
+            spectrum = self.parent.get_spectrum()
         else:
             spectrum = self.dataset
-        self.edges = eels.fit_edges2(spectrum, self.energy_scale, edges)
+        self.edges = eels.fit_edges2(spectrum, self.parent.energy_scale, edges)
         areal_density = []
         elements = []
         for key in edges:
@@ -649,7 +485,7 @@ class CompositionWidget(object):
 
             edges = eels.make_cross_sections(self.edges, np.array(self.energy_scale), beam_kv, eff_beta, self.low_loss)
     
-            view = self.view
+            view = self.parent
             bin_x = view.bin_x
             bin_y = view.bin_y
 
@@ -689,9 +525,9 @@ class CompositionWidget(object):
             
     
     def modify_onset(self, value=-1):
-        edge_index = self.sidebar[4, 0].value
+        edge_index = self.core_loss_tab[5, 0].value
         edge = self.edges[str(edge_index)]
-        edge['onset'] = self.sidebar[7,0].value
+        edge['onset'] = self.core_loss_tab[8,0].value
         if 'original_onset' not in edge:
             edge['original_onset'] = edge['onset']
         edge['chemical_shift'] = edge['onset'] -  edge['original_onset']
@@ -699,52 +535,60 @@ class CompositionWidget(object):
         
             
     def modify_start_exclude(self, value=-1):
-        edge_index = self.sidebar[4, 0].value
+        edge_index = self.core_loss_tab[5, 0].value
         edge = self.edges[str(edge_index)]
-        edge['start_exclude'] = self.sidebar[8,0].value
+        edge['start_exclude'] = self.core_loss_tab[9,0].value
         self.plot()
         
     def modify_end_exclude(self, value=-1):
-        edge_index = self.sidebar[4, 0].value
+        edge_index = self.core_loss_tab[5, 0].value
         edge = self.edges[str(edge_index)]
-        edge['end_exclude'] = self.sidebar[9,0].value
+        edge['end_exclude'] = self.core_loss_tab[10,0].value
         self.plot()
     
     def modify_areal_density(self, value=-1):
-        edge_index = self.sidebar[4, 0].value
+        edge_index = self.core_loss_tab[5, 0].value
         edge = self.edges[str(edge_index)]
         
-        edge['areal_density'] = self.sidebar[10, 0].value
-        if self.y_scale != 1.0:
-            dispersion = self.energy_scale[1]-self.energy_scale[0]
-            edge['areal_density'] = self.sidebar[10, 0].value *self.dataset.metadata['experiment']['flux_ppm']/1e-6
-
-        self.model = self.edges['model']['background']
-        for key in self.edges:
-            if key.isdigit():
-                if 'data' in self.edges[key]:
-
-                    self.model = self.model + self.edges[key]['areal_density'] * self.edges[key]['data']
+        edge['areal_density'] = self.core_loss_tab[11, 0].value
+        if self.parent.y_scale != 1.0:
+            dispersion = self.parent.energy_scale[1]-self.parent.energy_scale[0]
+            edge['areal_density'] = self.core_loss_tab[11, 0].value *self.dataset.metadata['experiment']['flux_ppm']/1e-6
+        if 'model' in self.edges:
+            self.model = self.edges['model']['background']
+            for key in self.edges:
+                if key.isdigit():
+                    if 'data' in self.edges[key]:
+                        self.model = self.model + self.edges[key]['areal_density'] * self.edges[key]['data']
+            self.model = self.edges['model']['background']
+            for key in self.edges:
+                if key.isdigit():
+                    if 'data' in self.edges[key]:
+                        self.model = self.model + self.edges[key]['areal_density'] * self.edges[key]['data']
         self.plot()
-
-    def set_action(self):
-        self.sidebar[1, 0].observe(self.set_fit_area, names='value')
-        self.sidebar[2, 0].observe(self.set_fit_area, names='value')
+    
+    def set_y_scale(self, value):
+        self.parent.info_tab[9, 2].value = self.core_loss_tab[13,0].value
+        self.update()
         
-        self.sidebar[3, 0].on_click(self.find_elements)
-        self.sidebar[4, 0].observe(self.update, names='value')
-        self.sidebar[5, 0].observe(self.set_element, names='value')
-
-        self.sidebar[7, 0].observe(self.modify_onset, names='value')
-        self.sidebar[8, 0].observe(self.modify_start_exclude, names='value')
-        self.sidebar[9, 0].observe(self.modify_end_exclude, names='value')
-        self.sidebar[10, 0].observe(self.modify_areal_density, names='value')
+    def set_cl_action(self):
+        self.core_loss_tab[2, 0].observe(self.set_fit_area, names='value')
+        self.core_loss_tab[3, 0].observe(self.set_fit_area, names='value')
         
-        self.sidebar[11, 0].on_click(self.do_fit)
-        self.sidebar[12, 2].observe(self.plot, names='value')
-        self.sidebar[0, 0].observe(self.plot, names='value')
-        self.sidebar[12,0].observe(self.set_y_scale, names='value')
-        self.sidebar[13,0].observe(self.do_all_button_click, names='value')
+        self.core_loss_tab[4, 0].on_click(self.find_elements)
+        self.core_loss_tab[5, 0].observe(self.update, names='value')
+        self.core_loss_tab[6, 0].observe(self.set_element, names='value')
+
+        self.core_loss_tab[8, 0].observe(self.modify_onset, names='value')
+        self.core_loss_tab[9, 0].observe(self.modify_start_exclude, names='value')
+        self.core_loss_tab[10, 0].observe(self.modify_end_exclude, names='value')
+        self.core_loss_tab[11, 0].observe(self.modify_areal_density, names='value')
+        
+        self.core_loss_tab[12, 0].on_click(self.do_fit)
+        self.core_loss_tab[13, 2].observe(self.plot, names='value')
+        self.core_loss_tab[1, 0].observe(self.plot, names='value')
+        self.core_loss_tab[13,0].observe(self.set_y_scale, names='value')
+        self.core_loss_tab[14,0].observe(self.do_all_button_click, names='value')
 
         self.elements_cancel_button.on_click(self.set_figure_pane)
         self.elements_auto_button.on_click(self.auto_id)
