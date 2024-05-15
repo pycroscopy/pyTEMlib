@@ -746,7 +746,6 @@ class Info(object):
         self.count += 1
         self.parent.change_y_scale = 1.0 / self.parent.y_scale
         if self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] > 1e-12:
-
             if self.info_tab[9, 2].value:
                 dispersion = self.parent.datasets[self.key].get_dimension_slope(self.energy_scale)
                 self.parent.y_scale = 1 / self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] * dispersion

@@ -151,9 +151,7 @@ class CoreLoss(object):
         for index, key in enumerate(self.parent.datasets.keys()):
             if isinstance(self.parent.datasets[key], sidpy.Dataset):
                 if 'SPECTR' in self.parent.datasets[key].data_type.name:
-                    energy_offset = self.parent.datasets[key].get_spectral_dims(return_axis=True)[0][0]
-                    if energy_offset < 0:
-                        spectrum_list.append(f'{key}: {self.parent.datasets[key].title}') 
+                    spectrum_list.append(f'{key}: {self.parent.datasets[key].title}') 
         
         self.core_loss_tab[0, 0].options = spectrum_list
         
@@ -166,11 +164,17 @@ class CoreLoss(object):
        
             
     def plot(self, scale=True):
+        self.parent.dataset.metadata['edges'] = self.edges
         self.parent.plot(scale=scale)
+        y_scale = self.parent.y_scale
+        spectrum = self.parent.spectrum
         if len(self.model) > 1:
-            self.parent.axis.plot(self.parent.energy_scale, self.model, label='model')
-            self.parent.axis.plot(self.parent.energy_scale, self.dataset-self.model, label='difference')
-    
+            self.model = self.edges['model']['spectrum'].copy()
+            #self.parent.axis.plot(self.parent.energy_scale, (self.edges['model']['spectrum'])*y_scale, label='difference')
+            self.parent.axis.plot(self.parent.energy_scale, self.model*y_scale, label='model')
+            self.parent.axis.plot(self.parent.energy_scale, spectrum-self.model*y_scale, label='difference')
+            self.parent.axis.legend()
+            pass
         if self.core_loss_tab[13, 2].value:
             self.show_edges()
         if self.core_loss_tab[1, 0].value:
@@ -379,7 +383,7 @@ class CoreLoss(object):
         self.parent.app_layout.center = self.parent.panel
     
     def update(self, index=0):
-        
+        self.dataset = self.parent.dataset  
         index = self.core_loss_tab[5,0].value  # which edge
         if index < 0:
             options  = list(self.core_loss_tab[5, 0].options)
@@ -433,12 +437,14 @@ class CoreLoss(object):
                                 self.low_loss = self.datasets[key]/self.datasets[key].sum()
 
         edges = eels.make_cross_sections(self.edges, np.array(self.parent.energy_scale), beam_kv, eff_beta, self.low_loss)
-
         if self.dataset.data_type == sidpy.DataType.SPECTRAL_IMAGE:
             spectrum = self.parent.get_spectrum()
         else:
             spectrum = self.dataset
         self.edges = eels.fit_edges2(spectrum, self.parent.energy_scale, edges)
+        self.model = self.edges['model']['spectrum'].copy()
+        print('set_model',  self.edges['model']['spectrum'][0], self.model[0])
+        
         areal_density = []
         elements = []
         for key in edges:
@@ -450,7 +456,8 @@ class CoreLoss(object):
         for i, element in enumerate(elements):
             out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.1f}%  '
 
-        self.model = self.edges['model']['spectrum']
+        
+
         self.update()
         self.plot()
 
