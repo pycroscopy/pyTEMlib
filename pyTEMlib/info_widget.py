@@ -710,19 +710,22 @@ class EELSWidget(EELSBaseWidget):
 
     def tab_activated(self, val=0):
         if isinstance(val.new, int):
+            self.tabval = val.new
             self.update_sidebars()
             if val.new == 1:
                 self.info.update_dataset()
             elif val.new == 2:
                 self.low_loss.update_ll_dataset()
             elif val.new == 3:
-                self.low_loss.update_cl_dataset()
+                self.core_loss.update_cl_dataset()
 
     def update_sidebars(self):
         if hasattr(self, 'info'):
             self.info.update_sidebar()
         if hasattr(self, 'low_loss'):
             self.low_loss.update_ll_sidebar()
+        if hasattr(self, 'core_loss'):
+            self.core_loss.update_cl_sidebar()
 
 class Info(object):
     def __init__(self, sidebar=None, parent=None):

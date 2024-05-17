@@ -135,6 +135,7 @@ class CoreLoss(object):
         
         self.model = []
         self.edges = {}
+        self.count = 0
         
         self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.parent.energy_scale)
         self.elements_cancel_button = ipywidgets.Button(description='Cancel')
@@ -145,9 +146,15 @@ class CoreLoss(object):
                                                      ipywidgets.HBox([self.elements_cancel_button, self.elements_auto_button, self.elements_select_button])])
         self.set_cl_action()
         self.update_cl_sidebar()
+
+    def update_cl_dataset(self, value=0):
+        self.cl_key = self.core_loss_tab[0, 0].value.split(':')[0]
+        self.parent.set_dataset(self.cl_key)
+        self.dataset = self.parent.dataset
         
     def update_cl_sidebar(self):
-        spectrum_list = ['None']
+        self.count+=1
+        spectrum_list = ['None '+str(self.count)]
         for index, key in enumerate(self.parent.datasets.keys()):
             if isinstance(self.parent.datasets[key], sidpy.Dataset):
                 if 'SPECTR' in self.parent.datasets[key].data_type.name:
@@ -341,14 +348,18 @@ class CoreLoss(object):
        
     
     def set_fit_area(self, value):
+        if 'fit_area' not in self.edges:    
+            self.edges['fit_area'] = {'fit_start':self.parent.energy_scale[10],
+                                      'fit_end': self.parent.energy_scale[-10]}
+            self.core_loss_tab[2, 0].value = self.edges['fit_area']['fit_start']    
+            self.core_loss_tab[3, 0].value = self.edges['fit_area']['fit_end']  
+
         if self.core_loss_tab[2, 0].value > self.core_loss_tab[3, 0].value:
             self.core_loss_tab[2, 0].value = self.core_loss_tab[3, 0].value -1
         if self.core_loss_tab[2, 0].value < self.parent.energy_scale[0]:
             self.core_loss_tab[2, 0].value = self.parent.energy_scale[0]
         if self.core_loss_tab[3, 0].value > self.parent.energy_scale[-1]:
             self.core_loss_tab[3, 0].value = self.parent.energy_scale[-1]
-        if 'fit_area' not in self.edges:    
-            self.edges['fit_area'] = {}
         self.edges['fit_area']['fit_start'] = self.core_loss_tab[2, 0].value 
         self.edges['fit_area']['fit_end'] = self.core_loss_tab[3, 0].value 
         
