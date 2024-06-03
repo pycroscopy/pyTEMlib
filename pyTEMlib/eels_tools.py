@@ -373,15 +373,30 @@ def shift_energy(dataset: sidpy.Dataset, shifts: np.ndarray) -> sidpy.Dataset:
 
 
 def align_zero_loss(dataset: sidpy.Dataset) -> sidpy.Dataset:
+    """
+    Shifts the energy axis of the input dataset to be aligned with the zero-loss peak.
 
+    Parameters:
+    -----------
+    dataset : sidpy.Dataset
+        The input dataset containing the energy axis to be aligned.
+
+    Returns:
+    --------
+    sidpy.Dataset
+        The dataset with the energy axis shifted to align the zero-loss peak.
+
+    """
     shifts = get_zero_loss_energy(dataset)
-    print(shifts, dataset)
+    # print(shifts, dataset)
     new_si = shift_energy(dataset, shifts)    
     new_si.metadata.update({'zero_loss': {'shifted': shifts}})
     return new_si
 
 
-def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endFitEnergy: float=+1,
+
+
+def get_resolution_functions(dataset: sidpy.Dataset, startFitEnergy: float=-1, endFitEnergy: float=+1,
                              n_workers: int=1, n_threads: int=8):
     """
     Analyze and fit low-loss EELS data within a specified energy range to determine zero-loss peaks.
@@ -392,33 +407,35 @@ def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endF
     from the dataset. The function handles both 2D and 3D datasets.
 
     Parameters:
-        dset: sidpy.Dataset
-            The dataset containing TEM spectral data.
-        startFitEnergy: float
-            The start energy of the fitting window.
-        endFitEnergy: float
-            The end energy of the fitting window.
-        n_workers: int, optional
-            The number of workers for parallel processing (default is 1).
-        n_threads: int, optional
-            The number of threads for parallel processing (default is 8).
+    -----------
+        dataset (sidpy.Dataset): The dataset containing TEM spectral data.
+        startFitEnergy (float): The start energy of the fitting window.
+        endFitEnergy (float): The end energy of the fitting window.
+        n_workers (int, optional): The number of workers for parallel processing (default is 1).
+        n_threads (int, optional): The number of threads for parallel processing (default is 8).
 
     Returns:
+    --------
         tuple: A tuple containing:
             - z_loss_dset (sidpy.Dataset): The dataset with added zero-loss peak information.
             - z_loss_params (numpy.ndarray): Array of parameters used for the zero-loss peak fitting.
 
     Raises:
+    -------
         ValueError: If the input dataset does not have the expected dimensions or format.
 
     Notes:
+    ------
         - The function expects `dset` to have specific dimensionalities and will raise an error if they are not met.
         - Parallel processing is employed to enhance performance, particularly for large datasets.
     """
-    energy = dset.get_spectral_dims(return_axis=True)[0].values
+    energy = dataset.get_spectral_dims(return_axis=True)[0].values
     start_fit_pixel = np.searchsorted(energy, startFitEnergy)
     end_fit_pixel = np.searchsorted(energy, endFitEnergy)
     guess_width = (endFitEnergy - startFitEnergy)/2
+    if end_fit_pixel - start_fit_pixel < 5:
+        start_fit_pixel -= 2
+        end_fit_pixel += 2
     
     def get_good_guess(zl_func, energy, spectrum):
         popt, pcov = curve_fit(zl_func, energy, spectrum,
@@ -428,21 +445,21 @@ def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endF
 
     fit_energy = energy[start_fit_pixel:end_fit_pixel]
     # get a good guess for the fit parameters
-    if len(dset.shape) == 3:
-        fit_dset = dset[:, :, start_fit_pixel:end_fit_pixel]
+    if len(dataset.shape) == 3:
+        fit_dset = dataset[:, :, start_fit_pixel:end_fit_pixel]
         guess_amplitude = np.sqrt(fit_dset.max())
         guess_params = get_good_guess(zl_func, fit_energy, fit_dset.sum(axis=(0, 1))/fit_dset.shape[0]/fit_dset.shape[1])
-    elif len(dset.shape) == 2:
-        fit_dset = dset[:, start_fit_pixel:end_fit_pixel]
+    elif len(dataset.shape) == 2:
+        fit_dset = dataset[:, start_fit_pixel:end_fit_pixel]
         fit_energy = energy[start_fit_pixel:end_fit_pixel]
         guess_amplitude = np.sqrt(fit_dset.max())
         guess_params = get_good_guess(zl_func, fit_energy, fit_dset.sum(axis=0)/fit_dset.shape[0])
-    elif len(dset.shape) == 1:
-        fit_dset = dset[start_fit_pixel:end_fit_pixel]
+    elif len(dataset.shape) == 1:
+        fit_dset = dataset[start_fit_pixel:end_fit_pixel]
         fit_energy = energy[start_fit_pixel:end_fit_pixel]
         guess_amplitude = np.sqrt(fit_dset.max())
         guess_params = get_good_guess(zl_func, fit_energy, fit_dset)
-        z_loss_dset = dset.copy()
+        z_loss_dset = dataset.copy()
         z_loss_dset *= 0.0
         z_loss_dset += zl_func(energy, *guess_params)
         if 'zero_loss' not in z_loss_dset.metadata:
@@ -450,11 +467,11 @@ def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endF
         z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
                                                   'endFitEnergy': endFitEnergy,
                                                   'fit_parameter': guess_params,
-                                                  'original_low_loss': dset.title})
+                                                  'original_low_loss': dataset.title})
         return z_loss_dset
     else:
         print('Error: need a spectrum or spectral image sidpy dataset')
-        print('Not dset.shape = ', dset.shape)
+        print('Not dset.shape = ', dataset.shape)
         return None
 
     # define guess function for SidFitter
@@ -466,7 +483,7 @@ def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endF
                                  return_cov=False, return_fit=False, return_std=False, km_guess=False, num_fit_parms=6)
     
     [z_loss_params] = zero_loss_fitter.do_fit()
-    z_loss_dset = dset.copy()
+    z_loss_dset = dataset.copy()
     z_loss_dset *= 0.0
 
     energy_grid = np.broadcast_to(energy.reshape((1, 1, -1)), (z_loss_dset.shape[0],
@@ -480,7 +497,7 @@ def get_resolution_functions(dset: sidpy.Dataset, startFitEnergy: float=-1, endF
     z_loss_dset.metadata['zero_loss'].update({'startFitEnergy': startFitEnergy,
                                               'endFitEnergy': endFitEnergy,
                                               'fit_parameter': z_loss_params,
-                                              'original_low_loss': dset.title})
+                                              'original_low_loss': dataset.title})
 
 
     return z_loss_dset
@@ -503,7 +520,7 @@ def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
     return eps
 
 
-def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result=False, number_workers=4, number_threads=8):
+def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float, plot_result: bool = False, number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
     """
     Fit plasmon peak positions and widths in a TEM dataset using a Drude model.
 
@@ -540,7 +557,7 @@ def fit_plasmon(dataset, startFitEnergy, endFitEnergy, plot_result=False, number
         - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
     """
     # define Drude function for plasmon fitting
-    def energy_loss_function(E, Ep, Ew, A):
+    def energy_loss_function(E: np.ndarray, Ep: float, Ew: float, A: float) -> np.ndarray:
         E = E/E.max()
         eps = 1 - Ep**2/(E**2+Ew**2) + 1j * Ew * Ep**2/E/(E**2+Ew**2)
         elf = (-1/eps).imag
@@ -592,7 +609,6 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
     Gives probabilities of dielectric function eps relative to zero-loss integral (i0 = 1) per eV
     Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
 
-    # function drude(ep,ew,eb,epc,e0,beta,nn,tnm)
     # Given the plasmon energy (ep), plasmon fwhm (ew) and binding energy(eb),
     # this program generates:
     # EPS1, EPS2 from modified Eq. (3.40), ELF=Im(-1/EPS) from Eq. (3.42),
@@ -603,41 +619,10 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
     # Details in R.F.Egerton: EELS in the Electron Microscope, 3rd edition, Springer 2011
     # Version 10.11.26
 
-
-    b.7 drude Simulation of a Low-Loss Spectrum
-    The program DRUDE calculates a single-scattering plasmon-loss spectrum for
-    a specimen of a given thickness tnm (in nm), recorded with electrons of a
-    specified incident energy e0 by a spectrometer that accepts scattering up to a
-    specified collection semi-angle beta. It is based on the extended drude model
-    (Section 3.3.2), with a volume energy-loss function elf in accord with Eq. (3.64) and
-    a surface-scattering energy-loss function srelf as in Eq. (4.31). Retardation effects
-    and coupling between the two surface modes are not included. The surface term can
-    be made negligible by entering a large specimen thickness (tnm > 1000).
-    Surface intensity srfint and volume intensity volint are calculated from
-    Eqs. (4.31) and (4.26), respectively. The total spectral intensity ssd is written to
-    the file DRUDE.SSD, which can be used as input for KRAKRO. These intensities are
-    all divided by i0, to give relative probabilities (per eV). The real and imaginary parts
-    of the dielectric function are written to DRUDE.EPS and can be used for comparison
-    with the results of Kramers–Kronig analysis (KRAKRO.DAT).
-    Written output includes the surface-loss probability Ps, obtained by integrating
-    srfint (a value that relates to two surfaces but includes the negative begrenzungs
-    term), for comparison with the analytical integration represented by Eq. (3.77). The
-    volume-loss probability p_v is obtained by integrating volint and is used to calculate
-    the volume plasmon mean free path (lam = tnm/p_v). The latter is listed and
-    compared with the MFP obtained from Eq. (3.44), which represents analytical integration
-    assuming a zero-width plasmon peak. The total probability (Pt = p_v+Ps) is
-    calculated and used to evaluate the thickness (lam.Pt) that would be given by the formula
-    t/λ = ln(It/i0), ignoring the surface-loss probability. Note that p_v will exceed
-    1 for thicker specimens (t/λ > 1), since it represents the probability of plasmon
-    scattering relative to that of no inelastic scattering.
-    The command-line usage is drude(ep,ew,eb,epc,beta,e0,tnm,nn), where ep is the
-    plasmon energy, ew the plasmon width, eb the binding energy of the electrons (0 for
-    a metal), and nn is the number of channels in the output spectrum. An example of
-    the output is shown in Fig. b.1a,b.
-
     """
-    
-    epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
+    energy_scale = dset.get_spectral_dims(return_axis=True)[0].values
+
+    epc = energy_scale[1] - energy_scale[0]  # input('ev per channel : ');
     
     b = dset.metadata['collection_angle'] / 1000.  # rad
     epc = dset.energy_scale[1] - dset.energy_scale[0]  # input('ev per channel : ');
@@ -1465,7 +1450,7 @@ def fit_edges2(spectrum, energy_scale, edges):
 
 
     def model(xx, pp):
-        yy = pp[0] + x**pp[1] + pp[2] + pp[3] * xx + pp[4] * xx * xx
+        yy = pp[0] *  xx**pp[1] +  pp[2] + pp[3]* xx + pp[4] * xx * xx
         for i in range(number_of_edges):
             pp[i+5] = np.abs(pp[i+5])
             yy = yy + pp[i+5] * xsec[i, :]
@@ -1476,20 +1461,20 @@ def fit_edges2(spectrum, energy_scale, edges):
         return err
 
     scale = y[100]
-    pin = np.array([A,r, 10., 1., 0.00] + [scale/5] * number_of_edges)
+    pin = np.array([A,-r, 10., 1., 0.00] + [scale/5] * number_of_edges)
     [p, _] = leastsq(residuals, pin, args=(x, y))
 
     for key in edges:
         if key.isdigit():
             edges[key]['areal_density'] = p[int(key)+5]
-
+    print(p)
     edges['model'] = {}
-    edges['model']['background'] = (background + p[6] + p[7] * x + p[8] * x * x)
-    edges['model']['background-poly_0'] = p[6]
-    edges['model']['background-poly_1'] = p[7]
-    edges['model']['background-poly_2'] = p[8]
-    edges['model']['background-A'] = A
-    edges['model']['background-r'] = r
+    edges['model']['background'] = ( p[0] * np.power(x, -p[1])+ p[2]+ x**p[3] +  p[4] * x * x)
+    edges['model']['background-poly_0'] = p[2]
+    edges['model']['background-poly_1'] = p[3]
+    edges['model']['background-poly_2'] = p[4]
+    edges['model']['background-A'] = p[0]
+    edges['model']['background-r'] = p[1]
     edges['model']['spectrum'] = model(x, p)
     edges['model']['blurred'] = blurred
     edges['model']['mask'] = mask

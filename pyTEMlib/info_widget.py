@@ -11,7 +11,91 @@ import sidpy
 # from pyTEMlib.microscope import microscope
 from pyTEMlib import file_tools
 from pyTEMlib import eels_tools
+from pyTEMlib.core_loss_widget import get_core_loss_sidebar, CoreLoss
+from pyTEMlib.low_loss_widget import get_low_loss_sidebar, LowLoss
 
+def get_image_sidebar() -> Any:
+    side_bar = ipywidgets.GridspecLayout(14, 3, width='auto', grid_gap="0px")
+
+    side_bar[0, :2] = ipywidgets.Dropdown(
+            options=[('None', 0)],
+            value=0,
+            description='Main Dataset:',
+            disabled=False)
+    row = 1
+    side_bar[row, :3] = ipywidgets.Button(description='Image Scale',
+                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='x dim:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="nm", layout=ipywidgets.Layout(width='20px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='y dim:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="nm", layout=ipywidgets.Layout(width='20px'))
+    row += 1
+
+    side_bar[row, :3] = ipywidgets.Button(description='Microscope',
+                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Conv.Angle:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Coll.Angle:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Acc Voltage:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="keV", layout=ipywidgets.Layout(width='100px'))
+    
+    row += 1
+    side_bar[row, :3] = ipywidgets.Button(description='Calibration',
+                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Pixel_Time:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="μs", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Screen Curr:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="pA", layout=ipywidgets.Layout(width='50px'))
+    row += 1
+
+    side_bar[row, 0] = ipywidgets.Button(description='FFT', disabled=True,
+                                         layout=ipywidgets.Layout(width='auto'),
+                                         style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    side_bar[row, 1] = ipywidgets.Button(description='LR-Decon', disabled=True,
+                                         layout=ipywidgets.Layout(width='auto'),
+                                         style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    side_bar[row, 2] = ipywidgets.Button(description='Find atoms', disabled=True,
+                                         layout=ipywidgets.Layout(width='auto'),
+                                         style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    
+    row += 1
+    side_bar[row, :3] = ipywidgets.Button(description='Image Stack',
+                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, 0] = ipywidgets.Button(description='Rig Reg.', disabled=True,
+                                         layout=ipywidgets.Layout(width='auto'),
+                                         style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    side_bar[row, 1] = ipywidgets.Button(description='Demon', disabled=True,
+                                         layout=ipywidgets.Layout(width='auto'),
+                                         style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    side_bar[row, 2] = ipywidgets.Button(description='Sum', disabled=True,
+                                         layout=ipywidgets.Layout(width='auto'),
+                                         style=ipywidgets.ButtonStyle(button_color='lightblue'))
+   
+    side_bar[-2, 0].layout.display = "none"
+    for i in range(3):
+        side_bar[-1, i].layout.display = "none"
+    return side_bar
+    
 
 def get_info_sidebar() -> Any:
     side_bar = ipywidgets.GridspecLayout(18, 3, width='auto', grid_gap="0px")
@@ -111,8 +195,9 @@ def get_info_sidebar() -> Any:
     return side_bar
 
 
+
 def get_file_widget_ui():
-    side_bar = ipywidgets.GridspecLayout(6, 3, height='500px', width='auto', grid_gap="0px")
+    side_bar = ipywidgets.GridspecLayout(7, 3, height='500px', width='auto', grid_gap="0px")
     row = 0
     side_bar[row, :3] = ipywidgets.Dropdown(options=['None'], value='None', description='directory:', disabled=False,
                                             button_style='', layout=ipywidgets.Layout(width='auto', grid_area='header'))
@@ -141,10 +226,15 @@ def get_file_widget_ui():
     for i in range(3, 6):
         side_bar[i, 0].layout.display = "none"
 
+    row += 1
+    side_bar[row, 0] = ipywidgets.Button(description='Save',
+                                         layout=ipywidgets.Layout(width='100px'),
+                                         style=ipywidgets.ButtonStyle(button_color='lightblue'))
+
     return side_bar  
 
 
-class EELSWidget(object):
+class EELSBaseWidget(object):
 
     def __init__(self, datasets, sidebar, tab_title=None):
         
@@ -169,6 +259,8 @@ class EELSWidget(object):
         self.file_name = ''
         self.datasets = {}
         self.dataset = None
+        self.sd0 = 0
+        self.sds = 0
 
         self.bin_x = 0
         self.bin_y = 0
@@ -192,7 +284,7 @@ class EELSWidget(object):
             tab.titles = ['File', 'Info']
         else:
             tab = sidebar
-
+        self.tab = tab
         with plt.ioff():
             self.figure = plt.figure()
         
@@ -260,17 +352,39 @@ class EELSWidget(object):
 
     def plot(self, scale=True):
         self.figure.clear()
-        self.energy_scale = self.dataset.get_spectral_dims(return_axis=True)[0]
-
-        if self.dataset.data_type.name == 'SPECTRUM':
-            self.axis = self.figure.subplots(ncols=1)
-        else:
-            self.plot_spectrum_image() 
-            self.axis = self.axes[-1]
-        self.spectrum = self.get_spectrum()
-        
-        self.plot_spectrum()
+        spec_dims = self.dataset.get_spectral_dims(return_axis=True)
+        if len(spec_dims)>0:
+            self.energy_scale = spec_dims[0]
+            if self.dataset.data_type.name == 'SPECTRUM':
+                self.axis = self.figure.subplots(ncols=1)
+            else:
+                self.plot_spectrum_image() 
+                self.axis = self.axes[-1]
+            self.spectrum = self.get_spectrum()
+            self.plot_spectrum()
     
+        else:
+            self.axis = self.figure.subplots(ncols=1)
+            self.plot_image()
+        
+    def plot_image(self): 
+        # image_dims = self.dataset.get_image_dims()
+        image_dims = []
+        for dim, axis in self.dataset._axes.items():
+            if axis.dimension_type in [sidpy.DimensionType.SPATIAL, sidpy.DimensionType.RECIPROCAL]:
+                image_dims.append(dim)
+        self.img = self.axis.imshow(self.dataset, extent=self.dataset.get_extent(image_dims))
+        self.axis.set_xlabel(self.dataset.labels[image_dims[0]])
+        self.axis.set_ylabel(self.dataset.labels[image_dims[1]])
+        
+        cbar = self.figure.colorbar(self.img)
+        cbar.set_label(self.dataset.data_descriptor)
+
+        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
+        self.figure.tight_layout()
+        self.figure.canvas.draw_idle()
+
+
     def plot_spectrum(self):    
         self.axis.plot(self.energy_scale, self.spectrum, label='spectrum')
         x_limit = self.axis.get_xlim()
@@ -422,6 +536,7 @@ class EELSWidget(object):
         self.end_channel = np.searchsorted(energy_scale, self.end_cursor.value)
 
     def set_dataset(self, key=None):
+         
         if len(self.datasets) == 0:
             data_set = sidpy.Dataset.from_array([0, 1], name='generic')
             data_set.set_dimension(0, sidpy.Dimension([0, 1], 'energy_loss',  units='channel', quantity='generic',
@@ -431,24 +546,26 @@ class EELSWidget(object):
                                                 'collection_angle': 0,
                                                 'acceleration_voltage': 0,
                                                 'exposure_time': 0}}
-            self.datasets = {'Channel_000': data_set}
-            key = 'Channel_000'
+            self.datasets = {'Nothing': data_set}
+            key = 'Nothing'
+        
         dataset_key = key
         
         self.dataset_list = []
         dataset_keys = []
         for key in self.datasets.keys():
             if isinstance(self.datasets[key], sidpy.Dataset):
-                if 'SPECTR' in self.datasets[key].data_type.name:
-                    self.dataset_list.append(f'{key}: {self.datasets[key].title}')
-                    dataset_keys.append(key)
+                self.dataset_list.append(f'{key}: {self.datasets[key].title}')
+                dataset_keys.append(key)
         if dataset_key not in dataset_keys:
             dataset_key = dataset_keys[0]
         self.key = dataset_key
 
         self.dataset = self.datasets[self.key]
-        self.energy_scale = self.dataset.get_spectral_dims(return_axis=True)[0]
-
+        
+        spectral_dims = self.dataset.get_spectral_dims(return_axis=True)
+        if len(spectral_dims) >0:
+            self.energy_scale = spectral_dims[0]
         self.y_scale = 1.0
         self.change_y_scale = 1.0
         self.x = 0
@@ -457,13 +574,14 @@ class EELSWidget(object):
         self.bin_y = 1
         self.count = 0
 
+        self.update_sidebars()
         self.plot()
-        self.update_sidebar()
         
-    def update_sidebar(self):
+    def update_sidebars(self):
         pass
 
     def select_main(self, value=0):
+        self.sds +=1
         self.datasets = {}
         # self.loaded_datasets.options = self.dataset_list
         
@@ -472,18 +590,19 @@ class EELSWidget(object):
         self.dataset_list = []
         self.image_list = ['Sum']
         self.survey_list = ['None']
+        self.spectral_list = ['None']
         for key in self.datasets.keys():
             if isinstance(self.datasets[key], sidpy.Dataset):
+                self.dataset_list.append(f'{key}: {self.datasets[key].title}')
                 if 'SPECTR' in self.datasets[key].data_type.name:
-                    self.dataset_list.append(f'{key}: {self.datasets[key].title}')
+                    self.spectral_list.append(f'{key}: {self.datasets[key].title}')
                 if 'IMAGE' == self.datasets[key].data_type.name:
                     if 'survey' in self.datasets[key].title.lower():
                         self.survey_list.append(f'{key}: {self.datasets[key].title}')
                     else:
                         self.image_list.append(f'{key}: {self.datasets[key].title}')
 
-        # self.survey_list.extend(self.image_list)
-        self.set_dataset()
+        
         self.key = self.dataset_list[0].split(':')[0]
         self.dataset = self.datasets[self.key]
 
@@ -569,87 +688,125 @@ class EELSWidget(object):
         elif os.path.isfile(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
             self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])
 
-        
-class InfoWidget(EELSWidget):
+class EELSWidget(EELSBaseWidget):
     def __init__(self, datasets=None):
         
-        sidebar = {'Info': get_info_sidebar(),
-                   'LowLoss': get_low_loss_sidebar()}
+        sidebar = {'Spec.': get_info_sidebar(),
+                   'LowLoss': get_low_loss_sidebar(),
+                   'CoreLoss': get_core_loss_sidebar()}
         super().__init__(datasets, sidebar)
-        self.info_tab = sidebar['Info']
+        self.info_tab = sidebar['Spec.']
+        self.core_loss_tab = sidebar['CoreLoss']
+        self.low_loss_tab = sidebar['LowLoss']
         super().set_dataset()
-
+        self.info = Info(self.info_tab, self)
+        self.low_loss = LowLoss(self.low_loss_tab, self)
+        self.core_loss = CoreLoss(self.core_loss_tab, self)
+        
         self.set_action()
+    
+    def set_action(self):
+        self.tab.observe(self.tab_activated)
+
+    def tab_activated(self, val=0):
+        if isinstance(val.new, int):
+            self.tabval = val.new
+            self.update_sidebars()
+            if val.new == 1:
+                self.info.update_dataset()
+            elif val.new == 2:
+                self.low_loss.update_ll_dataset()
+            elif val.new == 3:
+                self.core_loss.update_cl_dataset()
+
+    def update_sidebars(self):
+        if hasattr(self, 'info'):
+            self.info.update_sidebar()
+        if hasattr(self, 'low_loss'):
+            self.low_loss.update_ll_sidebar()
+        if hasattr(self, 'core_loss'):
+            self.core_loss.update_cl_sidebar()
+
+class Info(object):
+    def __init__(self, sidebar=None, parent=None):
+        self.parent = parent
+        self.info_tab = sidebar
+        self.key = self.parent.key
+        self.update_sidebar()        
+        self.set_action()
+        self.count =0
 
     def set_energy_scale(self, value):
-        self.energy_scale = self.datasets[self.key].get_spectral_dims(return_axis=True)[0]
-        dispersion = self.datasets[self.key].get_dimension_slope(self.energy_scale)
+        self.ens = 1
+        self.energy_scale = self.parent.datasets[self.key].get_spectral_dims(return_axis=True)[0]
+        dispersion = self.parent.datasets[self.key].get_dimension_slope(self.energy_scale)
+        self.ens = dispersion
         self.energy_scale *= (self.info_tab[3, 0].value / dispersion)
         self.energy_scale += (self.info_tab[2, 0].value - self.energy_scale[0])
-        self.plot()
+        self.parent.plot()
 
     def set_y_scale(self, value):
         self.count += 1
-        self.change_y_scale = 1.0 / self.y_scale
-        if self.datasets[self.key].metadata['experiment']['flux_ppm'] > 1e-12:
-
+        self.parent.change_y_scale = 1.0 / self.parent.y_scale
+        if self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] > 1e-12:
             if self.info_tab[9, 2].value:
-                dispersion = self.datasets[self.key].get_dimension_slope(self.energy_scale)
-                self.y_scale = 1 / self.datasets[self.key].metadata['experiment']['flux_ppm'] * dispersion
-                self.ylabel = 'scattering probability (ppm)'
+                dispersion = self.parent.datasets[self.key].get_dimension_slope(self.energy_scale)
+                self.parent.y_scale = 1 / self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] * dispersion
+                self.parent.ylabel = 'scattering probability (ppm)'
             else:
-                self.y_scale = 1.0
-                self.ylabel = 'intensity (counts)'
-            self.change_y_scale *= self.y_scale
-            self._update()
+                self.parent.y_scale = 1.0
+                self.parent.ylabel = 'intensity (counts)'
+            self.parent.change_y_scale *= self.parent.y_scale
+            self.parent._update()
 
     def set_flux(self, value):
-        self.datasets[self.key].metadata['experiment']['exposure_time'] = self.info_tab[10, 0].value
+        self.parent.datasets[self.key].metadata['experiment']['exposure_time'] = self.info_tab[10, 0].value
         if self.info_tab[9, 0].value == 'None':
-            self.datasets[self.key].metadata['experiment']['flux_ppm'] = 0.
+            self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = 0.
         else:
-            key = self.info_tab[9, 0].value.split(':')[0]
-            self.datasets['_relationship']['low_loss'] = key
-            spectrum_dimensions = self.dataset.get_spectral_dims()
+            ll_key = self.info_tab[9, 0].value.split(':')[0]
+            self.parent.datasets['_relationship']['low_loss'] = ll_key
+            spectrum_dimensions = self.parent.dataset.get_spectral_dims()
 
             number_of_pixels = 1
-            for index, dimension in enumerate(self.dataset.shape):
+            for index, dimension in enumerate(self.parent.dataset.shape):
                 if index not in spectrum_dimensions:
                     number_of_pixels *= dimension
-            if self.datasets[key].metadata['experiment']['exposure_time'] == 0.0:
-                if self.datasets[key].metadata['experiment']['single_exposure_time'] == 0.0:
+            if self.parent.datasets[ll_key].metadata['experiment']['exposure_time'] == 0.0:
+                if self.parent.datasets[ll_key].metadata['experiment']['single_exposure_time'] == 0.0:
                     return
                 else:
-                    self.datasets[key].metadata['experiment']['exposure_time'] = (self.datasets[key].metadata['experiment']['single_exposure_time'] *
-                                                                                  self.datasets[key].metadata['experiment']['number_of_frames'])
+                    self.parent.datasets[ll_key].metadata['experiment']['exposure_time'] = (self.parent.datasets[ll_key].metadata['experiment']['single_exposure_time'] *
+                                                                                     self.parent.datasets[ll_key].metadata['experiment']['number_of_frames'])
 
-            self.datasets[self.key].metadata['experiment']['flux_ppm'] = ((np.array(self.datasets[key])*1e-6).sum() /
-                                                                          self.datasets[key].metadata['experiment']['exposure_time'] /
+            self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = ((np.array(self.parent.datasets[ll_key])*1e-6).sum() /
+                                                                          self.parent.datasets[ll_key].metadata['experiment']['exposure_time'] /
                                                                           number_of_pixels)
-            self.datasets[self.key].metadata['experiment']['flux_ppm'] *= self.datasets[self.key].metadata['experiment']['exposure_time']
-            if 'SPECT' in self.datasets[key].data_type.name:
+            self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] *= self.parent.datasets[self.key].metadata['experiment']['exposure_time']
+            if 'SPECT' in self.parent.datasets[ll_key].data_type.name:
                 self.info_tab[14, 0].disabled = False
-        self.info_tab[11, 0].value = np.round(self.datasets[self.key].metadata['experiment']['flux_ppm'], 2)
+        self.info_tab[11, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['flux_ppm'], 2)
 
     def set_microscope_parameter(self, value):
-        self.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
-        self.datasets[self.key].metadata['experiment']['collection_angle'] = self.info_tab[6, 0].value
-        self.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.info_tab[7, 0].value*1000
+        self.parent.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
+        self.parent.datasets[self.key].metadata['experiment']['collection_angle'] = self.info_tab[6, 0].value
+        self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.info_tab[7, 0].value*1000
     
     def cursor2energy_scale(self, value):
-        self.energy_scale = self.datasets[self.key].get_spectral_dims(return_axis=True)[0]
-        dispersion = (self.end_cursor.value - self.start_cursor.value) / (self.end_channel - self.start_channel)
+        self.energy_scale = self.parent.datasets[self.key].get_spectral_dims(return_axis=True)[0]
+        dispersion = (self.parent.end_cursor.value - self.parent.start_cursor.value) / (self.parent.end_channel - self.parent.start_channel)
 
         self.energy_scale *= (self.info_tab[3, 0].value/dispersion)
-        self.info_tab[3, 0].value = dispersion
-        offset = self.start_cursor.value - self.start_channel * dispersion
-        self.energy_scale += (self.info_tab[2, 0].value-self.energy_scale[0])
-        self.info_tab[2, 0].value = offset
-        self.plot()
+        
+        offset = self.parent.start_cursor.value - self.parent.start_channel * dispersion
+        self.parent.energy_scale += (self.info_tab[2, 0].value-self.parent.energy_scale[0])
+        self.info_tab[2, 0].value = np.round(offset,4)
+        self.info_tab[3, 0].value = np.round(dispersion,4)
+        self.parent.plot()
 
     def set_binning(self, value):
-        if 'SPECTRAL' in self.dataset.data_type.name:
-            image_dims = self.dataset.get_image_dims()
+        if 'SPECTRAL' in self.parent.dataset.data_type.name:
+            image_dims = self.parent.dataset.get_image_dims()
 
             self.bin_x = int(self.info_tab[16, 0].value)
             self.bin_y = int(self.info_tab[17, 0].value)
@@ -659,109 +816,103 @@ class InfoWidget(EELSWidget):
             if self.bin_y < 1:
                 self.bin_y = 1
                 self.info_tab[17, 0].value = self.bin_y
-            if self.bin_x > self.dataset.shape[image_dims[0]]:
-                self.bin_x = self.dataset.shape[image_dims[0]]
+            if self.bin_x > self.parent.dataset.shape[image_dims[0]]:
+                self.bin_x = self.parent.dataset.shape[image_dims[0]]
                 self.info_tab[16, 0].value = self.bin_x
-            if self.bin_y > self.dataset.shape[image_dims[1]]:
-                self.bin_y = self.dataset.shape[image_dims[1]]
+            if self.bin_y > self.parent.dataset.shape[image_dims[1]]:
+                self.bin_y = self.parent.dataset.shape[image_dims[1]]
                 self.info_tab[17, 0].value = self.bin_y
 
-            self.datasets[self.key].metadata['experiment']['SI_bin_x'] = self.bin_x
-            self.datasets[self.key].metadata['experiment']['SI_bin_y'] = self.bin_y
+            self.parent.datasets[self.key].metadata['experiment']['SI_bin_x'] = self.bin_x
+            self.parent.datasets[self.key].metadata['experiment']['SI_bin_y'] = self.bin_y
             self.plot()
 
+    
+
     def update_sidebar(self):
-        spectrum_list = []
+        spectrum_list = ['None']
         reference_list = ['None']
-        for key in self.datasets.keys():
-            if isinstance(self.datasets[key], sidpy.Dataset):
-                if 'Reference' not in key:
-                    if 'SPECTR' in self.datasets[key].data_type.name:
-                        spectrum_list.append(f'{key}: {self.datasets[key].title}')
-                reference_list.append(f'{key}: {self.datasets[key].title}')
-       
+        data_list = []
+        self.key = self.parent.key
+        spectrum_data = False
+        for key in self.parent.datasets.keys():
+            if isinstance(self.parent.datasets[key], sidpy.Dataset):
+                if key[0] != '_' :
+                    data_list.append(f'{key}: {self.parent.datasets[key].title}')
+                    if 'SPECTR' in self.parent.datasets[key].data_type.name:
+                        spectrum_data = True
+                        spectrum_list.append(f'{key}: {self.parent.datasets[key].title}')
+                reference_list.append(f'{key}: {self.parent.datasets[key].title}')
         self.info_tab[0, 0].options = spectrum_list
         self.info_tab[9, 0].options = reference_list
 
-        if 'SPECTRUM' in self.dataset.data_type.name:
+        if 'SPECTRUM' in self.parent.dataset.data_type.name:
             for i in range(15, 18):
                 self.info_tab[i, 0].layout.display = "none"
         else:
             for i in range(15, 18):
                 self.info_tab[i, 0].layout.display = "flex"
-        # self.info_tab[0,0].value = dataset_index #f'{self.key}: {self.datasets[self.key].title}'
-        self.info_tab[2, 0].value = np.round(self.datasets[self.key].energy_loss[0], 3)
-        self.info_tab[3, 0].value = np.round(self.datasets[self.key].energy_loss[1] - self.datasets[self.key].energy_loss[0], 4)
-        self.info_tab[5, 0].value = np.round(self.datasets[self.key].metadata['experiment']['convergence_angle'], 1)
-        self.info_tab[6, 0].value = np.round(self.datasets[self.key].metadata['experiment']['collection_angle'], 1)
-        self.info_tab[7, 0].value = np.round(self.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
-        self.info_tab[10, 0].value = np.round(self.datasets[self.key].metadata['experiment']['exposure_time'], 4)
-        if 'flux_ppm' not in self.datasets[self.key].metadata['experiment']:
-            self.datasets[self.key].metadata['experiment']['flux_ppm'] = 0
-        self.info_tab[11, 0].value = self.datasets[self.key].metadata['experiment']['flux_ppm']
-        if 'count_conversion' not in self.datasets[self.key].metadata['experiment']:
-            self.datasets[self.key].metadata['experiment']['count_conversion'] = 1
-        self.info_tab[12, 0].value = self.datasets[self.key].metadata['experiment']['count_conversion']
-        if 'beam_current' not in self.datasets[self.key].metadata['experiment']:
-            self.datasets[self.key].metadata['experiment']['beam_current'] = 0
-        self.info_tab[13, 0].value = self.datasets[self.key].metadata['experiment']['beam_current']
-    
+        
+        if spectrum_data:
+            offset = self.parent.datasets[self.key].energy_loss[0]
+            dispersion = self.parent.datasets[self.key].energy_loss[1] - offset
+            
+            # self.info_tab[0,0].value = dataset_index #f'{self.key}: {self.parent.datasets[self.key].title}'
+            self.info_tab[2, 0].value = np.round(offset, 3)
+            self.info_tab[3, 0].value = np.round(dispersion, 4)
+            self.info_tab[5, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['convergence_angle'], 1)
+            self.info_tab[6, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['collection_angle'], 1)
+            self.info_tab[7, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
+            self.info_tab[10, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['exposure_time'], 4)
+            if 'flux_ppm' not in self.parent.datasets[self.key].metadata['experiment']:
+                self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = 0
+            self.info_tab[11, 0].value = self.parent.datasets[self.key].metadata['experiment']['flux_ppm']
+            if 'count_conversion' not in self.parent.datasets[self.key].metadata['experiment']:
+                self.parent.datasets[self.key].metadata['experiment']['count_conversion'] = 1
+            self.info_tab[12, 0].value = self.parent.datasets[self.key].metadata['experiment']['count_conversion']
+            if 'beam_current' not in self.parent.datasets[self.key].metadata['experiment']:
+                self.parent.datasets[self.key].metadata['experiment']['beam_current'] = 0
+            self.info_tab[13, 0].value = self.parent.datasets[self.key].metadata['experiment']['beam_current']
+            ll_key = 'None'
+            if '_relationship' in self.parent.datasets:
+                if 'low_loss' in self.parent.datasets['_relationship']:
+                    ll_key = self.parent.datasets['_relationship']['low_loss']  
+                    ll_key = f'{ll_key}: {self.parent.datasets[ll_key].title}'
+            self.info_tab[9, 0].value = ll_key
+
     def update_dataset(self, value=0):
         key = self.info_tab[0, 0].value.split(':')[0]
-        self.set_dataset(key)
+        self.parent.set_dataset(key)
 
     def shift_low_loss(self,  value=0):
-        if 'low_loss' in self.datasets['_relationship']:
-            low_loss = self.datasets[self.datasets['_relationship']['low_loss']]
-            self.datasets[self.datasets['_relationship']['low_loss']] = eels_tools.align_zero_loss(low_loss)
-            print('1')
-        print('2')
-        if 'low_loss' in self.datasets['_relationship']:
-            if 'zero_loss' in self.datasets[self.datasets['_relationship']['low_loss']].metadata:
-                if 'shifted' in self.datasets[self.datasets['_relationship']['low_loss']].metadata['zero_loss'].keys():
+        if 'low_loss' in self.parent.datasets['_relationship']:
+            low_loss = self.parent.datasets[self.parent.datasets['_relationship']['low_loss']]
+            self.parent.datasets[self.parent.datasets['_relationship']['low_loss']] = eels_tools.align_zero_loss(low_loss)
+           
+        if 'low_loss' in self.parent.datasets['_relationship']:
+            if 'zero_loss' in self.parent.datasets[self.parent.datasets['_relationship']['low_loss']].metadata:
+                if 'shifted' in self.parent.datasets[self.parent.datasets['_relationship']['low_loss']].metadata['zero_loss'].keys():
                     self.info_tab[14, 1].disabled = False
-                    print('shifted')
+                    
 
     def shift_spectrum(self,  value=0):
-        shifts = self.dataset.shape
-        if 'low_loss' in self.datasets['_relationship']:
-            if 'zero_loss' in self.datasets[self.datasets['_relationship']['low_loss']].metadata:
-                if 'shifted' in self.datasets[self.datasets['_relationship']['low_loss']].metadata['zero_loss'].keys():
-                    shifts = self.datasets[self.datasets['_relationship']['low_loss']].metadata['zero_loss']['shifted']
+        shifts = self.parent.dataset.shape
+        if 'low_loss' in self.parent.datasets['_relationship']:
+            if 'zero_loss' in self.parent.datasets[self.parent.datasets['_relationship']['low_loss']].metadata:
+                if 'shifted' in self.parent.datasets[self.parent.datasets['_relationship']['low_loss']].metadata['zero_loss'].keys():
+                    shifts = self.parent.datasets[self.parent.datasets['_relationship']['low_loss']].metadata['zero_loss']['shifted']
                     shifts_new = shifts.copy()
-                    if 'zero_loss' in self.dataset.metadata:
-                        if 'shifted' in self.dataset.metadata['zero_loss'].keys():
-                            shifts_new = shifts-self.dataset.metadata['zero_loss']['shifted']
+                    if 'zero_loss' in self.parent.dataset.metadata:
+                        if 'shifted' in self.parent.dataset.metadata['zero_loss'].keys():
+                            shifts_new = shifts-self.parent.dataset.metadata['zero_loss']['shifted']
                     else:
-                        self.dataset.metadata['zero_loss'] = {}
-                    print(shifts_new)
+                        self.parent.dataset.metadata['zero_loss'] = {}
+                    
 
-                    self.dataset = eels_tools.shift_energy(self.dataset, shifts_new)
-                    self.dataset.metadata['zero_loss']['shifted'] = shifts
-                    self.plot()
+                    self.parent.dataset = eels_tools.shift_energy(self.parent.dataset, shifts_new)
+                    self.parent.dataset.metadata['zero_loss']['shifted'] = shifts
+                    self.parent.plot()
 
-    def get_resolution_function(self,  value=0):
-        if 'low_loss' in self.datasets['_relationship']:
-            if 'zero_loss' in self.datasets[self.datasets['_relationship']['low_loss']].metadata:
-                if 'shifted' in self.datasets[self.datasets['_relationship']['low_loss']].metadata['zero_loss']:
-                    low_loss = self.datasets[self.datasets['_relationship']['low_loss']]
-                    zero_channel = np.searchsorted(low_loss.energy_loss, 0)
-                    channels = np.argwhere(np.array(low_loss) > low_loss.max()/100).flatten()
-                    energy = self.dataset.get_spectral_dims(return_axis=True)[0].values
-                    self.datasets['resolution_function'] = eels_tools.get_resolution_functions(low_loss,
-                                                                                               energy[channels[0]],
-                                                                                               energy[channels[-1]])
-                    self.datasets['resolution_function'].title = 'resolution_function'
-                    self.axis.plot(self.datasets['resolution_function'].energy_loss,
-                                   self.datasets['resolution_function'],
-                                   label='resolution_function')
-                    self.axis.legend()
-
-        resolution_key = self.dataset_list.append(f'resolution_function: resolution_function')
-        if resolution_key not in self.dataset_list:
-            self.dataset_list.append(resolution_key)
-        self.loaded_datasets.options = self.dataset_list
-        self.info_tab[0, 0].options = self.dataset_list
 
     def set_action(self):
         self.info_tab[0, 0].observe(self.update_dataset, names='value')
@@ -776,222 +927,6 @@ class InfoWidget(EELSWidget):
         self.info_tab[10, 0].observe(self.set_flux)
         self.info_tab[14, 0].on_click(self.shift_low_loss)
         self.info_tab[14, 1].on_click(self.shift_spectrum)
-        self.info_tab[14, 2].on_click(self.get_resolution_function)
         
         self.info_tab[16, 0].observe(self.set_binning)
         self.info_tab[17, 0].observe(self.set_binning)
-
-
-def get_low_loss_sidebar():
-    side_bar = ipywidgets.GridspecLayout(17, 3, width='auto', grid_gap="0px")
-
-    side_bar[0, :2] = ipywidgets.Dropdown(
-            options=[('None', 0)],
-            value=0,
-            description='Main Dataset:',
-            disabled=False)
-    
-    row = 1
-    side_bar[row, :3] = ipywidgets.Button(description='Fix Energy Scale',
-                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
-                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Offset:', disabled=False, color='black',
-                                             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Dispersion:', disabled=False, color='black',
-                                             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='20px'))
-    
-    row += 1
-    side_bar[row, :3] = ipywidgets.Button(description='Resolution_function',
-                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
-                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.3, description='Fit Window:', disabled=False, color='black',
-                                             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.ToggleButton(description='Show Resolution Function',
-                                                disabled=False,
-                                                button_style='',  # 'success', 'info', 'warning', 'danger' or ''
-                                                tooltip='Changes y-axis to probability if flux is given',
-                                                layout=ipywidgets.Layout(width='100px'))
-    side_bar[row, 2] = ipywidgets.ToggleButton(description='Probability',
-                                               disabled=False,
-                                               button_style='',  # 'success', 'info', 'warning', 'danger' or ''
-                                               tooltip='Changes y-axis to probability if flux is given',
-                                               layout=ipywidgets.Layout(width='100px'))
-    row += 2
-
-    side_bar[row, :3] = ipywidgets.Button(description='Drude Fit',
-                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
-                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.Dropdown(options=[('None', 0)],
-                                            value=0,
-                                            description='Low_Loss:',
-                                            disabled=False)
-    side_bar[row, 2] = ipywidgets.ToggleButton(description='Probability',
-                                               disabled=False,
-                                               button_style='',
-                                               tooltip='Changes y-axis to probability if flux is given',
-                                               layout=ipywidgets.Layout(width='100px'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Exp_Time:', disabled=False, color='black',
-                                             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="s", layout=ipywidgets.Layout(width='100px'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Flux:', disabled=False, color='black',
-                                             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="Mcounts", layout=ipywidgets.Layout(width='100px'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Conversion:', disabled=False, color='black',
-                                             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value=r"e$^-$/counts", layout=ipywidgets.Layout(width='100px'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Current:', disabled=False, color='black',
-                                             layout=ipywidgets.Layout(width='200px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="pA", layout=ipywidgets.Layout(width='100px'))
-    
-    row += 1
-
-    side_bar[row, :3] = ipywidgets.Button(description='Spectrum Image',
-                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
-                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
-    
-    row += 1
-    side_bar[row, :2] = ipywidgets.IntText(value=1, description='bin X:', disabled=False, color='black',
-                                           layout=ipywidgets.Layout(width='200px'))
-    row += 1
-    side_bar[row, :2] = ipywidgets.IntText(value=1, description='bin X:', disabled=False, color='black',
-                                           layout=ipywidgets.Layout(width='200px'))
-    
-    for i in range(15, 18):
-        pass
-        # side_bar[i, 0].layout.display = "none"
-    return side_bar
-
-
-class LowLossWidget(EELSWidget):
-    def __init__(self, datasets):
-        sidebar = get_low_loss_sidebar()
-        super().__init__(datasets, sidebar)
-        self.info_tab[3, 0].value = self.energy_scale[0]
-        self.info_tab[4, 0].value = self.energy_scale[1] - self.energy_scale[0]
-
-        self.set_action()
-
-    def update_sidebar(self):
-        spectrum_list = []
-        reference_list = [('None', -1)]
-        for index, key in enumerate(self.datasets.keys()):
-            if isinstance(self.datasets[key], sidpy.Dataset):
-                if 'Reference' not in key:
-                    if 'SPECTR' in self.datasets[key].data_type.name:
-                        spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
-                reference_list.append((f'{key}: {self.datasets[key].title}', index))
-       
-        self.info_tab[0, 0].options = spectrum_list
-        self.info_tab[9, 0].options = reference_list
-        
-        if 'SPECTRUM' in self.dataset.data_type.name:
-            for i in range(14, 17):
-                self.info_tab[i, 0].layout.display = "none"
-        else:
-            for i in range(14, 17):
-                self.info_tab[i, 0].layout.display = "flex"
-
-    def get_resolution_function(self, value):
-        self.datasets['resolution_functions'] = eels_tools.get_resolution_functions(self.dataset,
-                                                                                    zero_loss_fit_width=self.info_tab[5, 0].value)
-        if 'low_loss' not in self.dataset.metadata:
-            self.dataset.metadata['low_loss'] = {}
-        self.dataset.metadata['low_loss'].update(self.datasets['resolution_functions'].metadata['low_loss'])
-        self.info_tab[6, 0].value = True
-
-    def update_dataset(self):
-        dataset_index = self.info_tab[0, 0].value
-        self.set_dataset(dataset_index)
-
-    def set_action(self):
-        self.info_tab[0, 0].observe(self.update_dataset)
-        self.info_tab[1, 0].on_click(self.fix_energy_scale)
-        self.info_tab[2, 0].observe(self.set_energy_scale, names='value')
-        self.info_tab[3, 0].observe(self.set_energy_scale, names='value')
-        self.info_tab[4, 0].on_click(self.get_resolution_function)
-        self.info_tab[6, 2].observe(self.set_y_scale, names='value')
-        self.info_tab[6, 0].observe(self._update, names='value')
-        
-    def fix_energy_scale(self, value=0):
-        self.dataset = eels_tools.shift_on_same_scale(self.dataset)
-        self.datasets[self.key] = self.dataset
-        if 'resolution_functions' in self.datasets:
-            self.datasets['resolution_functions'] = eels_tools.shift_on_same_scale(self.datasets['resolution_functions'])
-        self._update()
-
-    def set_y_scale(self, value):  
-        self.change_y_scale = 1.0/self.y_scale
-        if self.info_tab[6, 2].value:
-            dispersion = self.dataset.energy_loss[1] - self.dataset.energy_loss[0]
-            if self.dataset.data_type.name == 'SPECTRUM':
-                sum = self.dataset.sum()
-            else:
-                image_dims = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPATIAL)
-                sum = np.average(self.dataset, axis=image_dims).sum()
-
-            self.y_scale = 1/sum * dispersion * 1e6
-            # self.datasets[self.key].metadata['experiment']['flux_ppm'] * dispersion
-            self.ylabel = 'scattering probability (ppm)'
-        else:
-            self.y_scale = 1.0
-            self.ylabel = 'intensity (counts)'
-        self.change_y_scale *= self.y_scale
-        self._update()
-
-    def _update(self, ev=0):
-        super()._update(ev)
-        if self.info_tab[6, 0].value:
-            if 'resolution_functions' in self.datasets:
-                resolution_function = self.get_additional_spectrum('resolution_functions')
-                self.axis.plot(self.energy_scale, resolution_function, label='resolution_function')
-                self.axis.legend()
-
-    def get_additional_spectrum(self, key):
-        if key not in self.datasets.keys():
-            return
-        
-        if self.datasets[key].data_type == sidpy.DataType.SPECTRUM:
-            self.spectrum = self.datasets[key].copy()
-        else:
-            image_dims = self.datasets[key].get_dimensions_by_type(sidpy.DimensionType.SPATIAL)
-            selection = []
-            for dim, axis in self.datasets[key]._axes.items():
-                # print(dim, axis.dimension_type)
-                if axis.dimension_type == sidpy.DimensionType.SPATIAL:
-                    if dim == image_dims[0]:
-                        selection.append(slice(self.x, self.x + self.bin_x))
-                    else:
-                        selection.append(slice(self.y, self.y + self.bin_y))
-
-                elif axis.dimension_type == sidpy.DimensionType.SPECTRAL:
-                    selection.append(slice(None))
-                elif axis.dimension_type == sidpy.DimensionType.CHANNEL:
-                    selection.append(slice(None))
-                else:
-                    selection.append(slice(0, 1))
-            
-            self.spectrum = self.datasets[key][tuple(selection)].mean(axis=tuple(image_dims))
-            
-        self.spectrum *= self.y_scale
-        
-        return self.spectrum.squeeze()
-    
-    def set_binning(self, value):
-        if 'SPECTRAL' in self.dataset.data_type.name:
-            bin_x = self.info_tab[15, 0].value
-            bin_y = self.info_tab[16, 0].value
-            self.dataset.view.set_bin([bin_x, bin_y])
-            self.datasets[self.key].metadata['experiment']['SI_bin_x'] = bin_x
-            self.datasets[self.key].metadata['experiment']['SI_bin_y'] = bin_y
