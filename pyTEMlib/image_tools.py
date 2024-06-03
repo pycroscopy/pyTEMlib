@@ -606,9 +606,18 @@ def rigid_registration(dataset, sub_pixel=True):
     rigid_registered.source = dataset.title
     rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
                                  'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
-    rigid_registered.set_dimension(0, dataset._axes[frame_dim[0]])
-    rigid_registered.set_dimension(1, dataset._axes[spatial_dim[0]][input_crop[0]:input_crop[1]])
-    rigid_registered.set_dimension(2, dataset._axes[spatial_dim[1]][input_crop[2]:input_crop[3]])
+    rigid_registered.set_dimension(0, sidpy.Dimension(np.arange(rigid_registered.shape[0]), 
+                                          name='frame', units='frame', quantity='time',
+                                          dimension_type='temporal'))
+    
+    array_x = dataset._axes[spatial_dim[0]][input_crop[0]:input_crop[1]].values
+    rigid_registered.set_dimension(1, sidpy.Dimension(array_x,
+                                          'x', units='nm', quantity='Length',
+                                          dimension_type='spatial'))
+    array_y = dataset._axes[spatial_dim[1]][input_crop[2]:input_crop[3]].values
+    rigid_registered.set_dimension(2, sidpy.Dimension(array_y,
+                                          'y', units='nm', quantity='Length',
+                                          dimension_type='spatial'))
     return rigid_registered.rechunk({0: 'auto', 1: -1, 2: -1})
 
 
