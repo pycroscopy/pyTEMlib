@@ -1,6 +1,4 @@
 """
-QT dialog window for EELS compositional analysis
-
 Author: Gerd Duscher
 """
 

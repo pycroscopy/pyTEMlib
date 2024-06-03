@@ -1450,7 +1450,7 @@ def fit_edges2(spectrum, energy_scale, edges):
 
 
     def model(xx, pp):
-        yy = pp[0] + x**pp[1] + pp[2] + pp[3] * xx + pp[4] * xx * xx
+        yy = pp[0] *  xx**pp[1] +  pp[2] + pp[3]* xx + pp[4] * xx * xx
         for i in range(number_of_edges):
             pp[i+5] = np.abs(pp[i+5])
             yy = yy + pp[i+5] * xsec[i, :]
@@ -1461,15 +1461,15 @@ def fit_edges2(spectrum, energy_scale, edges):
         return err
 
     scale = y[100]
-    pin = np.array([A,r, 10., 1., 0.00] + [scale/5] * number_of_edges)
+    pin = np.array([A,-r, 10., 1., 0.00] + [scale/5] * number_of_edges)
     [p, _] = leastsq(residuals, pin, args=(x, y))
 
     for key in edges:
         if key.isdigit():
             edges[key]['areal_density'] = p[int(key)+5]
-
+    print(p)
     edges['model'] = {}
-    edges['model']['background'] = (background + p[0] + p[1] * x + p[2] * x * x)
+    edges['model']['background'] = ( p[0] * np.power(x, -p[1])+ p[2]+ x**p[3] +  p[4] * x * x)
     edges['model']['background-poly_0'] = p[2]
     edges['model']['background-poly_1'] = p[3]
     edges['model']['background-poly_2'] = p[4]

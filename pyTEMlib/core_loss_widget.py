@@ -144,14 +144,19 @@ class CoreLoss(object):
        
         self.periodic_table_panel = ipywidgets.VBox([self.periodic_table.periodic_table,
                                                      ipywidgets.HBox([self.elements_cancel_button, self.elements_auto_button, self.elements_select_button])])
-        self.set_cl_action()
+        
         self.update_cl_sidebar()
+        self.set_cl_action()
 
     def update_cl_dataset(self, value=0):
         self.cl_key = self.core_loss_tab[0, 0].value.split(':')[0]
         self.parent.set_dataset(self.cl_key)
+    
         self.dataset = self.parent.dataset
-        
+        if len(self.dataset)>12:
+            pass
+            # self.set_fit_area()
+
     def update_cl_sidebar(self):
         self.count+=1
         spectrum_list = ['None '+str(self.count)]
@@ -161,6 +166,7 @@ class CoreLoss(object):
                     spectrum_list.append(f'{key}: {self.parent.datasets[key].title}') 
         
         self.core_loss_tab[0, 0].options = spectrum_list
+        
         
     def line_select_callback(self, x_min, x_max):
             self.start_cursor.value = np.round(x_min,3)
@@ -347,19 +353,41 @@ class CoreLoss(object):
         self.update()
        
     
-    def set_fit_area(self, value):
+    def set_fit_start(self, value=0):
+        if 'edges' not in self.dataset.metadata:
+            self.edges = self.dataset.metadata['edges'] = {}
         if 'fit_area' not in self.edges:    
             self.edges['fit_area'] = {'fit_start':self.parent.energy_scale[10],
                                       'fit_end': self.parent.energy_scale[-10]}
-            self.core_loss_tab[2, 0].value = self.edges['fit_area']['fit_start']    
-            self.core_loss_tab[3, 0].value = self.edges['fit_area']['fit_end']  
-
-        if self.core_loss_tab[2, 0].value > self.core_loss_tab[3, 0].value:
-            self.core_loss_tab[2, 0].value = self.core_loss_tab[3, 0].value -1
+            self.core_loss_tab[3, 0].value = str(self.edges['fit_area']['fit_end']  )
+            self.core_loss_tab[2, 0].value = str(self.edges['fit_area']['fit_start'] )  
         if self.core_loss_tab[2, 0].value < self.parent.energy_scale[0]:
-            self.core_loss_tab[2, 0].value = self.parent.energy_scale[0]
+            self.core_loss_tab[2, 0].value = self.parent.energy_scale[10]
+
+    def set_fit_end(self, value=0):
+        if 'edges' not in self.dataset.metadata:
+            self.edges = self.dataset.metadata['edges'] = {}
+        if 'fit_area' not in self.edges:    
+            self.edges['fit_area'] = {'fit_start':self.parent.energy_scale[10],
+                                      'fit_end': self.parent.energy_scale[-10]}
+            self.core_loss_tab[3, 0].value = str(self.edges['fit_area']['fit_end']  )
+            self.core_loss_tab[2, 0].value = str(self.edges['fit_area']['fit_start'] )  
         if self.core_loss_tab[3, 0].value > self.parent.energy_scale[-1]:
-            self.core_loss_tab[3, 0].value = self.parent.energy_scale[-1]
+            self.core_loss_tab[3, 0].value = self.parent.energy_scale[-10]
+
+    def set_fit_area(self, value=1):
+        if 'fit_area' not in self.edges:    
+            self.edges['fit_area'] = {'fit_start':self.parent.energy_scale[10],
+                                      'fit_end': self.parent.energy_scale[-10]}
+        
+        fit_end = str(self.edges['fit_area']['fit_end']  )
+        fit_start = str(self.edges['fit_area']['fit_start'] )
+        
+        if fit_end > fit_start:
+            fit_start = self.parent.energy_scale[10]
+            fit_end = self.parent.energy_scale[-10]
+        self.core_loss_tab[2, 0].value = fit_start
+        self.core_loss_tab[3, 0].value = fit_end
         self.edges['fit_area']['fit_start'] = self.core_loss_tab[2, 0].value 
         self.edges['fit_area']['fit_end'] = self.core_loss_tab[3, 0].value 
         
@@ -437,7 +465,7 @@ class CoreLoss(object):
             raise ValueError('need a experiment parameter in metadata dictionary')
         
         eff_beta = eels.effective_collection_angle(self.parent.energy_scale, alpha, beta, beam_kv)
-
+        self.dataset.metadata['experiment']['eff_beta'] = eff_beta
         self.low_loss = None
         if self.core_loss_tab[13, 1].value:
             for key in self.datasets.keys():
@@ -588,10 +616,13 @@ class CoreLoss(object):
     def set_y_scale(self, value):
         self.parent.info_tab[9, 2].value = self.core_loss_tab[13,0].value
         self.update()
+
         
     def set_cl_action(self):
-        self.core_loss_tab[2, 0].observe(self.set_fit_area, names='value')
-        self.core_loss_tab[3, 0].observe(self.set_fit_area, names='value')
+
+        # self.core_loss_tab[0, 0].observe(self.update_cl_dataset, names='value')
+        self.core_loss_tab[2, 0].observe(self.set_fit_start, names='value')
+        self.core_loss_tab[3, 0].observe(self.set_fit_end, names='value')
         
         self.core_loss_tab[4, 0].on_click(self.find_elements)
         self.core_loss_tab[5, 0].observe(self.update, names='value')
