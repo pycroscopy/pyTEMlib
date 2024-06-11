@@ -136,6 +136,7 @@ class CoreLoss(object):
         self.model = []
         self.edges = {}
         self.count = 0
+        self.cl_key = ''
         
         self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.parent.energy_scale)
         self.elements_cancel_button = ipywidgets.Button(description='Cancel')
@@ -145,27 +146,37 @@ class CoreLoss(object):
         self.periodic_table_panel = ipywidgets.VBox([self.periodic_table.periodic_table,
                                                      ipywidgets.HBox([self.elements_cancel_button, self.elements_auto_button, self.elements_select_button])])
         
-        self.update_cl_sidebar()
+        # self.update_cl_sidebar()
         self.set_cl_action()
-
-    def update_cl_dataset(self, value=0):
+    
+    def update_cl_key(self, value=0):
         self.cl_key = self.core_loss_tab[0, 0].value.split(':')[0]
         self.parent.set_dataset(self.cl_key)
     
         self.dataset = self.parent.dataset
-        if len(self.dataset)>12:
-            pass
-            # self.set_fit_area()
+        print(self.cl_key, self.core_loss_tab[0, 0].value)
+
+    def update_cl_dataset(self, value=0):
+        if self.cl_key not in self.core_loss_tab[0, 0].options:
+            self.cl_key = self.core_loss_tab[0, 0].value.split(':')[0]
+        self.parent.set_dataset(self.cl_key)
+    
+        self.dataset = self.parent.dataset
 
     def update_cl_sidebar(self):
         self.count+=1
         spectrum_list = ['None '+str(self.count)]
+        cl_index = 0
         for index, key in enumerate(self.parent.datasets.keys()):
             if isinstance(self.parent.datasets[key], sidpy.Dataset):
                 if 'SPECTR' in self.parent.datasets[key].data_type.name:
                     spectrum_list.append(f'{key}: {self.parent.datasets[key].title}') 
-        
+                if key == self.cl_key:
+                    cl_index = index
+        self.cl_key = spectrum_list[cl_index]
         self.core_loss_tab[0, 0].options = spectrum_list
+        self.core_loss_tab[0, 0].value = spectrum_list[cl_index]
+
         
         
     def line_select_callback(self, x_min, x_max):
@@ -363,7 +374,9 @@ class CoreLoss(object):
             self.core_loss_tab[2, 0].value = str(self.edges['fit_area']['fit_start'] )  
         if self.core_loss_tab[2, 0].value < self.parent.energy_scale[0]:
             self.core_loss_tab[2, 0].value = self.parent.energy_scale[10]
-
+        self.edges['fit_area']['fit_start'] = float(self.core_loss_tab[2, 0].value)
+        self.parent.plot()
+        
     def set_fit_end(self, value=0):
         if 'edges' not in self.dataset.metadata:
             self.edges = self.dataset.metadata['edges'] = {}
@@ -374,7 +387,8 @@ class CoreLoss(object):
             self.core_loss_tab[2, 0].value = str(self.edges['fit_area']['fit_start'] )  
         if self.core_loss_tab[3, 0].value > self.parent.energy_scale[-1]:
             self.core_loss_tab[3, 0].value = self.parent.energy_scale[-10]
-
+        self.edges['fit_area']['fit_end'] = self.core_loss_tab[3, 0].value 
+        self.parent.plot()
     def set_fit_area(self, value=1):
         if 'fit_area' not in self.edges:    
             self.edges['fit_area'] = {'fit_start':self.parent.energy_scale[10],
@@ -620,7 +634,7 @@ class CoreLoss(object):
         
     def set_cl_action(self):
 
-        # self.core_loss_tab[0, 0].observe(self.update_cl_dataset, names='value')
+        self.core_loss_tab[0, 0].observe(self.update_cl_key, names='value')
         self.core_loss_tab[2, 0].observe(self.set_fit_start, names='value')
         self.core_loss_tab[3, 0].observe(self.set_fit_end, names='value')
         

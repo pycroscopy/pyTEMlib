@@ -575,6 +575,7 @@ class EELSBaseWidget(object):
         self.count = 0
 
         self.update_sidebars()
+        #self.update_sidebar()
         self.plot()
         
     def update_sidebars(self):
@@ -717,15 +718,15 @@ class EELSWidget(EELSBaseWidget):
             elif val.new == 2:
                 self.low_loss.update_ll_dataset()
             elif val.new == 3:
-                self.core_loss.update_cl_dataset()
+                self.core_loss.update_cl_sidebar()
 
     def update_sidebars(self):
         if hasattr(self, 'info'):
             self.info.update_sidebar()
-        if hasattr(self, 'low_loss'):
-            self.low_loss.update_ll_sidebar()
-        if hasattr(self, 'core_loss'):
-            self.core_loss.update_cl_sidebar()
+        #if hasattr(self, 'low_loss'):
+        #    self.low_loss.update_ll_sidebar()
+        #if hasattr(self, 'core_loss'):
+        #    self.core_loss.update_cl_sidebar()
 
 class Info(object):
     def __init__(self, sidebar=None, parent=None):
@@ -760,7 +761,7 @@ class Info(object):
             self.parent._update()
 
     def set_flux(self, value):
-        self.parent.datasets[self.key].metadata['experiment']['exposure_time'] = self.info_tab[10, 0].value
+        # self.parent.datasets[self.key].metadata['experiment']['exposure_time'] = self.info_tab[10, 0].value
         if self.info_tab[9, 0].value == 'None':
             self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = 0.
         else:

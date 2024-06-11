@@ -1457,7 +1457,7 @@ def fit_edges2(spectrum, energy_scale, edges):
         return yy
 
     def residuals(pp, xx, yy):
-        err = np.abs((yy - model(xx, pp)) * mask)  # / np.sqrt(np.abs(y))
+        err = np.abs((yy - model(xx, pp)) * mask)  / np.sqrt(np.abs(y))
         return err
 
     scale = y[100]
