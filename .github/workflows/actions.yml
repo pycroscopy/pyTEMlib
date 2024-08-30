@@ -1,7 +1,7 @@
 name: build
 
 env:
-  PYTHON_MAIN_VERSION: 3.8
+  PYTHON_MAIN_VERSION: 3.12
   
 on:
   pull_request:
