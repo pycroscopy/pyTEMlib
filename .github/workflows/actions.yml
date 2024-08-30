@@ -1,7 +1,7 @@
 name: build
 
 env:
-  PYTHON_MAIN_VERSION: 3.12
+  PYTHON_MAIN_VERSION: 3.9
   
 on:
   pull_request:
@@ -73,6 +73,6 @@ jobs:
       env: 
         PYPI_TOKEN_PASSWORD: ${{ secrets.API_TOKEN_PYPI2 }}
       run: |
-        pip install wheel twine setuptools
+        pip install wheel twine
         python setup.py sdist bdist_wheel
         twine upload --username "__token__" --password $PYPI_TOKEN_PASSWORD dist/*
