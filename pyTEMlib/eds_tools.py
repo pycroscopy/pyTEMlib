@@ -346,9 +346,9 @@ def get_model(spectrum, start=100):
         detector_efficiency = None
     E_0 = spectrum.metadata['experiment']['acceleration_voltage']
 
-    if detector_efficiency is not None:
-        model[start:] += detector_efficiency[start:] * (pp[-3] + pp[-2] * (E_0 - energy_scale) / energy_scale +
-                                                        pp[-1] * (E_0 - energy_scale) ** 2 / energy_scale)
+    # if detector_efficiency is not None:
+    #    model[start:] += detector_efficiency[start:] * (pp[-3] + pp[-2] * (E_0 - energy_scale) / energy_scale +
+    #                                                    pp[-1] * (E_0 - energy_scale) ** 2 / energy_scale)
 
     return model
 
