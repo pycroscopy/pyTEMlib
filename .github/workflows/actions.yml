@@ -1,7 +1,7 @@
 name: build
 
 env:
-  PYTHON_MAIN_VERSION: 3.8
+  PYTHON_MAIN_VERSION: 3.12
   
 on:
   pull_request:
@@ -19,7 +19,7 @@ jobs:
     strategy:
       max-parallel: 5
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - uses: actions/checkout@v3
@@ -73,6 +73,6 @@ jobs:
       env: 
         PYPI_TOKEN_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
-        pip install wheel twine
-        python setup.py sdist bdist_wheel
+        pip install wheel twine, build
+        python -m build --sdist --wheel
         twine upload --username "__token__" --password $PYPI_TOKEN_PASSWORD dist/*

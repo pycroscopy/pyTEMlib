@@ -9,6 +9,7 @@ from codecs import open
 import os
 import setuptools
 
+
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'README.rst')) as f:
     long_description = f.read()
@@ -47,7 +48,7 @@ setuptools.setup(
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
 
-    install_requires=['scipy', 'numpy', 'pillow',  'ase', 'tqdm', 'plotly', 'pandas', 'requests', 'lxml', 'ipympl', 
+    install_requires=['scipy', 'numpy', 'pillow',  'ase', 'tqdm', 'plotly', 'pandas', 'requests', 'lxml', 'ipympl', 'build', 
                       'spglib', 'scikit-image', 'scikit-learn', 'pyNSID>=0.0.7', 'sidpy>=0.12.1', 'SciFiReaders>=0.0.8'],  # 'PyQt5> 1.0'],#
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
