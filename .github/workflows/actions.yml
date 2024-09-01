@@ -75,6 +75,7 @@ jobs:
       env: 
         PYPI_TOKEN_PASSWORD: ${{ secrets.API_TOKEN_PYPI2 }}
       run: |
-        pip install twine, build
+        pip install twine
+        pip install build
         python -m build --sdist --wheel
         twine upload --username "__token__" --password $PYPI_TOKEN_PASSWORD dist/*
