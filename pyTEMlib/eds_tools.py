@@ -56,7 +56,6 @@ shell_occupancy = {'K1': 2, 'L1': 2, 'L2': 2, 'L3': 4, 'M1': 2, 'M2': 2, 'M3': 4
 def detector_response(dataset):
     tags = dataset.metadata['experiment']
 
-    tags['acceleration_voltage_V'] = tags['microscope']['acceleration_voltage_V']
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
     if 'start_channel' not in tags['detector']:
         tags['detector']['start_channel'] = np.searchsorted(energy_scale, 100)
@@ -88,7 +87,7 @@ def get_detector_response(detector_definition, energy_scale):
     -------
 
     tags ={}
-    tags['acceleration_voltage_V'] = 200000
+    tags['acceleration_voltage'] = 200000
 
     tags['detector'] ={}
 
@@ -182,19 +181,13 @@ def find_elements(spectrum, minor_peaks):
         found = False
         for element in range(3,82):
             if 'lines' in x_sections[str(element)]:
-                if 'K-L3' in x_sections[str(element)]['lines']:
-                    if abs(x_sections[str(element)]['lines']['K-L3']['position']- energy_scale[peak]) <10:
+                if 'K-L2' in x_sections[str(element)]['lines']:
+                    if abs(x_sections[str(element)]['lines']['K-L2']['position']- energy_scale[peak]) <10:
                         found = True
                         if  x_sections[str(element)]['name'] not in elements:
                             elements.append( x_sections[str(element)]['name'])
                 if not found:
-                    if 'K-L2' in x_sections[str(element)]['lines']:
-                        if abs(x_sections[str(element)]['lines']['K-L2']['position']- energy_scale[peak]) <10:
-                            found = True
-                            if  x_sections[str(element)]['name'] not in elements:
-                                elements.append( x_sections[str(element)]['name'])
-                if not found:
-                    if 'L3-M5' in x_sections[str(element)]['lines']:
+                    if 'L3-M3' in x_sections[str(element)]['lines']:
                         if abs(x_sections[str(element)]['lines']['L3-M5']['position']- energy_scale[peak]) <30:
                               if  x_sections[str(element)]['name'] not in elements:
                                     elements.append( x_sections[str(element)]['name'])
@@ -212,87 +205,71 @@ def get_x_ray_lines(spectrum, elements):
     # omega_K = Z**4/(alpha_K+Z**4)
     # omega_L = Z**4/(alpha_L+Z**4)
     # omega_M = Z**4/(alpha_M+Z**4)
-    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
+    energy_scale = np.array(spectrum.get_spectral_dims(return_axis=True)[0].values)
     for element in elements:
-        atomic_number = elements_list.index(element)
+        atomic_number = pyTEMlib.eds_tools.elements_list.index(element)
         out_tags[element] ={'Z': atomic_number}
+        lines = x_sections[str(atomic_number)]['lines']
+        K_weight = 0
+        K_main = 'None'
+        K_lines = []
+        L_weight = 0
+        L_main = 'None'
+        L_lines = []
+        M_weight = 0
+        M_main = 'None'
+        M_lines = []
+        
+        for key, line in lines.items():
+            if 'K' == key[0]:
+                if line['position'] < energy_scale[-1]:
+                        K_lines.append(key)
+                        if line['weight'] > K_weight:
+                            K_weight = line['weight']
+                            K_main = key
+            if 'L' == key[0]:
+                if line['position'] < energy_scale[-1]:
+                        L_lines.append(key)
+                        if line['weight'] > L_weight:
+                            L_weight = line['weight']
+                            L_main = key
+            if 'M' == key[0]:
+                if line['position'] < energy_scale[-1]:
+                        M_lines.append(key)
+                        if line['weight'] > M_weight:
+                            M_weight = line['weight']
+                            M_main = key
+            
+        if K_weight > 0:
+            out_tags[element]['K-family'] = {'main': K_main, 'weight': K_weight, 'lines': K_lines}
+            height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines'][K_main]['position'] )].compute()
+            out_tags[element]['K-family']['height'] = height/K_weight
+            for key in K_lines:
+                out_tags[element]['K-family'][key] = x_sections[str(atomic_number)]['lines'][key]
+        if L_weight > 0:     
+            out_tags[element]['L-family'] = {'main': L_main, 'weight': L_weight, 'lines': L_lines}
+            height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines'][L_main]['position'] )].compute()
+            out_tags[element]['L-family']['height'] = height/L_weight
+            for key in L_lines:
+                out_tags[element]['L-family'][key] = x_sections[str(atomic_number)]['lines'][key]
+        if M_weight > 0:
+            out_tags[element]['M-family'] = {'main': M_main, 'weight': M_weight, 'lines': M_lines}
+            height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines'][M_main]['position'] )].compute()
+            out_tags[element]['M-family']['height'] = height/M_weight
+            for key in M_lines:
+                out_tags[element]['M-family'][key] = x_sections[str(atomic_number)]['lines'][key]
 
-        if 'K-L3' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['K-L3']['position'] < energy_scale[-1]:
-                height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['K-L3']['position'] )].compute()
-                out_tags[element]['K-family'] = {'height': height}
-                if 'K' in x_sections[str(atomic_number)]['fluorescent_yield']:
-                    out_tags[element]['K-family']['yield'] = x_sections[str(atomic_number)]['fluorescent_yield']['K']
-                else:
-                    out_tags[element]['K-family']['yield'] = atomic_number**4/(alpha_K+atomic_number**4)/4/1.4
-
-        if 'L3-M5' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['L3-M5']['position'] < energy_scale[-1]:
-                height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['L3-M5']['position'] )].compute()
-                out_tags[element]['L-family'] = {'height': height}
-                if 'L' in x_sections[str(atomic_number)]['fluorescent_yield']:
-                    out_tags[element]['L-family']['yield'] = x_sections[str(atomic_number)]['fluorescent_yield']['L']
-                else:
-                    out_tags[element]['L-family']['yield'] = (atomic_number**4/(alpha_L+atomic_number**4))**2
-
-        if 'M5-N6' in x_sections[str(atomic_number)]['lines']:
-            if x_sections[str(atomic_number)]['lines']['M5-N6']['position'] < energy_scale[-1]:
-                height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines']['M5-N6']['position'] )].compute()
-                out_tags[element]['M-family'] = {'height': height}
-                if 'M' in x_sections[str(atomic_number)]['fluorescent_yield']:
-                    out_tags[element]['M-family']['yield'] = x_sections[str(atomic_number)]['fluorescent_yield']['M']
-                else:
-                    out_tags[element]['M-family']['yield'] = (atomic_number**4/(alpha_M+atomic_number**4))**2
-
-        for key, line in x_sections[str(atomic_number)]['lines'].items():
-            other = True
-            if line['weight'] > 0.01 and line['position'] < 3e4:
-                if 'K-family' in out_tags[element]:
-                    if key[0] == 'K':
-                        other = False
-                        out_tags[element]['K-family'][key]=line
-                if 'L-family' in out_tags[element]:
-                    if key[:2] in ['L2', 'L3']:
-                        other = False
-                        out_tags[element]['L-family'][key]=line
-                if 'M-family' in out_tags[element]:
-                    if key[:2] in ['M5', 'M4']:
-                        other = False
-                        out_tags[element]['M-family'][key]=line
-                if other:
-                    if 'other' not in out_tags[element]:
-                        out_tags[element]['other'] = {}
-                    height = spectrum[np.searchsorted(energy_scale, x_sections[str(atomic_number)]['lines'][key]['position'] )].compute()
-                    out_tags[element]['other'][key]=line
-                    out_tags[element]['other'][key]['height'] = height
-      
         xs = get_eds_cross_sections(atomic_number)
         if 'K' in xs and 'K-family' in out_tags[element]:
-            out_tags[element]['K-family']['ionization_x_section'] = xs['K']
+            out_tags[element]['K-family']['probability'] = xs['K']
         if 'L' in xs and 'L-family' in out_tags[element]:
-            out_tags[element]['L-family']['ionization_x_section'] = xs['L']
+            out_tags[element]['L-family']['probability'] = xs['L']
         if 'M' in xs and 'M-family' in out_tags[element]:
-            out_tags[element]['M-family']['ionization_x_section'] = xs['M']
+            out_tags[element]['M-family']['probability'] = xs['M']
 
-    """
-    We really should use the sum of the family
-    for key, x_lines in out_tags.items():
-        if 'K-family' in x_lines:
-            xs = pyTEMlib.eels_tools.xsec_xrpa(np.arange(100)+x_sections[str(x_lines['Z'])]['K1']['onset'], 200,x_lines['Z'], 100).sum()
-
-            x_lines['K-family']['ionization_x_section'] = xs
-            
-        if 'L-family' in x_lines:
-            xs = pyTEMlib.eels_tools.xsec_xrpa(np.arange(100)+x_sections[str(x_lines['Z'])]['L3']['onset'], 200,x_lines['Z'], 100).sum()
-            x_lines['L-family']['ionization_x_section'] = xs
-        if 'M-family' in x_lines:
-            xs = pyTEMlib.eels_tools.xsec_xrpa(np.arange(100)+x_sections[str(x_lines['Z'])]['M5']['onset'], 200,x_lines['Z'], 100).sum()
-            x_lines['M-family']['ionization_x_section'] = xs
-    """
     if 'EDS' not in spectrum.metadata:
         spectrum.metadata['EDS'] = {}
-
-    spectrum.metadata['EDS']['lines'] = out_tags
+    spectrum.metadata['EDS'].update(out_tags)
     return out_tags
 
 
@@ -313,7 +290,7 @@ def get_peak(E, energy_scale):
 
 
 def initial_model_parameter(spectrum):
-    tags = spectrum.metadata['EDS']['lines']
+    tags = spectrum.metadata['EDS']
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
     p = []
     peaks = []
@@ -324,9 +301,9 @@ def initial_model_parameter(spectrum):
             for line, info in lines['K-family'].items():
                 if line[0] == 'K':
                     model += get_peak(info['position'], energy_scale)*info['weight']
-            lines['K-family']['peaks'] = model/model.sum()
-            lines['K-family']['height'] /= lines['K-family']['peaks'].max()
-            p.append(lines['K-family']['height'])
+            lines['K-family']['peaks'] = model  /model.sum()  # *lines['K-family']['probability']
+             
+            p.append(lines['K-family']['height'] / lines['K-family']['peaks'].max())
             peaks.append(lines['K-family']['peaks'])
             keys.append(element+':K-family')
         if 'L-family' in lines:
@@ -334,9 +311,8 @@ def initial_model_parameter(spectrum):
             for line, info in lines['L-family'].items():
                 if line[0] == 'L':
                     model += get_peak(info['position'], energy_scale)*info['weight']
-            lines['L-family']['peaks'] = model/model.sum()
-            lines['L-family']['height'] /= lines['L-family']['peaks'].max()
-            p.append(lines['L-family']['height'])
+            lines['L-family']['peaks'] = model  /model.sum() # *lines['L-family']['probability']
+            p.append(lines['L-family']['height'] / lines['L-family']['peaks'].max())
             peaks.append(lines['L-family']['peaks'])
             keys.append(element+':L-family')
         if 'M-family' in lines:
@@ -344,18 +320,11 @@ def initial_model_parameter(spectrum):
             for line, info in lines['M-family'].items():
                 if line[0] == 'M':
                     model += get_peak(info['position'], energy_scale)*info['weight']
-            lines['M-family']['peaks'] = model/model.sum()
-            lines['M-family']['height'] /= lines['M-family']['peaks'].max()
-            p.append(lines['M-family']['height'])
+            lines['M-family']['peaks'] = model  /model.sum()*lines['M-family']['probability']
+            p.append(lines['M-family']['height'] / lines['M-family']['peaks'].max())
             peaks.append(lines['M-family']['peaks'])
             keys.append(element+':M-family')
-            
-        if 'other' in lines:
-            for line, info in lines['other'].items():
-                info['peak'] =  get_peak(info['position'], energy_scale)
-                peaks.append(info['peak'])
-                p.append(info['height'])
-                keys.append(element+':other:'+line)
+
 
     #p.extend([300, 10, 1.e-04])
     # p.extend([1, 300, -.02])
@@ -363,22 +332,23 @@ def initial_model_parameter(spectrum):
     return np.array(peaks), np.array(p), keys
 
 def get_model(spectrum, start=100):
-
-    peaks, pp, keys = initial_model_parameter(spectrum)
     model = np.zeros(len(spectrum))
-    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
-    pp= spectrum.metadata['EDS']['parameters']
-    for i in range(len(pp) - 3):
-        model += peaks[i] * pp[i]
-    if 'detector_efficiency' in spectrum.metadata['experiment']['detector'].keys():
-        detector_efficiency = spectrum.metadata['experiment']['detector']['detector_efficiency']
+    for key in spectrum.metadata['EDS']:
+        for family in spectrum.metadata['EDS'][key]:
+            if isinstance(spectrum.metadata['EDS'][key][family], dict):
+                intensity  = spectrum.metadata['EDS'][key][family]['areal_density']
+                peaks = spectrum.metadata['EDS'][key][family]['peaks']
+                model += peaks * intensity
+
+    if 'detector_efficiency' in spectrum.metadata['EDS']['detector'].keys():
+        detector_efficiency = spectrum.metadata['EDS']['detector']['detector_efficiency']
     else:
         detector_efficiency = None
-    E_0 = spectrum.metadata['experiment']['acceleration_voltage_V']
+    E_0 = spectrum.metadata['experiment']['acceleration_voltage']
 
-    if detector_efficiency is not None:
-        model[start:] += detector_efficiency[start:] * (pp[-3] + pp[-2] * (E_0 - energy_scale) / energy_scale +
-                                                        pp[-1] * (E_0 - energy_scale) ** 2 / energy_scale)
+    # if detector_efficiency is not None:
+    #    model[start:] += detector_efficiency[start:] * (pp[-3] + pp[-2] * (E_0 - energy_scale) / energy_scale +
+    #                                                    pp[-1] * (E_0 - energy_scale) ** 2 / energy_scale)
 
     return model
 
@@ -386,22 +356,22 @@ def fit_model(spectrum, elements, use_detector_efficiency=False):
     out_tags = get_x_ray_lines(spectrum, elements)
     peaks, pin, keys = initial_model_parameter(spectrum)
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
-
-    if 'detector' in spectrum.metadata['experiment'].keys():
-        if 'start_channel' not in spectrum.metadata['experiment']['detector']:
-            spectrum.metadata['experiment']['detector']['start_channel'] = np.searchsorted(energy_scale, 100)
-        if 'detector_efficiency' in spectrum.metadata['experiment']['detector'].keys():
+    
+    if 'detector' in spectrum.metadata['EDS'].keys():
+        if 'start_channel' not in spectrum.metadata['EDS']['detector']:
+            spectrum.metadata['EDS']['detector']['start_channel'] = np.searchsorted(energy_scale, 100)
+        if 'detector_efficiency' in spectrum.metadata['EDS']['detector'].keys():
             if use_detector_efficiency:
-                detector_efficiency = spectrum.metadata['experiment']['detector']['detector_efficiency']
+                detector_efficiency = spectrum.metadata['EDS']['detector']['detector_efficiency']
         else:
             use_detector_efficiency = False
     else:
         print('need detector information to fit spectrum')
         return
-    start = spectrum.metadata['experiment']['detector']['start_channel']
+    start = spectrum.metadata['EDS']['detector']['start_channel']
     energy_scale = energy_scale[start:]
 
-    E_0= spectrum.metadata['experiment']['acceleration_voltage_V']
+    E_0= spectrum.metadata['experiment']['acceleration_voltage']
 
     def residuals(pp, yy):
         #get_model(peaks, pp, detector_efficiency=None)
@@ -426,33 +396,31 @@ def fit_model(spectrum, elements, use_detector_efficiency=False):
 
     # print(pin[-6:], p[-6:])
 
-    update_fit_values(out_tags, p)
+    update_fit_values(out_tags, peaks, p)
 
 
     if 'EDS' not in spectrum.metadata:
         spectrum.metadata['EDS'] = {}
-    spectrum.metadata['EDS']['lines'] = out_tags
+    spectrum.metadata['EDS'].update(out_tags)
 
     return np.array(peaks), np.array(p)
 
 
-def update_fit_values(out_tags, p):
+def update_fit_values(out_tags, peaks, p):
     index = 0
     for element, lines in out_tags.items():
         if 'K-family' in lines:
-            lines['K-family']['height'] = p[index]
+            lines['K-family']['areal_density'] = p[index]
+            lines['K-family']['peaks'] = peaks[index]
             index += 1
         if 'L-family' in lines:
-            lines['L-family']['height'] = p[index]
+            lines['L-family']['areal_density'] = p[index]
+            lines['L-family']['peaks'] = peaks[index]
             index += 1
         if 'M-family' in lines:
-            lines['M-family']['height'] =p[index]
+            lines['M-family']['areal_density'] =p[index]
+            lines['M-family']['peaks'] = peaks[index]
             index += 1
-        if 'other' in lines:
-            for line, info in lines['other'].items():
-                info['height'] = p[index]
-                index += 1
-                
 
 def get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd):
     background = pyTEMlib.eels_tools.power_law_background(Xsection, energy_scale, [start_bgd, end_bgd], verbose=False)
@@ -462,44 +430,97 @@ def get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd):
     return cross_section_core
 
 
-def get_eds_cross_sections(z):
-    energy_scale = np.arange(10, 20000)
-    Xsection = pyTEMlib.eels_tools.xsec_xrpa(energy_scale, 200, z, 400.)
+def get_eds_cross_sections(z, acceleration_voltage=200000):
+    energy_scale = np.arange(1,20000)
+    Xsection = pyTEMlib.eels_tools.xsec_xrpa(energy_scale, acceleration_voltage/1000., z, 400.)
     edge_info = pyTEMlib.eels_tools.get_x_sections(z)
+
+    
     eds_cross_sections = {}
-    if 'K1' in edge_info:
-        start_bgd = edge_info['K1']['onset'] * 0.8
-        end_bgd = edge_info['K1']['onset']  - 5
-        if start_bgd > end_bgd:
-            start_bgd = end_bgd-100
-        if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
-            eds_xsection = get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd)
-            eds_xsection = Xsection - eds_xsection
-            eds_xsection[eds_xsection<0] = 0.
-            start_sum = np.searchsorted(energy_scale, edge_info['K1']['onset'])
-            eds_cross_sections['K'] = eds_xsection[start_sum:start_sum+200].sum() 
-    if 'L3' in edge_info:
-        start_bgd = edge_info['L3']['onset'] * 0.8
-        end_bgd = edge_info['L3']['onset']  - 5
-        if start_bgd > end_bgd:
-            start_bgd = end_bgd-100
-        if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
-            eds_xsection = get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd)
-            eds_xsection = Xsection - eds_xsection
-            eds_xsection[eds_xsection<0] = 0.
-            start_sum = np.searchsorted(energy_scale, edge_info['L3']['onset'])
-            eds_cross_sections['L'] = eds_xsection[start_sum:start_sum+200].sum() 
-    if 'M5' in edge_info:
-        start_bgd = edge_info['M5']['onset'] * 0.8
-        end_bgd = edge_info['M5']['onset']  - 5
-        if start_bgd > end_bgd:
-            start_bgd = end_bgd-100
-        if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
-            eds_xsection = get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd)
-            eds_xsection = Xsection - eds_xsection
-            eds_xsection[eds_xsection<0] = 0.
-            start_sum = np.searchsorted(energy_scale, edge_info['M5']['onset'])
-            eds_cross_sections['M'] = eds_xsection[start_sum:start_sum+200].sum() 
+    Xyield = edge_info['total_fluorescent_yield']
+    if 'K' in Xyield:
+            start_bgd = edge_info['K1']['onset'] * 0.8
+            end_bgd = edge_info['K1']['onset']  - 5
+            if start_bgd > end_bgd:
+                start_bgd = end_bgd-100
+            if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
+                eds_xsection = get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd)
+                eds_xsection[eds_xsection<0] = 0.
+                start_sum = np.searchsorted(energy_scale, edge_info['K1']['onset'])
+                end_sum = start_sum+600
+                if end_sum> len(Xsection):
+                    end_sum = len(Xsection)-1
+                eds_cross_sections['K1'] = eds_xsection[start_sum:end_sum].sum() 
+                eds_cross_sections['K'] = eds_xsection[start_sum:end_sum].sum() * Xyield['K']
+    
+    if 'L3' in Xyield:
+            start_bgd = edge_info['L3']['onset'] * 0.8
+            end_bgd = edge_info['L3']['onset']  - 5
+            if start_bgd > end_bgd:
+                start_bgd = end_bgd-100
+            if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
+                eds_xsection = get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd)
+                eds_xsection[eds_xsection<0] = 0.
+                start_sum = np.searchsorted(energy_scale, edge_info['L3']['onset'])
+                end_sum = start_sum+600
+                if end_sum> len(Xsection):
+                    end_sum = len(Xsection)-1
+                if end_sum >np.searchsorted(energy_scale, edge_info['K1']['onset'])-10:
+                    end_sum = np.searchsorted(energy_scale, edge_info['K1']['onset'])-10
+                eds_cross_sections['L'] = eds_xsection[start_sum:end_sum].sum() 
+                L1_channel =  np.searchsorted(energy_scale, edge_info['L1']['onset'])
+                m_start = start_sum-100
+                if m_start < 2:
+                    m_start = start_sum-20
+                l3_rise = np.max(Xsection[m_start: L1_channel-10])-np.min(Xsection[m_start: L1_channel-10])
+                l1_rise = np.max(Xsection[L1_channel-10: L1_channel+100])-np.min(Xsection[L1_channel-10: L1_channel+100])
+                l1_ratio = l1_rise/l3_rise
+                
+                eds_cross_sections['L1'] = l1_ratio * eds_cross_sections['L']
+                eds_cross_sections['L2'] = eds_cross_sections['L']*(1-l1_ratio)*1/3
+                eds_cross_sections['L3'] = eds_cross_sections['L']*(1-l1_ratio)*2/3
+                eds_cross_sections['yield_L1'] = Xyield['L1']
+                eds_cross_sections['yield_L2'] = Xyield['L2']
+                eds_cross_sections['yield_L3'] = Xyield['L3']
+
+                eds_cross_sections['L'] = eds_cross_sections['L1']*Xyield['L1']+eds_cross_sections['L2']*Xyield['L2']+eds_cross_sections['L3']*Xyield['L3']
+                # eds_cross_sections['L'] /= 8
+    if 'M5' in Xyield:
+            start_bgd = edge_info['M5']['onset'] * 0.8
+            end_bgd = edge_info['M5']['onset']  - 5
+            if start_bgd > end_bgd:
+                start_bgd = end_bgd-100
+            if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
+                eds_xsection = get_eds_xsection(Xsection, energy_scale, start_bgd, end_bgd)
+                eds_xsection[eds_xsection<0] = 0.
+                start_sum = np.searchsorted(energy_scale, edge_info['M5']['onset'])
+                end_sum = start_sum+600
+                if end_sum > np.searchsorted(energy_scale, edge_info['L3']['onset'])-10:
+                    end_sum = np.searchsorted(energy_scale, edge_info['L3']['onset'])-10
+                eds_cross_sections['M'] = eds_xsection[start_sum:end_sum].sum() 
+                #print(edge_info['M5']['onset'] - edge_info['M1']['onset'])
+                M3_channel =  np.searchsorted(energy_scale, edge_info['M3']['onset'])
+                M1_channel =  np.searchsorted(energy_scale, edge_info['M1']['onset'])
+                m5_rise = np.max(Xsection[start_sum-100: M3_channel-10])-np.min(Xsection[start_sum-100: M3_channel-10])
+                m3_rise = np.max(Xsection[M3_channel-10: M1_channel-10])-np.min(Xsection[M3_channel-10: M1_channel-10])
+                m1_rise = np.max(Xsection[M1_channel-10: M1_channel+100])-np.min(Xsection[M1_channel-10: M1_channel+100])
+                m1_ratio = m1_rise/m5_rise
+                m3_ratio = m3_rise/m5_rise
+                m5_ratio = 1-(m1_ratio+m3_ratio)
+                #print(m1_ratio, m3_ratio, 1-(m1_ratio+m3_ratio))
+                eds_cross_sections['M1'] = m1_ratio * eds_cross_sections['M']
+                eds_cross_sections['M2'] = m3_ratio * eds_cross_sections['M']*1/3
+                eds_cross_sections['M3'] = m3_ratio * eds_cross_sections['M']*2/3
+                eds_cross_sections['M4'] = m5_ratio * eds_cross_sections['M']*2/5
+                eds_cross_sections['M5'] = m5_ratio * eds_cross_sections['M']*3/5
+                eds_cross_sections['yield_M1'] = Xyield['M1']
+                eds_cross_sections['yield_M2'] = Xyield['M2']
+                eds_cross_sections['yield_M3'] = Xyield['M3']
+                eds_cross_sections['yield_M4'] = Xyield['M4']
+                eds_cross_sections['yield_M5'] = Xyield['M5']
+                eds_cross_sections['M'] = eds_cross_sections['M1']*Xyield['M1']+eds_cross_sections['M2']*Xyield['M2']+eds_cross_sections['M3']*Xyield['M3'] \
+                                            +eds_cross_sections['M4']*Xyield['M4']+eds_cross_sections['M5']*Xyield['M5']
+                #eds_cross_sections['M'] /= 18
     return eds_cross_sections
 
 
@@ -556,3 +577,33 @@ def plot_phases(dataset, image=None, survey_image=None):
     plt.tight_layout()
     plt.show()
     return fig
+
+
+def plot_lines(eds_quantification: dict, axis: plt.Axes):
+    for key, lines in eds_quantification.items():
+        if 'K-family' in lines:
+            intensity = lines['K-family']['height']
+            for line in lines['K-family']:
+                if line[0] == 'K':
+                    pos = lines['K-family'][line]['position']
+                    axis.plot([pos,pos], [0, intensity*lines['K-family'][line]['weight']], color='blue')  
+                    if line == lines['K-family']['main']:      
+                        axis.text(pos,0, key+'\n'+line, verticalalignment='top')
+
+        if 'L-family' in lines:
+            intensity = lines['L-family']['height']
+            for line in lines['L-family']:
+                if line[0] == 'L':
+                    pos = lines['L-family'][line]['position']
+                    axis.plot([pos,pos], [0, intensity*lines['L-family'][line]['weight']], color='black')    
+                    if line in [lines['L-family']['main'], 'L3-M5', 'L3-N5', 'L1-M3']:            
+                        axis.text(pos,0, key+'\n'+line, verticalalignment='top')
+
+        if 'M-family' in lines:
+            intensity = lines['M-family']['height']
+            for line in lines['M-family']:
+                if line[0] == 'M':
+                    pos = lines['M-family'][line]['position']
+                    axis.plot([pos,pos], [0, intensity*lines['M-family'][line]['weight']], color='green')    
+                    if line in [lines['M-family']['main'], 'M5-N7', 'M4-N6']:      
+                        axis.text(pos,0, key+'\n'+line, verticalalignment='top')

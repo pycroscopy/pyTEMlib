@@ -601,8 +601,12 @@ def rigid_registration(dataset, sub_pixel=True):
     rig_reg, drift = rig_reg_drift(dataset, relative_drift)
     crop_reg, input_crop = crop_image_stack(rig_reg, drift)
     
-    rigid_registered = dataset.like_data(crop_reg)
-    rigid_registered.title = 'Rigid Registration'
+    rigid_registered = sidpy.Dataset.from_array(crop_reg, 
+                                                title='Rigid Registration', 
+                                                data_type='IMAGE_STACK',
+                                                quantity=dataset.quantity,
+                                                units=dataset.units)
+    rigid_registered.title = 'Rigid_Registration'
     rigid_registered.source = dataset.title
     rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
                                  'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
@@ -664,9 +668,9 @@ def rig_reg_drift(dset, rel_drift):
     # absolute drift
     print(rel_drift)
     drift = np.array(rel_drift).copy()
-
+    
     drift[0] = [0, 0]
-    for i in range(drift.shape[0]):
+    for i in range(1, drift.shape[0]):
         drift[i] = drift[i - 1] + rel_drift[i]
     center_drift = drift[int(drift.shape[0] / 2)]
     drift = drift - center_drift
