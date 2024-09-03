@@ -212,7 +212,7 @@ def get_x_ray_lines(spectrum, elements):
     # omega_K = Z**4/(alpha_K+Z**4)
     # omega_L = Z**4/(alpha_L+Z**4)
     # omega_M = Z**4/(alpha_M+Z**4)
-    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
+    energy_scale = spectrum.energy_scale
     for element in elements:
         atomic_number = elements_list.index(element)
         out_tags[element] ={'Z': atomic_number}
@@ -314,7 +314,7 @@ def get_peak(E, energy_scale):
 
 def initial_model_parameter(spectrum):
     tags = spectrum.metadata['EDS']['lines']
-    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
+    energy_scale = spectrum.energy_scale
     p = []
     peaks = []
     keys = []
@@ -385,7 +385,7 @@ def get_model(spectrum, start=100):
 def fit_model(spectrum, elements, use_detector_efficiency=False):
     out_tags = get_x_ray_lines(spectrum, elements)
     peaks, pin, keys = initial_model_parameter(spectrum)
-    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    energy_scale = energy_scale = spectrum.energy_scale
 
     if 'detector' in spectrum.metadata['experiment'].keys():
         if 'start_channel' not in spectrum.metadata['experiment']['detector']:
