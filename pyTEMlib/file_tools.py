@@ -44,7 +44,8 @@ except ModuleNotFoundError:
 
 Dimension = sidpy.Dimension
 
-get_slope = sidpy.base.num_utils.get_slope
+# Austin commented the line below - it is not used anywhere in the code, and it gives import errors 9-14-2024
+# get_slope = sidpy.base.num_utils.get_slopes
 __version__ = '2022.3.3'
 
 from traitlets import Unicode, Bool, validate, TraitError
@@ -595,7 +596,7 @@ def h5_group_to_dict(group, group_dict={}):
 
 
 def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=False):  # save_file=False,
-    """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
+    """Opens a file if the extension is .emd, .mrc, .hf5, .ndata, .dm3 or .dm4
 
     If no filename is provided the QT open_file windows opens (if QT_available==True)
     Everything will be stored in a NSID style hf5 file.
@@ -654,7 +655,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
             if not write_hdf_file:
                 file.close()
             return dataset_dict
-    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5']:
+    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5', '.mrc']:
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DMReader(filename)
@@ -689,6 +690,9 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
 
         elif extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
+
+        elif extension in ['.mrc']:
+            reader = SciFiReaders.MRCReader(filename)
 
         else:
             raise NotImplementedError('extension not supported')
