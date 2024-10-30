@@ -831,7 +831,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
             dataset_dict = {}
             for index, dataset in enumerate(datasets):
                 title = dataset.title.split('/')[2]
-                dataset.title = dataset.title.split('/')[-1]
+                dataset.title = str(dataset.title).split('/')[-1]
                 dataset_dict[title] = dataset
                 if index == 0:
                     file = datasets[0].h5_dataset.file
