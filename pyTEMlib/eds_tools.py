@@ -385,7 +385,7 @@ def get_model(spectrum, start=100):
 def fit_model(spectrum, elements, use_detector_efficiency=False):
     out_tags = get_x_ray_lines(spectrum, elements)
     peaks, pin, keys = initial_model_parameter(spectrum)
-    energy_scale = energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
 
     if 'detector' in spectrum.metadata['experiment'].keys():
         if 'start_channel' not in spectrum.metadata['experiment']['detector']:
