@@ -440,6 +440,8 @@ class ChooseDataset(object):
         else:
             self.reader = None
         self.get_dataset_list()
+        if self.dataset_list < 0:
+            self.dataset_list = ['None']
         self.select_image = widgets.Dropdown(options=self.dataset_list,
                                              value=self.dataset_list[0],
                                              description='select dataset:',
@@ -454,6 +456,7 @@ class ChooseDataset(object):
 
     def get_dataset_list(self):
         """ Get by Log number sorted list of datasets"""
+        dataset_list = []
         if not isinstance(self.datasets, dict):
             dataset_list = self.reader.read()
             self.datasets = {}
@@ -843,8 +846,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                 for key in master_group.keys():
                     if key not in dataset_dict:
                         dataset_dict[key] = h5_group_to_dict(master_group[key])
-                if not write_hdf_file:
-                    file.close()
+            if not write_hdf_file:
+                file.close()
             return dataset_dict
     elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5']:
         # tags = open_file(filename)
