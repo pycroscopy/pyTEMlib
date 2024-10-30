@@ -742,7 +742,6 @@ if Qt_available:
             
             self.axis.set_xlim(x_limit)
             self.axis.set_ylim(y_limit)
-            y_limit = jj
             
             for index, peak in self.peaks['peaks'].items():
                 p = [peak['position'], peak['amplitude'], peak['width']]

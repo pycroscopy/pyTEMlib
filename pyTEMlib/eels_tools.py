@@ -1731,7 +1731,6 @@ def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, re
     """ model for fitting low-loss spectrum"""
     if pin is None:
         pin = p
-        index = int(i * 3)
 
     # if len([restrict_pos]) == 1:
     #    restrict_pos = [restrict_pos]*number_of_peaks
