@@ -174,9 +174,11 @@ def get_info_sidebar() -> Any:
     side_bar[row, 1] = ipywidgets.Button(description='Shift Spec', disabled=True,
                                          layout=ipywidgets.Layout(width='auto'),
                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    """ 
     side_bar[row, 2] = ipywidgets.Button(description='Res.Fct.', disabled=True,
                                          layout=ipywidgets.Layout(width='auto'),
                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    """
     
     row += 1
     side_bar[row, :3] = ipywidgets.Button(description='Spectrum Image',
@@ -248,6 +250,9 @@ class EELSBaseWidget(object):
         self.image_list = ['Sum']
         self.dir_name = file_tools.get_last_path()
 
+        self.key = None
+        self.image = 'Sum'
+
         self.save_path = True
 
         if not os.path.isdir(self.dir_name):
@@ -295,11 +300,17 @@ class EELSBaseWidget(object):
                                                  layout=ipywidgets.Layout(width='200px'))
         self.end_cursor = ipywidgets.FloatText(value=0, description='End:', disabled=False, color='black',
                                                layout=ipywidgets.Layout(width='200px'))
+        self.statusbar = ipywidgets.Text(value='Starting',
+                                    placeholder='Type something',
+                                    description='Status:',
+                                    disabled=True,
+                                    layout=ipywidgets.Layout(width='100%'))
         self.panel = ipywidgets.VBox([ipywidgets.HBox([ipywidgets.Label('', layout=ipywidgets.Layout(width='100px')),
                                                        ipywidgets.Label('Cursor:'),
                                                        self.start_cursor, ipywidgets.Label('eV'),
                                                        self.end_cursor, ipywidgets.Label('eV')]),
-                                      self.figure.canvas])
+                                     self.figure.canvas,
+                                     self.statusbar])
         
         self.app_layout = ipywidgets.AppLayout(
             left_sidebar=tab,
@@ -329,9 +340,17 @@ class EELSBaseWidget(object):
         select_button.on_click(self.select_main)
         add_button.on_click(self.add_dataset)
         self.loaded_datasets.observe(self.select_dataset, names='value')
-        self.file_bar[4, 0].observe(self.plot, names='value')
+        self.file_bar[4, 0].observe(self.set_image, names='value')
+        self.file_bar[5, 0].observe(self.set_survey_image, names='value')
+        
+    def status_message(self, out: str):
+        self.statusbar.value = out 
 
-    def set_image(self, key=None):
+    def set_survey_image(self, key=None):
+        self.datasets['_relationship']['survey_image'] = self.file_bar[5, 0].value
+        # ToDo: Find boundaries of scan. 
+        
+    def get_image(self):
         if self.file_bar[4, 0].value == 'Sum':
             spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
             if len(spec_dim) != 1:
@@ -346,9 +365,15 @@ class EELSBaseWidget(object):
                 self.image = self.dataset.mean(axis=(spec_dim[0], channel_dim[0]))
             else:
                 self.image = self.dataset.mean(axis=(spec_dim[0]))
+            image_key = 'Sum'
         else:
             image_key = self.file_bar[4, 0].value.split(':')[0]
             self.image = self.datasets[image_key]
+        self.datasets['_relationship']['image'] = image_key
+        
+    def set_image(self, key=None):
+        self.get_image()
+        self.plot()
 
     def plot(self, scale=True):
         self.figure.clear()
@@ -358,6 +383,7 @@ class EELSBaseWidget(object):
             if self.dataset.data_type.name == 'SPECTRUM':
                 self.axis = self.figure.subplots(ncols=1)
             else:
+                self.get_image()
                 self.plot_spectrum_image() 
                 self.axis = self.axes[-1]
             self.spectrum = self.get_spectrum()
@@ -438,6 +464,7 @@ class EELSBaseWidget(object):
         self.axis.set_xlabel(self.xlabel)
         self.axis.set_ylabel(self.ylabel)
         self.change_y_scale = 1.0
+        
         self.figure.canvas.draw_idle()
 
     def _onclick(self, event):
@@ -513,7 +540,6 @@ class EELSBaseWidget(object):
         self.axes = self.figure.subplots(ncols=2)
         self.axis = self.axes[-1]
 
-        self.set_image()
         self.rect = matplotlib.patches.Rectangle((0, 0), self.bin_x, self.bin_y, linewidth=1, edgecolor='r',
                                                  facecolor='red', alpha=0.2)
         image_dims = self.dataset.get_image_dims()
@@ -619,6 +645,7 @@ class EELSBaseWidget(object):
         self.file_bar[3, 0].options = self.dataset_list
         self.loaded_datasets.options = self.dataset_list
         self.loaded_datasets.value = self.dataset_list[0]
+        self.status_message(' New file loaded')
 
     def add_dataset(self, value=0):
         key = file_tools.add_dataset_from_file(self.datasets, self.file_name, 'Channel')
@@ -691,6 +718,9 @@ class EELSBaseWidget(object):
 
 class EELSWidget(EELSBaseWidget):
     def __init__(self, datasets=None):
+        self.lowloss_key = 'None'
+        self.coreloss_key = 'None'
+        self.info_key = 'None'
         
         sidebar = {'Spec.': get_info_sidebar(),
                    'LowLoss': get_low_loss_sidebar(),
@@ -704,6 +734,8 @@ class EELSWidget(EELSBaseWidget):
         self.low_loss = LowLoss(self.low_loss_tab, self)
         self.core_loss = CoreLoss(self.core_loss_tab, self)
         
+        
+        
         self.set_action()
     
     def set_action(self):
@@ -712,11 +744,11 @@ class EELSWidget(EELSBaseWidget):
     def tab_activated(self, val=0):
         if isinstance(val.new, int):
             self.tabval = val.new
-            self.update_sidebars()
+            # self.update_sidebars()
             if val.new == 1:
                 self.info.update_dataset()
             elif val.new == 2:
-                self.low_loss.update_ll_dataset()
+                self.low_loss.update_ll_sidebar()
             elif val.new == 3:
                 self.core_loss.update_cl_sidebar()
 
@@ -732,7 +764,7 @@ class Info(object):
     def __init__(self, sidebar=None, parent=None):
         self.parent = parent
         self.info_tab = sidebar
-        self.key = self.parent.key
+        self.key = self.parent.info_key
         self.update_sidebar()        
         self.set_action()
         self.count =0
@@ -749,10 +781,10 @@ class Info(object):
     def set_y_scale(self, value):
         self.count += 1
         self.parent.change_y_scale = 1.0 / self.parent.y_scale
-        if self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] > 1e-12:
+        if self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'] > 1e-12:
             if self.info_tab[9, 2].value:
-                dispersion = self.parent.datasets[self.key].get_dimension_slope(self.energy_scale)
-                self.parent.y_scale = 1 / self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] * dispersion
+                dispersion = self.parent.datasets[self.parent.key].get_dimension_slope(self.parent.energy_scale)
+                self.parent.y_scale = 1 / self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'] * dispersion
                 self.parent.ylabel = 'scattering probability (ppm)'
             else:
                 self.parent.y_scale = 1.0
@@ -763,10 +795,11 @@ class Info(object):
     def set_flux(self, value):
         # self.parent.datasets[self.key].metadata['experiment']['exposure_time'] = self.info_tab[10, 0].value
         if self.info_tab[9, 0].value == 'None':
-            self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = 0.
+            self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'] = 0.
         else:
             ll_key = self.info_tab[9, 0].value.split(':')[0]
             self.parent.datasets['_relationship']['low_loss'] = ll_key
+            self.parent.lowloss_key = ll_key
             spectrum_dimensions = self.parent.dataset.get_spectral_dims()
 
             number_of_pixels = 1
@@ -780,13 +813,13 @@ class Info(object):
                     self.parent.datasets[ll_key].metadata['experiment']['exposure_time'] = (self.parent.datasets[ll_key].metadata['experiment']['single_exposure_time'] *
                                                                                      self.parent.datasets[ll_key].metadata['experiment']['number_of_frames'])
 
-            self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = ((np.array(self.parent.datasets[ll_key])*1e-6).sum() /
+            self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'] = ((np.array(self.parent.datasets[ll_key])*1e-6).sum() /
                                                                           self.parent.datasets[ll_key].metadata['experiment']['exposure_time'] /
                                                                           number_of_pixels)
-            self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] *= self.parent.datasets[self.key].metadata['experiment']['exposure_time']
+            self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'] *= self.parent.datasets[self.parent.key].metadata['experiment']['exposure_time']
             if 'SPECT' in self.parent.datasets[ll_key].data_type.name:
                 self.info_tab[14, 0].disabled = False
-        self.info_tab[11, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['flux_ppm'], 2)
+        self.info_tab[11, 0].value = np.round(self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'], 2)
 
     def set_microscope_parameter(self, value):
         self.parent.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
@@ -823,10 +856,12 @@ class Info(object):
             if self.bin_y > self.parent.dataset.shape[image_dims[1]]:
                 self.bin_y = self.parent.dataset.shape[image_dims[1]]
                 self.info_tab[17, 0].value = self.bin_y
+            self.parent.bin_x = self.bin_x
+            self.parent.bin_y = self.bin_y
 
             self.parent.datasets[self.key].metadata['experiment']['SI_bin_x'] = self.bin_x
             self.parent.datasets[self.key].metadata['experiment']['SI_bin_y'] = self.bin_y
-            self.plot()
+            self.parent.plot()
 
     
 
@@ -834,8 +869,10 @@ class Info(object):
         spectrum_list = ['None']
         reference_list = ['None']
         data_list = []
-        self.key = self.parent.key
+        self.key = self.info_key = self.parent.info_key
+        
         spectrum_data = False
+        info_index= 0
         for key in self.parent.datasets.keys():
             if isinstance(self.parent.datasets[key], sidpy.Dataset):
                 if key[0] != '_' :
@@ -843,10 +880,14 @@ class Info(object):
                     if 'SPECTR' in self.parent.datasets[key].data_type.name:
                         spectrum_data = True
                         spectrum_list.append(f'{key}: {self.parent.datasets[key].title}')
+                        print( self.info_key, key)
+                        if self.info_key == key:
+                            info_index = len(spectrum_list)-1
                 reference_list.append(f'{key}: {self.parent.datasets[key].title}')
         self.info_tab[0, 0].options = spectrum_list
         self.info_tab[9, 0].options = reference_list
-
+        self.info_tab[0, 0].value = spectrum_list[info_index]
+            
         if 'SPECTRUM' in self.parent.dataset.data_type.name:
             for i in range(15, 18):
                 self.info_tab[i, 0].layout.display = "none"
@@ -854,9 +895,14 @@ class Info(object):
             for i in range(15, 18):
                 self.info_tab[i, 0].layout.display = "flex"
         
-        if spectrum_data:
-            offset = self.parent.datasets[self.key].energy_loss[0]
-            dispersion = self.parent.datasets[self.key].energy_loss[1] - offset
+        if 'None' not in self.key:
+            energy_scale = self.parent.datasets[self.key].get_spectral_dims(return_axis=True)
+            if len(energy_scale) == 0:
+                return
+            energy_scale = energy_scale[0]
+            offset = energy_scale[0]
+            # dispersion = self.parent.datasets[self.key].get_dimension_slope(energy_scale)
+            dispersion = energy_scale[1] - offset
             
             # self.info_tab[0,0].value = dataset_index #f'{self.key}: {self.parent.datasets[self.key].title}'
             self.info_tab[2, 0].value = np.round(offset, 3)
@@ -879,12 +925,22 @@ class Info(object):
                 if 'low_loss' in self.parent.datasets['_relationship']:
                     ll_key = self.parent.datasets['_relationship']['low_loss']  
                     ll_key = f'{ll_key}: {self.parent.datasets[ll_key].title}'
+                    self.lowloss_key = ll_key
             self.info_tab[9, 0].value = ll_key
 
     def update_dataset(self, value=0):
-        key = self.info_tab[0, 0].value.split(':')[0]
-        self.parent.set_dataset(key)
-
+        self.key = self.info_tab[0, 0].value.split(':')[0]
+        
+        self.info_key = self.key
+        self.parent.info_key = self.key
+        
+        if self.info_key != 'None':
+            self.parent.set_dataset(self.info_key)
+        self.parent.status_message(self.key+'  ,  '+ self.parent.info_key)
+        self.parent.datasets['_relationship']['spectrum'] = self.info_key
+        self.update_sidebar()
+        self.parent._update(0)
+        
     def shift_low_loss(self,  value=0):
         if 'low_loss' in self.parent.datasets['_relationship']:
             low_loss = self.parent.datasets[self.parent.datasets['_relationship']['low_loss']]
@@ -927,6 +983,7 @@ class Info(object):
         self.info_tab[9, 2].observe(self.set_y_scale, names='value')
         self.info_tab[10, 0].observe(self.set_flux)
         self.info_tab[14, 0].on_click(self.shift_low_loss)
+        self.info_tab[14, 1].on_click(self.shift_spectrum)
         self.info_tab[14, 1].on_click(self.shift_spectrum)
         
         self.info_tab[16, 0].observe(self.set_binning)

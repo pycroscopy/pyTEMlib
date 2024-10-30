@@ -136,13 +136,13 @@ def get_sidebar():
     return side_bar
 
 class PeakFitWidget(object):
-    def __init__(self, datasets=None):
+    def __init__(self, datasets, key):
         self.datasets = datasets
         if not isinstance(datasets, dict):
             raise TypeError('need dictioary of sidpy datasets')
             
         self.sidebar = get_sidebar()
-        self.key = list(self.datasets)[0]
+        self.key = key
         self.dataset = datasets[self.key]
         if not isinstance(self.dataset, sidpy.Dataset):
             raise TypeError('dataset or first item inhas to be a sidpy dataset')
@@ -199,16 +199,22 @@ class PeakFitWidget(object):
             spectrum = self.dataset.view.get_spectrum()
         else:
             spectrum = self.dataset
+        #if 'features' in self.peaks:
+        if 'resolution_function' in self.datasets.keys():
+            
+            zl = self.datasets['resolution_function']  # self.peaks['features']]
+        additional_spectra = {}
         if len(self.model) > 1:
             additional_spectra = {'model': self.model,
-                                  'difference': spectrum-self.model}   
+                                  'difference': spectrum-self.model,
+                                  'zero_loss': self.datasets['resolution_function']}   
         else:
             additional_spectra = {}
         if 'peaks' in self.peaks:
             if len(self.peaks)>0:
                 for index, peak in self.peaks['peaks'].items(): # ll
                     p = [peak['position'], peak['amplitude'], peak['width']]
-                    additional_spectra[f'peak {index}']= eels_tools.gauss(self.energy_scale, p)
+                    additional_spectra[f'peak {index}']= gauss(np.array(self.energy_scale), p)
         self.view.plot(scale=True, additional_spectra=additional_spectra )
         self.change_y_scale = 1.
     
@@ -263,7 +269,9 @@ class PeakFitWidget(object):
         if self.dataset.data_type.name =='SPECTRAL_IMAGE':
             self.view = eels_dialog_utilities.SIPlot(self.dataset)
         else:
-            self.view = eels_dialog_utilities.SpectrumPlot(self.dataset)    
+            self.view = eels_dialog_utilities.SpectrumPlot(self.dataset)
+        self.dataset.view = self.view
+        #self.view.legend(loc='Upper Right')
         self.y_scale = 1.0
         self.change_y_scale = 1.0
                 
@@ -309,19 +317,26 @@ class PeakFitWidget(object):
             self.peaks['peaks'][str(peak_index)]['asymmetry'] = 0.
         self.sidebar[12, 0].value = self.peaks['peaks'][str(peak_index)]['asymmetry']
 
-       
-    def fit_peaks(self, value = 0):
-        """Fit spectrum with peaks given in peaks dictionary"""
-        # print('Fitting peaks...')
+    
+    def get_input(self):
         p_in = []
         for key, peak in self.peaks['peaks'].items():
             if key.isdigit():
                 p_in.append(peak['position'])
                 p_in.append(peak['amplitude'])
                 p_in.append(peak['width'])
+        return p_in
 
-        spectrum = np.array(self.dataset)
-
+       
+    def fit_peaks(self, value=0):
+        """Fit spectrum with peaks given in peaks dictionary"""
+        # print('Fitting peaks...')
+        
+        if self.dataset.data_type.name == 'SPECTRUM':
+            spectrum = np.array(self.dataset)
+        else:
+            spectrum = self.dataset.view.get_spectrum()
+        spectrum -= spectrum.min() - 1
         # set the energy scale and fit start and end points
         energy_scale = np.array(self.energy_scale)
         start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
@@ -335,25 +350,31 @@ class PeakFitWidget(object):
             # print('Core loss model found. Fitting on top of the model.')
             model = self.dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
         else:
+            
             # print('No core loss model found. Fitting to the full spectrum.')
             model = np.zeros(end_channel - start_channel)
 
         # if we have a core loss model we will only fit the difference between the model and the data.
         difference = np.array(spectrum[start_channel:end_channel] - model)
-
+        p_in = self.get_input()
         # find the optimum fitting parameters
-        [self.p_out, _] = scipy.optimize.leastsq(eels_tools.residuals_smooth, np.array(p_in), ftol=1e-3,
-                                                    args=(energy_scale, difference, False))
+        #[self.p_out, _] = scipy.optimize.leastsq(eels_tools.residuals_smooth, np.array(p_in), ftol=1e-3,
+        #                                            args=(energy_scale, difference, False))
 
+        [self.p_out, _] = scipy.optimize.leastsq(eels_tools.residuals3, np.array(p_in, dtype=np.float64),
+                                                    args=(energy_scale, difference)  ) # , False))
         # construct the fit data from the optimized parameters
-        self.peak_model = np.zeros(len(self.energy_scale))
-        self.model = np.zeros(len(self.energy_scale))
-        self.model[start_channel:end_channel] = model
-        fit = eels_tools.model_smooth(energy_scale, self.p_out, False)
-        self.peak_model[start_channel:end_channel] = fit
-        self.dataset.metadata['peak_fit']['edge_model'] = self.model
-        self.model = self.model + self.peak_model
-        self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
+        #self.peak_model = np.zeros(len(self.energy_scale))
+        #self.model = np.zeros(len(self.energy_scale))
+        #self.model[start_channel:end_channel] = model
+        #fit = eels_tools.model_smooth(energy_scale, self.p_out, False)
+        fit = eels_tools.gmm(energy_scale, self.p_out)  # , False)
+        self.peak_model = fit
+        
+        #self.peak_model[start_channel:end_channel] = fit
+        #self.dataset.metadata['peak_fit']['edge_model'] = self.model
+        #self.model = self.model + self.peak_model
+        #self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
 
         for key, peak in self.peaks['peaks'].items():
             if key.isdigit():
@@ -410,13 +431,29 @@ class PeakFitWidget(object):
         self.peak_list = []
         self.peaks['peaks'] = {}
         new_number_of_peaks = 0
-        for i in range(number_of_peaks):
-            self.peak_list.append((f'Peak {i+1}', i))
-            p = self.peak_out_list[i]
-            if p[1]>0:
-                self.peaks['peaks'][str(new_number_of_peaks)] = {'position': p[0], 'amplitude': p[1], 'width': p[2], 'type': 'Gauss',
-                                           'asymmetry': 0}
-                new_number_of_peaks += 1
+
+        peaks, prop = scipy.signal.find_peaks(self.peak_model, width=5)
+        print(len(peaks), number_of_peaks, len(peaks)>= number_of_peaks)
+        if len(peaks) >= number_of_peaks:
+            if self.dataset.data_type.name == 'SPECTRUM':
+                spectrum = np.array(self.dataset)
+            else:
+                spectrum = self.dataset.view.get_spectrum()
+            for i in range(number_of_peaks):
+                self.peak_list.append((f'Peak {i+1}', i))
+                p = [self.energy_scale[peaks[i]], np.float32(spectrum[peaks[i]]), np.sqrt(prop['widths'][i])]
+                if p[1]>0:
+                    self.peaks['peaks'][str(new_number_of_peaks)] = {'position': p[0], 'amplitude': p[1], 'width': p[2], 'type': 'Gauss',
+                                            'asymmetry': 0}
+                    new_number_of_peaks += 1
+        else:
+            for i in range(number_of_peaks):
+                self.peak_list.append((f'Peak {i+1}', i))
+                p = self.peak_out_list[i]
+                if p[1]>0:
+                    self.peaks['peaks'][str(new_number_of_peaks)] = {'position': p[0], 'amplitude': p[1], 'width': p[2], 'type': 'Gauss',
+                                            'asymmetry': 0}
+                    new_number_of_peaks += 1
         self.sidebar[5, 0].value = str(new_number_of_peaks)
         self.peak_list.append((f'add peak', -1))
         
@@ -437,9 +474,13 @@ class PeakFitWidget(object):
         """
         iterations = self.sidebar[4, 0].value
         self.sidebar[5, 0].value =  0
-        advanced_present=False
+        
+        if self.key == self.datasets['_relationship']['low_loss']:
+           if 'resolution_function' in self.datasets['_relationship'].keys():
+               self.model = np.array(self.datasets['resolution_function'])
 
-        self.peak_model, self.peak_out_list, number_of_peaks = smooth(self.dataset, iterations, advanced_present)
+
+        self.peak_model, self.peak_out_list, number_of_peaks = smooth(self.dataset-self.model, iterations, advanced_present)
 
         spec_dim = ft.get_dimensions_by_type('SPECTRAL', self.dataset)[0]
         if spec_dim[1][0] > 0:
@@ -454,7 +495,9 @@ class PeakFitWidget(object):
         self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
         self.dataset.metadata['peak_fit']['peak_out_list'] = self.peak_out_list
         
-        self.sidebar[5, 0].value = str(len(self.peak_out_list))
+        peaks, prop = scipy.signal.find_peaks(self.peak_model, width=5)
+
+        self.sidebar[5, 0].value = str(len(peaks))
         self.update()
         self.plot()
         
@@ -471,15 +514,20 @@ class PeakFitWidget(object):
         energy_scale = np.array(self.energy_scale)
         start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
         end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
-        energy_scale = self.energy_scale[start_channel:end_channel]
+        energy_scale = self.energy_scale # [start_channel:end_channel]
         # select the core loss model if it exists. Otherwise, we will fit to the full spectrum.
-            
-        fit = eels_tools.model_smooth(energy_scale, p_peaks, False)
-        self.peak_model[start_channel:end_channel] = fit
-        if 'edge_model' in self.dataset.metadata['peak_fit']:
+        
+        p_peaks = np.array(p_peaks, dtype=np.float64)
+        
+        fit = eels_tools.gmm(energy_scale, p_peaks)  # , False)
+        self.peak_model = fit
+        #self.peak_model[start_channel:end_channel] = fit
+        """if 'edge_model' in self.dataset.metadata['peak_fit']:
             self.model = self.dataset.metadata['peak_fit']['edge_model'] + self.peak_model
         else:
             self.model = np.zeros(self.dataset.shape)
+        """
+        self.model = fit
 
     def modify_peak_position(self, value=-1):
         peak_index = self.sidebar[7, 0].value
@@ -683,22 +731,24 @@ if Qt_available:
             self.axis.clear()
 
             self.axis.plot(self.energy_scale, spectrum, label='spectrum')
-            if 'zero_loss' in self.dataset.metadata:
-                self.axis.plot(self.energy_scale, spectrum, label=name)
+            #if 'features' in self.peaks:
+            zl = self.datasets[self.peaks['features']]
+            self.axis.plot(self.energy_scale, zl, label='zero_loss')
 
             if len(self.model) > 1:
                 self.axis.plot(self.energy_scale, self.model, label='model')
                 self.axis.plot(self.energy_scale, spectrum - self.model, label='difference')
                 #self.axis.plot(self.energy_scale, (spectrum - self.model) / np.sqrt(spectrum), label='Poisson')
-                self.axis.legend()
+            
             self.axis.set_xlim(x_limit)
             self.axis.set_ylim(y_limit)
-            self.axis.figure.canvas.draw_idle()
-
+            
             for index, peak in self.peaks['peaks'].items():
                 p = [peak['position'], peak['amplitude'], peak['width']]
                 self.axis.plot(self.energy_scale, eels_tools.gauss(self.energy_scale, p))
-
+            self.axis.legend(loc="upper right")
+            self.axis.figure.canvas.draw_idle()
+            
         def fit_peaks(self):
             """Fit spectrum with peaks given in peaks dictionary"""
             print('Fitting peaks...')
@@ -714,10 +764,10 @@ if Qt_available:
                 spectrum = self.dataset.view.get_spectrum()
             else:
                 spectrum = np.array(self.dataset)
-
+            spectrum -= spectrum.min()-1
             # set the energy scale and fit start and end points
             energy_scale = np.array(self.energy_scale)
-            start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
+            """start_channel = np.searchsorted(energy_scale, self.peaks['fit_start'])
             end_channel = np.searchsorted(energy_scale, self.peaks['fit_end'])
 
             energy_scale = self.energy_scale[start_channel:end_channel]
@@ -732,19 +782,29 @@ if Qt_available:
                 model = np.zeros(end_channel - start_channel)
 
             # if we have a core loss model we will only fit the difference between the model and the data.
+            
+            
             difference = np.array(spectrum[start_channel:end_channel] - model)
+            """
+            difference = spectrum
+            if self.key == self.datasets['_relationships']['low_loss']:
+                if 'resolution_function' in self.datasets['_relationships'].keys():
+                    difference -= np.array(self.datasets['_relationships']['resolution_function'])
+                    self.peaks['peaks']['features'] = 'resolution_function'
+                    self.model = np.array(self.datasets['_relationships']['resolution_function'])
 
             # find the optimum fitting parameters
-            [self.p_out, _] = scipy.optimize.leastsq(eels_tools.residuals_smooth, np.array(p_in), ftol=1e-3,
+            [self.p_out, _] = scipy.optimize.leastsq(eels_tools.residuals3, np.array(p_in), ftol=1e-3,
                                                      args=(energy_scale, difference, False))
 
             # construct the fit data from the optimized parameters
-            self.peak_model = np.zeros(len(self.energy_scale))
-            self.model = np.zeros(len(self.energy_scale))
-            self.model[start_channel:end_channel] = model
-            fit = eels_tools.model_smooth(energy_scale, self.p_out, False)
-            self.peak_model[start_channel:end_channel] = fit
-            self.dataset.metadata['peak_fit']['edge_model'] = self.model
+            #self.peak_model = np.zeros(len(self.energy_scale))
+            #self.model = np.zeros(len(self.energy_scale))
+            #self.model[start_channel:end_channel] = model
+            fit = eels_tools.gmm(energy_scale, self.p_out, False)
+            self.peak_model = fit
+            #self.peak_model[start_channel:end_channel] = fit
+            #self.dataset.metadata['peak_fit']['edge_model'] = self.model
             self.model = self.model + self.peak_model
             self.dataset.metadata['peak_fit']['peak_model'] = self.peak_model
 
@@ -773,8 +833,13 @@ if Qt_available:
             if 'resolution_function' in self.datasets:
                 self.dataset.metadata['model'] = np.array(self.datasets['resolution_function'])
             iterations = int(self.ui.smooth_list.currentIndex())
+            
+            if self.key == self.datasets['_relationships']['low_loss']:
+                if 'resolution_function' in self.datasets['_relationships'].keys():
+                    self.model = np.array(self.datasets['_relationships']['resolution_function'])
 
-            self.peak_model, self.peak_out_list, number_of_peaks = smooth(self.dataset, iterations, advanced_present)
+
+            self.peak_model, self.peak_out_list, number_of_peaks = smooth(self.dataset-self.model, iterations, advanced_present)
 
             spec_dim = ft.get_dimensions_by_type('SPECTRAL', self.dataset)[0]
             if spec_dim[1][0] > 0:
@@ -1015,6 +1080,8 @@ if Qt_available:
             
 
 def smooth(dataset, iterations, advanced_present):
+    from pyTEMlib import advanced_eels_tools
+
     """Gaussian mixture model (non-Bayesian)
 
     Fit lots of Gaussian to spectrum and let the program sort it out
@@ -1023,15 +1090,15 @@ def smooth(dataset, iterations, advanced_present):
     """
 
     # TODO: add sensitivity to dialog and the two functions below
-    peaks = dataset.metadata['peak_fit']
+    #peaks = dataset.metadata['peak_fit']
+    
+    #peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
+    peak_model, peak_out_list = eels_tools.gaussian_mixture_model(dataset, p_in=None)
 
-    peak_model, peak_out_list = eels_tools.find_peaks(dataset,
-                                                                       peaks['fit_start'],
-                                                                       peaks['fit_end'])
     # 
-    #cif advanced_present and iterations > 1:
+    # if advanced_present and iterations > 1:
     # peak_model, peak_out_list = advanced_eels_tools.smooth(dataset, peaks['fit_start'],
-    #                                                             peaks['fit_end'], iterations=iterations)
+    #                                                       peaks['fit_end'], iterations=iterations)
     # else:
     #    peak_model, peak_out_list = eels_tools.find_peaks(dataset, peaks['fit_start'], peaks['fit_end'])
     #    peak_out_list = [peak_out_list]
@@ -1045,3 +1112,18 @@ def smooth(dataset, iterations, advanced_present):
     number_of_peaks = np.searchsorted(area * -1, -np.average(area))
 
     return peak_model, peak_out_list, number_of_peaks
+
+
+def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
+    """Gaussian Function
+
+        p[0]==mean, p[1]= amplitude p[2]==fwhm
+        area = np.sqrt(2* np.pi)* p[1] * np.abs(p[2] / 2.3548)
+        FWHM = 2 * np.sqrt(2 np.log(2)) * sigma = 2.3548 * sigma
+        sigma = FWHM/3548
+    """
+    if p[2] == 0:
+        return x * 0.
+    else:
+        return p[1] * np.exp(-(x - p[0]) ** 2 / (2.0 * (p[2] / 2.3548) ** 2))
+    

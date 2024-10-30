@@ -386,7 +386,7 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
     plt.gca().add_patch(deviation_angle)
 
     plt.gca().set_aspect('equal')
-    plt.gca().set_xlabel('angle (1/$\AA$)')
+    plt.gca().set_xlabel(r'angle (1/$\AA$)')
     plt.gca().set_ylim(-.1, k_0[1] * 2.2)
     plt.gca().set_xlim(-.2, 1.03)
 

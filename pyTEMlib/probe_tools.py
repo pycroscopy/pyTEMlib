@@ -3,6 +3,8 @@ import numpy as np
 import pyTEMlib.image_tools
 import scipy.ndimage as ndimage
 
+get_wavelength = pyTEMlib.image_tools.get_wavelength
+
 
 def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
     """Make a Gaussian shaped probe """
@@ -158,9 +160,60 @@ def get_ronchigram(size, ab, scale='mrad'):
         extent = [-fov_mrad, fov_mrad, -fov_mrad, fov_mrad]
         ylabel = 'reciprocal distance [mrad]'
 
+    ab['chi'] = chi
     ab['ronchi_extent'] = extent
     ab['ronchi_label'] = ylabel
     return ronchigram
+
+
+
+
+def make_probe (chi, aperture):
+    chi2 = np.fft.ifftshift(chi)
+    chiT = np.fft.ifftshift (np.vectorize(complex)(np.cos(chi2), -np.sin(chi2)) )
+    ## Aply aperture function
+    chiT = chiT*aperture
+    ## inverse fft of aberration function
+    i2  = np.fft.fftshift(np.fft.ifft2(np.fft.ifftshift (chiT)))
+    ## intensity
+    probe = np.real(i2 * np.conjugate(i2))
+
+    return probe
+
+def get_probe( ab, sizeX, sizeY,  scale = 'mrad', verbose= True):
+    
+    
+    chi, A_k  = get_chi( ab, sizeX, sizeY, verbose= False)
+    probe = make_probe (chi, A_k)
+
+    V_noise  =np.random.rand(sizeX,sizeY)
+    smoothing = 5
+    phi_r = ndimage.gaussian_filter(V_noise, sigma=(smoothing, smoothing), order=0)
+
+    sigma = 6 ## 6 for carbon and thin
+
+    q_r = np.exp(-1j*sigma * phi_r)
+    #q_r = 1-phi_r * sigma
+
+    T_k =  (A_k)*(np.exp(-1j*chi))
+    t_r = (np.fft.ifft2(np.fft.fftshift(T_k)))
+
+    Psi_k =  np.fft.fftshift(np.fft.fft2(q_r*t_r))
+
+    ronchigram = I_k  = np.absolute(Psi_k*np.conjugate(Psi_k))
+
+    FOV_reciprocal = 1/ab['FOV']*sizeX/2 
+    if scale == '1/nm':
+        extent = [-FOV_reciprocal,FOV_reciprocal,-FOV_reciprocal,FOV_reciprocal]
+        ylabel = 'reciprocal distance [1/nm]'
+    else :
+        FOV_mrad = FOV_reciprocal * ab['wavelength'] *1000
+        extent = [-FOV_mrad,FOV_mrad,-FOV_mrad,FOV_mrad]
+        ylabel = 'reciprocal distance [mrad]'
+    ab['extent_reciprocal'] = extent
+    ab['ylabel'] =ylabel
+    
+    return probe, A_k, chi
 
 
 def get_chi_2(ab, u, v):
@@ -456,6 +509,7 @@ def get_ronchigram_2(size, ab, scale='mrad', threshold=3):
         extent = [-fov_mrad, fov_mrad, -fov_mrad, fov_mrad]
         ylabel = 'reciprocal distance [mrad]'
 
+    ab['chi'] = chi
     ab['ronchi_extent'] = extent
     ab['ronchi_label'] = ylabel
 
