@@ -828,19 +828,23 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
             print('no hdf5 dataset found in file')
             return {}
         else:
-            dataset_dict = {}
-            for index, dataset in enumerate(datasets):
-                title = str(dataset.title).split('/')[-1]
-                # dataset.title = str(dataset.title).split('/')[-1]
-                dataset_dict[title] = dataset
-                if index == 0:
-                    file = datasets[0].h5_dataset.file
-                    master_group = datasets[0].h5_dataset.parent.parent.parent
-            for key in master_group.keys():
-                if key not in dataset_dict:
-                    dataset_dict[key] = h5_group_to_dict(master_group[key])
-            if not write_hdf_file:
-                file.close()
+            if isinstance(datasets, dict):
+                pass
+
+            else:    
+                dataset_dict = {}
+                for index, dataset in enumerate(datasets):
+                    title = str(dataset.title).split('/')[-1]
+                    # dataset.title = str(dataset.title).split('/')[-1]
+                    dataset_dict[title] = dataset
+                    if index == 0:
+                        file = datasets[0].h5_dataset.file
+                        master_group = datasets[0].h5_dataset.parent.parent.parent
+                for key in master_group.keys():
+                    if key not in dataset_dict:
+                        dataset_dict[key] = h5_group_to_dict(master_group[key])
+                if not write_hdf_file:
+                    file.close()
             return dataset_dict
     elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5']:
         # tags = open_file(filename)
