@@ -194,7 +194,7 @@ def get_core_loss_sidebar():
 
 
 class CompositionWidget(object):
-    def __init__(self, datasets=None, key=None):
+    def __init__(self, datasets=None):
         
         if not isinstance(datasets, dict):
             raise TypeError('dataset or first item has to be a sidpy dataset')
@@ -204,7 +204,7 @@ class CompositionWidget(object):
         self.model = []
         self.sidebar = get_core_loss_sidebar()
         
-        self.set_dataset(key)
+        self.set_dataset()
         
         self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.energy_scale)
         self.elements_cancel_button = ipywidgets.Button(description='Cancel')
@@ -305,7 +305,7 @@ class CompositionWidget(object):
         
     
         
-    def set_dataset(self, set_key):
+    def set_dataset(self, set_key=None):
         spectrum_list = []
         self.spectrum_keys_list = []
         reference_list =[('None', -1)]
@@ -316,13 +316,18 @@ class CompositionWidget(object):
                     if 'SPECTR' in self.datasets[key].data_type.name:
                         spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
                         self.spectrum_keys_list.append(key)
+                        if key == self.parent.coreloss_key:
+                            self.key = key
+                            self.coreloss_key = self.key
+                            dataset_index = len(spectrum_list)-1
+
                 reference_list.append((f'{key}: {self.datasets[key].title}', index))  
-        
-        if set_key in self.spectrum_keys_list:
-            self.key = set_key
-        else:
-            self.key = self.spectrum_keys_list[-1]
-        self.dataset = self.datasets[self.key]
+        self.sidebar[0, 0].options = spectrum_list
+        self.sidebar[0, 0].value = dataset_index
+
+        if self.coreloss_key is None:
+            return
+        self.dataset = self.datasets[self.coreloss_key]
         
         self.spec_dim = self.dataset.get_spectral_dims(return_axis=True)[0]
 
@@ -740,7 +745,7 @@ class CompositionWidget(object):
         
         self.sidebar[11, 0].on_click(self.do_fit)
         self.sidebar[12, 2].observe(self.plot, names='value')
-        self.sidebar[0, 0].observe(self.plot, names='value')
+        self.sidebar[0, 0].observe(self.set_dataset, names='value')
         self.sidebar[12,0].observe(self.set_y_scale, names='value')
         self.sidebar[13,0].observe(self.do_all_button_click, names='value')
 

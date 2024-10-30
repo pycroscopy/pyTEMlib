@@ -52,6 +52,194 @@ import ipywidgets
 
 
 @ipywidgets.register
+class FileWidget2(ipywidgets.DOMWidget):
+    """Widget to select directories or widgets from a list
+
+    Works in google colab.
+    The widget converts the name of the nion file to the one in Nion's swift software,
+    because it is otherwise incomprehensible
+
+    Attributes
+    ----------
+    dir_name: str
+        name of starting directory
+    extension: list of str
+        extensions of files to be listed  in widget
+
+    Methods
+    -------
+    get_directory
+    set_options
+    get_file_name
+
+    Example
+    -------
+    >>from google.colab import drive
+    >>drive.mount("/content/drive")
+    >>file_list = pyTEMlib.file_tools.FileWidget()
+    next code cell:
+    >>dataset = pyTEMlib.file_tools.open_file(file_list.file_name)
+
+    """
+
+    def __init__(self, dir_name=None, extension=['*'], sum_frames=False):
+        self.save_path = False
+        self.dir_dictionary = {}
+        self.dir_list = ['.', '..']
+        self.display_list = ['.', '..']
+        self.sum_frames = sum_frames
+
+        self.dir_name = '.'
+        if dir_name is None:
+            self.dir_name = get_last_path()
+            self.save_path = True
+        elif os.path.isdir(dir_name):
+            self.dir_name = dir_name
+
+        self.get_directory(self.dir_name)
+        self.dir_list = ['.']
+        self.extensions = extension
+        self.file_name = ''
+        self.datasets = {}
+        self.dataset = None
+
+        self.select_files = widgets.Select(
+            options=self.dir_list,
+            value=self.dir_list[0],
+            description='Select file:',
+            disabled=False,
+            rows=10,
+            layout=widgets.Layout(width='70%')
+        )
+        self.path_choice = widgets.Dropdown(options=['None'],
+                                            value='None',
+                                            description='directory:',
+                                            disabled=False,
+                                            button_style='',
+                                            layout=widgets.Layout(width='90%'))
+        
+        
+        
+        self.set_options()
+        ui = widgets.VBox([self.path_choice, self.select_files])
+        display(ui)
+        
+        self.select_files.observe(self.get_file_name, names='value')
+        self.path_choice.observe(self.set_dir, names='value')
+
+
+
+    def get_directory(self, directory=None):
+        self.dir_name = directory
+        self.dir_dictionary = {}
+        self.dir_list = []
+        self.dir_list = ['.', '..'] + os.listdir(directory)
+
+    def set_dir(self, value=0):
+        self.dir_name = self.path_choice.value
+        self.select_files.index = 0
+        self.set_options()
+
+
+    def set_options(self):
+        self.dir_name = os.path.abspath(os.path.join(self.dir_name, self.dir_list[self.select_files.index]))
+        dir_list = os.listdir(self.dir_name)
+        file_dict = update_directory_list(self.dir_name)
+
+        sort = np.argsort(file_dict['directory_list'])
+        self.dir_list = ['.', '..']
+        self.display_list = ['.', '..']
+        for j in sort:
+            self.display_list.append(f" * {file_dict['directory_list'][j]}")
+            self.dir_list.append(file_dict['directory_list'][j])
+
+        sort = np.argsort(file_dict['display_file_list'])
+
+        for i, j in enumerate(sort):
+            if '--' in dir_list[j]:
+                self.display_list.append(f" {i:3} {file_dict['display_file_list'][j]}")
+            else:
+                self.display_list.append(f" {i:3}   {file_dict['display_file_list'][j]}")
+            self.dir_list.append(file_dict['file_list'][j])
+
+        self.dir_label = os.path.split(self.dir_name)[-1] + ':'
+        self.select_files.options = self.display_list
+        
+        path = self.dir_name
+        old_path = ' '
+        path_list = []
+        while path != old_path:
+            path_list.append(path)
+            old_path = path
+            path = os.path.split(path)[0]
+        self.path_choice.options = path_list
+        self.path_choice.value = path_list[0]
+
+    def get_file_name(self, b):
+
+        if os.path.isdir(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
+            self.set_options()
+
+        elif os.path.isfile(os.path.join(self.dir_name, self.dir_list[self.select_files.index])):
+            self.file_name = os.path.join(self.dir_name, self.dir_list[self.select_files.index])
+
+class FileWidget3(FileWidget2):
+    def __init__(self, dir_name=None, extension=['*'], sum_frames=False):
+        if dir_name is None:
+            dir_name = get_last_path()
+            self.save_path = True     
+        super().__init__(dir_name=dir_name, extension=extension, sum_frames=sum_frames)
+        
+        select_button = widgets.Button(description='Select Main',
+                                       layout=widgets.Layout(width='auto', grid_area='header'),
+                                       style=widgets.ButtonStyle(button_color='lightblue'))
+        
+        add_button = widgets.Button(description='Add',
+                                    layout=widgets.Layout(width='auto', grid_area='header'),
+                                    style=widgets.ButtonStyle(button_color='lightblue'))
+        
+        self.dataset_list = ['None']
+        self.loaded_datasets = widgets.Dropdown(options=self.dataset_list,
+                                                value=self.dataset_list[0],
+                                                description='loaded datasets:',
+                                                disabled=False,
+                                                button_style='')
+        
+        ui = widgets.HBox([select_button, add_button, self.loaded_datasets])
+        display(ui)
+        
+        
+        select_button.on_click(self.select_main)
+        add_button.on_click(self.add_dataset)
+        self.loaded_datasets.observe(self.select_dataset)
+    
+
+    def select_dataset(self, value=0):
+        key = self.loaded_datasets.value.split(':')[0]
+        if key != 'None':
+            self.selected_dataset = self.datasets[key]
+            self.selected_key = key
+
+    def select_main(self, value=0):
+        self.datasets = {}
+        self.dataset_list = []
+        self.datasets = open_file(self.file_name, sum_frames=self.sum_frames)
+        self.dataset_list = []
+        for key in self.datasets.keys():
+            self.dataset_list.append(f'{key}: {self.datasets[key].title}')
+        self.loaded_datasets.options = self.dataset_list
+        self.loaded_datasets.value = self.dataset_list[0]
+        self.dataset = self.datasets[list(self.datasets.keys())[0]]
+        self.selected_dataset = self.dataset
+
+    def add_dataset(self, value=0):
+        key = add_dataset_from_file(self.datasets, self.file_name, 'Channel')
+        self.dataset_list.append(f'{key}: {self.datasets[key].title}')
+        self.loaded_datasets.options = self.dataset_list
+        self.loaded_datasets.value = self.dataset_list[-1]
+    
+
+@ipywidgets.register
 class FileWidget(ipywidgets.DOMWidget):
     """Widget to select directories or widgets from a list
 

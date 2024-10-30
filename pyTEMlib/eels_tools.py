@@ -33,6 +33,8 @@ from scipy.signal import peak_prominences
 from scipy.ndimage import gaussian_filter
 from scipy.optimize import curve_fit, leastsq
 
+from numba import jit, float64
+
 import requests
 
 # ## And we use the image tool library of pyTEMlib
@@ -247,7 +249,7 @@ def model_smooth(x, p, only_positive_intensity=False):
 
     return y
 
-
+@jit
 def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
     """Gaussian Function
 
@@ -319,9 +321,9 @@ def get_zero_loss_energy(dataset):
             start = startx - i
         if spectrum[startx + i] < 0.3 * spectrum[startx]:
             end = startx + i
-    if end - start < 3:
-        end = startx + 2
-        start = startx - 2
+    if end - start < 7:
+        end = startx + 4
+        start = startx - 4
     width = int((end-start)/2+0.5)
 
     energy = dataset.get_spectral_dims(return_axis=True)[0].values
@@ -558,7 +560,7 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
     """
     # define Drude function for plasmon fitting
     def energy_loss_function(E: np.ndarray, Ep: float, Ew: float, A: float) -> np.ndarray:
-        E = E/E.max()
+        
         eps = 1 - Ep**2/(E**2+Ew**2) + 1j * Ew * Ep**2/E/(E**2+Ew**2)
         elf = (-1/eps).imag
         return A*elf
@@ -579,10 +581,15 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
         guess_pos = np.argmax(fit_dset)
         guess_amplitude = fit_dset[guess_pos]
-        guess_width = (endFitEnergy - startFitEnergy)/2
-        popt, pcov = curve_fit(energy_loss_function, energy, dataset,
+        guess_width = 8
+        popt, pcov = curve_fit(energy_loss_function, energy[start_fit_pixel:end_fit_pixel], fit_dset,
                                p0=[guess_pos, guess_width, guess_amplitude])
-        return popt
+       
+        plasmon = dataset.like_data(energy_loss_function(energy, popt[0], popt[1], popt[2]))
+        start_plasmon = np.searchsorted(energy, 0)+1
+        plasmon[:start_plasmon] = 0.
+        plasmon.metadata['plasmon'] = popt
+        return plasmon
     
     # if it can be parallelized:
     fitter = SidFitter(fit_dset, energy_loss_function, num_workers=number_workers,
@@ -875,7 +882,7 @@ def get_x_sections(z: int=0) -> dict:
             return 0
 
 
-def list_all_edges(z: Union[str, int]=0, verbose=False)->[str, dict]:
+def list_all_edges(z: Union[str, int]=0, verbose=False)->list[str, dict]:
     """List all ionization edges of an element with atomic number z
 
     Parameters
@@ -1042,9 +1049,10 @@ def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
 
     noise_level_start = sensitivity * np.std(second_dif[3:50])
     noise_level_end = sensitivity * np.std(second_dif[start_end_noise: start_end_noise + 50])
-    slope = (noise_level_end - noise_level_start) / (len(energy_scale) - 400)
-    noise_level = noise_level_start + np.arange(len(energy_scale)) * slope
-    return second_dif, noise_level
+    #slope = (noise_level_end - noise_level_start) / (len(energy_scale) - 400)
+    #noise_level = noise_level_start #+ np.arange(len(energy_scale)) * slope
+    return second_dif , noise_level
+
 
 
 def find_edges(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
@@ -1615,19 +1623,43 @@ def get_spectrum(dataset, x=0, y=0, bin_x=1, bin_y=1):
         spectrum.data_type = 'Spectrum'
     return spectrum
 
-def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
+def find_peaks(dataset, energy_scale):  #, fit_start, fit_end, sensitivity=2):
     """find peaks in spectrum"""
 
+    peaks, prop = scipy.signal.find_peaks(dataset, width=5)
+    results_half = scipy.signal.peak_widths(dataset, peaks, rel_height=0.5)[0]
+    
+    """peaks = []
+    for index in indices:
+        # if start_channel < index < end_channel:
+        peaks.append(index)  # - start_channel)
+    """
+    disp = energy_scale[1] - energy_scale[0]    
+    if len(peaks) > 0:
+        p_in = np.ravel([[energy_scale[peaks[i]], dataset[peaks[i]], results_half[i]*disp] for i in range(len(peaks))])
+
+        #p_in = np.ravel([[energy_scale[i], dataset[i], .7] for i in peaks])
+
+    return p_in  # model, p_in
+
+def nothing():
+    pass
+    """
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
-        spectrum = dataset.view.get_spectrum()
+        if hasattr(dataset.view, 'get_spectrum'):
+            spectrum = dataset.view.get_spectrum()
+        else:
+            spectrum = np.array(dataset[0,0])
+
     else:
         spectrum = np.array(dataset)
 
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
 
-    second_dif, noise_level = second_derivative(dataset, sensitivity=sensitivity)
-    [indices, _] = scipy.signal.find_peaks(-second_dif, noise_level)
-
+    """
+    
+    
+    """
     start_channel = np.searchsorted(energy_scale, fit_start)
     end_channel = np.searchsorted(energy_scale, fit_end)
     peaks = []
@@ -1636,34 +1668,26 @@ def find_peaks(dataset, fit_start, fit_end, sensitivity=2):
             peaks.append(index - start_channel)
 
     if 'model' in dataset.metadata:
-        model = dataset.metadata['model'][start_channel:end_channel]
+        model = dataset.metadata['model']
 
     elif energy_scale[0] > 0:
         if 'edges' not in dataset.metadata:
             return
         if 'model' not in dataset.metadata['edges']:
             return
-        model = dataset.metadata['edges']['model']['spectrum'][start_channel:end_channel]
+        model = dataset.metadata['edges']['model']['spectrum']
 
     else:
-        model = np.zeros(end_channel - start_channel)
+        model = np.zeros(len(energy_scale))
 
     energy_scale = energy_scale[start_channel:end_channel]
 
-    difference = np.array(spectrum)[start_channel:end_channel] - model
+    difference = np.array(spectrum - model)[start_channel:end_channel]
     fit = np.zeros(len(energy_scale))
-    p_out = []
     if len(peaks) > 0:
         p_in = np.ravel([[energy_scale[i], difference[i], .7] for i in peaks])
-        [p_out, _] = scipy.optimize.leastsq(residuals_smooth, p_in, ftol=1e-3, args=(energy_scale,
-                                                                                     difference,
-                                                                                     False))
-        fit = fit + model_smooth(energy_scale, p_out, False)
-
-    peak_model = np.zeros(len(spectrum))
-    peak_model[start_channel:end_channel] = fit
-
-    return peak_model, p_out
+    """
+    
 
 
 def find_maxima(y, number_of_peaks):
@@ -1691,12 +1715,23 @@ def find_maxima(y, number_of_peaks):
     peak_indices = np.argsort(peaks)
     return peaks[peak_indices]
 
-
+@jit
+def gmm(x, p):
+    y = np.zeros(len(x))
+    number_of_peaks= int(len(p)/3)
+    for i in range(number_of_peaks):
+        index = i*3
+        p[index + 1] = abs(p[index + 1])
+        # print(p[index + 1])
+        p[index + 2] = abs(p[index + 2])
+        y = y + gauss(x, p[index:])
+    return y
 # 
 def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, restrict_width=0):
     """ model for fitting low-loss spectrum"""
     if pin is None:
         pin = p
+        index = int(i * 3)
 
     # if len([restrict_pos]) == 1:
     #    restrict_pos = [restrict_pos]*number_of_peaks
@@ -1764,18 +1799,50 @@ def add_peaks(x, y, peaks, pin_in=None, peak_shape_in=None, shape='Gaussian'):
 
     return pin, peak_shape
 
+@jit
+def residuals3(pp, xx, yy):
+    err = (yy - gmm(xx, pp)) / np.sqrt(yy) *20 # 
+    return err
 
+def gaussian_mixture_model(dataset, p_in=None):
+    peak_model = None
+    if isinstance(dataset, sidpy.Dataset):
+        if dataset.data_type.name == 'SPECTRAL_IMAGE':
+            if hasattr(dataset.view, 'get_spectrum'):
+                spectrum = dataset.view.get_spectrum()
+            else:
+                spectrum = dataset[0,0]
+        else:
+            spectrum = dataset
+        spectrum.data_type == 'SPECTRUM'
+        energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+    else:
+        spectrum = np.array(dataset)
+        energy_scale = np.arange(len(spectrum))
+    spectrum = np.array(spectrum)    
+    spectrum -= np.min(spectrum)-1
+    if p_in is None:
+        p_in = find_peaks(spectrum, energy_scale)
+    
+    p = fit_gmm(energy_scale, np.array(spectrum), p_in)
+    peak_model = gmm(energy_scale, p)
+    return peak_model, p
+
+def fit_gmm(x, y, pin):
+    """fit a Gaussian mixture model to a spectrum"""
+
+    [p, _] = leastsq(residuals3, pin, args=(x, y),maxfev = 10000)
+    return p    
+
+              
 def fit_model(x, y, pin, number_of_peaks, peak_shape, p_zl, restrict_pos=0, restrict_width=0):
     """model for fitting low-loss spectrum"""
 
     pin_original = pin.copy()
 
-    def residuals3(pp, xx, yy):
-        err = (yy - model3(xx, pp, number_of_peaks, peak_shape, p_zl, pin_original, restrict_pos,
-                           restrict_width)) / np.sqrt(np.abs(yy))
-        return err
+    
 
-    [p, _] = leastsq(residuals3, pin, args=(x, y))
+    [p, _] =  scipy.optimize.leastsq(residuals3, pin, args=(x, y),maxfev = 19400)
     # p2 = p.tolist()
     # p3 = np.reshape(p2, (number_of_peaks, 3))
     # sort_pin = np.argsort(p3[:, 0])
