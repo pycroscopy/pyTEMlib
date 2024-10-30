@@ -174,9 +174,7 @@ class LowLoss(object):
                     self.parent.axis.plot(self.parent.energy_scale, 
                                           spectrum - resolution_function - plasmon, label='difference')
                     
-                    self.parent.axis.legend()
-        else:
-            
+        else:            
             if self.low_loss_tab[4, 0].value :
                 if 'resolution_function' in self.parent.datasets:
                     
@@ -184,18 +182,13 @@ class LowLoss(object):
                     self.parent.axis.plot(self.parent.energy_scale, resolution_function, label='resolution function')
                     self.parent.axis.plot(self.parent.energy_scale, 
                                           spectrum - resolution_function, label='difference')
-
-                    self.parent.axis.legend()
-
             if self.low_loss_tab[8, 0].value:
                 if 'plasmon' in self.parent.datasets:
-                    
                     plasmon = self.get_additional_spectrum('plasmon')
                     self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
                     self.parent.axis.plot(self.parent.energy_scale, 
                                           spectrum - plasmon, label='difference')
 
-                    self.parent.axis.legend()
         if self.low_loss_tab[8, 2].value:
             if 'plasmon' in self.parent.datasets:
                     if 'plasmon' in self.parent.datasets['plasmon'].metadata:
