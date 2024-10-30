@@ -440,7 +440,7 @@ class ChooseDataset(object):
         else:
             self.reader = None
         self.get_dataset_list()
-        if self.dataset_list < 0:
+        if len(self.dataset_list) < 1:
             self.dataset_list = ['None']
         self.select_image = widgets.Dropdown(options=self.dataset_list,
                                              value=self.dataset_list[0],
@@ -478,10 +478,11 @@ class ChooseDataset(object):
 
     def set_dataset(self, b):
         index = self.select_image.index
-        self.key = self.dataset_names[index]
-        self.dataset = self.datasets[self.key]
-        self.dataset.title = self.dataset.title.split('/')[-1]
-        self.dataset.title = self.dataset.title.split('/')[-1]
+        if index < len(self.dataset_names):
+            self.key = self.dataset_names[index]
+            self.dataset = self.datasets[self.key]
+            self.dataset.title = self.dataset.title.split('/')[-1]
+            self.dataset.title = self.dataset.title.split('/')[-1]
 
 
 def add_to_dict(file_dict, name):
@@ -846,8 +847,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                 for key in master_group.keys():
                     if key not in dataset_dict:
                         dataset_dict[key] = h5_group_to_dict(master_group[key])
-            if not write_hdf_file:
-                file.close()
+                if not write_hdf_file:
+                    file.close()
             return dataset_dict
     elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5']:
         # tags = open_file(filename)
