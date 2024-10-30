@@ -829,7 +829,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
             return {}
         else:
             if isinstance(datasets, dict):
-                pass
+                dataset_dict = datasets
 
             else:    
                 dataset_dict = {}
