@@ -126,7 +126,7 @@ class LowLoss(object):
         self.low_loss_tab[3, 1].value = f"{np.log(self.parent.dataset.sum()/self.parent.datasets['resolution_function'].sum())}"
         self.parent.status_message('Fitted zero-loss peak')
         
-    def get_drude(self):
+    def get_drude(self, value=0):
         self.low_loss_tab[8, 0].value = False
         fit_start = self.low_loss_tab[6, 0].value
         fit_end = self.low_loss_tab[7, 0].value
@@ -134,8 +134,10 @@ class LowLoss(object):
         
         plasmon = eels_tools.fit_plasmon(self.parent.spectrum, fit_start, fit_end)
 
+        
         self.parent.datasets['plasmon'] = plasmon
         self.parent.datasets['_relationship']['plasmon'] = 'plasmon'
+        self.parent.status_message('Fitting plasmon peak 2')
         
         #self.dataset.metadata['plasmon'].update(self.parent.datasets['plasmon'].metadata['zero_loss'])
         self.low_loss_tab[8, 0].value = True
@@ -154,6 +156,7 @@ class LowLoss(object):
         self.low_loss_tab[4, 0].observe(self._update, names='value')
         self.low_loss_tab[5, 0].on_click(self.get_drude)
         self.low_loss_tab[8, 0].observe(self._update, names='value')
+        self.low_loss_tab[8, 2].observe(self._update, names='value')
         
         
     def _update(self, ev=0):
@@ -167,7 +170,7 @@ class LowLoss(object):
                     resolution_function = self.get_additional_spectrum('resolution_function')
                     plasmon = self.get_additional_spectrum('plasmon')
                     self.parent.axis.plot(self.parent.energy_scale, resolution_function, label='resolution function')
-                    self.parent.axis.plot(self.parent.energy_scale, plasmon, label='resolution function')
+                    self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
                     self.parent.axis.plot(self.parent.energy_scale, 
                                           spectrum - resolution_function - plasmon, label='difference')
                     
@@ -188,12 +191,18 @@ class LowLoss(object):
                 if 'plasmon' in self.parent.datasets:
                     
                     plasmon = self.get_additional_spectrum('plasmon')
-                    self.parent.axis.plot(self.parent.energy_scale, plasmon, label='resolution function')
+                    self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
                     self.parent.axis.plot(self.parent.energy_scale, 
                                           spectrum - plasmon, label='difference')
 
                     self.parent.axis.legend()
-        
+        if self.low_loss_tab[8, 2].value:
+            if 'plasmon' in self.parent.datasets:
+                    if 'plasmon' in self.parent.datasets['plasmon'].metadata:
+                        eps = self.parent.datasets['plasmon'].metadata['plasmon']['epsilon']
+                        self.parent.axis.plot(self.parent.energy_scale, eps.real, label='epsilon.real')
+                        self.parent.axis.plot(self.parent.energy_scale, eps.imag, label='epsilon.imag')
+        self.parent.axis.legend()
 
     def get_additional_spectrum(self, key):
         if key not in self.parent.datasets.keys():
