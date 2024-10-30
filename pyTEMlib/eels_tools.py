@@ -581,14 +581,22 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
         guess_pos = np.argmax(fit_dset)
         guess_amplitude = fit_dset[guess_pos]
-        guess_width = 8
+        guess_width =(endFitEnergy-startFitEnergy)/4
+        guess_pos = energy[guess_pos]
+        if guess_width >8:
+            guess_width=8
         popt, pcov = curve_fit(energy_loss_function, energy[start_fit_pixel:end_fit_pixel], fit_dset,
                                p0=[guess_pos, guess_width, guess_amplitude])
        
         plasmon = dataset.like_data(energy_loss_function(energy, popt[0], popt[1], popt[2]))
         start_plasmon = np.searchsorted(energy, 0)+1
+        
+        
         plasmon[:start_plasmon] = 0.
-        plasmon.metadata['plasmon'] = popt
+        epsilon = drude(energy, popt[0], popt[1], 1) * popt[2]
+        epsilon[:start_plasmon] = 0.
+
+        plasmon.metadata['plasmon'] = {'parameter': popt, 'epsilon':epsilon}
         return plasmon
     
     # if it can be parallelized:
