@@ -40,15 +40,15 @@ def get_image_sidebar() -> Any:
                                           layout=ipywidgets.Layout(width='auto', grid_area='header'),
                                           style=ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Conv.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-1, description='Conv.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Coll.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-0.1, description='Coll.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Acc Voltage:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=.1, description='Acc Voltage:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="keV", layout=ipywidgets.Layout(width='100px'))
     
@@ -123,11 +123,11 @@ def get_info_sidebar() -> Any:
                                           layout=ipywidgets.Layout(width='auto', grid_area='header'),
                                           style=ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Conv.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-1, description='Conv.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Coll.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-0.1, description='Coll.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
@@ -251,6 +251,7 @@ class EELSBaseWidget(object):
         self.dir_name = file_tools.get_last_path()
 
         self.key = None
+        self.new_info = False
         self.image = 'Sum'
 
         self.save_path = True
@@ -632,6 +633,7 @@ class EELSBaseWidget(object):
         
         self.key = self.dataset_list[0].split(':')[0]
         self.dataset = self.datasets[self.key]
+        self.new_info = True
 
         self.selected_dataset = self.dataset
         if len(self.image_list) > 0:
@@ -822,9 +824,10 @@ class Info(object):
         self.info_tab[11, 0].value = np.round(self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'], 2)
 
     def set_microscope_parameter(self, value):
-        self.parent.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
-        self.parent.datasets[self.key].metadata['experiment']['collection_angle'] = self.info_tab[6, 0].value
-        self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.info_tab[7, 0].value*1000
+        if not self.parent.new_info:
+            self.parent.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
+            self.parent.datasets[self.key].metadata['experiment']['collection_angle'] = self.info_tab[6, 0].value
+            self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.info_tab[7, 0].value*1000
     
     def cursor2energy_scale(self, value):
         self.energy_scale = self.parent.datasets[self.key].get_spectral_dims(return_axis=True)[0]
@@ -869,6 +872,7 @@ class Info(object):
         spectrum_list = ['None']
         reference_list = ['None']
         data_list = []
+        
         self.key = self.info_key = self.parent.info_key
         
         spectrum_data = False
@@ -880,7 +884,6 @@ class Info(object):
                     if 'SPECTR' in self.parent.datasets[key].data_type.name:
                         spectrum_data = True
                         spectrum_list.append(f'{key}: {self.parent.datasets[key].title}')
-                        print( self.info_key, key)
                         if self.info_key == key:
                             info_index = len(spectrum_list)-1
                 reference_list.append(f'{key}: {self.parent.datasets[key].title}')
@@ -894,8 +897,9 @@ class Info(object):
         else:
             for i in range(15, 18):
                 self.info_tab[i, 0].layout.display = "flex"
-        
+
         if 'None' not in self.key:
+            self.parent.new_info = True
             energy_scale = self.parent.datasets[self.key].get_spectral_dims(return_axis=True)
             if len(energy_scale) == 0:
                 return
@@ -910,6 +914,7 @@ class Info(object):
             self.info_tab[5, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['convergence_angle'], 1)
             self.info_tab[6, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['collection_angle'], 1)
             self.info_tab[7, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
+            print(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'])
             self.info_tab[10, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['exposure_time'], 4)
             if 'flux_ppm' not in self.parent.datasets[self.key].metadata['experiment']:
                 self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = 0
@@ -927,6 +932,7 @@ class Info(object):
                     ll_key = f'{ll_key}: {self.parent.datasets[ll_key].title}'
                     self.lowloss_key = ll_key
             self.info_tab[9, 0].value = ll_key
+            self.parent.new_info = False
 
     def update_dataset(self, value=0):
         self.key = self.info_tab[0, 0].value.split(':')[0]

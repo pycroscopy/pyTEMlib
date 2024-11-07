@@ -94,6 +94,7 @@ def get_chi(ab, size_x, size_y, verbose=False):
     chi = make_chi(phi, theta, ab)
 
     # Aperture function
+    print(aperture_angle)
     mask = theta >= aperture_angle
 
     aperture = np.ones((size_x, size_y), dtype=float)
@@ -182,37 +183,9 @@ def make_probe (chi, aperture):
 
 def get_probe( ab, sizeX, sizeY,  scale = 'mrad', verbose= True):
     
-    
     chi, A_k  = get_chi( ab, sizeX, sizeY, verbose= False)
     probe = make_probe (chi, A_k)
 
-    V_noise  =np.random.rand(sizeX,sizeY)
-    smoothing = 5
-    phi_r = ndimage.gaussian_filter(V_noise, sigma=(smoothing, smoothing), order=0)
-
-    sigma = 6 ## 6 for carbon and thin
-
-    q_r = np.exp(-1j*sigma * phi_r)
-    #q_r = 1-phi_r * sigma
-
-    T_k =  (A_k)*(np.exp(-1j*chi))
-    t_r = (np.fft.ifft2(np.fft.fftshift(T_k)))
-
-    Psi_k =  np.fft.fftshift(np.fft.fft2(q_r*t_r))
-
-    ronchigram = I_k  = np.absolute(Psi_k*np.conjugate(Psi_k))
-
-    FOV_reciprocal = 1/ab['FOV']*sizeX/2 
-    if scale == '1/nm':
-        extent = [-FOV_reciprocal,FOV_reciprocal,-FOV_reciprocal,FOV_reciprocal]
-        ylabel = 'reciprocal distance [1/nm]'
-    else :
-        FOV_mrad = FOV_reciprocal * ab['wavelength'] *1000
-        extent = [-FOV_mrad,FOV_mrad,-FOV_mrad,FOV_mrad]
-        ylabel = 'reciprocal distance [mrad]'
-    ab['extent_reciprocal'] = extent
-    ab['ylabel'] =ylabel
-    
     return probe, A_k, chi
 
 
