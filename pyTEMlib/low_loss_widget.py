@@ -14,7 +14,7 @@ from pyTEMlib import eels_tools
 
 
 def get_low_loss_sidebar() -> Any:
-    side_bar = ipywidgets.GridspecLayout(9, 3, width='auto', grid_gap="0px")
+    side_bar = ipywidgets.GridspecLayout(16, 3, width='auto', grid_gap="0px")
 
     side_bar[0, :2] = ipywidgets.Dropdown(
             options=[('None', 0)],
@@ -31,10 +31,6 @@ def get_low_loss_sidebar() -> Any:
     side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='fit width:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
-    row +=1
-    side_bar[row, 0] = ipywidgets.widgets.Label(value="thickness", layout=ipywidgets.Layout(width='100px'))
-    side_bar[row, 1] = ipywidgets.widgets.Label(value="", layout=ipywidgets.Layout(width='100px'))
-    side_bar[row, 2] = ipywidgets.widgets.Label(value="* iMFP", layout=ipywidgets.Layout(width='100px'))
     row +=1
     side_bar[row, 0] = ipywidgets.ToggleButton(description='Plot Res.Fct.',
                                                disabled=False,
@@ -61,6 +57,18 @@ def get_low_loss_sidebar() -> Any:
     side_bar[row, :2] = ipywidgets.FloatText(value=25, description='End Fit:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='50px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=5, description='Energy:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=25, description='Width:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='50px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=25, description='Amplitude:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='50px'))
     row +=1
     side_bar[row, 0] = ipywidgets.ToggleButton(description='Plot Drude',
                                                disabled=False,
@@ -69,6 +77,35 @@ def get_low_loss_sidebar() -> Any:
                                                layout=ipywidgets.Layout(width='100px'))
     
     side_bar[row, 2] = ipywidgets.ToggleButton(description='Plot Diel.Fct.',
+                                               disabled=False,
+                                               button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+                                               tooltip='Changes y-axis to probability if flux is given',
+                                               layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :3] = ipywidgets.Button(description='Multiple Scattering',
+                                          layout=ipywidgets.Layout(width='auto', grid_area='header'),
+                                          style=ipywidgets.ButtonStyle(button_color='lightblue'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=5, description='Start Fit:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
+    row += 1
+    side_bar[row, :2] = ipywidgets.FloatText(value=25, description='End Fit:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='50px'))
+    row +=1
+    side_bar[row, :2] = ipywidgets.FloatText(value=25, description='thickness:', disabled=False, color='black',
+                                             layout=ipywidgets.Layout(width='200px'))
+    side_bar[row, 2] = ipywidgets.widgets.Label(value="* iMFP", layout=ipywidgets.Layout(width='50px'))
+    
+    row +=1
+    side_bar[row, 0] = ipywidgets.ToggleButton(description='Plot LowLoss',
+                                               disabled=False,
+                                               button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+                                               tooltip='Plots resolution function on right',
+                                               layout=ipywidgets.Layout(width='100px'))
+    
+    side_bar[row, 2] = ipywidgets.ToggleButton(description='Nix',
                                                disabled=False,
                                                button_style='',  # 'success', 'info', 'warning', 'danger' or ''
                                                tooltip='Changes y-axis to probability if flux is given',
@@ -122,29 +159,50 @@ class LowLoss(object):
         if 'low_loss' not in self.dataset.metadata:
             self.dataset.metadata['zero_loss'] = {}
         self.dataset.metadata['zero_loss'].update(self.parent.datasets['resolution_function'].metadata['zero_loss'])
-        self.low_loss_tab[4, 0].value = True
-        self.low_loss_tab[3, 1].value = f"{np.log(self.parent.dataset.sum()/self.parent.datasets['resolution_function'].sum())}"
+        self.low_loss_tab[3, 0].value = True
+        self.low_loss_tab[14, 1].value = np.round(np.log(self.parent.dataset.sum()/self.parent.datasets['resolution_function'].sum()), 4)
         self.parent.status_message('Fitted zero-loss peak')
         
     def get_drude(self, value=0):
         self.low_loss_tab[8, 0].value = False
-        fit_start = self.low_loss_tab[6, 0].value
-        fit_end = self.low_loss_tab[7, 0].value
-        fit_start = self.low_loss_tab[6, 0].value
+        fit_start = self.low_loss_tab[5, 0].value
+        fit_end = self.low_loss_tab[6, 0].value
         
         plasmon = eels_tools.fit_plasmon(self.parent.spectrum, fit_start, fit_end)
-
         
+
         self.parent.datasets['plasmon'] = plasmon
         self.parent.datasets['_relationship']['plasmon'] = 'plasmon'
-        self.parent.status_message('Fitting plasmon peak 2')
         
         #self.dataset.metadata['plasmon'].update(self.parent.datasets['plasmon'].metadata['zero_loss'])
-        self.low_loss_tab[8, 0].value = True
+        self.low_loss_tab[10, 0].value = True
+        p = plasmon.metadata['plasmon']['parameter']
+        self.low_loss_tab[7, 0].value = np.round(p[0],3)
+        self.low_loss_tab[8, 0].value = np.round(p[1],3)
+        self.low_loss_tab[9, 0].value = np.round(p[2],1)
+        
         self.parent.status_message('Fitted plasmon peak')
+
+    def get_multiple_scattering(self, value=0):
+        self.low_loss_tab[15, 0].value = False
+        fit_start = self.low_loss_tab[12, 0].value
+        fit_end = self.low_loss_tab[13, 0].value
+        
+        p = [self.low_loss_tab[7, 0].value, self.low_loss_tab[8, 0].value, self.low_loss_tab[9, 0].value, self.low_loss_tab[14, 0].value]
+        low_loss = eels_tools.fit_multiple_scattering(self.parent.spectrum, fit_start, fit_end, pin=p)
         
 
-        return plasmon
+        self.parent.datasets['multiple_scattering'] = low_loss
+        self.parent.datasets['_relationship']['multiple_scattering'] = 'multiple_scattering'
+        self.low_loss_tab[10, 0].value = False
+        self.low_loss_tab[15, 0].value = True
+        p = low_loss.metadata['multiple_scattering']['parameter']
+        self.low_loss_tab[14, 0].value = np.round(p[3],3)
+        
+        self.parent.status_message('Fitted multiple scattering')
+        
+
+        return low_loss
 
     def set_ll_action(self):
         self.low_loss_tab[0, 0].observe(self.update_ll_dataset)
@@ -152,50 +210,49 @@ class LowLoss(object):
         #self.low_loss_tab[2, 0].observe(self.set_energy_scale, names='value')
         #self.low_loss_tab[3, 0].observe(self.set_energy_scale, names='value')
         self.low_loss_tab[1, 0].on_click(self.get_resolution_function)
-        self.low_loss_tab[4, 2].observe(self.parent.info.set_y_scale, names='value')
-        self.low_loss_tab[4, 0].observe(self._update, names='value')
-        self.low_loss_tab[5, 0].on_click(self.get_drude)
-        self.low_loss_tab[8, 0].observe(self._update, names='value')
-        self.low_loss_tab[8, 2].observe(self._update, names='value')
+        self.low_loss_tab[3, 2].observe(self.parent.info.set_y_scale, names='value')
+        self.low_loss_tab[3, 0].observe(self._update, names='value')
+        self.low_loss_tab[4, 0].on_click(self.get_drude)
+        self.low_loss_tab[10, 0].observe(self._update, names='value')
+        self.low_loss_tab[10, 2].observe(self._update, names='value')
+        self.low_loss_tab[11, 0].on_click(self.get_multiple_scattering)
+        self.low_loss_tab[15, 0].observe(self._update, names='value')
         
         
     def _update(self, ev=0):
         
         self.parent._update(ev)
         spectrum = self.parent.spectrum
-
-        if self.low_loss_tab[4, 0].value * self.low_loss_tab[8, 0].value:
+        resolution_function = None
+        if self.low_loss_tab[3, 0].value:
             if 'resolution_function' in self.parent.datasets:
-                if 'plasmon' in self.parent.datasets:
-                    resolution_function = self.get_additional_spectrum('resolution_function')
-                    plasmon = self.get_additional_spectrum('plasmon')
-                    self.parent.axis.plot(self.parent.energy_scale, resolution_function, label='resolution function')
-                    self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
-                    self.parent.axis.plot(self.parent.energy_scale, 
-                                          spectrum - resolution_function - plasmon, label='difference')
-                    
-        else:            
-            if self.low_loss_tab[4, 0].value :
-                if 'resolution_function' in self.parent.datasets:
-                    
-                    resolution_function = self.get_additional_spectrum('resolution_function')
-                    self.parent.axis.plot(self.parent.energy_scale, resolution_function, label='resolution function')
-                    self.parent.axis.plot(self.parent.energy_scale, 
-                                          spectrum - resolution_function, label='difference')
-            if self.low_loss_tab[8, 0].value:
-                if 'plasmon' in self.parent.datasets:
-                    plasmon = self.get_additional_spectrum('plasmon')
-                    self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
-                    self.parent.axis.plot(self.parent.energy_scale, 
-                                          spectrum - plasmon, label='difference')
-
-        if self.low_loss_tab[8, 2].value:
-            if 'plasmon' in self.parent.datasets:
-                    if 'plasmon' in self.parent.datasets['plasmon'].metadata:
-                        eps = self.parent.datasets['plasmon'].metadata['plasmon']['epsilon']
-                        self.parent.axis.plot(self.parent.energy_scale, eps.real, label='epsilon.real')
-                        self.parent.axis.plot(self.parent.energy_scale, eps.imag, label='epsilon.imag')
-        self.parent.axis.legend()
+                resolution_function = self.get_additional_spectrum('resolution_function')
+                self.parent.axis.plot(self.parent.energy_scale, resolution_function, label='resolution function')
+        if self.low_loss_tab[10, 0].value:
+            p = [self.low_loss_tab[7, 0].value, self.low_loss_tab[8, 0].value, self.low_loss_tab[9, 0].value]
+            self.parent.datasets['plasmon'] = self.parent.datasets['plasmon'].like_data(eels_tools.energy_loss_function(spectrum.energy_loss, p))
+            plasmon = self.get_additional_spectrum('plasmon')
+            self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
+        else: 
+            plasmon = None
+        if self.low_loss_tab[15, 0].value:
+            p = [self.low_loss_tab[7, 0].value, self.low_loss_tab[8, 0].value, self.low_loss_tab[9, 0].value, self.low_loss_tab[14, 0].value]
+            low_loss = eels_tools.multiple_scattering(self.parent.energy_scale, p)
+            self.parent.axis.plot(self.parent.energy_scale, low_loss*self.parent.y_scale, label='multiple scattering')        
+        else:
+            low_loss = None
+        
+        difference = spectrum
+        if resolution_function is not None:
+            difference -= resolution_function
+        if low_loss is not None:
+            difference -= low_loss *self.parent.y_scale
+        else:
+            if plasmon is not None:
+                difference -= plasmon
+        if self.low_loss_tab[3, 0].value + self.low_loss_tab[10, 0].value + self.low_loss_tab[15, 0].value > 0:
+            self.parent.axis.plot(self.parent.energy_scale, difference, label='difference')               
+            self.parent.axis.legend()
 
     def get_additional_spectrum(self, key):
         if key not in self.parent.datasets.keys():

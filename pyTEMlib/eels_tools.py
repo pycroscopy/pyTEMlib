@@ -617,6 +617,100 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
     return fitted_dataset
 
 
+def energy_loss_function(energy_scale: np.ndarray, p: np.ndarray) -> np.ndarray:
+    eps = 1 - p[0]**2/(energy_scale**2+p[1]**2) + 1j * p[1] * p[0]**2/energy_scale/(energy_scale**2+p[1]**2)
+    elf = (-1/eps).imag
+    return elf*p[2]
+
+
+def multiple_scattering(energy_scale: np.ndarray, p: list, core_loss=False)-> np.ndarray:
+    p = np.abs(p)
+    tmfp = p[3]
+    if core_loss:
+        dif = 1
+    else:
+        dif = 16
+    LLene = np.linspace(1, 2048-1,2048)/dif
+    
+    SSD = energy_loss_function(LLene, p)
+    ssd  = np.fft.fft(SSD)
+    ssd2 = ssd.copy()
+    
+    ### sum contribution from each order of scattering:
+    PSD = np.zeros(len(LLene))
+    for order in range(15):
+        # This order convoluted spectum 
+        # convoluted SSD is SSD2
+        SSD2 = np.fft.ifft(ssd).real
+    
+        # scale right (could be done better? GERD) 
+        # And add this order to final spectrum
+        PSD += SSD2*abs(sum(SSD)/sum(SSD2)) / scipy.special.factorial(order+1)*np.power(tmfp, (order+1))*np.exp(-tmfp) #using equation 4.1 of egerton ed2
+        
+        # next order convolution
+        ssd = ssd * ssd2
+    
+    PSD /=tmfp*np.exp(-tmfp)
+    BGDcoef = scipy.interpolate.splrep(LLene, PSD, s=0)    
+    return scipy.interpolate.splev(energy_scale, BGDcoef)
+
+def fit_multiple_scattering(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float,pin=None, number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
+    """
+    Fit multiple scattering of plasmon peak in a TEM dataset.
+
+    
+    Parameters:
+        dataset: sidpy.Dataset or numpy.ndarray
+            The dataset containing TEM spectral data.
+        startFitEnergy: float
+            The start energy of the fitting window.
+        endFitEnergy: float
+            The end energy of the fitting window.
+        number_workers: int, optional
+            The number of workers for parallel processing (default is 4).
+        number_threads: int, optional
+            The number of threads for parallel processing (default is 8).
+
+    Returns:
+        fitted_dataset: sidpy.Dataset or numpy.ndarray
+            The dataset with fitted plasmon peak parameters. The dimensions and 
+            format depend on the input dataset.
+
+    Raises:
+        ValueError: If the input dataset does not have the expected dimensions or format.
+
+    Notes:
+        - The function uses the Drude model to fit plasmon peaks.
+        - The fitting parameters are peak position (Ep), peak width (Ew), and amplitude (A).
+        - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
+    """
+    
+
+    # define window for fitting
+    energy = dataset.get_spectral_dims(return_axis=True)[0].values
+    start_fit_pixel = np.searchsorted(energy, startFitEnergy)
+    end_fit_pixel = np.searchsorted(energy, endFitEnergy)
+
+    def errf_multi(p, y, x):
+        elf = multiple_scattering(x, p)
+        err = y - elf
+        #print (p,sum(np.abs(err)))
+        return np.abs(err) # /np.sqrt(y)
+
+    if pin is None:
+        pin = np.array([9,1,.7, 0.3])
+
+    
+    fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
+    popt, lsq = leastsq(errf_multi, pin, args=(fit_dset, energy[start_fit_pixel:end_fit_pixel]), maxfev=2000)
+    
+    multi = dataset.like_data(multiple_scattering(energy, popt))
+    
+
+    multi.metadata['multiple_scattering'] = {'parameter': popt}
+    return multi
+
+    
 
 def drude_simulation(dset, e, ep, ew, tnm, eb):
     """probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)
