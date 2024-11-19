@@ -560,7 +560,7 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
     """
     # define Drude function for plasmon fitting
 
-    anglog, T = angle_correction(dataset)
+    anglog, T, _ = angle_correction(dataset)
     def energy_loss_function(E: np.ndarray, Ep: float, Ew: float, A: float) -> np.ndarray:
 
         eps = 1 - Ep**2/(E**2+Ew**2) + 1j * Ew * Ep**2/E/(E**2+Ew**2)
@@ -626,12 +626,37 @@ def angle_correction(spectrum):
 
     acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
-    eff_beta = effective_collection_angle(energy_scale, spectrum.metadata['experiment']['convergence_angle'],
-                                         spectrum.metadata['experiment']['collection_angle'],acceleration_voltage)
+    # eff_beta = effective_collection_angle(energy_scale, spectrum.metadata['experiment']['convergence_angle'],
+    #                                     spectrum.metadata['experiment']['collection_angle'],acceleration_voltage)
    
     
     epc = energy_scale[1] - energy_scale[0]  # input('ev per channel : ');
-       
+
+    alpha = spectrum.metadata['experiment']['convergence_angle']  # input('Alpha (mrad) : ');
+    beta = spectrum.metadata['experiment']['collection_angle']# input('Beta (mrad) : ');
+    e = energy_scale
+    e0 = acceleration_voltage/1000 # input('E0 (keV) : ');
+
+    T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
+    
+    tgt=e0*(1.+e0/1022.)/(1+e0/511.);
+    thetae=(e+1e-6)/tgt; # % avoid NaN for e=0
+    # %     A2,B2,T2 ARE SQUARES OF ANGLES IN RADIANS**2
+    a2=alpha*alpha*1e-6 + 1e-7;  # % avoid inf for alpha=0
+    b2=beta*beta*1e-6;
+    t2=thetae*thetae*1e-6;
+    eta1=np.sqrt((a2+b2+t2)**2-4*a2*b2)-a2-b2-t2;
+    eta2=2.*b2*np.log(0.5/t2*(np.sqrt((a2+t2-b2)**2+4.*b2*t2)+a2+t2-b2));
+    eta3=2.*a2*np.log(0.5/t2*(np.sqrt((b2+t2-a2)**2+4.*a2*t2)+b2+t2-a2));
+    eta=(eta1+eta2+eta3)/a2/np.log(4./t2);
+    f1=(eta1+eta2+eta3)/2./a2/np.log(1.+b2/t2);
+    f2=f1;
+    if(alpha/beta>1):
+        f2=f1*a2/b2;
+
+    bstar=thetae*np.sqrt(np.exp(f2*np.log(1.+b2/t2))-1.);
+    anglog = f2
+    """
     b = eff_beta/1000.0 # %rad
     e0 = acceleration_voltage/1000.0 # %keV
     T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
@@ -640,7 +665,8 @@ def angle_correction(spectrum):
     the = energy_scale/tgt # varies with energy loss! # Appendix E p 427 
     anglog = np.log(1.0+ b*b/the/the)
     # 2 * T = m_0 v**2 !!!  a_0 = 0.05292 nm  epc is for sum over I0
-    return anglog,  (np.pi*0.05292* T / 2.0)/epc
+    """
+    return anglog,   (np.pi*0.05292* T / 2.0)/epc, bstar[0],
 
 def energy_loss_function(energy_scale: np.ndarray, p: np.ndarray, anglog=1) -> np.ndarray:
     eps = 1 - p[0]**2/(energy_scale**2+p[1]**2) + 1j * p[1] * p[0]**2/energy_scale/(energy_scale**2+p[1]**2)
@@ -1622,7 +1648,7 @@ def fit_edges2(spectrum, energy_scale, edges):
     for key in edges:
         if key.isdigit():
             edges[key]['areal_density'] = p[int(key)+5]
-    print(p)
+    # print(p)
     edges['model'] = {}
     edges['model']['background'] = ( p[0] * np.power(x, -p[1])+ p[2]+ x**p[3] +  p[4] * x * x)
     edges['model']['background-poly_0'] = p[2]
