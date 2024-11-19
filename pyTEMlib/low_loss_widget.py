@@ -90,7 +90,7 @@ def get_low_loss_sidebar() -> Any:
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='100px'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=25, description='End Fit:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-1, description='End Fit:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="eV", layout=ipywidgets.Layout(width='50px'))
     row +=1
@@ -137,6 +137,7 @@ class LowLoss(object):
                     ll_index = index+1
         self.low_loss_tab[0, 0].options = spectrum_list
         self.low_loss_tab[0, 0].value = spectrum_list[ll_index]
+        
         self.update_ll_dataset()
         
     def update_ll_dataset(self, value=0):
@@ -146,6 +147,9 @@ class LowLoss(object):
             return
         self.parent.set_dataset(self.ll_key)
         self.dataset = self.parent.dataset
+        if self.low_loss_tab[13, 0].value < 0:
+            energy_scale = self.dataset.get_spectral_dims(return_axis=True)[0]
+            self.low_loss_tab[13, 0].value = np.round(self.dataset.get_spectral_dims(return_axis=True)[0][-2], 3)
 
         
     def get_resolution_function(self, value=0):
@@ -181,17 +185,19 @@ class LowLoss(object):
         self.low_loss_tab[8, 0].value = np.round(p[1],3)
         self.low_loss_tab[9, 0].value = np.round(p[2],1)
 
-        _, dsdo = eels_tools.angle_correction(self.parent.spectrum)
+        _, dsdo, _ = eels_tools.angle_correction(self.parent.spectrum)
 
 
         I0 = self.parent.datasets['resolution_function'].sum() + p[2] 
         # I0 = self.parent.spectrum.sum()
-        print(I0)
+        # print(I0)
         # T = m_0 v**2 !!!  a_0 = 0.05292 nm p[2] = S(E)/elf
         t_nm  = p[2]/I0*dsdo  #Egerton equ 4.26% probability per eV
         relative_thickness = self.low_loss_tab[14, 0].value
-        
-        self.parent.status_message(f'Fitted plasmon peak: thickness :{t_nm:.1f} nm and IMFP: {t_nm/relative_thickness:.1f} nm')
+        imfp, _ = eels_tools.inelatic_mean_free_path(p[0], self.parent.spectrum)
+        t_nm = float(relative_thickness * imfp)
+        # print(t_nm, relative_thickness, imfp)
+        self.parent.status_message(f'Fitted plasmon peak: thickness :{t_nm:.1f} nm and IMFP: {t_nm/relative_thickness:.1f} nm in free electron approximation')
 
         plasmon.metadata['plasmon']['thickness'] = t_nm
         plasmon.metadata['plasmon']['relative_thickness'] = relative_thickness
@@ -240,7 +246,7 @@ class LowLoss(object):
         
         self.parent._update(ev)
         spectrum = self.parent.spectrum
-        anglog, _ = eels_tools.angle_correction(spectrum)
+        anglog, _, _ = eels_tools.angle_correction(spectrum)
         resolution_function = None
         if self .low_loss_tab[3, 0].value:
             if 'resolution_function' in self.parent.datasets:

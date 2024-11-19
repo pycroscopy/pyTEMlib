@@ -736,8 +736,6 @@ class EELSWidget(EELSBaseWidget):
         self.low_loss = LowLoss(self.low_loss_tab, self)
         self.core_loss = CoreLoss(self.core_loss_tab, self)
         
-        
-        
         self.set_action()
     
     def set_action(self):
@@ -914,7 +912,7 @@ class Info(object):
             self.info_tab[5, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['convergence_angle'], 1)
             self.info_tab[6, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['collection_angle'], 1)
             self.info_tab[7, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
-            print(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'])
+            # print(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'])
             self.info_tab[10, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['exposure_time'], 4)
             if 'flux_ppm' not in self.parent.datasets[self.key].metadata['experiment']:
                 self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = 0
