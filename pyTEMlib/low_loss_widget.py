@@ -180,8 +180,25 @@ class LowLoss(object):
         self.low_loss_tab[7, 0].value = np.round(p[0],3)
         self.low_loss_tab[8, 0].value = np.round(p[1],3)
         self.low_loss_tab[9, 0].value = np.round(p[2],1)
+
+        _, dsdo = eels_tools.angle_correction(self.parent.spectrum)
+
+
+        I0 = self.parent.datasets['resolution_function'].sum() + p[2] 
+        # I0 = self.parent.spectrum.sum()
+        print(I0)
+        # T = m_0 v**2 !!!  a_0 = 0.05292 nm p[2] = S(E)/elf
+        t_nm  = p[2]/I0*dsdo  #Egerton equ 4.26% probability per eV
+        relative_thickness = self.low_loss_tab[14, 0].value
         
-        self.parent.status_message('Fitted plasmon peak')
+        self.parent.status_message(f'Fitted plasmon peak: thickness :{t_nm:.1f} nm and IMFP: {t_nm/relative_thickness:.1f} nm')
+
+        plasmon.metadata['plasmon']['thickness'] = t_nm
+        plasmon.metadata['plasmon']['relative_thickness'] = relative_thickness
+        plasmon.metadata['plasmon']['IMFP'] = t_nm/relative_thickness
+
+        self.parent.spectrum.metadata['plasmon'] = plasmon.metadata['plasmon']
+        
 
     def get_multiple_scattering(self, value=0):
         self.low_loss_tab[15, 0].value = False
@@ -223,21 +240,22 @@ class LowLoss(object):
         
         self.parent._update(ev)
         spectrum = self.parent.spectrum
+        anglog, _ = eels_tools.angle_correction(spectrum)
         resolution_function = None
-        if self.low_loss_tab[3, 0].value:
+        if self .low_loss_tab[3, 0].value:
             if 'resolution_function' in self.parent.datasets:
                 resolution_function = self.get_additional_spectrum('resolution_function')
                 self.parent.axis.plot(self.parent.energy_scale, resolution_function, label='resolution function')
         if self.low_loss_tab[10, 0].value:
             p = [self.low_loss_tab[7, 0].value, self.low_loss_tab[8, 0].value, self.low_loss_tab[9, 0].value]
-            self.parent.datasets['plasmon'] = self.parent.datasets['plasmon'].like_data(eels_tools.energy_loss_function(spectrum.energy_loss, p))
+            self.parent.datasets['plasmon'] = self.parent.datasets['plasmon'].like_data(eels_tools.energy_loss_function(spectrum.energy_loss, p))*anglog
             plasmon = self.get_additional_spectrum('plasmon')
             self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
         else: 
             plasmon = None
         if self.low_loss_tab[15, 0].value:
             p = [self.low_loss_tab[7, 0].value, self.low_loss_tab[8, 0].value, self.low_loss_tab[9, 0].value, self.low_loss_tab[14, 0].value]
-            low_loss = eels_tools.multiple_scattering(self.parent.energy_scale, p)
+            low_loss = eels_tools.multiple_scattering(self.parent.energy_scale, p) * anglog
             self.parent.axis.plot(self.parent.energy_scale, low_loss*self.parent.y_scale, label='multiple scattering')        
         else:
             low_loss = None
