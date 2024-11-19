@@ -559,11 +559,15 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
     """
     # define Drude function for plasmon fitting
+
+    anglog, T = angle_correction(dataset)
     def energy_loss_function(E: np.ndarray, Ep: float, Ew: float, A: float) -> np.ndarray:
-        
+
         eps = 1 - Ep**2/(E**2+Ew**2) + 1j * Ew * Ep**2/E/(E**2+Ew**2)
-        elf = (-1/eps).imag
+        elf = (-1/eps).imag  
         return A*elf
+    
+
 
     # define window for fitting
     energy = dataset.get_spectral_dims(return_axis=True)[0].values
@@ -578,7 +582,7 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         dataset = dataset.rechunk(chunks=(1, -1))
         fit_dset = dataset[:, start_fit_pixel:end_fit_pixel]
     else:
-        fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
+        fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel]/ anglog[start_fit_pixel:end_fit_pixel])
         guess_pos = np.argmax(fit_dset)
         guess_amplitude = fit_dset[guess_pos]
         guess_width =(endFitEnergy-startFitEnergy)/4
@@ -589,6 +593,7 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
                                p0=[guess_pos, guess_width, guess_amplitude])
        
         plasmon = dataset.like_data(energy_loss_function(energy, popt[0], popt[1], popt[2]))
+        plasmon *= anglog
         start_plasmon = np.searchsorted(energy, 0)+1
         
         
@@ -617,10 +622,50 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
     return fitted_dataset
 
 
-def energy_loss_function(energy_scale: np.ndarray, p: np.ndarray) -> np.ndarray:
+def angle_correction(spectrum):
+
+    acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    eff_beta = effective_collection_angle(energy_scale, spectrum.metadata['experiment']['convergence_angle'],
+                                         spectrum.metadata['experiment']['collection_angle'],acceleration_voltage)
+   
+    
+    epc = energy_scale[1] - energy_scale[0]  # input('ev per channel : ');
+       
+    b = eff_beta/1000.0 # %rad
+    e0 = acceleration_voltage/1000.0 # %keV
+    T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
+    tgt = 1000*e0*(1022.12 + e0)/(511.06 + e0)  # %eV  Appendix E p 427 
+
+    the = energy_scale/tgt # varies with energy loss! # Appendix E p 427 
+    anglog = np.log(1.0+ b*b/the/the)
+    # 2 * T = m_0 v**2 !!!  a_0 = 0.05292 nm  epc is for sum over I0
+    return anglog,  (np.pi*0.05292* T / 2.0)/epc
+
+def energy_loss_function(energy_scale: np.ndarray, p: np.ndarray, anglog=1) -> np.ndarray:
     eps = 1 - p[0]**2/(energy_scale**2+p[1]**2) + 1j * p[1] * p[0]**2/energy_scale/(energy_scale**2+p[1]**2)
     elf = (-1/eps).imag
-    return elf*p[2]
+    return elf*p[2]*anglog
+
+def inelatic_mean_free_path(E_p, spectrum):
+    acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    
+    e0 = acceleration_voltage/1000.0 # %keV
+
+    eff_beta = effective_collection_angle(energy_scale, spectrum.metadata['experiment']['convergence_angle'],
+                                         spectrum.metadata['experiment']['collection_angle'],acceleration_voltage)
+    beta = eff_beta/1000.0 # %rad
+    
+    T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
+    tgt = 1000*e0*(1022.12 + e0)/(511.06 + e0)  # %eV  Appendix E p 427 
+    theta_e = E_p/tgt # varies with energy loss! # Appendix E p 427
+    
+    # 2 * T = m_0 v**2 !!!  
+    a_0 = 0.05292 # nm 
+    imfp = 4*T*a_0/E_p/np.log(1+beta**2/theta_e**2)
+
+    return imfp, theta_e
 
 
 def multiple_scattering(energy_scale: np.ndarray, p: list, core_loss=False)-> np.ndarray:
