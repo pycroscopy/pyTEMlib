@@ -132,9 +132,14 @@ class LowLoss(object):
                 if 'SPECTR' in self.parent.datasets[key].data_type.name:
                     energy_offset = self.parent.datasets[key].get_spectral_dims(return_axis=True)[0][0]
                     if energy_offset < 0:
-                        spectrum_list.append(f'{key}: {self.parent.datasets[key].title}') 
+                        spectrum_list.append(f'{key}: {self.parent.datasets[key].title}')
+                print(key, self.ll_key, ll_index)
                 if key == self.ll_key:
-                    ll_index = index+1
+                    ll_index = index-1
+                print(key, self.ll_key, ll_index)
+        if ll_index >len(spectrum_list) - 1:
+            ll_index = len(spectrum_list) - 1
+
         self.low_loss_tab[0, 0].options = spectrum_list
         self.low_loss_tab[0, 0].value = spectrum_list[ll_index]
         
