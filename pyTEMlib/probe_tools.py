@@ -2,6 +2,7 @@
 import numpy as np
 import pyTEMlib.image_tools
 import scipy.ndimage as ndimage
+import skimage
 
 get_wavelength = pyTEMlib.image_tools.get_wavelength
 
