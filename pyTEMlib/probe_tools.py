@@ -94,6 +94,7 @@ def get_chi(ab, size_x, size_y, verbose=False):
     chi = make_chi(phi, theta, ab)
 
     # Aperture function
+    print(aperture_angle)
     mask = theta >= aperture_angle
 
     aperture = np.ones((size_x, size_y), dtype=float)
@@ -108,15 +109,15 @@ def print_aberrations(ab):
     output += f"Aberrations [nm] for acceleration voltage: {ab['acceleration_voltage'] / 1e3:.0f} kV"
     output += '<table>'
     output += f"<tr><td> C10 </td><td> {ab['C10']:.1f} </tr>"
-    output += f"<tr><td> C12a </td><td> {ab['C12a']:20.1f} <td> C12b </td><td> {ab['C12b']:20.1f} </tr>"
-    output += f"<tr><td> C21a </td><td> {ab['C21a']:.1f} <td> C21b </td><td> {ab['C21b']:.1f} "
-    output += f"    <td> C23a </td><td> {ab['C23a']:.1f} <td> C23b </td><td> {ab['C23b']:.1f} </tr>"
+    output += f"<tr><td> C12a (A1) </td><td> {ab['C12a']:20.1f} <td> C12b (A1) </td><td> {ab['C12b']:20.1f} </tr>"
+    output += f"<tr><td> C21a (B2) </td><td> {ab['C21a']:.1f} <td> C21b (B2)</td><td> {ab['C21b']:.1f} "
+    output += f"    <td> C23a (A2) </td><td> {ab['C23a']:.1f} <td> C23b (A2) </td><td> {ab['C23b']:.1f} </tr>"
     output += f"<tr><td> C30 </td><td> {ab['C30']:.1f} </tr>"
-    output += f"<tr><td> C32a </td><td> {ab['C32a']:20.1f} <td> C32b </td><td> {ab['C32b']:20.1f} "
-    output += f"<td> C34a </td><td> {ab['C34a']:20.1f} <td> C34b </td><td> {ab['C34b']:20.1f} </tr>"
-    output += f"<tr><td> C41a </td><td> {ab['C41a']:.3g} <td> C41b </td><td> {ab['C41b']:.3g} "
-    output += f"    <td> C43a </td><td> {ab['C43a']:.3g} <td> C43b </td><td> {ab['C41b']:.3g} "
-    output += f"    <td> C45a </td><td> {ab['C45a']:.3g} <td> C45b </td><td> {ab['C45b']:.3g} </tr>"
+    output += f"<tr><td> C32a (S3) </td><td> {ab['C32a']:20.1f} <td> C32b (S3)</td><td> {ab['C32b']:20.1f} "
+    output += f"<td> C34a (A3) </td><td> {ab['C34a']:20.1f} <td> C34b (A3) </td><td> {ab['C34b']:20.1f} </tr>"
+    output += f"<tr><td> C41a (B4) </td><td> {ab['C41a']:.3g} <td> C41b (B4) </td><td> {ab['C41b']:.3g} "
+    output += f"    <td> C43a (D4) </td><td> {ab['C43a']:.3g} <td> C43b (D4) </td><td> {ab['C41b']:.3g} "
+    output += f"    <td> C45a (A4) </td><td> {ab['C45a']:.3g} <td> C45b (A4)</td><td> {ab['C45b']:.3g} </tr>"
     output += f"<tr><td> C50 </td><td> {ab['C50']:.3g} </tr>"
     output += f"<tr><td> C52a </td><td> {ab['C52a']:20.1f} <td> C52b </td><td> {ab['C52b']:20.1f} "
     output += f"<td> C54a </td><td> {ab['C54a']:20.1f} <td> C54b </td><td> {ab['C54b']:20.1f} "
@@ -182,37 +183,9 @@ def make_probe (chi, aperture):
 
 def get_probe( ab, sizeX, sizeY,  scale = 'mrad', verbose= True):
     
-    
     chi, A_k  = get_chi( ab, sizeX, sizeY, verbose= False)
     probe = make_probe (chi, A_k)
 
-    V_noise  =np.random.rand(sizeX,sizeY)
-    smoothing = 5
-    phi_r = ndimage.gaussian_filter(V_noise, sigma=(smoothing, smoothing), order=0)
-
-    sigma = 6 ## 6 for carbon and thin
-
-    q_r = np.exp(-1j*sigma * phi_r)
-    #q_r = 1-phi_r * sigma
-
-    T_k =  (A_k)*(np.exp(-1j*chi))
-    t_r = (np.fft.ifft2(np.fft.fftshift(T_k)))
-
-    Psi_k =  np.fft.fftshift(np.fft.fft2(q_r*t_r))
-
-    ronchigram = I_k  = np.absolute(Psi_k*np.conjugate(Psi_k))
-
-    FOV_reciprocal = 1/ab['FOV']*sizeX/2 
-    if scale == '1/nm':
-        extent = [-FOV_reciprocal,FOV_reciprocal,-FOV_reciprocal,FOV_reciprocal]
-        ylabel = 'reciprocal distance [1/nm]'
-    else :
-        FOV_mrad = FOV_reciprocal * ab['wavelength'] *1000
-        extent = [-FOV_mrad,FOV_mrad,-FOV_mrad,FOV_mrad]
-        ylabel = 'reciprocal distance [mrad]'
-    ab['extent_reciprocal'] = extent
-    ab['ylabel'] =ylabel
-    
     return probe, A_k, chi
 
 
@@ -453,6 +426,22 @@ def get_target_aberrations(TEM_name, acceleration_voltage):
         ab['TEM_name'] = TEM_name
 
         ab['wavelength'] = pyTEMlib.image_tools.get_wavelength(ab['acceleration_voltage'])
+
+    if TEM_name == 'Spectra300':
+        ab = {'C10': 0, 'C12a': 0, 'C12b': 0.38448128113770325, 
+              'C21a': -68.45251255685642, 'C21b': 64.85359774641199, 'C23a': 11.667578600494137, 'C23b': -29.775627778458194, 
+              'C30': 123,
+              'C32a': 95.3047364258614, 'C32b': -189.72105710231244, 'C34a': -47.45099594807912, 'C34b': -94.67424667529909,
+              'C41a': -905.31842572806, 'C41b': 981.316128853203, 'C43a': 4021.8433526960034, 'C43b': 131.72716642732158, 
+              'C45a': -4702.390968272048,  'C45b': -208.25028574642903, 'C50': -663.1, 
+              'C50': 552000., 'C52a': -0., 'C52b': 0.,
+              'C54a': -0., 'C54b': -0., 'C56a': -36663.643489934424, 'C56b': 21356.079837905396,
+              'acceleration_voltage': 200000,
+              'FOV': 34.241659495148205,
+              'Cc': 1* 1e6,
+              'convergence_angle': 30,
+              'wavelength': 0.0025079340450548005}
+ 
     return ab
 
 

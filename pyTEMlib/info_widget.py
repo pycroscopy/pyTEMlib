@@ -2,6 +2,7 @@ from typing import Any
 
 import numpy as np
 import os
+import sys
 import ipywidgets
 import matplotlib.pylab as plt
 import matplotlib
@@ -40,15 +41,15 @@ def get_image_sidebar() -> Any:
                                           layout=ipywidgets.Layout(width='auto', grid_area='header'),
                                           style=ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Conv.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-1, description='Conv.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Coll.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-0.1, description='Coll.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Acc Voltage:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=.1, description='Acc Voltage:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="keV", layout=ipywidgets.Layout(width='100px'))
     
@@ -123,11 +124,11 @@ def get_info_sidebar() -> Any:
                                           layout=ipywidgets.Layout(width='auto', grid_area='header'),
                                           style=ipywidgets.ButtonStyle(button_color='lightblue'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=7.5, description='Conv.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-1, description='Conv.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
-    side_bar[row, :2] = ipywidgets.FloatText(value=0.1, description='Coll.Angle:', disabled=False, color='black',
+    side_bar[row, :2] = ipywidgets.FloatText(value=-0.1, description='Coll.Angle:', disabled=False, color='black',
                                              layout=ipywidgets.Layout(width='200px'))
     side_bar[row, 2] = ipywidgets.widgets.Label(value="mrad", layout=ipywidgets.Layout(width='100px'))
     row += 1
@@ -251,7 +252,13 @@ class EELSBaseWidget(object):
         self.dir_name = file_tools.get_last_path()
 
         self.key = None
+        self.new_info = False
         self.image = 'Sum'
+        if 'google.colab' in sys.modules:
+            self.google = True
+        else:
+            self.google = False
+        self.google = True
 
         self.save_path = True
 
@@ -274,25 +281,40 @@ class EELSBaseWidget(object):
         self.end_channel = -2
 
         self.file_bar = get_file_widget_ui()
+        children = [self.file_bar]
+        titles = ['File']
         if isinstance(sidebar, dict):
-            tab = ipywidgets.Tab()
-            children = [self.file_bar]
-            titles = ['File']
+
             for sidebar_key, sidebar_gui in sidebar.items():
                 children.append(sidebar_gui)
                 titles.append(sidebar_key)
+        elif not isinstance(sidebar, list):
+            children = [self.file_bar, sidebar]
+            titles = ['File', 'Info']
+
+        if self.google:
+            self.buttons = []
+            for i in range(len(children)):
+                self.buttons.append(ipywidgets.Button(description=titles[i],
+                                    disabled=False,
+                                    button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+                                    layout=ipywidgets.Layout(width='800px')))
+
+
+            self.tab_buttons = ipywidgets.ToggleButtons(options=titles, description='', disabled=False,
+                                                        layout=ipywidgets.Layout(width='auto'),
+                                                        style={"button_width": "auto"})
+            tab = ipywidgets.VBox([self.tab_buttons, self.file_bar])
+            self.children = children
+
+        else:
+            tab = ipywidgets.Tab()
             tab.children = children
             tab.titles = titles
-        elif not isinstance(sidebar, list):
-            tab = ipywidgets.Tab()
-            tab.children = [self.file_bar, sidebar]
-            tab.titles = ['File', 'Info']
-        else:
-            tab = sidebar
-        self.tab = tab
+
         with plt.ioff():
             self.figure = plt.figure()
-        
+        self.tab =tab
         self.figure.canvas.toolbar_position = 'right'
         self.figure.canvas.toolbar_visible = True
 
@@ -632,6 +654,7 @@ class EELSBaseWidget(object):
         
         self.key = self.dataset_list[0].split(':')[0]
         self.dataset = self.datasets[self.key]
+        self.new_info = True
 
         self.selected_dataset = self.dataset
         if len(self.image_list) > 0:
@@ -734,23 +757,28 @@ class EELSWidget(EELSBaseWidget):
         self.low_loss = LowLoss(self.low_loss_tab, self)
         self.core_loss = CoreLoss(self.core_loss_tab, self)
         
-        
-        
         self.set_action()
     
     def set_action(self):
+        if self.google:
+            self.tab_buttons.observe(self.tab_activated)
         self.tab.observe(self.tab_activated)
 
     def tab_activated(self, val=0):
-        if isinstance(val.new, int):
-            self.tabval = val.new
+        if self.google:
+            self.tab.children = [self.tab_buttons, self.children[self.tab_buttons.index]]
+            self.tabval = self.tab_buttons.index
+        else:
+            if isinstance(val.new, int):
+                self.tabval = val.new
             # self.update_sidebars()
-            if val.new == 1:
-                self.info.update_dataset()
-            elif val.new == 2:
-                self.low_loss.update_ll_sidebar()
-            elif val.new == 3:
-                self.core_loss.update_cl_sidebar()
+        if self.tabval == 1:
+            self.info.update_dataset()
+        elif self.tabval == 2:
+            self.low_loss.update_ll_sidebar()
+        elif self.tabval == 3:
+            self.core_loss.update_cl_sidebar()
+
 
     def update_sidebars(self):
         if hasattr(self, 'info'):
@@ -822,9 +850,10 @@ class Info(object):
         self.info_tab[11, 0].value = np.round(self.parent.datasets[self.parent.key].metadata['experiment']['flux_ppm'], 2)
 
     def set_microscope_parameter(self, value):
-        self.parent.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
-        self.parent.datasets[self.key].metadata['experiment']['collection_angle'] = self.info_tab[6, 0].value
-        self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.info_tab[7, 0].value*1000
+        if not self.parent.new_info:
+            self.parent.datasets[self.key].metadata['experiment']['convergence_angle'] = self.info_tab[5, 0].value
+            self.parent.datasets[self.key].metadata['experiment']['collection_angle'] = self.info_tab[6, 0].value
+            self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'] = self.info_tab[7, 0].value*1000
     
     def cursor2energy_scale(self, value):
         self.energy_scale = self.parent.datasets[self.key].get_spectral_dims(return_axis=True)[0]
@@ -869,6 +898,7 @@ class Info(object):
         spectrum_list = ['None']
         reference_list = ['None']
         data_list = []
+        
         self.key = self.info_key = self.parent.info_key
         
         spectrum_data = False
@@ -880,7 +910,6 @@ class Info(object):
                     if 'SPECTR' in self.parent.datasets[key].data_type.name:
                         spectrum_data = True
                         spectrum_list.append(f'{key}: {self.parent.datasets[key].title}')
-                        print( self.info_key, key)
                         if self.info_key == key:
                             info_index = len(spectrum_list)-1
                 reference_list.append(f'{key}: {self.parent.datasets[key].title}')
@@ -894,8 +923,9 @@ class Info(object):
         else:
             for i in range(15, 18):
                 self.info_tab[i, 0].layout.display = "flex"
-        
+
         if 'None' not in self.key:
+            self.parent.new_info = True
             energy_scale = self.parent.datasets[self.key].get_spectral_dims(return_axis=True)
             if len(energy_scale) == 0:
                 return
@@ -910,6 +940,7 @@ class Info(object):
             self.info_tab[5, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['convergence_angle'], 1)
             self.info_tab[6, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['collection_angle'], 1)
             self.info_tab[7, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
+            # print(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'])
             self.info_tab[10, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['exposure_time'], 4)
             if 'flux_ppm' not in self.parent.datasets[self.key].metadata['experiment']:
                 self.parent.datasets[self.key].metadata['experiment']['flux_ppm'] = 0
@@ -927,6 +958,7 @@ class Info(object):
                     ll_key = f'{ll_key}: {self.parent.datasets[ll_key].title}'
                     self.lowloss_key = ll_key
             self.info_tab[9, 0].value = ll_key
+            self.parent.new_info = False
 
     def update_dataset(self, value=0):
         self.key = self.info_tab[0, 0].value.split(':')[0]

@@ -559,11 +559,15 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
     """
     # define Drude function for plasmon fitting
+
+    anglog, T, _ = angle_correction(dataset)
     def energy_loss_function(E: np.ndarray, Ep: float, Ew: float, A: float) -> np.ndarray:
-        
+
         eps = 1 - Ep**2/(E**2+Ew**2) + 1j * Ew * Ep**2/E/(E**2+Ew**2)
-        elf = (-1/eps).imag
+        elf = (-1/eps).imag  
         return A*elf
+    
+
 
     # define window for fitting
     energy = dataset.get_spectral_dims(return_axis=True)[0].values
@@ -578,17 +582,26 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         dataset = dataset.rechunk(chunks=(1, -1))
         fit_dset = dataset[:, start_fit_pixel:end_fit_pixel]
     else:
-        fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
+        fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel]/ anglog[start_fit_pixel:end_fit_pixel])
         guess_pos = np.argmax(fit_dset)
         guess_amplitude = fit_dset[guess_pos]
-        guess_width = 8
+        guess_width =(endFitEnergy-startFitEnergy)/4
+        guess_pos = energy[guess_pos]
+        if guess_width >8:
+            guess_width=8
         popt, pcov = curve_fit(energy_loss_function, energy[start_fit_pixel:end_fit_pixel], fit_dset,
                                p0=[guess_pos, guess_width, guess_amplitude])
        
         plasmon = dataset.like_data(energy_loss_function(energy, popt[0], popt[1], popt[2]))
+        plasmon *= anglog
         start_plasmon = np.searchsorted(energy, 0)+1
+        
+        
         plasmon[:start_plasmon] = 0.
-        plasmon.metadata['plasmon'] = popt
+        epsilon = drude(energy, popt[0], popt[1], 1) * popt[2]
+        epsilon[:start_plasmon] = 0.
+
+        plasmon.metadata['plasmon'] = {'parameter': popt, 'epsilon':epsilon}
         return plasmon
     
     # if it can be parallelized:
@@ -609,6 +622,166 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
     return fitted_dataset
 
 
+def angle_correction(spectrum):
+
+    acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    # eff_beta = effective_collection_angle(energy_scale, spectrum.metadata['experiment']['convergence_angle'],
+    #                                     spectrum.metadata['experiment']['collection_angle'],acceleration_voltage)
+   
+    
+    epc = energy_scale[1] - energy_scale[0]  # input('ev per channel : ');
+
+    alpha = spectrum.metadata['experiment']['convergence_angle']  # input('Alpha (mrad) : ');
+    beta = spectrum.metadata['experiment']['collection_angle']# input('Beta (mrad) : ');
+    e = energy_scale
+    e0 = acceleration_voltage/1000 # input('E0 (keV) : ');
+
+    T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
+    
+    tgt=e0*(1.+e0/1022.)/(1+e0/511.);
+    thetae=(e+1e-6)/tgt; # % avoid NaN for e=0
+    # %     A2,B2,T2 ARE SQUARES OF ANGLES IN RADIANS**2
+    a2=alpha*alpha*1e-6 + 1e-7;  # % avoid inf for alpha=0
+    b2=beta*beta*1e-6;
+    t2=thetae*thetae*1e-6;
+    eta1=np.sqrt((a2+b2+t2)**2-4*a2*b2)-a2-b2-t2;
+    eta2=2.*b2*np.log(0.5/t2*(np.sqrt((a2+t2-b2)**2+4.*b2*t2)+a2+t2-b2));
+    eta3=2.*a2*np.log(0.5/t2*(np.sqrt((b2+t2-a2)**2+4.*a2*t2)+b2+t2-a2));
+    eta=(eta1+eta2+eta3)/a2/np.log(4./t2);
+    f1=(eta1+eta2+eta3)/2./a2/np.log(1.+b2/t2);
+    f2=f1;
+    if(alpha/beta>1):
+        f2=f1*a2/b2;
+
+    bstar=thetae*np.sqrt(np.exp(f2*np.log(1.+b2/t2))-1.);
+    anglog = f2
+    """
+    b = eff_beta/1000.0 # %rad
+    e0 = acceleration_voltage/1000.0 # %keV
+    T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
+    tgt = 1000*e0*(1022.12 + e0)/(511.06 + e0)  # %eV  Appendix E p 427 
+
+    the = energy_scale/tgt # varies with energy loss! # Appendix E p 427 
+    anglog = np.log(1.0+ b*b/the/the)
+    # 2 * T = m_0 v**2 !!!  a_0 = 0.05292 nm  epc is for sum over I0
+    """
+    return anglog,   (np.pi*0.05292* T / 2.0)/epc, bstar[0],
+
+def energy_loss_function(energy_scale: np.ndarray, p: np.ndarray, anglog=1) -> np.ndarray:
+    eps = 1 - p[0]**2/(energy_scale**2+p[1]**2) + 1j * p[1] * p[0]**2/energy_scale/(energy_scale**2+p[1]**2)
+    elf = (-1/eps).imag
+    return elf*p[2]*anglog
+
+def inelatic_mean_free_path(E_p, spectrum):
+    acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    
+    e0 = acceleration_voltage/1000.0 # %keV
+
+    eff_beta = effective_collection_angle(energy_scale, spectrum.metadata['experiment']['convergence_angle'],
+                                         spectrum.metadata['experiment']['collection_angle'],acceleration_voltage)
+    beta = eff_beta/1000.0 # %rad
+    
+    T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
+    tgt = 1000*e0*(1022.12 + e0)/(511.06 + e0)  # %eV  Appendix E p 427 
+    theta_e = E_p/tgt # varies with energy loss! # Appendix E p 427
+    
+    # 2 * T = m_0 v**2 !!!  
+    a_0 = 0.05292 # nm 
+    imfp = 4*T*a_0/E_p/np.log(1+beta**2/theta_e**2)
+
+    return imfp, theta_e
+
+
+def multiple_scattering(energy_scale: np.ndarray, p: list, core_loss=False)-> np.ndarray:
+    p = np.abs(p)
+    tmfp = p[3]
+    if core_loss:
+        dif = 1
+    else:
+        dif = 16
+    LLene = np.linspace(1, 2048-1,2048)/dif
+    
+    SSD = energy_loss_function(LLene, p)
+    ssd  = np.fft.fft(SSD)
+    ssd2 = ssd.copy()
+    
+    ### sum contribution from each order of scattering:
+    PSD = np.zeros(len(LLene))
+    for order in range(15):
+        # This order convoluted spectum 
+        # convoluted SSD is SSD2
+        SSD2 = np.fft.ifft(ssd).real
+    
+        # scale right (could be done better? GERD) 
+        # And add this order to final spectrum
+        PSD += SSD2*abs(sum(SSD)/sum(SSD2)) / scipy.special.factorial(order+1)*np.power(tmfp, (order+1))*np.exp(-tmfp) #using equation 4.1 of egerton ed2
+        
+        # next order convolution
+        ssd = ssd * ssd2
+    
+    PSD /=tmfp*np.exp(-tmfp)
+    BGDcoef = scipy.interpolate.splrep(LLene, PSD, s=0)    
+    return scipy.interpolate.splev(energy_scale, BGDcoef)
+
+def fit_multiple_scattering(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float,pin=None, number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
+    """
+    Fit multiple scattering of plasmon peak in a TEM dataset.
+
+    
+    Parameters:
+        dataset: sidpy.Dataset or numpy.ndarray
+            The dataset containing TEM spectral data.
+        startFitEnergy: float
+            The start energy of the fitting window.
+        endFitEnergy: float
+            The end energy of the fitting window.
+        number_workers: int, optional
+            The number of workers for parallel processing (default is 4).
+        number_threads: int, optional
+            The number of threads for parallel processing (default is 8).
+
+    Returns:
+        fitted_dataset: sidpy.Dataset or numpy.ndarray
+            The dataset with fitted plasmon peak parameters. The dimensions and 
+            format depend on the input dataset.
+
+    Raises:
+        ValueError: If the input dataset does not have the expected dimensions or format.
+
+    Notes:
+        - The function uses the Drude model to fit plasmon peaks.
+        - The fitting parameters are peak position (Ep), peak width (Ew), and amplitude (A).
+        - If `plot_result` is True, the function plots Ep, Ew, and A as separate subplots.
+    """
+    
+
+    # define window for fitting
+    energy = dataset.get_spectral_dims(return_axis=True)[0].values
+    start_fit_pixel = np.searchsorted(energy, startFitEnergy)
+    end_fit_pixel = np.searchsorted(energy, endFitEnergy)
+
+    def errf_multi(p, y, x):
+        elf = multiple_scattering(x, p)
+        err = y - elf
+        #print (p,sum(np.abs(err)))
+        return np.abs(err) # /np.sqrt(y)
+
+    if pin is None:
+        pin = np.array([9,1,.7, 0.3])
+
+    
+    fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel])
+    popt, lsq = leastsq(errf_multi, pin, args=(fit_dset, energy[start_fit_pixel:end_fit_pixel]), maxfev=2000)
+    
+    multi = dataset.like_data(multiple_scattering(energy, popt))
+    
+
+    multi.metadata['multiple_scattering'] = {'parameter': popt}
+    return multi
+
+    
 
 def drude_simulation(dset, e, ep, ew, tnm, eb):
     """probabilities of dielectric function eps relative to zero-loss integral (i0 = 1)
@@ -1475,7 +1648,7 @@ def fit_edges2(spectrum, energy_scale, edges):
     for key in edges:
         if key.isdigit():
             edges[key]['areal_density'] = p[int(key)+5]
-    print(p)
+    # print(p)
     edges['model'] = {}
     edges['model']['background'] = ( p[0] * np.power(x, -p[1])+ p[2]+ x**p[3] +  p[4] * x * x)
     edges['model']['background-poly_0'] = p[2]
