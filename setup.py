@@ -9,6 +9,7 @@ from codecs import open
 import os
 import setuptools
 
+
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'README.rst')) as f:
     long_description = f.read()
@@ -31,10 +32,10 @@ setuptools.setup(
         'Operating System :: OS Independent',
         'Programming Language :: Cython',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Scientific/Engineering :: Information Analysis'],
     keywords=['imaging', 'spectra', 'transmission', 'electron', 'microscopy',
@@ -47,7 +48,7 @@ setuptools.setup(
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
 
-    install_requires=['scipy', 'numpy', 'pillow',  'ase', 'tqdm', 'plotly', 'pandas', 'requests', 'lxml', 'ipympl', 
+    install_requires=['scipy', 'numpy', 'pillow',  'ase', 'tqdm', 'plotly', 'pandas', 'requests', 'lxml', 'ipympl',  
                       'spglib', 'scikit-image', 'scikit-learn', 'pyNSID>=0.0.7', 'sidpy>=0.12.1', 'SciFiReaders>=0.0.8'],  # 'PyQt5> 1.0'],#
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],

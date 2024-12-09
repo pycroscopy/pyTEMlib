@@ -1,6 +1,4 @@
 """
-QT dialog window for EELS compositional analysis
-
 Author: Gerd Duscher
 """
 
@@ -93,7 +91,7 @@ class CurveVisualizer(object):
             legline.set_alpha(0.2)
         self.fig.canvas.draw()
 
-def get_sidebar():
+def get_core_loss_sidebar():
     side_bar = ipywidgets.GridspecLayout(14, 3,width='auto', grid_gap="0px")
 
     
@@ -194,8 +192,9 @@ def get_sidebar():
     return side_bar
 
 
+
 class CompositionWidget(object):
-    def __init__(self, datasets=None, key=None):
+    def __init__(self, datasets=None):
         
         if not isinstance(datasets, dict):
             raise TypeError('dataset or first item has to be a sidpy dataset')
@@ -203,9 +202,9 @@ class CompositionWidget(object):
 
         
         self.model = []
-        self.sidebar = get_sidebar()
+        self.sidebar = get_core_loss_sidebar()
         
-        self.set_dataset(key)
+        self.set_dataset()
         
         self.periodic_table = eels_dialog_utilities.PeriodicTableWidget(self.energy_scale)
         self.elements_cancel_button = ipywidgets.Button(description='Cancel')
@@ -306,28 +305,35 @@ class CompositionWidget(object):
         
     
         
-    def set_dataset(self, set_key):
+    def set_dataset(self, set_key=None):
         spectrum_list = []
         self.spectrum_keys_list = []
         reference_list =[('None', -1)]
         
         for index, key in enumerate(self.datasets.keys()):
-            if 'Reference' not in key:
-                if 'SPECTR' in self.datasets[key].data_type.name:
-                    spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
-                    self.spectrum_keys_list.append(key)
-            reference_list.append((f'{key}: {self.datasets[key].title}', index))  
+            if '_rel' not in key:
+                if 'Reference' not in key :
+                    if 'SPECTR' in self.datasets[key].data_type.name:
+                        spectrum_list.append((f'{key}: {self.datasets[key].title}', index)) 
+                        self.spectrum_keys_list.append(key)
+                        if key == self.parent.coreloss_key:
+                            self.key = key
+                            self.coreloss_key = self.key
+                            dataset_index = len(spectrum_list)-1
+
+                reference_list.append((f'{key}: {self.datasets[key].title}', index))  
+        self.sidebar[0, 0].options = spectrum_list
+        self.sidebar[0, 0].value = dataset_index
+
+        if self.coreloss_key is None:
+            return
+        self.dataset = self.datasets[self.coreloss_key]
         
-        if set_key in self.spectrum_keys_list:
-            self.key = set_key
-        else:
-            self.key = self.spectrum_keys_list[-1]
-        self.dataset = self.datasets[self.key]
-        
-        spec_dim = self.dataset.get_dimensions_by_type(sidpy.DimensionType.SPECTRAL)
-        self.spec_dim = self.dataset._axes[spec_dim[0]]
+        self.spec_dim = self.dataset.get_spectral_dims(return_axis=True)[0]
 
         self.energy_scale = self.spec_dim.values
+        self.dd = (self.energy_scale[0], self.energy_scale[1])
+
         self.dataset.metadata['experiment']['offset'] = self.energy_scale[0]
         self.dataset.metadata['experiment']['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
         if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
@@ -634,7 +640,7 @@ class CompositionWidget(object):
                 raise ValueError('need a experiment parameter in metadata dictionary')
 
             eff_beta = eels.effective_collection_angle(self.energy_scale, alpha, beta, beam_kv)
-
+            eff_beta = beta
             self.low_loss = None
             if self.sidebar[12, 1].value:
                 for key in self.datasets.keys():
@@ -739,7 +745,7 @@ class CompositionWidget(object):
         
         self.sidebar[11, 0].on_click(self.do_fit)
         self.sidebar[12, 2].observe(self.plot, names='value')
-        self.sidebar[0, 0].observe(self.plot, names='value')
+        self.sidebar[0, 0].observe(self.set_dataset, names='value')
         self.sidebar[12,0].observe(self.set_y_scale, names='value')
         self.sidebar[13,0].observe(self.do_all_button_click, names='value')
 
