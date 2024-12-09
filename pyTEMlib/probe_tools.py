@@ -167,8 +167,6 @@ def get_ronchigram(size, ab, scale='mrad'):
     return ronchigram
 
 
-
-
 def make_probe (chi, aperture):
     chi2 = np.fft.ifftshift(chi)
     chiT = np.fft.ifftshift (np.vectorize(complex)(np.cos(chi2), -np.sin(chi2)) )
@@ -181,12 +179,24 @@ def make_probe (chi, aperture):
 
     return probe
 
+
 def get_probe( ab, sizeX, sizeY,  scale = 'mrad', verbose= True):
     
     chi, A_k  = get_chi( ab, sizeX, sizeY, verbose= False)
     probe = make_probe (chi, A_k)
 
     return probe, A_k, chi
+
+
+def get_probe_large(ab):    
+    ab['FOV'] = 20
+    sizeX = 512*2
+    probe, A_k, chi  = pyTEMlib.probe_tools.get_probe( ab, sizeX, sizeX,  scale = 'mrad', verbose= True)
+    
+    res = np.zeros((512, 512))
+    res[256-32:256+32, 256-32:256+32 ] = skimage.transform.resize(probe, (64, 64))
+    
+    return res
 
 
 def get_chi_2(ab, u, v):
