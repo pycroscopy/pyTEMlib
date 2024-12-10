@@ -55,6 +55,9 @@ from skimage.filters import threshold_otsu, sobel
 from scipy.optimize import leastsq
 from sklearn.cluster import DBSCAN
 
+from ase.build import fcc110
+import probe_tools  # Assuming you have this module available
+
 
 _SimpleITK_present = True
 try:
@@ -66,6 +69,62 @@ except ImportError:
 if not _SimpleITK_present:
     print('SimpleITK not installed; Registration Functions for Image Stacks not available\n' +
           'install with: conda install -c simpleitk simpleitk ')
+
+
+
+def simulate_atomic_scattering_potential(fov=100, angle=0, atoms=None):
+    """
+    Simulates the atomic scattering potential on a 2D grid.
+
+    Parameters:
+    - fov (float): Field of view in angstroms.
+    - angle (float): Rotation angle in degrees.
+    - atoms (ase.Atoms): Optional input for a custom atomic structure. Defaults to Al FCC(110).
+
+    Returns:
+    - np.ndarray: 2D grid of the simulated scattering potential.
+    """
+    # Default to Al FCC(110) structure if no atoms are provided
+    if atoms is None:
+        atoms = fcc110('Al', size=(2, 2, 1), orthogonal=True)
+    
+    # Ensure the structure is periodic and centered
+    atoms.pbc = True
+    atoms.center()
+    
+    # Determine the grid size based on the field of view
+    grid_scaling_factor = int(1 / (fov / 1024))
+    grid_x = int(atoms.cell[0, 0] * grid_scaling_factor)
+    grid_y = int(atoms.cell[1, 1] * grid_scaling_factor)
+
+    # Create an empty grid and calculate pixel size
+    potential_map = np.zeros((grid_x, grid_y))
+    pixel_size_x = atoms.cell[0, 0] / grid_x
+    pixel_size_y = atoms.cell[1, 1] / grid_y
+
+    # Generate the scattering potential by summing Gaussian peaks
+    for position in atoms.positions:
+        x_pixel = position[0] / pixel_size_x
+        y_pixel = position[1] / pixel_size_y
+        gauss_peak = probe_tools.make_gauss(grid_x, grid_y, x0=x_pixel, y0=y_pixel)
+        potential_map += gauss_peak
+
+    # Expand the grid to ensure proper rotation without clipping
+    expansion_factor = np.floor(1450 / np.array(potential_map.shape)).astype(int)
+    potential_map = np.tile(potential_map, (expansion_factor[0], expansion_factor[1]))
+
+    # Rotate the map by the specified angle
+    potential_map = scipy.ndimage.rotate(potential_map, angle, axes=(1, 0), reshape=True)
+
+    # Extract a centered square region of size 1024x1024
+    center = potential_map.shape[0] // 2
+    cropped_map = potential_map[center - 512:center + 512, center - 512:center + 512]
+
+    # Debugging output for pixel size
+    print(f"Pixel size (angstrom): x={pixel_size_x}, y={pixel_size_y}")
+
+    return cropped_map
+
 
 
 # Wavelength in 1/nm
