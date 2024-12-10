@@ -2,19 +2,31 @@
 import numpy as np
 import pyTEMlib.image_tools
 import scipy.ndimage as ndimage
+import skimage
 
 get_wavelength = pyTEMlib.image_tools.get_wavelength
 
 
-def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
+
+def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0):
+    """Make a Gaussian shaped probe """
+    
+    x, y = np.mgrid[0:size_x, 0:size_y]
+    g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / 2.0 / width ** 2)
+    
+    return g  / g.sum()
+
+# below is an old version of the make_gauss
+# changing to the new one could cause problems in other modules?
+# need to check if their are any imports - AH, 2024-12-09
+'''def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
     """Make a Gaussian shaped probe """
     size_x = size_x / 2
     size_y = size_y / 2
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
     g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / 2.0 / width ** 2)
     probe = g / g.sum() * intensity
-
-    return probe
+    return probe'''
 
 
 def make_lorentz(size_x, size_y, gamma=1.0, x0=0., y0=0., intensity=1.):
@@ -167,8 +179,6 @@ def get_ronchigram(size, ab, scale='mrad'):
     return ronchigram
 
 
-
-
 def make_probe (chi, aperture):
     chi2 = np.fft.ifftshift(chi)
     chiT = np.fft.ifftshift (np.vectorize(complex)(np.cos(chi2), -np.sin(chi2)) )
@@ -181,12 +191,24 @@ def make_probe (chi, aperture):
 
     return probe
 
+
 def get_probe( ab, sizeX, sizeY,  scale = 'mrad', verbose= True):
     
     chi, A_k  = get_chi( ab, sizeX, sizeY, verbose= False)
     probe = make_probe (chi, A_k)
 
     return probe, A_k, chi
+
+
+def get_probe_large(ab):    
+    ab['FOV'] = 20
+    sizeX = 512*2
+    probe, A_k, chi  = pyTEMlib.probe_tools.get_probe( ab, sizeX, sizeX,  scale = 'mrad', verbose= True)
+    
+    res = np.zeros((512, 512))
+    res[256-32:256+32, 256-32:256+32 ] = skimage.transform.resize(probe, (64, 64))
+    
+    return res
 
 
 def get_chi_2(ab, u, v):

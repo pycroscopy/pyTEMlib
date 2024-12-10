@@ -55,6 +55,9 @@ from skimage.filters import threshold_otsu, sobel
 from scipy.optimize import leastsq
 from sklearn.cluster import DBSCAN
 
+from ase.build import fcc110
+import probe_tools  # Assuming you have this module available
+
 
 _SimpleITK_present = True
 try:
@@ -66,6 +69,62 @@ except ImportError:
 if not _SimpleITK_present:
     print('SimpleITK not installed; Registration Functions for Image Stacks not available\n' +
           'install with: conda install -c simpleitk simpleitk ')
+
+
+
+def simulate_atomic_scattering_potential(fov=100, angle=0, atoms=None):
+    """
+    Simulates the atomic scattering potential on a 2D grid.
+
+    Parameters:
+    - fov (float): Field of view in angstroms.
+    - angle (float): Rotation angle in degrees.
+    - atoms (ase.Atoms): Optional input for a custom atomic structure. Defaults to Al FCC(110).
+
+    Returns:
+    - np.ndarray: 2D grid of the simulated scattering potential.
+    """
+    # Default to Al FCC(110) structure if no atoms are provided
+    if atoms is None:
+        atoms = fcc110('Al', size=(2, 2, 1), orthogonal=True)
+    
+    # Ensure the structure is periodic and centered
+    atoms.pbc = True
+    atoms.center()
+    
+    # Determine the grid size based on the field of view
+    grid_scaling_factor = int(1 / (fov / 1024))
+    grid_x = int(atoms.cell[0, 0] * grid_scaling_factor)
+    grid_y = int(atoms.cell[1, 1] * grid_scaling_factor)
+
+    # Create an empty grid and calculate pixel size
+    potential_map = np.zeros((grid_x, grid_y))
+    pixel_size_x = atoms.cell[0, 0] / grid_x
+    pixel_size_y = atoms.cell[1, 1] / grid_y
+
+    # Generate the scattering potential by summing Gaussian peaks
+    for position in atoms.positions:
+        x_pixel = position[0] / pixel_size_x
+        y_pixel = position[1] / pixel_size_y
+        gauss_peak = probe_tools.make_gauss(grid_x, grid_y, x0=x_pixel, y0=y_pixel)
+        potential_map += gauss_peak
+
+    # Expand the grid to ensure proper rotation without clipping
+    expansion_factor = np.floor(1450 / np.array(potential_map.shape)).astype(int)
+    potential_map = np.tile(potential_map, (expansion_factor[0], expansion_factor[1]))
+
+    # Rotate the map by the specified angle
+    potential_map = scipy.ndimage.rotate(potential_map, angle, axes=(1, 0), reshape=True)
+
+    # Extract a centered square region of size 1024x1024
+    center = potential_map.shape[0] // 2
+    cropped_map = potential_map[center - 512:center + 512, center - 512:center + 512]
+
+    # Debugging output for pixel size
+    print(f"Pixel size (angstrom): x={pixel_size_x}, y={pixel_size_y}")
+
+    return cropped_map
+
 
 
 # Wavelength in 1/nm
@@ -280,20 +339,21 @@ def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     return spots, center
 
 
-def center_diffractogram(dset, return_plot = True, histogram_factor = None, smoothing = 1, min_samples = 100):
+def center_diffractogram(dset, return_plot = True, smoothing = 1, min_samples = 10, beamstop_size = 0.1):
     try:
         diff = np.array(dset).T.astype(np.float16)
         diff[diff < 0] = 0
-        
-        if histogram_factor is not None:
-            hist, bins = np.histogram(np.ravel(diff), bins=256, range=(0, 1), density=True)
-            threshold = threshold_otsu(diff, hist = hist * histogram_factor)
-        else:
-            threshold = threshold_otsu(diff)
+        threshold = threshold_otsu(diff)
         binary = (diff > threshold).astype(float)
         smoothed_image = ndimage.gaussian_filter(binary, sigma=smoothing) # Smooth before edge detection
         smooth_threshold = threshold_otsu(smoothed_image)
         smooth_binary = (smoothed_image > smooth_threshold).astype(float)
+
+        # add a circle to mask the beamstop
+        x, y = np.meshgrid(np.arange(dset.shape[0]), np.arange(dset.shape[1]))
+        circle = (x - dset.shape[0] / 2) ** 2 + (y - dset.shape[1] / 2) ** 2 < (beamstop_size * dset.shape[0] / 2) ** 2
+        smooth_binary[circle] = 1
+        
         # Find the edges using the Sobel operator
         edges = sobel(smooth_binary)
         edge_points = np.argwhere(edges)
@@ -322,18 +382,21 @@ def center_diffractogram(dset, return_plot = True, histogram_factor = None, smoo
     
     finally:
         if return_plot:
-            fig, ax = plt.subplots(1, 4, figsize=(10, 4))
+            fig, ax = plt.subplots(1, 5, figsize=(14, 4), sharex=True, sharey=True)
             ax[0].set_title('Diffractogram')
             ax[0].imshow(dset.T, cmap='viridis')
             ax[1].set_title('Otsu Binary Image')
             ax[1].imshow(binary, cmap='gray')
             ax[2].set_title('Smoothed Binary Image')
-            ax[2].imshow(smooth_binary, cmap='gray')
-            ax[3].set_title('Edge Detection and Fitting')
-            ax[3].imshow(edges, cmap='gray')
-            ax[3].scatter(center[0], center[1], c='r', s=10)
+            ax[2].imshow(smoothed_image, cmap='gray')
+
+            ax[3].set_title('Smoothed Binary Image')
+            ax[3].imshow(smooth_binary, cmap='gray')
+            ax[4].set_title('Edge Detection and Fitting')
+            ax[4].imshow(edges, cmap='gray')
+            ax[4].scatter(center[0], center[1], c='r', s=10)
             circle = plt.Circle(center, mean_radius, color='red', fill=False)
-            ax[3].add_artist(circle)
+            ax[4].add_artist(circle)
             for axis in ax:
                 axis.axis('off')
             fig.tight_layout()
