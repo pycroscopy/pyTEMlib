@@ -191,14 +191,16 @@ class CoreLoss(object):
                     cl_index = index+1
         self.core_loss_tab[0, 0].options = spectrum_list
         self.core_loss_tab[0, 0].value = spectrum_list[cl_index]
-        self.update_cl_dataset()
-        self.set_fit_start()
-        self.parent.plot()
+        if '_relationship' in self.parent.datasets.keys():
+            self.update_cl_dataset()
+            self.set_fit_start()
+            self.parent.plot()
         
     def update_cl_dataset(self, value=0):
         self.cl_key = self.core_loss_tab[0, 0].value.split(':')[0]
         self.parent.coreloss_key = self.cl_key
-        self.parent.datasets['_relationship']['core_loss'] = self.cl_key
+        if '_relationship' in self.parent.datasets.keys():
+            self.parent.datasets['_relationship']['core_loss'] = self.cl_key
         
         if 'None' in self.cl_key:
             return
