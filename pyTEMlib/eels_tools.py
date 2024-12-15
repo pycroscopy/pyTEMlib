@@ -395,6 +395,15 @@ def align_zero_loss(dataset: sidpy.Dataset) -> sidpy.Dataset:
     new_si.metadata.update({'zero_loss': {'shifted': shifts}})
     return new_si
 
+from numba import jit
+
+def get_zero_losses(energy, z_loss_params):
+    z_loss_dset = np.zeros((z_loss_params.shape[0], z_loss_params.shape[1], energy.shape[0]))
+    for x in range(z_loss_params.shape[0]):
+        for y in range(z_loss_params.shape[1]):
+            z_loss_dset[x, y] +=  zl_func(energy, *z_loss_params[x, y])
+    return z_loss_dset
+
 
 
 
@@ -488,11 +497,12 @@ def get_resolution_functions(dataset: sidpy.Dataset, startFitEnergy: float=-1, e
     z_loss_dset = dataset.copy()
     z_loss_dset *= 0.0
 
-    energy_grid = np.broadcast_to(energy.reshape((1, 1, -1)), (z_loss_dset.shape[0],
-                                                               z_loss_dset.shape[1], energy.shape[0]))
-    z_loss_peaks = zl_func(energy_grid, *z_loss_params)
-    z_loss_dset += z_loss_peaks
-
+    #energy_grid = np.broadcast_to(energy.reshape((1, 1, -1)), (z_loss_dset.shape[0],
+    #                                                           z_loss_dset.shape[1], energy.shape[0]))
+    #z_loss_peaks = zl_func(energy_grid, *z_loss_params)
+    z_loss_params = np.array(z_loss_params)
+    z_loss_dset += get_zero_losses(np.array(energy), np.array(z_loss_params))
+    
     shifts = z_loss_params[:, :, 0] * z_loss_params[:, :, 3]
     widths = z_loss_params[:, :, 2] * z_loss_params[:, :, 5]
 
@@ -522,7 +532,15 @@ def drude_lorentz(eps_inf, leng, ep, eb, gamma, e, amplitude):
     return eps
 
 
-def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float, plot_result: bool = False, number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
+def get_plasmon_losses(energy, params):
+    dset = np.zeros((params.shape[0], params.shape[1], energy.shape[0]))
+    for x in range(params.shape[0]):
+        for y in range(params.shape[1]):
+            dset[x, y] +=  energy_loss_function(energy, params[x, y])
+    return dset
+
+
+def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float,  number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
     """
     Fit plasmon peak positions and widths in a TEM dataset using a Drude model.
 
@@ -567,8 +585,6 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         elf = (-1/eps).imag  
         return A*elf
     
-
-
     # define window for fitting
     energy = dataset.get_spectral_dims(return_axis=True)[0].values
     start_fit_pixel = np.searchsorted(energy, startFitEnergy)
@@ -589,18 +605,26 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         guess_pos = energy[guess_pos]
         if guess_width >8:
             guess_width=8
-        popt, pcov = curve_fit(energy_loss_function, energy[start_fit_pixel:end_fit_pixel], fit_dset,
-                               p0=[guess_pos, guess_width, guess_amplitude])
+        try:
+            popt, pcov = curve_fit(energy_loss_function, energy[start_fit_pixel:end_fit_pixel], fit_dset,
+                                p0=[guess_pos, guess_width, guess_amplitude])
+        except:
+            end_fit_pixel = np.searchsorted(energy, 30)
+            fit_dset = np.array(dataset[start_fit_pixel:end_fit_pixel]/ anglog[start_fit_pixel:end_fit_pixel])
+            try:
+                popt, pcov = curve_fit(energy_loss_function, energy[start_fit_pixel:end_fit_pixel], fit_dset,
+                                p0=[guess_pos, guess_width, guess_amplitude])
+            except:
+                popt=[0,0,0]
        
         plasmon = dataset.like_data(energy_loss_function(energy, popt[0], popt[1], popt[2]))
         plasmon *= anglog
         start_plasmon = np.searchsorted(energy, 0)+1
-        
-        
         plasmon[:start_plasmon] = 0.
+        
         epsilon = drude(energy, popt[0], popt[1], 1) * popt[2]
         epsilon[:start_plasmon] = 0.
-
+        
         plasmon.metadata['plasmon'] = {'parameter': popt, 'epsilon':epsilon}
         return plasmon
     
@@ -608,18 +632,19 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
     fitter = SidFitter(fit_dset, energy_loss_function, num_workers=number_workers,
                        threads=number_threads, return_cov=False, return_fit=False, return_std=False,
                        km_guess=False, num_fit_parms=3)
-    [fitted_dataset] = fitter.do_fit()
+    [fit_parameter] = fitter.do_fit()
 
-    if plot_result:
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
-        ax1.imshow(fitted_dataset[:, :, 0], cmap='jet')
-        ax1.set_title('Ep - Peak Position')
-        ax2.imshow(fitted_dataset[:, :, 1], cmap='jet')
-        ax2.set_title('Ew - Peak Width')
-        ax3.imshow(fitted_dataset[:, :, 2], cmap='jet')
-        ax3.set_title('A - Amplitude')
-        plt.show()
-    return fitted_dataset
+    plasmon_dset = dataset * 0.0
+    fit_parameter = np.array(fit_parameter)
+    plasmon_dset += get_plasmon_losses(np.array(energy), fit_parameter)
+    if 'plasmon' not in plasmon_dset.metadata:
+        plasmon_dset.metadata['plasmon'] = {}
+    plasmon_dset.metadata['plasmon'].update({'startFitEnergy': startFitEnergy,
+                                              'endFitEnergy': endFitEnergy,
+                                              'fit_parameter': fit_parameter,
+                                              'original_low_loss': dataset.title})
+
+    return plasmon_dset
 
 
 def angle_correction(spectrum):
@@ -722,8 +747,11 @@ def multiple_scattering(energy_scale: np.ndarray, p: list, core_loss=False)-> np
         ssd = ssd * ssd2
     
     PSD /=tmfp*np.exp(-tmfp)
-    BGDcoef = scipy.interpolate.splrep(LLene, PSD, s=0)    
-    return scipy.interpolate.splev(energy_scale, BGDcoef)
+    BGDcoef = scipy.interpolate.splrep(LLene, PSD, s=0)   
+    msd = scipy.interpolate.splev(energy_scale, BGDcoef)
+    start_plasmon = np.searchsorted(energy_scale, 0)+1
+    msd[:start_plasmon] = 0. 
+    return msd
 
 def fit_multiple_scattering(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float,pin=None, number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
     """

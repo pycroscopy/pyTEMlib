@@ -7,6 +7,7 @@ import ipywidgets
 import matplotlib.pylab as plt
 import matplotlib
 from IPython.display import display
+import plotly.graph_objects as go
 
 import sidpy
 # from pyTEMlib.microscope import microscope
@@ -241,6 +242,7 @@ def get_file_widget_ui():
                                     )
     return side_bar  
 
+out = ipywidgets.Output()
 
 class EELSBaseWidget(object):
 
@@ -254,6 +256,7 @@ class EELSBaseWidget(object):
         self.display_list = ['.', '..']
         self.dataset_list = ['None']
         self.image_list = ['Sum']
+        self.added_spectra = {}
         self.dir_name = file_tools.get_last_path()
 
         self.key = None
@@ -319,11 +322,24 @@ class EELSBaseWidget(object):
             tab.children = children
             tab.titles = titles
 
-        with plt.ioff():
-            self.figure = plt.figure()
+        
+
+        self.spectrum_plot = go.FigureWidget()
+        self.spectrum_plot.update_xaxes(showgrid=True, zeroline=True, showticklabels=True,
+                        showspikes=True, spikemode='across', spikesnap='cursor', showline=False, spikedash='solid')
+        self.spectrum_plot['layout'].update(height=500)
+        self.image_plot = go.FigureWidget()
+        self.image_plot['layout'].update(height=500, 
+                       width=500, 
+                       autosize=True, 
+                       xaxis_showgrid=False, 
+                       yaxis_showgrid=False,
+                       yaxis = dict(scaleanchor = 'x', autorange = "reversed"),
+                       plot_bgcolor="white")
+        
         self.tab =tab
-        self.figure.canvas.toolbar_position = 'right'
-        self.figure.canvas.toolbar_visible = True
+        self.canvas_plot = ipywidgets.HBox([self.spectrum_plot])
+        self.canvas = ipywidgets.VBox([self.canvas_plot, out])
 
         self.start_cursor = ipywidgets.FloatText(value=0, description='Start:', disabled=False, color='black',
                                                  layout=ipywidgets.Layout(width='200px'))
@@ -338,7 +354,7 @@ class EELSBaseWidget(object):
                                                        ipywidgets.Label('Cursor:'),
                                                        self.start_cursor, ipywidgets.Label('eV'),
                                                        self.end_cursor, ipywidgets.Label('eV')]),
-                                     self.figure.canvas,
+                                     self.canvas,
                                      self.statusbar])
         
         self.app_layout = ipywidgets.AppLayout(
@@ -373,7 +389,7 @@ class EELSBaseWidget(object):
         self.file_bar[5, 0].observe(self.set_survey_image, names='value')
 
         self.file_bar[6, 0].observe(self.save_datasets)
-        
+    
     def save_datasets(self, value=0):
         import warnings
         file_name = self.file_bar[6, 1].value
@@ -418,111 +434,86 @@ class EELSBaseWidget(object):
         self.plot()
 
     def plot(self, scale=True):
-        self.figure.clear()
+        
         spec_dims = self.dataset.get_spectral_dims(return_axis=True)
         if len(spec_dims)>0:
             self.energy_scale = spec_dims[0]
             if self.dataset.data_type.name == 'SPECTRUM':
-                self.axis = self.figure.subplots(ncols=1)
+                self.canvas_plot.children = [self.spectrum_plot]
             else:
                 self.get_image()
+                self.canvas_plot.children = [self.image_plot, self.spectrum_plot]
                 self.plot_spectrum_image() 
-                self.axis = self.axes[-1]
+                # self.axis = self.axes[-1]
             self.spectrum = self.get_spectrum()
             self.plot_spectrum()
     
         else:
-            self.axis = self.figure.subplots(ncols=1)
+            self.canvas_plot.children = [self.image_plot]
+            self.image = self.dataset
             self.plot_image()
         
-    def plot_image(self): 
-        # image_dims = self.dataset.get_image_dims()
-        image_dims = []
-        for dim, axis in self.dataset._axes.items():
-            if axis.dimension_type in [sidpy.DimensionType.SPATIAL, sidpy.DimensionType.RECIPROCAL]:
-                image_dims.append(dim)
-        self.img = self.axis.imshow(self.dataset.T, extent=self.dataset.get_extent(image_dims))
-        self.axis.set_xlabel(self.dataset.labels[image_dims[0]])
-        self.axis.set_ylabel(self.dataset.labels[image_dims[1]])
+    def plot_image(self, add_annotations=True): 
+        image_dims = self.dataset.get_image_dims(return_axis=True)
         
-        cbar = self.figure.colorbar(self.img)
-        cbar.set_label(self.dataset.data_descriptor)
-        if 'annotations' in self.dataset.metadata:
-            kwargs={'edgecolor': 'red', 'facecolor': 'None'}
-                    
+        if len(self.image_plot.data) == 0:
+                    self.image_plot.add_trace(go.Heatmap(z=self.image.T))
+        else:
+            self.image_plot.data[0].z=np.array(self.image).T
+        self.image_plot.data[0].x = image_dims[0].values
+        self.image_plot.data[0].y = image_dims[1].values
+        
+        self.image_plot.update_layout(xaxis_title = f"{image_dims[0].quantity} ({image_dims[0].units})", 
+                                      yaxis_title = f"{image_dims[1].quantity} ({image_dims[1].units})")
+        
+        if 'annotations' in self.dataset.metadata and add_annotations:                      
             annotations = self.dataset.metadata['annotations']
             for key in annotations:
                 if annotations[key]['type'] == 'spectral_image':
-                    rectangle = matplotlib.patches.Rectangle(annotations[key]['position'], annotations[key]['width'], annotations[key]['height'], **kwargs)
-                    self.axis.text(annotations[key]['position'][0], annotations[key]['position'][1], annotations[key]['label'], color='r')
-                    self.axis.add_artist(rectangle)
+                    pos, w, h = annotations[key]['position'], annotations[key]['width'], annotations[key]['height']
+                    self.image_plot.add_trace(go.Scatter(x= [pos[0], pos[0], pos[0]+w, pos[0]+w, pos[0]],  y = [pos[1], pos[1]+h, pos[1]+h, pos[1], pos[1]], mode='lines'))
+                    self.image_plot.add_trace(go.Scatter(x= [pos[0]],  y = [pos[1]], mode='text', text=['spectrum image'], 
+                                                         textfont=dict(color="red"),
+                                                         textposition="top right"))
+
                 elif annotations[key]['type'] == 'text':
-                    self.axis.text(annotations[key]['position'][0], annotations[key]['position'][1], annotations[key]['label'], color='r')
+                    self.image_plot.add_trace(go.Scatter(y=[annotations[key]['position'][0]], x=[annotations[key]['position'][1]], 
+                                                         text=[annotations[key]['label']]))
                 elif annotations[key]['type'] == 'circle':
-                    circle = matplotlib.patches.Circle(annotations[key]['position'], annotations[key]['radius'], **kwargs)
-                    self.axis.add_artist(circle)
-        self.figure.tight_layout()
-        self.axis.ticklabel_format(style='sci', scilimits=(-2, 3))
-        self.figure.tight_layout()
-        self.figure.canvas.draw_idle()
-
-
+                    [x, y] = annotations[key]['position']
+                    r = annotations[key]['radius']
+                    self.image_plot.add_shape(type="circle", xref="x", yref="y", x0=x-r, y0 = y-r, x1=x+r, y1=y+r,
+                                                line_color="LightSeaGreen")
+                    
+        
     def plot_spectrum(self):    
-        self.axis.plot(self.energy_scale, self.spectrum, label='spectrum')
-        x_limit = self.axis.get_xlim()
-        y_limit = np.array(self.axis.get_ylim())
+        if len(self.spectrum_plot.data) == 0:
+            self.spectrum_plot.add_trace(go.Scatter(x=self.energy_scale, y=self.spectrum, mode='markers+lines', marker_size=.1, name=self.dataset.title))
+        self.spectrum_plot.data = [self.spectrum_plot.data[0]]
+
         self.xlabel = self.datasets[self.key].labels[0]
         self.ylabel = self.datasets[self.key].data_descriptor
-        self.axis.set_xlabel(self.datasets[self.key].labels[0])
-        self.axis.set_ylabel(self.datasets[self.key].data_descriptor)
-        self.axis.ticklabel_format(style='sci', scilimits=(-2, 4))
-        
-        # if scale:
-        #    self.axis.set_ylim(np.array(y_limit)*self.change_y_scale)
         self.change_y_scale = 1.0
         if self.y_scale != 1.:
-            self.axis.set_ylabel('scattering probability (ppm/eV)')
-        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
-                                                        direction="horizontal",
-                                                        interactive=True,
-                                                        props=dict(facecolor='blue', alpha=0.2))
-        self.axis.legend()
-        if self.dataset.data_type.name == 'SPECTRUM':
-            self.axis.set_title(self.dataset.title)
-        else:
-            self.axis.set_title(f'spectrum {self.x}, {self.y}')
-        self.figure.canvas.draw_idle()
+            self.ylabel('scattering probability (ppm/eV)')
+        
+        self.spectrum_plot.update_layout(xaxis_title=self.xlabel, yaxis_title=self.ylabel)
+        self.spectrum_plot.data[0].y=self.spectrum
+        self.spectrum_plot.data[0].x=self.energy_scale
+        self.spectrum_plot.data[0].on_selection(self.selection_cursor)
+       
+        if self.dataset.data_type.name != 'SPECTRUM':
+             self.spectrum_plot.data[0].name = f'spectrum {self.x}, {self.y}'
+
+        for key in self.added_spectra:
+            self.added_spectra[key]
+            spectrum = self.get_additional_spectrum(key)
+            self.spectrum_plot.add_trace(go.Scatter(x=self.energy_scale, y=spectrum, mode='markers+lines', marker_size=.1, name=self.added_spectra[key]))
+        
 
     def _update(self, ev=None):
-        if hasattr(self, 'axes'):
-            xlim = np.array(self.axes[1].get_xlim())
-            ylim = np.array(self.axes[1].get_ylim())
-            self.axes[1].clear()
-            self.axis = self.axes[-1]
-        else:
-            xlim = np.array(self.axis.get_xlim())
-            ylim = np.array(self.axis.get_ylim())
-            self.axis.clear()
         self.get_spectrum()
-        if len(self.energy_scale) != self.spectrum.shape[0]:
-            self.spectrum = self.spectrum.T
-        # self.axis.plot(self.energy_scale, self.spectrum.compute(), label='experiment')
-        self.axis.plot(self.energy_scale, self.spectrum, label='experiment')
-
-        self.axis.set_title(f'spectrum {self.x}, {self.y}')
-        self.figure.tight_layout()
-        self.selector = matplotlib.widgets.SpanSelector(self.axis, self.line_select_callback,
-                                                        direction="horizontal",
-                                                        interactive=True,
-                                                        props=dict(facecolor='blue', alpha=0.2))
-
-        self.axis.set_xlim(xlim)
-        self.axis.set_ylim(ylim*self.change_y_scale)
-        self.axis.set_xlabel(self.xlabel)
-        self.axis.set_ylabel(self.ylabel)
-        self.change_y_scale = 1.0
-        self.update_tab_spectra()
-        self.figure.canvas.draw_idle()
+        self.plot_spectrum()
 
     def update_tab_spectra(self):
         pass
@@ -575,7 +566,6 @@ class EELSBaseWidget(object):
             if self.y > self.dataset.shape[image_dims[1]] - self.bin_y:
                 self.y = self.dataset.shape[image_dims[1]] - self.bin_y
             selection = []
-            self.axis.clear()
             for dim, axis in self.dataset._axes.items():
                 if axis.dimension_type == sidpy.DimensionType.SPATIAL:
                     if dim == image_dims[0]:
@@ -593,33 +583,66 @@ class EELSBaseWidget(object):
             self.spectrum = self.dataset[tuple(selection)].mean(axis=tuple(image_dims))
 
         self.spectrum *= self.y_scale
+        self.spectrum.squeeze()
+        self.spectrum.data_type = 'spectrum'
+        return self.spectrum
+
+    @out.capture(clear_output=True)
+    def click_callback(self, trace, points, selector):
+        self.status_message(f'click_callback: {selector}')
+        if selector.shift:
+            self.spectrum_plot.add_trace(go.Scatter(x=self.energy_scale, 
+                                                    y=self.dataset[points.point_inds[0][1], points.point_inds[0][0]], 
+                                                    mode='lines',
+                                                    name='spectrum'+str(points.point_inds[0])))
+        else: 
+            if selector.ctrl:
+                self.spectrum_plot.data =[self.spectrum_plot.data[0]]
+            self.spectrum_plot.data[0].y= self.dataset[points.point_inds[0][1],points.point_inds[0][0]] 
+            self.spectrum_plot.data[0].name = 'spectrum'+str(points.point_inds[0])
         
-        return self.spectrum.squeeze()
+            self.image_plot.data[1].x = [points.point_inds[0][1]]
+            self.image_plot.data[1].y = [points.point_inds[0][0]]
+
+    @out.capture(clear_output=True)
+    def selection_fn(self, trace,points,selector):
+        if selector.type == 'box':
+            xr = np.array(selector.xrange)
+            if xr[0]<0:
+                xr[0] = 0
+            yr = np.array(selector.yrange)
+            if yr[0]<1:
+                yr[0] = 0   
+            size_sel = (int(xr[1])-int(xr[0]))*(int(yr[1])-int(yr[0]))
+            
+            self.spectrum_plot.data[0].y= self.dataset[int(xr[0]):int(xr[1]), int(yr[0]):int(yr[1]),:].sum(axis=[0,1]).compute()/ size_sel
+            self.spectrum_plot.data[0].name = str(size_sel)+ ' spectra'
+        else:
+            print(selector)
 
     def plot_spectrum_image(self): 
-        self.axes = self.figure.subplots(ncols=2)
-        self.axis = self.axes[-1]
+        if len(self.image_plot.data) == 0:
+                    self.image_plot.add_trace(go.Heatmap(z=self.image.T))
+        else:
+            self.image_plot.data[0].z=np.array(self.image).T
+        self.plot_spectrum()
+        self.image_plot.add_trace(
+                    go.Scatter(mode="markers", x=[0], y=[0], marker_symbol=[101],
+                   marker_color="darkgray", 
+                   marker_line_width=1, marker_size=11, hovertemplate= 'x: %{x}<br>y: %{y}'))
 
-        self.rect = matplotlib.patches.Rectangle((0, 0), self.bin_x, self.bin_y, linewidth=1, edgecolor='r',
-                                                 facecolor='red', alpha=0.2)
-        image_dims = self.dataset.get_image_dims()
+        self.image_plot.data[0].on_selection(self.selection_fn)
+        self.image_plot.data[0].on_click(self.click_callback)
+    
+    @out.capture(clear_output=True)
+    def selection_cursor(self, trace, points, selector):
+        if selector.type == 'box':
+            self.start_cursor.value = np.round(selector.xrange[0], 3)
+            self.end_cursor.value = np.round(selector.xrange[1], 3)
 
-        size_x = self.dataset.shape[image_dims[0]]
-        size_y = self.dataset.shape[image_dims[1]]
-        self.extent = [0, size_x, size_y, 0]
-        self.rectangle = [0, size_x, 0, size_y]
-        self.axes[0].imshow(self.image.T, extent=self.extent)
-        self.axes[0].set_aspect('equal')
-        self.axes[0].add_patch(self.rect)
-        self.cid = self.axes[0].figure.canvas.mpl_connect('button_press_event', self._onclick)
-
-    def line_select_callback(self, x_min, x_max):
-        self.start_cursor.value = np.round(x_min, 3)
-        self.end_cursor.value = np.round(x_max, 3)
-
-        energy_scale = self.dataset.get_spectral_dims(return_axis=True)[0]
-        self.start_channel = np.searchsorted(energy_scale, self.start_cursor.value)
-        self.end_channel = np.searchsorted(energy_scale, self.end_cursor.value)
+            energy_scale = self.dataset.get_spectral_dims(return_axis=True)[0]
+            self.start_channel = np.searchsorted(energy_scale, self.start_cursor.value)
+            self.end_channel = np.searchsorted(energy_scale, self.end_cursor.value)
 
     def set_dataset(self, key=None):
          
@@ -693,6 +716,9 @@ class EELSBaseWidget(object):
         
         self.key = self.dataset_list[0].split(':')[0]
         self.dataset = self.datasets[self.key]
+        if len(self.image_plot.data)>0:
+            self.image_plot.data = [self.image_plot.data[0]]
+        self.spectrum_plot.data = [self.spectrum_plot.data[0]] 
         self.new_info = True
 
         self.selected_dataset = self.dataset
@@ -720,6 +746,8 @@ class EELSBaseWidget(object):
         
         if 'SPECTR' in self.datasets[key].data_type.name:
             self.spectral_list.append(f'{key}: {self.datasets[key].title}')
+            energy = self.datasets[key].get_spectral_dims(return_axis=True)[0]
+            self.spectrum_plot.add_trace(go.Scatter(x=energy, y=self.datasets[key], mode='markers+lines', marker_size=.1, name=key))
         if 'IMAGE' == self.datasets[key].data_type.name:
             if 'survey' in self.datasets[key].title.lower():
                 self.survey_list.append(f'{key}: {self.datasets[key].title}')
@@ -832,12 +860,10 @@ class EELSWidget(EELSBaseWidget):
             self.low_loss.update_ll_sidebar()
         elif self.tabval == 3:
             self.core_loss.update_cl_sidebar()
-
     
     def update_tab_spectra(self):
         if self.tabval == 2:
             self.low_loss._update()
-
 
     def update_sidebars(self):
         if hasattr(self, 'info'):
@@ -847,6 +873,45 @@ class EELSWidget(EELSBaseWidget):
         #if hasattr(self, 'core_loss'):
         #    self.core_loss.update_cl_sidebar()
 
+
+    def get_additional_spectrum(self, key):
+        if key not in self.datasets.keys():
+            return    
+        if isinstance(self.datasets[key], np.ndarray):
+            return self.datasets[key]*self.y_scale
+        
+        if isinstance(self.datasets[key], sidpy.Dataset):
+            if self.datasets[key].data_type == sidpy.DataType.SPECTRUM:
+                spectrum = self.datasets[key].copy()
+            else:
+                image_dims = self.datasets[key].get_dimensions_by_type(sidpy.DimensionType.SPATIAL)
+                selection = []
+                x = self.x
+                y = self.y
+                bin_x = self.bin_x
+                bin_y = self.bin_y
+                for dim, axis in self.datasets[key]._axes.items():
+                    # print(dim, axis.dimension_type)
+                    if axis.dimension_type == sidpy.DimensionType.SPATIAL:
+                        if dim == image_dims[0]:
+                            selection.append(slice(x, x + bin_x))
+                        else:
+                            selection.append(slice(y, y + bin_y))
+
+                    elif axis.dimension_type == sidpy.DimensionType.SPECTRAL:
+                        selection.append(slice(None))
+                    elif axis.dimension_type == sidpy.DimensionType.CHANNEL:
+                        selection.append(slice(None))
+                    else:
+                        selection.append(slice(0, 1))
+                
+                spectrum = self.datasets[key][tuple(selection)].mean(axis=tuple(image_dims))
+                spectrum.data_type = 'spectrum'
+            
+        spectrum *= self.y_scale
+        return spectrum.squeeze()
+
+    
 class Info(object):
     def __init__(self, sidebar=None, parent=None):
         self.parent = parent
@@ -994,11 +1059,13 @@ class Info(object):
             dispersion = energy_scale[1] - offset
             
             # self.info_tab[0,0].value = dataset_index #f'{self.key}: {self.parent.datasets[self.key].title}'
+            self.info_tab[2, 0].unobserve_all()
             self.info_tab[2, 0].value = np.round(offset, 3)
             self.info_tab[3, 0].value = np.round(dispersion, 4)
             self.info_tab[5, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['convergence_angle'], 1)
             self.info_tab[6, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['collection_angle'], 1)
             self.info_tab[7, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage']/1000, 1)
+            self.info_tab[2, 0].observe(self.set_energy_scale, names='value')
             # print(self.parent.datasets[self.key].metadata['experiment']['acceleration_voltage'])
             self.info_tab[10, 0].value = np.round(self.parent.datasets[self.key].metadata['experiment']['exposure_time'], 4)
             if 'flux_ppm' not in self.parent.datasets[self.key].metadata['experiment']:

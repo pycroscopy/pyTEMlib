@@ -786,6 +786,55 @@ def h5_group_to_dict(group, group_dict={}):
     return group_dict
 
 
+def read_annotation(image):
+    if 'MAGE' not in image.data_type.name:
+        return {}
+    scale_x = np.abs(image.x[1]-image.x[0])
+    scale_y = np.abs(image.y[1]-image.y[0])
+    rec_scale = np.array([scale_x, scale_y,scale_x, scale_y])
+    if 'DocumentObjectList' not in image.original_metadata:
+        return {}
+    if '0' not in image.original_metadata['DocumentObjectList']:
+        return {}
+    annotations = {}        
+    tags = image.original_metadata['DocumentObjectList']['0']     
+    for key in tags:
+        if 'AnnotationGroupList' in key:
+            an_tags = tags[key]
+            for key2 in an_tags:
+                if isinstance(an_tags[key2], dict):
+                    if an_tags[key2]['AnnotationType'] == 13:  #type 'text'
+                        annotations[key2] = {'type': 'text'}
+                        if 'Label' in an_tags:
+                            annotations[key2]['label'] = an_tags['Label']
+                        rect = np.array(an_tags[key2]['Rectangle']) * rec_scale
+                        annotations[key2]['position'] = [rect[1],rect[0]]
+                        annotations[key2]['text'] = an_tags['Text'] 
+                        
+                    elif an_tags[key2]['AnnotationType']==6:
+                        annotations[key2] = {'type': 'circle'}
+                        if 'Label' in an_tags:
+                            annotations[key2]['label'] = an_tags['Label']
+                        rect = np.array(an_tags[key2]['Rectangle']) * rec_scale
+                    
+                        annotations[key2]['radius'] =rect[3]-rect[1]
+                        annotations[key2]['position'] = [rect[1],rect[0]]
+        
+                    elif an_tags[key2]['AnnotationType'] == 23:
+                        annotations[key2] = {'type':  'spectral_image'}
+                        if 'Label' in an_tags[key2]:
+                            annotations[key2]['label'] = an_tags[key2]['Label']
+                        rect = np.array(an_tags[key2]['Rectangle']) * rec_scale
+                        
+                        annotations[key2]['width'] =rect[3]-rect[1]
+                        annotations[key2]['height'] =rect[2]-rect[0]
+                        annotations[key2]['position'] = [rect[1],rect[0]]
+                        annotations[key2]['Rectangle'] = np.array(an_tags[key2]['Rectangle'])
+    if len(annotations)>0:
+        image.metadata['annotations'] = annotations                
+    return annotations
+
+
 def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=False):  # save_file=False,
     """Opens a file if the extension is .hf5, .ndata, .dm3 or .dm4
 
@@ -849,11 +898,16 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                         dataset_dict[key] = h5_group_to_dict(master_group[key])
                 if not write_hdf_file:
                     file.close()
+            for dset in dataset_dict.values():
+                if isinstance(dset, sidpy.Dataset):
+                    if 'Measurement' in dset.title:
+                        dset.title = dset.title.split('/')[-1]
             return dataset_dict
     elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5']:
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DMReader(filename)
+
         elif extension in ['.emi']:
             try:
                 import hyperspy.api as hs
@@ -899,8 +953,10 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
             if not isinstance(dset, dict):
                 print('Please use new SciFiReaders Package for full functionality')
             if isinstance(dset, sidpy.Dataset):
-                dset = [dset]
-            
+                dset = {'Channel_000': dset}
+            for key in dset:
+                read_annotation(dset[key])
+
         if isinstance(dset, dict):
             dataset_dict = dset
 

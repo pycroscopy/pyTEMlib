@@ -14,12 +14,12 @@ from pyTEMlib import eels_tools
 
 
 def get_low_loss_sidebar() -> Any:
-    side_bar = ipywidgets.GridspecLayout(16, 3, width='auto', grid_gap="0px")
+    side_bar = ipywidgets.GridspecLayout(17, 3, width='auto', grid_gap="0px")
 
     side_bar[0, :2] = ipywidgets.Dropdown(
             options=[('None', 0)],
             value=0,
-            description='Main Dataset:',
+            description='Low-Loss:',
             disabled=False)
     
     row = 1
@@ -81,6 +81,11 @@ def get_low_loss_sidebar() -> Any:
                                                button_style='',  # 'success', 'info', 'warning', 'danger' or ''
                                                tooltip='Changes y-axis to probability if flux is given',
                                                layout=ipywidgets.Layout(width='100px'))
+    side_bar[row, 1] = ipywidgets.ToggleButton(description='Do All',
+                                               disabled=False,
+                                               button_style='',  # 'success', 'info', 'warning', 'danger' or ''
+                                               tooltip='Changes y-axis to probability if flux is given',
+                                               layout=ipywidgets.Layout(width='100px'))
     row += 1
     side_bar[row, :3] = ipywidgets.Button(description='Multiple Scattering',
                                           layout=ipywidgets.Layout(width='auto', grid_area='header'),
@@ -105,13 +110,9 @@ def get_low_loss_sidebar() -> Any:
                                                tooltip='Plots resolution function on right',
                                                layout=ipywidgets.Layout(width='100px'))
     
-    side_bar[row, 2] = ipywidgets.ToggleButton(description='Nix',
-                                               disabled=False,
-                                               button_style='',  # 'success', 'info', 'warning', 'danger' or ''
-                                               tooltip='Changes y-axis to probability if flux is given',
-                                               layout=ipywidgets.Layout(width='100px'))
     
-    
+    side_bar[row, 1:3] = ipywidgets.IntProgress(value=0, min=0, max=10, description=' ', bar_style='',  # 'success', 'info', 'warning', 'danger' or ''
+                                              style={'bar_color': 'maroon'}, orientation='horizontal')
     return side_bar
 
 class LowLoss(object):
@@ -133,10 +134,9 @@ class LowLoss(object):
                     energy_offset = self.parent.datasets[key].get_spectral_dims(return_axis=True)[0][0]
                     if energy_offset < 0:
                         spectrum_list.append(f'{key}: {self.parent.datasets[key].title}')
-                print(key, self.ll_key, ll_index)
                 if key == self.ll_key:
                     ll_index = index-1
-                print(key, self.ll_key, ll_index)
+
         if ll_index >len(spectrum_list) - 1:
             ll_index = len(spectrum_list) - 1
 
@@ -158,42 +158,96 @@ class LowLoss(object):
 
         
     def get_resolution_function(self, value=0):
-        self.low_loss_tab[4, 0].value = False
+        
         zero_loss_fit_width=self.low_loss_tab[2, 0].value
         spectrum = self.parent.spectrum
-        self.parent.datasets['resolution_function'] = eels_tools.get_resolution_functions(spectrum,
-                                                                                           startFitEnergy=-zero_loss_fit_width, 
-                                                                                           endFitEnergy=zero_loss_fit_width)
-        self.parent.datasets['_relationship']['resolution_function'] = 'resolution_function'
-        if 'low_loss' not in self.dataset.metadata:
-            self.dataset.metadata['zero_loss'] = {}
-        self.dataset.metadata['zero_loss'].update(self.parent.datasets['resolution_function'].metadata['zero_loss'])
-        self.low_loss_tab[3, 0].value = True
-        self.low_loss_tab[14, 1].value = np.round(np.log(self.parent.dataset.sum()/self.parent.datasets['resolution_function'].sum()), 4)
+        if 'zero_loss' not in self.parent.datasets.keys():
+            self.parent.datasets['zero_loss'] = self.parent.dataset.copy()*0
+        # if 'zero_loss' not in self.parent.datasets['zero_loss'].metadata.keys():
+        self.parent.datasets['zero_loss'].metadata['zero_loss']={}
+        self.parent.datasets['zero_loss'].metadata['zero_loss']['parameter'] = np.zeros([self.dataset.shape[0], self.dataset.shape[1], 6])
+          
+           
+        res  = eels_tools.get_resolution_functions(spectrum, startFitEnergy=-zero_loss_fit_width, endFitEnergy=zero_loss_fit_width)
+        if len(self.parent.datasets['zero_loss'].shape) > 2:
+            self.parent.datasets['zero_loss'][self.parent.x, self.parent.y] = np.array(res)
+            self.parent.datasets['zero_loss'].metadata['zero_loss'][self.parent.x, self.parent.y] = res.metadata['zero_loss']['fit_parameter']
+        else:
+            self.parent.datasets['zero_loss'] = res
+            self.parent.datasets['zero_loss'].metadata['zero_loss'].update(res.metadata['zero_loss'])
+
+        self.parent.datasets['_relationship']['resolution_function'] = 'zero_loss'
+        
+        self.parent.dataset.metadata['zero_loss'].update(self.parent.datasets['zero_loss'].metadata['zero_loss'])
+        
+        if self.low_loss_tab[3, 0].value: 
+            self.parent._update()
+        else:
+            self.low_loss_tab[3, 0].value = True
+        self.low_loss_tab[14, 1].value = np.round(np.log(self.parent.spectrum.sum()/res.sum()), 4)
         self.parent.status_message('Fitted zero-loss peak')
         
     def get_drude(self, value=0):
         self.low_loss_tab[8, 0].value = False
         fit_start = self.low_loss_tab[5, 0].value
         fit_end = self.low_loss_tab[6, 0].value
+        if 'plasmon' not in self.parent.datasets.keys():
+            self.parent.datasets['plasmon'] = self.parent.dataset.copy()*0
+        if 'plasmon' not in self.parent.datasets['plasmon'].metadata.keys():
+            self.parent.datasets['plasmon'].metadata['plasmon'] = {}
+        if 'fit_parameter' not in self.parent.datasets['plasmon'].metadata['plasmon'].keys():
+            if len(self.dataset.shape) > 2:
+                self.parent.datasets['plasmon'].metadata['plasmon']['fit_parameter'] = np.zeros([self.dataset.shape[0], self.dataset.shape[1], 4])
+                self.parent.datasets['plasmon'].metadata['plasmon']['IMFP'] = np.zeros([self.dataset.shape[0], self.dataset.shape[1]])
+            
+        if 'low_loss_model' not in self.parent.datasets.keys():
+            self.parent.datasets['low_loss_model'] = self.parent.dataset.copy()*0
         
         plasmon = eels_tools.fit_plasmon(self.parent.spectrum, fit_start, fit_end)
         
+        p = plasmon.metadata['plasmon']['parameter']
+        p = list(np.abs(p))
+        p.append(self.low_loss_tab[14, 0].value)
 
-        self.parent.datasets['plasmon'] = plasmon
+        
+        anglog, _, _ = eels_tools.angle_correction(self.parent.spectrum)
+        
+        low_loss = eels_tools.multiple_scattering(self.parent.energy_scale, p) * anglog
+            
+
+        if len(self.parent.datasets['plasmon'].shape) > 2:
+            self.parent.datasets['plasmon'][self.parent.x, self.parent.y] = np.array(plasmon)
+            self.parent.datasets['low_loss_model'][self.parent.x, self.parent.y] = np.array(low_loss)
+            self.parent.datasets['plasmon'].metadata['plasmon']['fit_parameter'][self.parent.x, self.parent.y] = p
+        
+            if 'zero_loss' in self.parent.datasets:
+                res = self.parent.datasets['zero_loss'][self.parent.x, self.parent.y]
+           
+        else:
+            self.parent.datasets['plasmon'] = plasmon
+            self.parent.datasets['low_loss_model'] = low_loss
+            if 'zero_loss' in self.parent.datasets:
+                res = self.parent.datasets['zero_loss']
         self.parent.datasets['_relationship']['plasmon'] = 'plasmon'
+        self.parent.datasets['_relationship']['low_loss_model'] = 'low_loss_model'
         
         #self.dataset.metadata['plasmon'].update(self.parent.datasets['plasmon'].metadata['zero_loss'])
-        self.low_loss_tab[10, 0].value = True
-        p = plasmon.metadata['plasmon']['parameter']
-        self.low_loss_tab[7, 0].value = np.round(p[0],3)
+        if self.low_loss_tab[10, 0].value:
+            self.parent._update() 
+            self._update()
+        else:
+            self.low_loss_tab[10, 0].value = True
+        
+        self.low_loss_tab[7, 0].value = np.round(np.abs(p[0]),3)
         self.low_loss_tab[8, 0].value = np.round(p[1],3)
         self.low_loss_tab[9, 0].value = np.round(p[2],1)
 
         _, dsdo, _ = eels_tools.angle_correction(self.parent.spectrum)
 
-
-        I0 = self.parent.datasets['resolution_function'].sum() + p[2] 
+        if 'zero_loss' in self.parent.datasets:
+            I0 = res.sum() + p[2] 
+        else:
+            I0 = self.parent.spectrum.sum()
         # I0 = self.parent.spectrum.sum()
         # print(I0)
         # T = m_0 v**2 !!!  a_0 = 0.05292 nm p[2] = S(E)/elf
@@ -204,13 +258,90 @@ class LowLoss(object):
         # print(t_nm, relative_thickness, imfp)
         self.parent.status_message(f'Fitted plasmon peak: thickness :{t_nm:.1f} nm and IMFP: {t_nm/relative_thickness:.1f} nm in free electron approximation')
 
-        plasmon.metadata['plasmon']['thickness'] = t_nm
-        plasmon.metadata['plasmon']['relative_thickness'] = relative_thickness
-        plasmon.metadata['plasmon']['IMFP'] = t_nm/relative_thickness
+        if self.dataset.ndim>1:
+            # self.parent.datasets['plasmon'].metadata['plasmon'][self.parent.x, self.parent.y]['thickness'] = t_nm
+            # self.parent.datasets['plasmon'].metadata['plasmon'][self.parent.x, self.parent.y]['relative_thickness'] = relative_thickness
+            self.parent.datasets['plasmon'].metadata['plasmon']['IMFP'][self.parent.x, self.parent.y] = t_nm/relative_thickness
 
-        self.parent.spectrum.metadata['plasmon'] = plasmon.metadata['plasmon']
+        else:
+            self.parent.datasets['plasmon'].metadata['plasmon']['thickness'] = t_nm
+            self.parent.datasets['plasmon'].metadata['plasmon']['relative_thickness'] = relative_thickness
+            self.parent.datasets['plasmon'].metadata['plasmon']['IMFP'] = t_nm/relative_thickness
+
+
+    def multiple_scattering(self, value=0):
+        if self.dataset.ndim >1:
+            anglog, dsdo, _ = eels_tools.angle_correction(self.parent.spectrum)
+            par = np.array(self.parent.datasets['plasmon'].metadata['plasmon']['fit_parameter'])
+            for x in range(self.parent.dataset.shape[0]):
+                for y in range(self.parent.dataset.shape[1]):
+                    self.parent.datasets['low_loss_model'][x, y] = eels_tools.multiple_scattering(self.parent.energy_scale, par[x, y]) * anglog
         
 
+    def do_all(self, value=0):
+        if len(self.parent.dataset.shape) < 3:
+            return
+            
+        zero_loss_fit_width=self.low_loss_tab[2, 0].value
+        fit_start = self.low_loss_tab[5, 0].value
+        fit_end = self.low_loss_tab[6, 0].value
+        
+        
+        if 'low_loss_model' not in self.parent.datasets.keys():
+            self.parent.datasets['low_loss_model'] = self.parent.dataset.copy()*0
+            self.parent.datasets['low_loss_model'].title = self.parent.dataset.title + ' low_loss_model'
+        
+        self.low_loss_tab[15,1].max = self.parent.dataset.shape[0]*self.parent.dataset.shape[1]
+        
+        self.parent.datasets['zero_loss']  = eels_tools.get_resolution_functions(self.dataset, startFitEnergy=-zero_loss_fit_width, endFitEnergy=zero_loss_fit_width)
+        self.parent.datasets['zero_loss'].title = self.parent.dataset.title + ' zero_loss'
+        self.parent.status_message('Fitted zero-loss peak')
+
+        self.parent.datasets['plasmon'] = eels_tools.fit_plasmon(self.dataset, fit_start, fit_end)
+        self.parent.datasets['plasmon'].title = self.parent.dataset.title + ' plasmon'
+        
+        self.parent.status_message('Fitted zero-loss + plasmon peak')
+
+        
+        """
+        anglog, _, _ = eels_tools.angle_correction(self.parent.spectrum)
+        i = 0
+        for x in range(self.parent.dataset.shape[0]):   
+            for y in range(self.parent.dataset.shape[1]):
+                self.low_loss_tab[15,1].value = i
+                i+= 1
+
+                spectrum = self.parent.dataset[x, y]
+                
+                plasmon = eels_tools.fit_plasmon(spectrum, fit_start, fit_end)
+                p =np.abs(plasmon.metadata['plasmon']['parameter'])
+                p = list(np.abs(p))
+                
+                p.append(np.log(spectrum.sum()/self.parent.datasets['zero_loss'][x,y].sum()))
+                if p[-1] is np.nan:
+                    p[-1] = 0
+                low_loss = eels_tools.multiple_scattering(self.parent.energy_scale, p) * anglog
+                self.parent.datasets['plasmon'][x, y] = np.array(plasmon.compute())
+                self.parent.datasets['low_loss_model'][x, y] = np.array(low_loss)
+                drude_p[x, y, :] = np.array(p)
+
+       
+
+        self.parent.datasets['plasmon'].metadata['plasmon'].update({'parameter': drude_p})
+        self.parent.datasets['low_loss_model'].metadata['low_loss'] = ({'parameter': drude_p})
+        """
+
+        imfp = np.log(self.parent.dataset.sum(axis=2)/self.parent.datasets['zero_loss'].sum(axis=2)) 
+        self.parent.datasets['plasmon'].metadata['plasmon']['fit_parameter'] = np.append(self.parent.datasets['plasmon'].metadata['plasmon']['fit_parameter'], imfp[..., np.newaxis], axis=2)
+        E_p = self.parent.datasets['plasmon'].metadata['plasmon']['fit_parameter'][:,:,0]    
+        self.parent.datasets['plasmon'].metadata['plasmon']['IMFP'], _ = eels_tools.inelatic_mean_free_path(E_p, self.parent.spectrum)
+        self.parent.datasets['_relationship']['zero_loss'] = 'zero_loss'
+        self.parent.datasets['_relationship']['plasmon'] = 'plasmon'
+        self.multiple_scattering()        
+        self.parent.datasets['_relationship']['low_loss_model'] = 'low_loss_model'
+        
+        self.low_loss_tab[10, 1].value = False
+            
     def get_multiple_scattering(self, value=0):
         self.low_loss_tab[15, 0].value = False
         fit_start = self.low_loss_tab[12, 0].value
@@ -242,46 +373,65 @@ class LowLoss(object):
         self.low_loss_tab[3, 0].observe(self._update, names='value')
         self.low_loss_tab[4, 0].on_click(self.get_drude)
         self.low_loss_tab[10, 0].observe(self._update, names='value')
+        self.low_loss_tab[10, 1].observe(self.do_all, names='value')
         self.low_loss_tab[10, 2].observe(self._update, names='value')
         self.low_loss_tab[11, 0].on_click(self.get_multiple_scattering)
         self.low_loss_tab[15, 0].observe(self._update, names='value')
         
-        
+    
     def _update(self, ev=0):
-        
-        self.parent._update(ev)
-        spectrum = self.parent.spectrum
-        anglog, _, _ = eels_tools.angle_correction(spectrum)
+        low_loss = None
+        plasmon = None
         resolution_function = None
-        if self .low_loss_tab[3, 0].value:
-            if 'resolution_function' in self.parent.datasets:
-                resolution_function = self.get_additional_spectrum('resolution_function')
-                self.parent.axis.plot(self.parent.energy_scale, resolution_function, label='resolution function')
-        if self.low_loss_tab[10, 0].value:
-            p = [self.low_loss_tab[7, 0].value, self.low_loss_tab[8, 0].value, self.low_loss_tab[9, 0].value]
-            self.parent.datasets['plasmon'] = self.parent.datasets['plasmon'].like_data(eels_tools.energy_loss_function(spectrum.energy_loss, p))*anglog
-            plasmon = self.get_additional_spectrum('plasmon')
-            self.parent.axis.plot(self.parent.energy_scale, plasmon, label='plasmon')
-        else: 
-            plasmon = None
-        if self.low_loss_tab[15, 0].value:
-            p = [self.low_loss_tab[7, 0].value, self.low_loss_tab[8, 0].value, self.low_loss_tab[9, 0].value, self.low_loss_tab[14, 0].value]
-            low_loss = eels_tools.multiple_scattering(self.parent.energy_scale, p) * anglog
-            self.parent.axis.plot(self.parent.energy_scale, low_loss*self.parent.y_scale, label='multiple scattering')        
-        else:
-            low_loss = None
+        if 'zero_loss' in self.get_additional_spectrum.keys():
+            del self.get_additional_spectrum['zero_loss']
+        if 'plasmon' in self.get_additional_spectrum.keys():
+            del self.get_additional_spectrum['plasmon']
+        if 'low_loss_model' in self.get_additional_spectrum.keys():
+            del self.get_additional_spectrum['low_loss_model']
         
-        difference = spectrum
-        if resolution_function is not None:
-            difference -= resolution_function
-        if low_loss is not None:
-            difference -= low_loss *self.parent.y_scale
-        else:
-            if plasmon is not None:
-                difference -= plasmon
+        if self .low_loss_tab[3, 0].value:
+            if 'zero_loss' in self.parent.datasets.keys():
+                resolution_function = np.array(self.parent.get_additional_spectrum('zero_loss'))
+                self.parent.added_spectra.update({'zero_loss': 'resolution'})
+        if self.low_loss_tab[10, 0].value:
+            if 'plasmon' in self.parent.datasets.keys():
+                plasmon = self.parent.get_additional_spectrum('plasmon')
+                if len(self.dataset.shape) > 1:
+                    p = np.round(plasmon.metadata['plasmon']['fit_parameter'][self.parent.x, self.parent.y], 3)
+                    imfp = np.array(plasmon.metadata['plasmon']['IMFP'][self.parent.x, self.parent.y])
+                else:
+                    p = np.round(plasmon.metadata['plasmon']['fit_parameter'], 3)
+                    imfp = plasmon.metadata['plasmon']['IMFP']
+                
+                self.parent.added_spectra.update({'plasmon': 'plasmon'})
+                self.low_loss_tab[7, 1].value =p[0]
+                self.low_loss_tab[8, 1].value = p[1]
+                self.low_loss_tab[8, 1].value = p[2]
+                
+                self.low_loss_tab[14, 1].value =p[-1]
+                t_nm = float(p[-1] * imfp)
+                # print(t_nm, p[-1], imfp)
+                self.parent.status_message(f'Fitted plasmon peak: thickness :{t_nm:.1f} nm and IMFP: {imfp:.1f} nm in free electron approximation')
+
+        if self.low_loss_tab[15, 0].value:
+            low_loss = np.array(self.parent.get_additional_spectrum('low_loss_model'))
+            self.parent.added_spectra.update({'low_loss': 'low_loss'})
+        
         if self.low_loss_tab[3, 0].value + self.low_loss_tab[10, 0].value + self.low_loss_tab[15, 0].value > 0:
-            self.parent.axis.plot(self.parent.energy_scale, difference, label='difference')               
-            self.parent.axis.legend()
+            self.parent.datasets['_difference'] = np.array(self.parent.spectrum)
+            if resolution_function is not None:
+                self.parent.datasets['_difference'] -= resolution_function
+            if low_loss is not None:
+                self.parent.datasets['_difference'] -= low_loss
+            else:
+                if plasmon is not None:
+                    self.parent.datasets['_difference'] -= np.array(plasmon)
+            self.parent.added_spectra.update({'_difference': 'difference'})
+        else:
+            if '_difference' in self.parent.datasets.keys():
+                del self.parent.datasets['_difference']
+        self.parent._update()
 
     def get_additional_spectrum(self, key):
         if key not in self.parent.datasets.keys():
@@ -292,13 +442,17 @@ class LowLoss(object):
         else:
             image_dims = self.parent.datasets[key].get_dimensions_by_type(sidpy.DimensionType.SPATIAL)
             selection = []
+            x = self.parent.x
+            y = self.parent.y
+            bin_x = self.parent.bin_x
+            bin_y = self.parent.bin_y
             for dim, axis in self.parent.datasets[key]._axes.items():
                 # print(dim, axis.dimension_type)
                 if axis.dimension_type == sidpy.DimensionType.SPATIAL:
                     if dim == image_dims[0]:
-                        selection.append(slice(self.x, self.x + self.bin_x))
+                        selection.append(slice(x, x + bin_x))
                     else:
-                        selection.append(slice(self.y, self.y + self.bin_y))
+                        selection.append(slice(y, y + bin_y))
 
                 elif axis.dimension_type == sidpy.DimensionType.SPECTRAL:
                     selection.append(slice(None))
