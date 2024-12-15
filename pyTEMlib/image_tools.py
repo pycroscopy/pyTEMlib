@@ -55,6 +55,13 @@ from skimage.filters import threshold_otsu, sobel
 from scipy.optimize import leastsq
 from sklearn.cluster import DBSCAN
 
+from ase.build import fcc110
+from pyTEMlib import probe_tools
+
+from scipy.ndimage import rotate
+from scipy.interpolate import RegularGridInterpolator
+from scipy.signal import fftconvolve
+
 
 _SimpleITK_present = True
 try:
@@ -66,6 +73,72 @@ except ImportError:
 if not _SimpleITK_present:
     print('SimpleITK not installed; Registration Functions for Image Stacks not available\n' +
           'install with: conda install -c simpleitk simpleitk ')
+
+
+def get_atomic_pseudo_potential(fov, atoms, size=512, rotation=0):
+    # Big assumption: the atoms are not near the edge of the unit cell
+    # If any atoms are close to the edge (ex. [0,0]) then the potential will be clipped
+    # before calling the function, shift the atoms to the center of the unit cell
+
+    pixel_size = fov / size
+    max_size = int(size * np.sqrt(2) + 1)  # Maximum size to accommodate rotation
+
+    # Create unit cell potential
+    positions = atoms.get_positions()[:, :2]
+    atomic_numbers = atoms.get_atomic_numbers()
+    unit_cell_size = atoms.cell.cellpar()[:2]
+
+    unit_cell_potential = np.zeros((max_size, max_size))
+    for pos, atomic_number in zip(positions, atomic_numbers):
+        x = pos[0] / pixel_size
+        y = pos[1] / pixel_size
+        atom_width = 0.5  # Angstrom
+        gauss_width = atom_width/pixel_size # important for images at various fov.  Room for improvement with theory
+        gauss = probe_tools.make_gauss(max_size, max_size, width = gauss_width, x0=x, y0=y)
+        unit_cell_potential += gauss * atomic_number  # gauss is already normalized to 1
+
+    # Create interpolation function for unit cell potential
+    x_grid = np.linspace(0, fov * max_size / size, max_size)
+    y_grid = np.linspace(0, fov * max_size / size, max_size)
+    interpolator = RegularGridInterpolator((x_grid, y_grid), unit_cell_potential, bounds_error=False, fill_value=0)
+
+    # Vectorized computation of the full potential map with max_size
+    x_coords, y_coords = np.meshgrid(np.linspace(0, fov, max_size), np.linspace(0, fov, max_size), indexing="ij")
+    xtal_x = x_coords % unit_cell_size[0]
+    xtal_y = y_coords % unit_cell_size[1]
+    potential_map = interpolator((xtal_x.ravel(), xtal_y.ravel())).reshape(max_size, max_size)
+
+    # Rotate and crop the potential map
+    potential_map = rotate(potential_map, rotation, reshape=False)
+    center = potential_map.shape[0] // 2
+    potential_map = potential_map[center - size // 2:center + size // 2, center - size // 2:center + size // 2]
+
+    potential_map = scipy.ndimage.gaussian_filter(potential_map,3)
+
+    return potential_map
+
+def convolve_probe(ab, potential):
+    # the pixel sizes should be the exact same as the potential
+    final_sizes = potential.shape
+
+    # Perform FFT-based convolution
+    pad_height = pad_width = potential.shape[0] // 2
+    potential = np.pad(potential, ((pad_height, pad_height), (pad_width, pad_width)), mode='constant')
+
+    probe, A_k, chi = probe_tools.get_probe(ab, potential.shape[0], potential.shape[1],  scale = 'mrad', verbose= False)
+    
+
+    convolved = fftconvolve(potential, probe, mode='same')
+
+    # Crop to original potential size
+    start_row = pad_height
+    start_col = pad_width
+    end_row = start_row + final_sizes[0]
+    end_col = start_col + final_sizes[1]
+
+    image = convolved[start_row:end_row, start_col:end_col]   
+
+    return probe, image
 
 
 # Wavelength in 1/nm
@@ -280,20 +353,21 @@ def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     return spots, center
 
 
-def center_diffractogram(dset, return_plot = True, histogram_factor = None, smoothing = 1, min_samples = 100):
+def center_diffractogram(dset, return_plot = True, smoothing = 1, min_samples = 10, beamstop_size = 0.1):
     try:
         diff = np.array(dset).T.astype(np.float16)
         diff[diff < 0] = 0
-        
-        if histogram_factor is not None:
-            hist, bins = np.histogram(np.ravel(diff), bins=256, range=(0, 1), density=True)
-            threshold = threshold_otsu(diff, hist = hist * histogram_factor)
-        else:
-            threshold = threshold_otsu(diff)
+        threshold = threshold_otsu(diff)
         binary = (diff > threshold).astype(float)
         smoothed_image = ndimage.gaussian_filter(binary, sigma=smoothing) # Smooth before edge detection
         smooth_threshold = threshold_otsu(smoothed_image)
         smooth_binary = (smoothed_image > smooth_threshold).astype(float)
+
+        # add a circle to mask the beamstop
+        x, y = np.meshgrid(np.arange(dset.shape[0]), np.arange(dset.shape[1]))
+        circle = (x - dset.shape[0] / 2) ** 2 + (y - dset.shape[1] / 2) ** 2 < (beamstop_size * dset.shape[0] / 2) ** 2
+        smooth_binary[circle] = 1
+        
         # Find the edges using the Sobel operator
         edges = sobel(smooth_binary)
         edge_points = np.argwhere(edges)
@@ -322,18 +396,21 @@ def center_diffractogram(dset, return_plot = True, histogram_factor = None, smoo
     
     finally:
         if return_plot:
-            fig, ax = plt.subplots(1, 4, figsize=(10, 4))
+            fig, ax = plt.subplots(1, 5, figsize=(14, 4), sharex=True, sharey=True)
             ax[0].set_title('Diffractogram')
             ax[0].imshow(dset.T, cmap='viridis')
             ax[1].set_title('Otsu Binary Image')
             ax[1].imshow(binary, cmap='gray')
             ax[2].set_title('Smoothed Binary Image')
-            ax[2].imshow(smooth_binary, cmap='gray')
-            ax[3].set_title('Edge Detection and Fitting')
-            ax[3].imshow(edges, cmap='gray')
-            ax[3].scatter(center[0], center[1], c='r', s=10)
+            ax[2].imshow(smoothed_image, cmap='gray')
+
+            ax[3].set_title('Smoothed Binary Image')
+            ax[3].imshow(smooth_binary, cmap='gray')
+            ax[4].set_title('Edge Detection and Fitting')
+            ax[4].imshow(edges, cmap='gray')
+            ax[4].scatter(center[0], center[1], c='r', s=10)
             circle = plt.Circle(center, mean_radius, color='red', fill=False)
-            ax[3].add_artist(circle)
+            ax[4].add_artist(circle)
             for axis in ax:
                 axis.axis('off')
             fig.tight_layout()
