@@ -15,7 +15,6 @@ import matplotlib.widgets as mwidgets
 import sidpy
 import pyTEMlib.file_tools as ft
 import pyTEMlib.sidpy_tools
-# import pyTEMlib.probe_tools
 
 from tqdm.auto import trange, tqdm
 
@@ -56,7 +55,6 @@ from scipy.optimize import leastsq
 from sklearn.cluster import DBSCAN
 
 from ase.build import fcc110
-from pyTEMlib import probe_tools
 
 from scipy.ndimage import rotate
 from scipy.interpolate import RegularGridInterpolator
@@ -94,7 +92,7 @@ def get_atomic_pseudo_potential(fov, atoms, size=512, rotation=0):
         y = pos[1] / pixel_size
         atom_width = 0.5  # Angstrom
         gauss_width = atom_width/pixel_size # important for images at various fov.  Room for improvement with theory
-        gauss = probe_tools.make_gauss(max_size, max_size, width = gauss_width, x0=x, y0=y)
+        gauss = pyTEMlib.probe_tools.make_gauss(max_size, max_size, width = gauss_width, x0=x, y0=y)
         unit_cell_potential += gauss * atomic_number  # gauss is already normalized to 1
 
     # Create interpolation function for unit cell potential
@@ -125,7 +123,7 @@ def convolve_probe(ab, potential):
     pad_height = pad_width = potential.shape[0] // 2
     potential = np.pad(potential, ((pad_height, pad_height), (pad_width, pad_width)), mode='constant')
 
-    probe, A_k, chi = probe_tools.get_probe(ab, potential.shape[0], potential.shape[1],  scale = 'mrad', verbose= False)
+    probe, A_k, chi = pyTEMlib.probe_tools.get_probe(ab, potential.shape[0], potential.shape[1],  scale = 'mrad', verbose= False)
     
 
     convolved = fftconvolve(potential, probe, mode='same')
