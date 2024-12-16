@@ -25,6 +25,7 @@ def make_lorentz(size_x, size_y, gamma=1.0, x0=0., y0=0., intensity=1.):
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
     g = gamma / (2 * np.pi) / np.power(((x - x0) ** 2 + (y - y0) ** 2 + gamma ** 2), 1.5)
     probe = g / g.sum() * intensity
+    
     return probe
 
 
