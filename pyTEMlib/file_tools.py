@@ -990,10 +990,11 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
 
         # Temporary Fix for dual eels spectra in dm files
         # Todo: Fic in ScifyReaders
-        for dset in dataset_dict.values():   
-            if 'single_exposure_time' in dset.metadata['experiment']:
-                dset.metadata['experiment']['exposure_time'] = dset.metadata['experiment']['number_of_frames'] * \
-                                                               dset.metadata['experiment']['single_exposure_time']
+        for dset in dataset_dict.values(): 
+            if 'experiment' in dset.metadata:
+                if 'single_exposure_time' in dset.metadata['experiment']:
+                    dset.metadata['experiment']['exposure_time'] = dset.metadata['experiment']['number_of_frames'] * \
+                                                                dset.metadata['experiment']['single_exposure_time']
         if write_hdf_file:
             h5_master_group = save_dataset(dataset_dict, filename=filename)
 
