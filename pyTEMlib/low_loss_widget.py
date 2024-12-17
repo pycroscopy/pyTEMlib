@@ -202,7 +202,7 @@ class LowLoss(object):
             
         if 'low_loss_model' not in self.parent.datasets.keys():
             self.parent.datasets['low_loss_model'] = self.parent.dataset.copy()*0
-        
+        self.parent.status_message(str(self.parent.x))
         plasmon = eels_tools.fit_plasmon(self.parent.spectrum, fit_start, fit_end)
         
         p = plasmon.metadata['plasmon']['parameter']
@@ -383,12 +383,12 @@ class LowLoss(object):
         low_loss = None
         plasmon = None
         resolution_function = None
-        if 'zero_loss' in self.get_additional_spectrum.keys():
-            del self.get_additional_spectrum['zero_loss']
-        if 'plasmon' in self.get_additional_spectrum.keys():
-            del self.get_additional_spectrum['plasmon']
-        if 'low_loss_model' in self.get_additional_spectrum.keys():
-            del self.get_additional_spectrum['low_loss_model']
+        if 'zero_loss' in self.parent.added_spectra.keys():
+            del self.parent.added_spectra['zero_loss']
+        if 'plasmon' in self.parent.added_spectra.keys():
+            del self.parent.added_spectra['plasmon']
+        if 'low_loss_model' in self.parent.added_spectra.keys():
+            del self.parent.added_spectra['low_loss_model']
         
         if self .low_loss_tab[3, 0].value:
             if 'zero_loss' in self.parent.datasets.keys():

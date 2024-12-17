@@ -508,9 +508,12 @@ class EELSBaseWidget(object):
         for key in self.added_spectra:
             self.added_spectra[key]
             spectrum = self.get_additional_spectrum(key)
+            
             self.spectrum_plot.add_trace(go.Scatter(x=self.energy_scale, y=spectrum, mode='markers+lines', marker_size=.1, name=self.added_spectra[key]))
-        
+            if key == 'zero_loss':
+                self.low_loss.low_loss_tab[14, 1].value = np.round(np.log(self.spectrum.sum()/spectrum.sum()), 4)
 
+                
     def _update(self, ev=None):
         self.get_spectrum()
         self.plot_spectrum()
@@ -589,7 +592,6 @@ class EELSBaseWidget(object):
 
     @out.capture(clear_output=True)
     def click_callback(self, trace, points, selector):
-        self.status_message(f'click_callback: {selector}')
         if selector.shift:
             self.spectrum_plot.add_trace(go.Scatter(x=self.energy_scale, 
                                                     y=self.dataset[points.point_inds[0][1], points.point_inds[0][0]], 
@@ -598,11 +600,14 @@ class EELSBaseWidget(object):
         else: 
             if selector.ctrl:
                 self.spectrum_plot.data =[self.spectrum_plot.data[0]]
-            self.spectrum_plot.data[0].y= self.dataset[points.point_inds[0][1],points.point_inds[0][0]] 
-            self.spectrum_plot.data[0].name = 'spectrum'+str(points.point_inds[0])
+            
         
             self.image_plot.data[1].x = [points.point_inds[0][1]]
             self.image_plot.data[1].y = [points.point_inds[0][0]]
+            self.x = points.point_inds[0][1]
+            self.y = points.point_inds[0][0]
+
+            self._update()
 
     @out.capture(clear_output=True)
     def selection_fn(self, trace,points,selector):
@@ -626,6 +631,7 @@ class EELSBaseWidget(object):
         else:
             self.image_plot.data[0].z=np.array(self.image).T
         self.plot_spectrum()
+        self.image_plot.data = [self.image_plot.data[0]]
         self.image_plot.add_trace(
                     go.Scatter(mode="markers", x=[0], y=[0], marker_symbol=[101],
                    marker_color="darkgray", 
