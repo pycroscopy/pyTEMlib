@@ -37,6 +37,7 @@ def make_lorentz(size_x, size_y, gamma=1.0, x0=0., y0=0., intensity=1.):
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
     g = gamma / (2 * np.pi) / np.power(((x - x0) ** 2 + (y - y0) ** 2 + gamma ** 2), 1.5)
     probe = g / g.sum() * intensity
+    
     return probe
 
 
@@ -46,6 +47,7 @@ def zero_loss_peak_weight():
     y = [0.0143, 0.0193, 0.0281, 0.0440, 0.0768, 0.1447, 0.2785, 0.4955, 0.7442, 0.9380, 1.0000, 0.9483, 0.8596,
          0.7620, 0.6539, 0.5515, 0.4478, 0.3500, 0.2683, 0.1979, 0.1410, 0.1021, 0.0752, 0.0545, 0.0401, 0.0300,
          0.0229, 0.0176, 0.0139]
+    
     return x, y
 
 
