@@ -8,25 +8,15 @@ get_wavelength = pyTEMlib.image_tools.get_wavelength
 
 
 
-def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0):
-    """Make a Gaussian shaped probe """
-    
-    x, y = np.mgrid[0:size_x, 0:size_y]
-    g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / 2.0 / width ** 2)
-    
-    return g  / g.sum()
-
-# below is an old version of the make_gauss
-# changing to the new one could cause problems in other modules?
-# need to check if their are any imports - AH, 2024-12-09
-'''def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
+def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
     """Make a Gaussian shaped probe """
     size_x = size_x / 2
     size_y = size_y / 2
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
     g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / 2.0 / width ** 2)
     probe = g / g.sum() * intensity
-    return probe'''
+
+    return probe
 
 
 def make_lorentz(size_x, size_y, gamma=1.0, x0=0., y0=0., intensity=1.):
@@ -37,6 +27,7 @@ def make_lorentz(size_x, size_y, gamma=1.0, x0=0., y0=0., intensity=1.):
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
     g = gamma / (2 * np.pi) / np.power(((x - x0) ** 2 + (y - y0) ** 2 + gamma ** 2), 1.5)
     probe = g / g.sum() * intensity
+    
     return probe
 
 
