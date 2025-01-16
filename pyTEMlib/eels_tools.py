@@ -269,6 +269,8 @@ def lorentz(x, center, amplitude, width):
     lorentz_peak = 0.5 * width / np.pi / ((x - center) ** 2 + (width / 2) ** 2)
     return amplitude * lorentz_peak / lorentz_peak.max()
 
+def zero_loss_function(x, p):
+    return zl_func(x, *p)
 
 def zl_func(x, center1, amplitude1, width1, center2, amplitude2, width2):
     """ zero loss function as product of two lorentzians """
@@ -1597,12 +1599,13 @@ def power_law_background(spectrum:np.ndarray, energy_scale:np.ndarray, fit_area:
     return background, p
 
 
-def cl_model(x, p, number_of_edges, xsec):
+def cl_model(xx, pp, number_of_edges, xsec):
     """ core loss model for fitting"""
-    y = (p[9] * np.power(x, (-p[10]))) + p[7] * x + p[8] * x * x
+    yy = pp[0] *  xx**pp[1] +  pp[2] + pp[3]* xx + pp[4] * xx * xx
     for i in range(number_of_edges):
-        y = y + p[i] * xsec[i, :]
-    return y
+        pp[i+5] = np.abs(pp[i+5])
+        yy = yy + pp[i+5] * xsec[i, :]
+    return yy
 
 
 def fit_edges2(spectrum, energy_scale, edges):
@@ -1690,8 +1693,19 @@ def fit_edges2(spectrum, energy_scale, edges):
     edges['model']['fit_parameter'] = p
     edges['model']['fit_area_start'] = edges['fit_area']['fit_start']
     edges['model']['fit_area_end'] = edges['fit_area']['fit_end']
-
+    edges['model']['xsec'] = xsec
     return edges
+
+    
+def core_loss_model(energy_scale, pp, number_of_edges, xsec):
+    """ core loss model for fitting"""
+    xx = np.array(energy_scale)
+    yy = pp[0] *  xx**pp[1] +  pp[2] + pp[3]* xx + pp[4] * xx * xx
+    for i in range(number_of_edges):
+        pp[i+5] = np.abs(pp[i+5])
+        yy = yy + pp[i+5] * xsec[i, :]
+    return yy
+
 
 
 def fit_edges(spectrum, energy_scale, region_tags, edges):
