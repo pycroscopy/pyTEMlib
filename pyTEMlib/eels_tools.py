@@ -1599,7 +1599,7 @@ def power_law_background(spectrum:np.ndarray, energy_scale:np.ndarray, fit_area:
     return background, p
 
 
-def cl_model(x, p, number_of_edges, xsec):
+def cl_model(xx, pp, number_of_edges, xsec):
     """ core loss model for fitting"""
     yy = pp[0] *  xx**pp[1] +  pp[2] + pp[3]* xx + pp[4] * xx * xx
     for i in range(number_of_edges):
