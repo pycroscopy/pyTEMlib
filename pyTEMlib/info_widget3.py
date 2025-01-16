@@ -4,8 +4,6 @@ import numpy as np
 import os
 import sys
 import ipywidgets
-import matplotlib.pylab as plt
-import matplotlib
 from IPython.display import display
 import plotly.graph_objects as go
 
@@ -491,11 +489,11 @@ class EELSBaseWidget(object):
             self.spectrum_plot.add_trace(go.Scatter(x=self.energy_scale, y=self.spectrum, mode='markers+lines', marker_size=.1, name=self.dataset.title))
         self.spectrum_plot.data = [self.spectrum_plot.data[0]]
 
-        self.xlabel = self.datasets[self.key].labels[0]
+        self.xlabel = self.spectrum.labels[0]
         self.ylabel = self.datasets[self.key].data_descriptor
-        self.change_y_scale = 1.0
+        # self.change_y_scale = 1.0
         if self.y_scale != 1.:
-            self.ylabel('scattering probability (ppm/eV)')
+            self.ylabel = 'scattering probability (ppm/eV)'
         
         self.spectrum_plot.update_layout(xaxis_title=self.xlabel, yaxis_title=self.ylabel)
         self.spectrum_plot.data[0].y=self.spectrum
@@ -517,44 +515,6 @@ class EELSBaseWidget(object):
 
     def update_tab_spectra(self):
         pass
-
-    def _onclick(self, event):
-        self.event = event
-        if event.inaxes in [self.axes[0]]:
-            x = int(event.xdata)
-            y = int(event.ydata)
-
-            x = int(x - self.rectangle[0])
-            y = int(y - self.rectangle[2])
-
-            if x >= 0 and y >= 0:
-                if x <= self.rectangle[1] and y <= self.rectangle[3]:
-                    self.x = int(x / (self.rect.get_width() / self.bin_x))
-                    self.y = int(y / (self.rect.get_height() / self.bin_y))
-                    image_dims = self.dataset.get_image_dims()
-            
-                    if self.x + self.bin_x > self.dataset.shape[image_dims[0]]:
-                        self.x = self.dataset.shape[image_dims[0]] - self.bin_x
-                    if self.y + self.bin_y > self.dataset.shape[image_dims[1]]:
-                        self.y = self.dataset.shape[image_dims[1]] - self.bin_y
-            
-                    self.rect.set_xy([self.x * self.rect.get_width() / self.bin_x + self.rectangle[0],
-                                      self.y * self.rect.get_height() / self.bin_y + self.rectangle[2]])
-                # self.get_spectrum()
-                self._update()
-        else:
-            if event.dblclick:
-                bottom = float(self.spectrum.min())
-                if bottom < 0:
-                    bottom *= 1.02
-                else:
-                    bottom *= 0.98
-                top = float(self.spectrum.max())
-                if top > 0:
-                    top *= 1.02
-                else:
-                    top *= 0.98
-                self.axis.set_ylim(bottom=bottom, top=top)
 
     def get_spectrum(self):
         if self.dataset.data_type.name == 'SPECTRUM':
@@ -589,7 +549,6 @@ class EELSBaseWidget(object):
 
     @out.capture(clear_output=True)
     def click_callback(self, trace, points, selector):
-        self.status_message(f'click_callback: {selector}')
         if selector.shift:
             self.spectrum_plot.add_trace(go.Scatter(x=self.energy_scale, 
                                                     y=self.dataset[points.point_inds[0][1], points.point_inds[0][0]], 
@@ -624,6 +583,7 @@ class EELSBaseWidget(object):
         if len(self.image_plot.data) == 0:
                     self.image_plot.add_trace(go.Heatmap(z=self.image.T))
         else:
+            self.image_plot.data = [self.image_plot.data[0]]
             self.image_plot.data[0].z=np.array(self.image).T
         self.plot_spectrum()
         self.image_plot.add_trace(
@@ -1100,7 +1060,7 @@ class Info(object):
         self.update_sidebar()
         self.parent._update(0)
         
-    def shift_low_loss(self,  value=0):
+    def get_shift(self,  value=0):
         if 'low_loss' in self.parent.datasets['_relationship']:
             low_loss = self.parent.datasets[self.parent.datasets['_relationship']['low_loss']]
 
@@ -1145,7 +1105,7 @@ class Info(object):
         self.info_tab[9, 0].observe(self.set_flux, names='value')
         self.info_tab[9, 2].observe(self.set_y_scale, names='value')
         self.info_tab[10, 0].observe(self.set_flux)
-        self.info_tab[14, 0].on_click(self.shift_low_loss)
+        self.info_tab[14, 0].on_click(self.get_shift)
         self.info_tab[14, 1].on_click(self.shift_spectrum)
         self.info_tab[14, 1].on_click(self.shift_spectrum)
         
