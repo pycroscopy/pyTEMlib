@@ -1841,20 +1841,12 @@ def get_spectrum(dataset, x=0, y=0, bin_x=1, bin_y=1):
 def find_peaks(dataset, energy_scale):  #, fit_start, fit_end, sensitivity=2):
     """find peaks in spectrum"""
 
-    peaks, prop = scipy.signal.find_peaks(dataset, width=5)
-    results_half = scipy.signal.peak_widths(dataset, peaks, rel_height=0.5)[0]
+    peaks, prop = scipy.signal.find_peaks(dataset-np.min(dataset)-1, width=5)
+    results_half = scipy.signal.peak_widths(dataset-np.min(dataset)-1, peaks, rel_height=0.5)[0]
     
-    """peaks = []
-    for index in indices:
-        # if start_channel < index < end_channel:
-        peaks.append(index)  # - start_channel)
-    """
     disp = energy_scale[1] - energy_scale[0]    
     if len(peaks) > 0:
         p_in = np.ravel([[energy_scale[peaks[i]], dataset[peaks[i]], results_half[i]*disp] for i in range(len(peaks))])
-
-        #p_in = np.ravel([[energy_scale[i], dataset[i], .7] for i in peaks])
-
     return p_in  # model, p_in
 
 def nothing():
@@ -1930,17 +1922,6 @@ def find_maxima(y, number_of_peaks):
     peak_indices = np.argsort(peaks)
     return peaks[peak_indices]
 
-@jit
-def gmm(x, p):
-    y = np.zeros(len(x))
-    number_of_peaks= int(len(p)/3)
-    for i in range(number_of_peaks):
-        index = i*3
-        p[index + 1] = abs(p[index + 1])
-        # print(p[index + 1])
-        p[index + 2] = abs(p[index + 2])
-        y = y + gauss(x, p[index:])
-    return y
 # 
 def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, restrict_width=0):
     """ model for fitting low-loss spectrum"""
@@ -2014,6 +1995,33 @@ def add_peaks(x, y, peaks, pin_in=None, peak_shape_in=None, shape='Gaussian'):
     return pin, peak_shape
 
 @jit
+def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
+    """Gaussian Function
+
+        p[0]==mean, p[1]= amplitude p[2]==fwhm
+        area = np.sqrt(2* np.pi)* p[1] * np.abs(p[2] / 2.3548)
+        FWHM = 2 * np.sqrt(2 np.log(2)) * sigma = 2.3548 * sigma
+        sigma = FWHM/3548
+    """
+    if p[2] == 0:
+        return x * 0.
+    else:
+        return p[1] * np.exp(-(x - p[0]) ** 2 / (2.0 * (p[2] / 2.3548) ** 2))
+
+
+@jit
+def gmm(x, p):
+    y = np.zeros(len(x))
+    number_of_peaks= int(len(p)/3)
+    for i in range(number_of_peaks):
+        index = i*3
+        p[index + 1] = p[index + 1]
+        # print(p[index + 1])
+        p[index + 2] = abs(p[index + 2])
+        y = y + gauss(x, p[index:])
+    return y
+
+@jit
 def residuals3(pp, xx, yy):
     err = (yy - gmm(xx, pp)) / np.sqrt(yy) *20 # 
     return err
@@ -2034,10 +2042,10 @@ def gaussian_mixture_model(dataset, p_in=None):
         spectrum = np.array(dataset)
         energy_scale = np.arange(len(spectrum))
     spectrum = np.array(spectrum)    
-    spectrum -= np.min(spectrum)-1
+    #spectrum -= np.min(spectrum)-1
     if p_in is None:
         p_in = find_peaks(spectrum, energy_scale)
-    
+    print(p_in)
     p = fit_gmm(energy_scale, np.array(spectrum), p_in)
     peak_model = gmm(energy_scale, p)
     return peak_model, p
