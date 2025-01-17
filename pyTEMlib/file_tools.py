@@ -705,7 +705,7 @@ def save_file_dialog_qt(file_types=None):  # , multiple_files=False):
         return filename
 
 
-def save_dataset(dataset, filename=None,  h5_group=None):
+def save_dataset(dataset, filename=None,  qt=False, h5_group=None):
     """ Saves a dataset to a file in pyNSID format
     Parameters
     ----------
@@ -716,7 +716,7 @@ def save_dataset(dataset, filename=None,  h5_group=None):
     h5_group: hd5py.Group
         not used yet
     """
-    if filename is None:
+    if filename is None or qt==True:
         filename = save_file_dialog_qt()
     h5_filename = get_h5_filename(filename)
     h5_file = h5py.File(h5_filename, mode='a')

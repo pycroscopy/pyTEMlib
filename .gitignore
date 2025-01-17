@@ -254,3 +254,6 @@ notebooks/Imaging/Adaptive_Fourier_Filter-Copy1.ipynb
 notebooks/Spectroscopy/EELS_286.hf5
 notebooks/Spectroscopy/Untitled1.ipynb
 pyTEMlib/info_widget2.py
+example_data/sto.hf5
+example_data/sto2.hf5
+example_data/sto3.hf5
