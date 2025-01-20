@@ -1841,8 +1841,8 @@ def get_spectrum(dataset, x=0, y=0, bin_x=1, bin_y=1):
 def find_peaks(dataset, energy_scale):  #, fit_start, fit_end, sensitivity=2):
     """find peaks in spectrum"""
 
-    peaks, prop = scipy.signal.find_peaks(dataset-np.min(dataset)-1, width=5)
-    results_half = scipy.signal.peak_widths(dataset-np.min(dataset)-1, peaks, rel_height=0.5)[0]
+    peaks, prop = scipy.signal.find_peaks(np.abs(dataset)+1, width=5)
+    results_half = scipy.signal.peak_widths(np.abs(dataset)+1, peaks, rel_height=0.5)[0]
     
     disp = energy_scale[1] - energy_scale[0]    
     if len(peaks) > 0:
@@ -2023,7 +2023,7 @@ def gmm(x, p):
 
 @jit
 def residuals3(pp, xx, yy):
-    err = (yy - gmm(xx, pp)) / np.sqrt(yy) *20 # 
+    err = (yy - gmm(xx, pp))
     return err
 
 def gaussian_mixture_model(dataset, p_in=None):
@@ -2045,8 +2045,9 @@ def gaussian_mixture_model(dataset, p_in=None):
     #spectrum -= np.min(spectrum)-1
     if p_in is None:
         p_in = find_peaks(spectrum, energy_scale)
-    print(p_in)
-    p = fit_gmm(energy_scale, np.array(spectrum), p_in)
+    
+    p = fit_gmm(energy_scale, np.array(spectrum), list(p_in))
+    
     peak_model = gmm(energy_scale, p)
     return peak_model, p
 
