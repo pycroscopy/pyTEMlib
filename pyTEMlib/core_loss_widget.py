@@ -175,7 +175,6 @@ class CoreLoss(object):
         self.parent.set_dataset(self.cl_key)
 
         self.dataset = self.parent.datasets[self.cl_key]
-
     
 
     def update_cl_sidebar(self):
