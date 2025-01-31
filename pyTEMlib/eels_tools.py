@@ -1153,36 +1153,32 @@ def find_all_edges(edge_onset: float, maximal_chemical_shift: float=5.0, major_e
                         else:
                             text += new_text
 
-    return text
-
+    return text         
 
 def find_associated_edges(dataset: sidpy.Dataset) -> None:
     onsets = []
     edges = []
-    if 'edges' in dataset.metadata:
-        for key, edge in dataset.metadata['edges'].items():
+    if 'core_loss' in dataset.metadata:
+        for key, edge in dataset.metadata['core_loss'].items():
             if key.isdigit():
-                element = edge['element']
-                pre_edge = 0.  # edge['onset']-edge['start_exclude']
-                post_edge = edge['end_exclude'] - edge['onset']
-
                 for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
-                    onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift']-pre_edge)
-                    edges.append([key, f"{element}-{sym}", onsets[-1]])
-        for key, peak in dataset.metadata['peak_fit']['peaks'].items():
-            if key.isdigit():
-                distance = dataset.get_spectral_dims(return_axis=True)[0].values[-1]
-                index = -1
-                for ii, onset in enumerate(onsets):
-                    if onset < peak['position'] < onset+post_edge:
-                        if distance > np.abs(peak['position'] - onset):
-                            distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
-                            distance_onset = peak['position'] - onset
-                            index = ii
-                if index >= 0:
-                    peak['associated_edge'] = edges[index][1]  # check if more info is necessary
-                    peak['distance_to_onset'] = distance_onset
+                    onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift'])
+                    edges.append([key, f"{edge['element']}-{sym}", onsets[-1]])
+                dataset.metadata['core_loss'][key]['associated_peaks'] = {}
+        print(onsets)
+        print(edges)
+        if 'peak_fit' in dataset.metadata:
+            p = dataset.metadata['peak_fit']['peak_out_list']
 
+            for key, peak in enumerate(p):
+                distances  = onsets-peak[0]
+                distances[distances < -0.3] = 1e6
+                if np.min(distances) < 50:
+                    index = np.argmin(distances)
+                    dataset.metadata['core_loss'][edges[np.argmin(distances)][0]]['associated_peaks'][key] = edges[np.argmin(distances)][1]
+                        # check if more info is necessary
+                    # peak['distance_to_onset'] = np.min(distances)
+            print(dataset.metadata['core_loss'])
 
 def find_white_lines(dataset: sidpy.Dataset) -> None:
     if 'edges' in dataset.metadata:
@@ -2034,6 +2030,7 @@ def gaussian_mixture_model(dataset, p_in=None):
                 spectrum = dataset.view.get_spectrum()
             else:
                 spectrum = dataset[0,0]
+            spectrum.data_type == 'SPECTRUM'
         else:
             spectrum = dataset
         spectrum.data_type == 'SPECTRUM'
