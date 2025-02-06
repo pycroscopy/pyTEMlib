@@ -1180,38 +1180,39 @@ def find_associated_edges(dataset: sidpy.Dataset) -> None:
                     # peak['distance_to_onset'] = np.min(distances)
             print(dataset.metadata['core_loss'])
 
-def find_white_lines(dataset: sidpy.Dataset) -> None:
-    if 'edges' in dataset.metadata:
-        white_lines = {}
-        for index, peak in dataset.metadata['peak_fit']['peaks'].items():
-            if index.isdigit():
-                if 'associated_edge' in peak:
-                    if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
-                        if peak['distance_to_onset'] < 10:
-                            area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
-                            if peak['associated_edge'] not in white_lines:
-                                white_lines[peak['associated_edge']] = 0.
-                            if area > 0:
-                                white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
-        white_line_ratios = {}
-        white_line_sum = {}
-        for sym, area in white_lines.items():
-            if sym[-2:] in ['L2', 'M4', 'M2']:
-                if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
-                    if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
-                        white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
-                            f"{sym[:-1]}{int(sym[-1]) + 1}"]
-                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
-                                    area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
+    
+def find_white_lines(peaks: dict) -> None:
+    
+    white_lines = {}
+    for index, peak in peaks['peaks'].items():
+        if index.isdigit():
+            if 'associated_edge' in peak:
+                if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
+                    if peak['distance_to_onset'] < 10:
+                        area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
+                        if peak['associated_edge'] not in white_lines:
+                            white_lines[peak['associated_edge']] = 0.
+                        if area > 0:
+                            white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
+    white_line_ratios = {}
+    white_line_sum = {}
+    for sym, area in white_lines.items():
+        if sym[-2:] in ['L2', 'M4', 'M2']:
+            if area > 0 and f"{sym[:-1]}{int(sym[-1]) + 1}" in white_lines:
+                if white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"] > 0:
+                    white_line_ratios[f"{sym}/{sym[-2]}{int(sym[-1]) + 1}"] = area / white_lines[
+                        f"{sym[:-1]}{int(sym[-1]) + 1}"]
+                    white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] = (
+                                area + white_lines[f"{sym[:-1]}{int(sym[-1]) + 1}"])
 
-                        areal_density = 1.
-                        if 'edges' in dataset.metadata:
-                            for key, edge in dataset.metadata['edges'].items():
-                                if key.isdigit():
-                                    if edge['element'] == sym.split('-')[0]:
-                                        areal_density = edge['areal_density']
-                                        break
-                        white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
+                    areal_density = 1.
+                    if 'edges' in dataset.metadata:
+                        for key, edge in dataset.metadata['edges'].items():
+                            if key.isdigit():
+                                if edge['element'] == sym.split('-')[0]:
+                                    areal_density = edge['areal_density']
+                                    break
+                    white_line_sum[f"{sym}+{sym[-2]}{int(sym[-1]) + 1}"] /= areal_density
 
         dataset.metadata['peak_fit']['white_lines'] = white_lines
         dataset.metadata['peak_fit']['white_line_ratios'] = white_line_ratios
@@ -1544,6 +1545,9 @@ def make_cross_sections(edges:dict, energy_scale:np.ndarray, e_0:float, coll_ang
     """
     for key in edges:
         if str(key).isdigit():
+            print(edges[key]['z'])
+            if edges[key]['z'] <1:
+                break
             edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['z'], coll_angle,
                                            edges[key]['chemical_shift']) / 1e10  # from barnes to 1/nm^2
             if low_loss is not None:
