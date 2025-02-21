@@ -1159,42 +1159,80 @@ def find_associated_edges(dataset: sidpy.Dataset) -> None:
     onsets = []
     edges = []
     if 'core_loss' in dataset.metadata:
-        for key, edge in dataset.metadata['core_loss'].items():
-            if key.isdigit():
-                for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
-                    onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift'])
-                    edges.append([key, f"{edge['element']}-{sym}", onsets[-1]])
-                dataset.metadata['core_loss'][key]['associated_peaks'] = {}
-        print(onsets)
-        print(edges)
-        if 'peak_fit' in dataset.metadata:
-            p = dataset.metadata['peak_fit']['peak_out_list']
+        if'edges' in dataset.metadata['core_loss']:
+            for key, edge in dataset.metadata['core_loss']['edges'].items():
+                if key.isdigit():
+                    """for sym in edge['all_edges']:  # TODO: Could be replaced with exclude
+                        onsets.append(edge['all_edges'][sym]['onset'] + edge['chemical_shift'])
+                        edges.append([key, f"{edge['element']}-{sym}", onsets[-1]])
+                    """
+                    onsets.append(edge['onset'])
+                    dataset.metadata['core_loss']['edges'][key]['associated_peaks'] = {}
+            if 'peak_fit' in dataset.metadata:
+                p = dataset.metadata['peak_fit']['peak_out_list']
+                for key, peak in enumerate(p):
+                    distances  = (onsets-peak[0])*-1
+                    distances[distances < -0.3] = 1e6
+                    if np.min(distances) < 50:
+                        index = np.argmin(distances)
+                        dataset.metadata['core_loss']['edges'][str(index)]['associated_peaks'][key] = peak
 
-            for key, peak in enumerate(p):
-                distances  = onsets-peak[0]
-                distances[distances < -0.3] = 1e6
-                if np.min(distances) < 50:
-                    index = np.argmin(distances)
-                    dataset.metadata['core_loss'][edges[np.argmin(distances)][0]]['associated_peaks'][key] = edges[np.argmin(distances)][1]
-                        # check if more info is necessary
-                    # peak['distance_to_onset'] = np.min(distances)
-            print(dataset.metadata['core_loss'])
-
+                        
+                """for key, peak in dataset.metadata['peak_fit']['peaks'].items():
+                    if key.isdigit():
+                        distance = dataset.get_spectral_dims(return_axis=True)[0].values[-1]
+                        index = -1
+                        for ii, onset in enumerate(onsets):
+                            if onset < peak['position'] < onset+post_edge:
+                                if distance > np.abs(peak['position'] - onset):
+                                    distance = np.abs(peak['position'] - onset)  # TODO: check whether absolute is good
+                                    distance_onset = peak['position'] - onset
+                                    index = ii
+                        if index >= 0:
+                            peak['associated_edge'] = edges[index][1]  # check if more info is necessary
+                            peak['distance_to_onset'] = distance_onset
+                """
     
-def find_white_lines(peaks: dict) -> None:
-    
-    white_lines = {}
-    for index, peak in peaks['peaks'].items():
+def find_white_lines(dataset: sidpy.Dataset) -> dict:
+    white_lines_out ={'sum': {}, 'ratio': {}}
+    white_lines = []
+    if 'peak_fit' in dataset.metadata:
+        peaks = dataset.metadata['peak_fit']['peaks']
+    else:
+        return
+    for index, edge in dataset.metadata['core_loss']['edges'].items():
         if index.isdigit():
-            if 'associated_edge' in peak:
-                if peak['associated_edge'][-2:] in ['L3', 'L2', 'M5', 'M4']:
-                    if peak['distance_to_onset'] < 10:
-                        area = np.sqrt(2 * np.pi) * peak['amplitude'] * np.abs(peak['width']/np.sqrt(2 * np.log(2)))
-                        if peak['associated_edge'] not in white_lines:
-                            white_lines[peak['associated_edge']] = 0.
-                        if area > 0:
-                            white_lines[peak['associated_edge']] += area  # TODO: only positive ones?
-    white_line_ratios = {}
+            if 'associated_peaks' in edge:
+                peaks = edge['associated_peaks']
+                
+                if edge['symmetry'][-2:] in ['L3', 'M5']:
+                    if 'L3' in edge['all_edges']:
+                        end_range1 = edge['all_edges']['L2']['onset'] + edge['chemical_shift']
+                        end_range2 = edge['all_edges']['L2']['onset']*2 - edge['all_edges']['L3']['onset'] + edge['chemical_shift'] 
+                        white_lines = ['L3', 'L2']
+                    elif 'M5' in edge['all_edges']:
+                        end_range1 = edge['all_edges']['M4']['onset'] + edge['chemical_shift']
+                        end_range2 = edge['all_edges']['M4']['onset']*2 - edge['all_edges']['M5']['onset'] + edge['chemical_shift'] 
+                        white_lines = ['M5', 'M4']
+                    else:
+                        return
+                    white_line_areas = [0., 0.]
+                    for key, peak in peaks.items():
+                        if str(key).isdigit():
+                            if peak[0] < end_range1:
+                                white_line_areas[0] += np.sqrt(2 * np.pi) * peak[1] * np.abs(peak[2]/np.sqrt(2 * np.log(2)))
+                            elif peak[0] < end_range2:
+                                white_line_areas[1] += np.sqrt(2 * np.pi) * peak[1] * np.abs(peak[2]/np.sqrt(2 * np.log(2)))
+
+                    edge['white_lines'] = {white_lines[0]: white_line_areas[0], white_lines[1]: white_line_areas[1]}
+                    
+                    reference_counts = edge['areal_density']*dataset.metadata['core_loss']['xsections'][int(index)].sum()
+                    white_lines_out['sum'][f"{edge['element']}-{white_lines[0]}+{white_lines[1]}"] = (white_line_areas[0] + white_line_areas[1])/reference_counts
+                    white_lines_out['ratio'][f"{edge['element']}-{white_lines[0]}/{white_lines[1]}"] = white_line_areas[0] / white_line_areas[1]
+    return white_lines_out
+
+
+    """white_line_ratios = {}
     white_line_sum = {}
     for sym, area in white_lines.items():
         if sym[-2:] in ['L2', 'M4', 'M2']:
@@ -1217,7 +1255,7 @@ def find_white_lines(peaks: dict) -> None:
         dataset.metadata['peak_fit']['white_lines'] = white_lines
         dataset.metadata['peak_fit']['white_line_ratios'] = white_line_ratios
         dataset.metadata['peak_fit']['white_line_sums'] = white_line_sum
-        
+    """    
 
 def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
     """Calculates second derivative of a sidpy.dataset"""
@@ -1545,7 +1583,6 @@ def make_cross_sections(edges:dict, energy_scale:np.ndarray, e_0:float, coll_ang
     """
     for key in edges:
         if str(key).isdigit():
-            print(edges[key]['z'])
             if edges[key]['z'] <1:
                 break
             edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['z'], coll_angle,
@@ -2018,7 +2055,7 @@ def gmm(x, p):
         p[index + 1] = p[index + 1]
         # print(p[index + 1])
         p[index + 2] = abs(p[index + 2])
-        y = y + gauss(x, p[index:])
+        y = y + gauss(x, p[index:index+3])
     return y
 
 @jit
@@ -2037,7 +2074,7 @@ def gaussian_mixture_model(dataset, p_in=None):
             spectrum.data_type == 'SPECTRUM'
         else:
             spectrum = dataset
-        spectrum.data_type == 'SPECTRUM'
+        spectrum.data_type = 'SPECTRUM'
         energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     else:
         spectrum = np.array(dataset)
@@ -2054,7 +2091,6 @@ def gaussian_mixture_model(dataset, p_in=None):
 
 def fit_gmm(x, y, pin):
     """fit a Gaussian mixture model to a spectrum"""
-
     [p, _] = leastsq(residuals3, pin, args=(x, y),maxfev = 10000)
     return p    
 
