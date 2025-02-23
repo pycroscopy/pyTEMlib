@@ -743,7 +743,6 @@ def rig_reg_drift(dset, rel_drift):
     rig_reg = np.zeros([dset.shape[frame_dim[0]], dset.shape[spatial_dim[0]], dset.shape[spatial_dim[1]]])
 
     # absolute drift
-    print(rel_drift)
     drift = np.array(rel_drift).copy()
     
     drift[0] = [0, 0]
