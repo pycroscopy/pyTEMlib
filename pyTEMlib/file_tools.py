@@ -988,7 +988,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                                             dset[key1].metadata['experiment']['collection_angle_end'] = float(end)
         if isinstance(dset, dict):
             dataset_dict = dset
-            for dataset in dataset_dict:
+            for dataset in dataset_dict.values():
                 dataset.metadata['filename'] = filename
 
         elif isinstance(dset, list):
