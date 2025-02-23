@@ -597,6 +597,7 @@ def demon_registration(dataset, verbose=False):
     demon_registered.source = dataset.title
 
     demon_registered.metadata = {'analysis': 'non-rigid demon registration'}
+    demon_registered.metadata['experiment'] = dataset.metadata['experiment'].copy()
     if 'input_crop' in dataset.metadata:
         demon_registered.metadata['input_crop'] = dataset.metadata['input_crop']
     if 'input_shape' in dataset.metadata:
@@ -685,6 +686,7 @@ def rigid_registration(dataset, sub_pixel=True):
     rigid_registered.source = dataset.title
     rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
                                  'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
+    rigid_registered.metadata['experiment'] = dataset.metadata['experiment'].copy()
     rigid_registered.set_dimension(0, sidpy.Dimension(np.arange(rigid_registered.shape[0]), 
                                           name='frame', units='frame', quantity='time',
                                           dimension_type='temporal'))
@@ -741,7 +743,6 @@ def rig_reg_drift(dset, rel_drift):
     rig_reg = np.zeros([dset.shape[frame_dim[0]], dset.shape[spatial_dim[0]], dset.shape[spatial_dim[1]]])
 
     # absolute drift
-    print(rel_drift)
     drift = np.array(rel_drift).copy()
     
     drift[0] = [0, 0]

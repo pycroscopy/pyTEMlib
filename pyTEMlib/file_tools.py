@@ -933,7 +933,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                 return
         elif extension == '.emd':
             reader = SciFiReaders.EMDReader(filename, sum_frames=sum_frames)
-
+            
         elif 'edax' in extension.lower():
             if 'h5' in extension:
                 reader = SciFiReaders.EDAXReader(filename)
@@ -960,9 +960,36 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                 dset = {'Channel_000': dset}
             for key in dset:
                 read_annotation(dset[key])
-
+        if extension == '.emd':
+            for key1 in dset:
+                for key in dset[key1].original_metadata:
+                    if key == 'Instrument':
+                        model = dset[key1].original_metadata[key]['InstrumentModel']
+                        id = dset[key1].original_metadata[key]['InstrumentId']
+                        dset[key1].metadata['experiment']['instrument'] = model + str(id)
+                    if key == 'Optics':
+                        dset[key1].metadata['experiment']['current'] = float(dset[key1].original_metadata[key]['LastMeasuredScreenCurrent'])
+                    if key == 'Scan':
+                        dset[key1].metadata['experiment']['pixel_time'] = float(dset[key1].original_metadata[key]['DwellTime'])
+                        dset[key1].metadata['experiment']['exposure_time'] = float(dset[key1].original_metadata[key]['FrameTime'])
+                    if  key == 'Sample':
+                        dset[key1].metadata['experiment']['sample'] = dset[key1].original_metadata[key]['SampleDescription']
+                        dset[key1].metadata['experiment']['sample_id'] = dset[key1].original_metadata[key]['SampleId']    
+                    if key == 'Detectors':
+                        if 'detector' in dset[key1].metadata['experiment']:
+                            used_detector = dset[key1].metadata['experiment']['detector']
+                            for detector in dset[key1].original_metadata[key].values():
+                                if 'DetectorName' in detector:
+                                    if used_detector in detector['DetectorName']: 
+                                        if 'CollectionAngleRange' in detector:
+                                            begin = detector['CollectionAngleRange']['begin']
+                                            end = detector['CollectionAngleRange']['end']
+                                            dset[key1].metadata['experiment']['collection_angle'] = float(begin)
+                                            dset[key1].metadata['experiment']['collection_angle_end'] = float(end)
         if isinstance(dset, dict):
             dataset_dict = dset
+            for dataset in dataset_dict.values():
+                dataset.metadata['filename'] = filename
 
         elif isinstance(dset, list):
             if len(dset) < 1:
