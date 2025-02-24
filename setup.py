@@ -24,7 +24,7 @@ setuptools.setup(
     description="pyTEM: TEM Data Quantification library through a model-based approach",
     long_description=long_description,
     classifiers=[
-        'Development Status :: 2 - Alpha',
+        'Development Status :: 2 - Pre-Alpha',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
@@ -32,6 +32,7 @@ setuptools.setup(
         'Operating System :: OS Independent',
         'Programming Language :: Cython',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
@@ -42,20 +43,22 @@ setuptools.setup(
               'storage', 'hdf5', 'diffraction'],
     packages=setuptools.find_packages(exclude=["*.tests", "*.tests.*",
                                                "tests.*", "tests"]),
-    url="https://pycroscopy.github.io/pycrosGUI/about.html",
+    url="https://pycroscopy.github.io/pyTEMlib/about.html",
     license='MIT',
     author="Gerd Duscher",
     author_email="gduscher@utk.edu",
 
-    install_requires=['pyTEMlib', 'pyqt5', 'pyqtgraph'],  # 'PyQt5> 1.0'],#
+    install_requires=['scipy', 'numpy', 'pillow',  'ase', 'tqdm', 'plotly', 'pandas', 'requests', 'lxml', 'ipympl',  
+                      'spglib', 'scikit-image', 'scikit-learn', 'pyNSID>=0.0.7', 'sidpy>=0.12.1', 'SciFiReaders>=0.0.8'],  # 'PyQt5> 1.0'],#
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     platforms=['Linux', 'Mac OSX', 'Windows 11/10'],
+    package_data={"pyTEMlib": ["data/*"]},
     test_suite='pytest',
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'pycrosGUI=pycrosGUI:main',
+            'pyTEMlib=pyTEMlib:main',
         ],
     },
 )
