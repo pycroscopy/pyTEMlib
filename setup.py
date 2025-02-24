@@ -19,12 +19,12 @@ with open(os.path.join(here, 'pyTEMlib/version.py')) as f:
 
 
 setuptools.setup(
-    name="pycrosGUI",
+    name="pyTEMlib",
     version=__version__,
     description="pyTEM: TEM Data Quantification library through a model-based approach",
     long_description=long_description,
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 2 - Alpha',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
