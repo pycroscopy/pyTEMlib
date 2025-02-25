@@ -968,13 +968,18 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                         id = dset[key1].original_metadata[key]['InstrumentId']
                         dset[key1].metadata['experiment']['instrument'] = model + str(id)
                     if key == 'Optics':
-                        dset[key1].metadata['experiment']['current'] = float(dset[key1].original_metadata[key]['LastMeasuredScreenCurrent'])
+                        if 'LastMeasuredScreenCurrent' in dset[key1].original_metadata[key]:
+                            dset[key1].metadata['experiment']['current'] = float(dset[key1].original_metadata[key]['LastMeasuredScreenCurrent'])
                     if key == 'Scan':
-                        dset[key1].metadata['experiment']['pixel_time'] = float(dset[key1].original_metadata[key]['DwellTime'])
-                        dset[key1].metadata['experiment']['exposure_time'] = float(dset[key1].original_metadata[key]['FrameTime'])
+                        if 'DwellTime' in dset[key1].original_metadata[key]:
+                            dset[key1].metadata['experiment']['pixel_time'] = float(dset[key1].original_metadata[key]['DwellTime'])
+                        if 'FrameTime' in dset[key1].original_metadata[key]:
+                            dset[key1].metadata['experiment']['exposure_time'] = float(dset[key1].original_metadata[key]['FrameTime'])
                     if  key == 'Sample':
-                        dset[key1].metadata['experiment']['sample'] = dset[key1].original_metadata[key]['SampleDescription']
-                        dset[key1].metadata['experiment']['sample_id'] = dset[key1].original_metadata[key]['SampleId']    
+                        if 'SampleDescription' in dset[key1].original_metadata[key]:
+                            dset[key1].metadata['experiment']['sample'] = dset[key1].original_metadata[key]['SampleDescription']
+                        if 'SampleId' in dset[key1].original_metadata[key]:
+                            dset[key1].metadata['experiment']['sample_id'] = dset[key1].original_metadata[key]['SampleId']    
                     if key == 'Detectors':
                         if 'detector' in dset[key1].metadata['experiment']:
                             used_detector = dset[key1].metadata['experiment']['detector']
