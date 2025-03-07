@@ -202,7 +202,7 @@ class LowLoss(object):
             
         if 'low_loss_model' not in self.parent.datasets.keys():
             self.parent.datasets['low_loss_model'] = self.parent.dataset.copy()*0
-        
+        self.parent.status_message(str(self.parent.x))
         plasmon = eels_tools.fit_plasmon(self.parent.spectrum, fit_start, fit_end)
         
         p = plasmon.metadata['plasmon']['parameter']

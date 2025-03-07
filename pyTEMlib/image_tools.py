@@ -1482,3 +1482,4 @@ def decon_lr(o_image, probe,  verbose=False):
     out_dataset.title = 'Lucy Richardson deconvolution'
     out_dataset.data_type = 'image'
     return out_dataset
+
