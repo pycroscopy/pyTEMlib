@@ -228,12 +228,12 @@ def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
     fft_dset.modality = 'fft'
 
     fft_dset.set_dimension(0, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[0],
-                                                                             d=dset.get_dimension_slope(dset.x))),
+                                                                             d=dset.x[1]-dset.x[0])),
 
                                               name='u', units=units_x, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
     fft_dset.set_dimension(1, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[1],
-                                                                             d=dset.get_dimension_slope(dset.y))),
+                                                                             d=dset.y[1]- dset.y[0])),
                                               name='v', units=units_y, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
 
@@ -320,7 +320,8 @@ def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     print(f'Found {spots_random.shape[0]} reflections')
 
     # Needed for conversion from pixel to Reciprocal space
-    rec_scale = np.array([dset.get_dimension_slope(dset.u), dset.get_dimension_slope(dset.v)])
+    rec_scale = np.array([dset.u[1]-dset.u[0], dset.u[0]-dset.u[1]])
+    
     spots_random[:, :2] = spots_random[:, :2]*rec_scale+[dset.u.values[0], dset.v.values[0]]
     # sort reflections
     spots_random[:, 2] = np.linalg.norm(spots_random[:, 0:2], axis=1)
@@ -1104,7 +1105,7 @@ def clean_svd(im, pixel_size=1, source_size=5):
     patch_size = int(source_size/pixel_size)
     if patch_size < 3:
         patch_size = 3
-    patches = image.extract_patches_2d(im, (patch_size, patch_size))
+    patches = image.extract_patches_2d(np.array(im), (patch_size, patch_size))
     patches = patches.reshape(patches.shape[0], patches.shape[1]*patches.shape[2])
 
     num_components = 32
@@ -1113,6 +1114,8 @@ def clean_svd(im, pixel_size=1, source_size=5):
     u_im_size = int(np.sqrt(u.shape[0]))
     reduced_image = u[:, 0].reshape(u_im_size, u_im_size)
     reduced_image = reduced_image/reduced_image.sum()*im.sum()
+    if isinstance(im, sidpy.Dataset):
+        reduced_image = im.like_data(reduced_image)
     return reduced_image
 
 
@@ -1479,3 +1482,4 @@ def decon_lr(o_image, probe,  verbose=False):
     out_dataset.title = 'Lucy Richardson deconvolution'
     out_dataset.data_type = 'image'
     return out_dataset
+
