@@ -212,6 +212,7 @@ def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
         return
 
     new_image = new_image - new_image.min()
+    
     fft_transform = (np.fft.fftshift(np.fft.fft2(new_image)))
 
     image_dims = pyTEMlib.sidpy_tools.get_image_dims(dset)
@@ -227,12 +228,12 @@ def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
     fft_dset.modality = 'fft'
 
     fft_dset.set_dimension(0, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[0],
-                                                                             d=ft.get_slope(dset.x.values))),
+                                                                             d=dset.x[1]-dset.x[0])),
 
                                               name='u', units=units_x, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
     fft_dset.set_dimension(1, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[1],
-                                                                             d=ft.get_slope(dset.y.values))),
+                                                                             d=dset.y[1]- dset.y[0])),
                                               name='v', units=units_y, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
 
@@ -319,7 +320,8 @@ def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     print(f'Found {spots_random.shape[0]} reflections')
 
     # Needed for conversion from pixel to Reciprocal space
-    rec_scale = np.array([ft.get_slope(dset.u.values), ft.get_slope(dset.v.values)])
+    rec_scale = np.array([dset.u[1]-dset.u[0], dset.u[0]-dset.u[1]])
+    
     spots_random[:, :2] = spots_random[:, :2]*rec_scale+[dset.u.values[0], dset.v.values[0]]
     # sort reflections
     spots_random[:, 2] = np.linalg.norm(spots_random[:, 0:2], axis=1)
@@ -516,7 +518,8 @@ def complete_registration(main_dataset, storage_channel=None):
 
     rigid_registered_dataset = rigid_registration(main_dataset)
 
-    
+    print(rigid_registered_dataset)
+    rigid_registered_dataset.data_type = 'IMAGE_STACK'
     print('Non-Rigid_Registration')
 
     non_rigid_registered = demon_registration(rigid_registered_dataset)
@@ -580,7 +583,6 @@ def demon_registration(dataset, verbose=False):
     resampler.SetDefaultPixelValue(0)
 
     for i in trange(nimages):
-
         moving = sitk.GetImageFromArray(dataset[i])
         moving_f = sitk.DiscreteGaussian(moving, 2.0)
         displacement_field = demons.Execute(fixed, moving_f)
@@ -603,6 +605,7 @@ def demon_registration(dataset, verbose=False):
     if 'input_shape' in dataset.metadata:
         demon_registered.metadata['input_shape'] = dataset.metadata['input_shape']
     demon_registered.metadata['input_dataset'] = dataset.source
+    demon_registered.data_type = 'IMAGE_STACK'
     return demon_registered
 
 
@@ -699,6 +702,7 @@ def rigid_registration(dataset, sub_pixel=True):
     rigid_registered.set_dimension(2, sidpy.Dimension(array_y,
                                           'y', units='nm', quantity='Length',
                                           dimension_type='spatial'))
+    rigid_registered.data_type = 'IMAGE_STACK'
     return rigid_registered.rechunk({0: 'auto', 1: -1, 2: -1})
 
 
@@ -903,8 +907,8 @@ def get_profile(dataset, line, spline_order=-1):
     xv, yv = get_line_selection_points(line)
     if dataset.data_type.name == 'IMAGE':
         dataset.get_image_dims()
-        xv /= (dataset.x[1] - dataset.x[0])
-        yv /= (dataset.y[1] - dataset.y[0])
+        xv /= dataset.get_dimension_slope(dataset.x)
+        yv /= dataset.get_dimension_slope(dataset.y)
         profile = scipy.ndimage.map_coordinates(np.array(dataset), [xv, yv])
         
         profile_dataset = sidpy.Dataset.from_array(profile.sum(axis=0))
@@ -1101,7 +1105,7 @@ def clean_svd(im, pixel_size=1, source_size=5):
     patch_size = int(source_size/pixel_size)
     if patch_size < 3:
         patch_size = 3
-    patches = image.extract_patches_2d(im, (patch_size, patch_size))
+    patches = image.extract_patches_2d(np.array(im), (patch_size, patch_size))
     patches = patches.reshape(patches.shape[0], patches.shape[1]*patches.shape[2])
 
     num_components = 32
@@ -1110,6 +1114,8 @@ def clean_svd(im, pixel_size=1, source_size=5):
     u_im_size = int(np.sqrt(u.shape[0]))
     reduced_image = u[:, 0].reshape(u_im_size, u_im_size)
     reduced_image = reduced_image/reduced_image.sum()*im.sum()
+    if isinstance(im, sidpy.Dataset):
+        reduced_image = im.like_data(reduced_image)
     return reduced_image
 
 
@@ -1402,11 +1408,18 @@ def decon_lr(o_image, probe,  verbose=False):
     error = np.ones(o_image.shape, dtype=np.complex64)
     est = np.ones(o_image.shape, dtype=np.complex64)
     source = np.ones(o_image.shape, dtype=np.complex64)
+    o_image = o_image - o_image.min()
+    image_mult = o_image.max()
+    o_image = o_image / o_image.max()
     source.real = o_image
 
     response_ft = fftpack.fft2(probe_c)
 
-    ap_angle = o_image.metadata['experiment']['convergence_angle'] / 1000.0  # now in rad
+    
+
+    ap_angle = o_image.metadata['experiment']['convergence_angle']
+    if ap_angle > .1:
+        ap_angle /= 1000  # now in rad
 
     e0 = float(o_image.metadata['experiment']['acceleration_voltage'])
 
@@ -1438,19 +1451,16 @@ def decon_lr(o_image, probe,  verbose=False):
     # de = 100
     dest = 100
     i = 0
-    while abs(dest) > 0.0001:  # or abs(de)  > .025:
+    while abs(dest) > 0.001:  # or abs(de)  > .025:
         i += 1
         error_old = np.sum(error.real)
         est_old = est.copy()
         error = source / np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est) * response_ft)))
         est = est * np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(error) * np.conjugate(response_ft))))
-        # est = est_old * est
-        # est =  np.real(fftpack.fftshift(fftpack.ifft2(fftpack.fft2(est)*fftpack.fftshift(aperture) )))
-
+        
         error_new = np.real(np.sum(np.power(error, 2))) - error_old
         dest = np.sum(np.power((est - est_old).real, 2)) / np.sum(est) * 100
-        # print(np.sum((est.real - est_old.real)* (est.real - est_old.real) )/np.sum(est.real)*100 )
-
+        
         if error_old != 0:
             de = error_new / error_old * 1.0
         else:
@@ -1466,9 +1476,8 @@ def decon_lr(o_image, probe,  verbose=False):
             print('terminate')
         progress.update(1)
     progress.write(f"converged in {i} iterations")
-    # progress.close()
     print('\n Lucy-Richardson deconvolution converged in ' + str(i) + '  iterations')
-    est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))
+    est2 = np.real(fftpack.ifft2(fftpack.fft2(est) * fftpack.fftshift(aperture)))*image_mult
     out_dataset = o_image.like_data(est2)
     out_dataset.title = 'Lucy Richardson deconvolution'
     out_dataset.data_type = 'image'
