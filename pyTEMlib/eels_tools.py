@@ -604,7 +604,8 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
         guess_pos = np.argmax(fit_dset)
         guess_amplitude = fit_dset[guess_pos]
         guess_width =(endFitEnergy-startFitEnergy)/4
-        guess_pos = energy[guess_pos]
+        guess_pos = energy[start_fit_pixel+guess_pos]
+        
         if guess_width >8:
             guess_width=8
         try:
@@ -618,7 +619,7 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
                                 p0=[guess_pos, guess_width, guess_amplitude])
             except:
                 popt=[0,0,0]
-       
+        
         plasmon = dataset.like_data(energy_loss_function(energy, popt[0], popt[1], popt[2]))
         plasmon *= anglog
         start_plasmon = np.searchsorted(energy, 0)+1
