@@ -320,7 +320,8 @@ def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     print(f'Found {spots_random.shape[0]} reflections')
 
     # Needed for conversion from pixel to Reciprocal space
-    rec_scale = np.array([dset.u[1]-dset.u[0], dset.u[0]-dset.u[1]])
+    image_dims = dset.get_image_dims(return_axis=True)
+    rec_scale = np.array([image_dims[0].slope, image_dims[1].slope])
     
     spots_random[:, :2] = spots_random[:, :2]*rec_scale+[dset.u.values[0], dset.v.values[0]]
     # sort reflections
@@ -906,9 +907,9 @@ def get_profile(dataset, line, spline_order=-1):
     """
     xv, yv = get_line_selection_points(line)
     if dataset.data_type.name == 'IMAGE':
-        dataset.get_image_dims()
-        xv /= dataset.get_dimension_slope(dataset.x)
-        yv /= dataset.get_dimension_slope(dataset.y)
+        image_dims = dataset.get_image_dims(return_axis=True)
+        xv /= image_dims[0].slope
+        yv /= image_dims[1].slope
         profile = scipy.ndimage.map_coordinates(np.array(dataset), [xv, yv])
         
         profile_dataset = sidpy.Dataset.from_array(profile.sum(axis=0))

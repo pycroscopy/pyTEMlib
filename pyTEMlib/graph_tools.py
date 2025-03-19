@@ -5,7 +5,6 @@ import numpy as np
 # import ase
 import sys
 
-# from scipy.spatial import cKDTree, Voronoi, ConvexHull
 import scipy.spatial
 import scipy.optimize
 import scipy.interpolate
@@ -20,7 +19,7 @@ import pyTEMlib.crystal_tools
 from tqdm.auto import tqdm, trange
 
 from .graph_viz import *
-
+QT_available = False
 
 ###########################################################################
 # utility functions
@@ -212,6 +211,14 @@ def get_voronoi(tetrahedra, atoms, bond_radii=None, optimize=True):
     """
 
     extent = atoms.cell.lengths()
+    print('extent', extent)
+
+    if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
+        positions = atoms.positions[:, :2]
+        extent = extent[:2]
+    else:
+        positions = atoms.positions
+
     if atoms.info is None:
         atoms.info = {}
 
@@ -232,8 +239,8 @@ def get_voronoi(tetrahedra, atoms, bond_radii=None, optimize=True):
         r_a = []
         for vert in vertices:
             r_a.append(bond_radii[vert])
-        voronoi, radius = interstitial_sphere_center(atoms.positions[vertices], r_a, optimize=optimize)
-
+        voronoi, radius = interstitial_sphere_center(positions[vertices], r_a, optimize=optimize)
+    
         r_a = np.average(r_a)  # np.min(r_a)
         r_aa.append(r_a)
 
@@ -247,7 +254,7 @@ def get_voronoi(tetrahedra, atoms, bond_radii=None, optimize=True):
 def find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=1.):
     """Find overlapping spheres"""
 
-    vertex_tree = scipy.spatial.cKDTree(voronoi_vertices)
+    vertex_tree = scipy.spatial.KDTree(voronoi_vertices)
 
     pairs = vertex_tree.query_pairs(r=r_a * 2)
 
@@ -424,7 +431,7 @@ def get_non_periodic_supercell(super_cell):
     return atoms
 
 def get_connectivity_matrix(crystal, atoms, polyhedra):
-    crystal_tree = scipy.spatial.cKDTree(crystal.positions)
+    crystal_tree = scipy.spatial.KDTree(crystal.positions)
     
     
     connectivity_matrix = np.zeros([len(atoms),len(atoms)], dtype=int)
@@ -476,8 +483,8 @@ def get_bonds(crystal, shift= 0., verbose = False, cheat=1.0):
     other = []
     super_cell_atoms =[]
     
-    atoms_tree = scipy.spatial.cKDTree(atoms.positions-crystal.cell.lengths())
-    crystal_tree = scipy.spatial.cKDTree(crystal.positions)
+    atoms_tree = scipy.spatial.KDTree(atoms.positions-crystal.cell.lengths())
+    crystal_tree = scipy.spatial.KDTree(crystal.positions)
     connectivity_matrix = np.zeros([len(atoms),len(atoms)], dtype=float)
     
     for polyhedron in polyhedra.values():
@@ -699,18 +706,21 @@ def find_polyhedra(atoms, optimize=True, cheat=1.0, bond_radii=None):
         raise TypeError('This function needs an ase.Atoms object')
 
     if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
-        tetrahedra = scipy.spatial.Delaunay(atoms.positions[:, :2])
+        positions = atoms.positions[:, :2]
+        print('2D')
     else:
-        tetrahedra = scipy.spatial.Delaunay(atoms.positions)
+        positions = atoms.positions
+    tetrahedra = scipy.spatial.Delaunay(positions)
 
     voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms, optimize=optimize, bond_radii=bond_radii)
-    if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
-        r_vv = np.array(r_vv)*3.
+    
+    if positions.shape[1] < 3:
+        r_vv = np.array(r_vv)*1.
     overlapping_pairs = find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=cheat)
 
     clusters, visited_all = find_interstitial_clusters(overlapping_pairs)
 
-    if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
+    if positions.shape[1] < 3:
         rings = get_polygons(atoms, clusters, voronoi_tetrahedrons)
         return rings
     else:
@@ -770,7 +780,7 @@ def sort_polyhedra_by_vertices(polyhedra, visible=range(4, 100), z_lim=[0, 100],
 ##########################
 # New Graph Stuff
 ##########################
-def breadth_first_search(graph, initial, projected_crystal):
+def breadth_first_search2(graph, initial, projected_crystal):
     """ breadth first search of atoms viewed as a graph
 
     the projection dictionary has to contain the following items
@@ -794,15 +804,20 @@ def breadth_first_search(graph, initial, projected_crystal):
     """
 
     projection_tags = projected_crystal.info['projection']
-
-    # get lattice vectors to hopp along through graph
-    projected_unit_cell = projected_crystal.cell[:2, :2]
-    a_lattice_vector = projected_unit_cell[0]
-    b_lattice_vector = projected_unit_cell[1]
-    main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
-    near = np.append(main, projection_tags['near_base'], axis=0)  # all nearest atoms
+    if 'lattice_vector' in projection_tags:
+        a_lattice_vector = projection_tags['lattice_vector']['a']
+        b_lattice_vector = projection_tags['lattice_vector']['b']
+        main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
+        near = main
+    else:
+        # get lattice vectors to hopp along through graph
+        projected_unit_cell = projected_crystal.cell[:2, :2]
+        a_lattice_vector = projected_unit_cell[0]
+        b_lattice_vector = projected_unit_cell[1]
+        main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
+        near = np.append(main, projection_tags['near_base'], axis=0)  # all nearest atoms
     # get k next nearest neighbours for each node
-    neighbour_tree = scipy.spatial.cKDTree(graph)
+    neighbour_tree = scipy.spatial.KDTree(graph)
     distances, indices = neighbour_tree.query(graph,  # let's get all neighbours
                                               k=50)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
     # print(projection_tags['number_of_nearest_neighbours'] * 2 + 1)
@@ -834,6 +849,46 @@ def breadth_first_search(graph, initial, projected_crystal):
                             ideal_queue.append(ideal_node + near[direction])
 
     return graph[visited], ideal
+
+
+
+def breath_first_search(graph, initial, lattice_parameter, tolerance=1):
+    """ breadth first search of atoms viewed as a graph
+        we only 
+    """
+    neighbour_tree = scipy.spatial.KDTree(graph)
+    distances, indices = neighbour_tree.query(graph,  # let's get all neighbours
+                                              k=50)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
+    visited = []  # the atoms we visited
+    angles = []  # atoms at ideal lattice
+    sub_lattice = []  # atoms in base and disregarded
+    queue = [initial]
+    queue_angles=[0]
+    
+    while queue:
+        node = queue.pop(0)
+        angle = queue_angles.pop(0)
+        if node not in visited:
+            visited.append(node)
+            angles.append(angle)
+            neighbors = indices[node]
+            for i, neighbour in enumerate(neighbors):
+                if neighbour not in visited:
+                    hopp = graph[node] - graph[neighbour]
+                    distance_to_ideal = np.linalg.norm(hopp)
+                    if np.min(np.abs(distance_to_ideal - lattice_parameter)) < tolerance:
+                        queue.append(neighbour) 
+                        queue_angles.append(np.arctan2(hopp[1], hopp[0]))
+    angles[0] = angles[1]
+    out_atoms = np.stack([graph[visited][:, 0], graph[visited][:, 1], angles])
+    return out_atoms.T, visited
+
+def delete_rim_atoms(atoms, extent, rim_distance):
+    rim = np.where(atoms[:, :2] - extent > -rim_distance)[0]
+    middle_atoms = np.delete(atoms, rim, axis=0)
+    rim = np.where(middle_atoms[:, :2].min(axis=1)<rim_distance)[0]
+    middle_atoms = np.delete(middle_atoms, rim, axis=0)
+    return middle_atoms
 
 ####################
 # Distortion Matrix
@@ -992,7 +1047,7 @@ def get_significant_vertices(vertices, distance=3):
             list of points that are all a minimum of 3 apart.
     """
 
-    tt = scipy.spatial.cKDTree(np.array(vertices))
+    tt = scipy.spatial.KDTree(np.array(vertices))
     near = tt.query_ball_point(vertices, distance)
     ideal_vertices = []
     for indices in near:
@@ -1146,21 +1201,16 @@ def undistort_stack(distortion_matrix, data):
     nimages = data.shape[0]
     done = 0
 
-    if QT_available:
-        progress = ft.ProgressDialog("Correct Scan Distortions", nimages)
+    
     for i in range(nimages):
-        if QT_available:
-            progress.set_value(i)
-        elif done < int((i + 1) / nimages * 50):
-            done = int((i + 1) / nimages * 50)
-            sys.stdout.write('\r')
-            # progress output :
-            sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
-            sys.stdout.flush()
+        done = int((i + 1) / nimages * 50)
+        sys.stdout.write('\r')
+        # progress output :
+        sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
+        sys.stdout.flush()
 
         interpolated[i, :, :] = griddata(corrected, intensity_values[i, :], (grid_x, grid_y), method='linear')
-    if QT_available:
-        progress.set_value(nimages)
+    
     print(':-)')
     print('You have successfully completed undistortion of image stack')
     return interpolated

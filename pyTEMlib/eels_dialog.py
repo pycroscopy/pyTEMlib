@@ -335,7 +335,7 @@ class CompositionWidget(object):
         self.dd = (self.energy_scale[0], self.energy_scale[1])
 
         self.dataset.metadata['experiment']['offset'] = self.energy_scale[0]
-        self.dataset.metadata['experiment']['dispersion'] = self.energy_scale[1] - self.energy_scale[0]
+        self.dataset.metadata['experiment']['dispersion'] = self.spec_dim.slope
         if 'edges' not in self.dataset.metadata or self.dataset.metadata['edges'] == {}:
             self.dataset.metadata['edges'] = {'0': {}, 'model': {}, 'use_low_loss': False}
        
