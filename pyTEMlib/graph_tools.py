@@ -3,7 +3,7 @@
 """
 import numpy as np
 # import ase
-import syss
+import sys
 
 import scipy.spatial
 import scipy.optimize
