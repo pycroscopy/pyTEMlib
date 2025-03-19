@@ -1261,7 +1261,7 @@ def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
     """Calculates second derivative of a sidpy.dataset"""
 
     dim = dataset.get_spectral_dims()
-    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
     if dataset.data_type.name == 'SPECTRAL_IMAGE':
         spectrum = dataset.view.get_spectrum()
     else:

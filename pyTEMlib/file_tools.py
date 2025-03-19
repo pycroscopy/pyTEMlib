@@ -33,8 +33,6 @@ import pyTEMlib.crystal_tools
 from pyTEMlib.config_dir import config_path
 from pyTEMlib.sidpy_tools import *
 
-from pyTEMlib.sidpy_tools import *
-
 Qt_available = True
 try:
     from PyQt5 import QtCore, QtWidgets, QtGui
@@ -114,7 +112,6 @@ class FileWidget2(ipywidgets.DOMWidget):
                                             value='None',
                                             description='directory:',
                                             disabled=False,
-                                            button_style='',
                                             layout=widgets.Layout(width='90%'))
         
         
@@ -201,8 +198,7 @@ class FileWidget3(FileWidget2):
         self.loaded_datasets = widgets.Dropdown(options=self.dataset_list,
                                                 value=self.dataset_list[0],
                                                 description='loaded datasets:',
-                                                disabled=False,
-                                                button_style='')
+                                                disabled=False)
         
         ui = widgets.HBox([select_button, add_button, self.loaded_datasets])
         display(ui)
@@ -311,14 +307,12 @@ class FileWidget(ipywidgets.DOMWidget):
                                             value='None',
                                             description='directory:',
                                             disabled=False,
-                                            button_style='',
                                             layout=widgets.Layout(width='90%'))
         self.dataset_list = ['None']
         self.loaded_datasets = widgets.Dropdown(options=self.dataset_list,
                                                 value=self.dataset_list[0],
                                                 description='loaded datasets:',
-                                                disabled=False,
-                                                button_style='')
+                                                disabled=False)
         
         self.set_options()
         ui = widgets.VBox([self.path_choice, self.select_files, widgets.HBox([select_button, add_button,
@@ -444,8 +438,7 @@ class ChooseDataset(object):
         self.select_image = widgets.Dropdown(options=self.dataset_list,
                                              value=self.dataset_list[0],
                                              description='select dataset:',
-                                             disabled=False,
-                                             button_style='')
+                                             disabled=False)
         if show_dialog:
             display(self.select_image)
 

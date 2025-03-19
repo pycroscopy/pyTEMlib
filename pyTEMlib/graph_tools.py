@@ -707,19 +707,20 @@ def find_polyhedra(atoms, optimize=True, cheat=1.0, bond_radii=None):
 
     if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
         positions = atoms.positions[:, :2]
+        print('2D')
     else:
         positions = atoms.positions
     tetrahedra = scipy.spatial.Delaunay(positions)
 
     voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms, optimize=optimize, bond_radii=bond_radii)
     
-    if positions.ndim < 3:
+    if positions.shape[1] < 3:
         r_vv = np.array(r_vv)*1.
     overlapping_pairs = find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=cheat)
 
     clusters, visited_all = find_interstitial_clusters(overlapping_pairs)
 
-    if positions.ndim < 3:
+    if positions.shape[1] < 3:
         rings = get_polygons(atoms, clusters, voronoi_tetrahedrons)
         return rings
     else:
