@@ -42,7 +42,6 @@ from pyTEMlib.xrpa_x_sections import x_sections
 
 import sidpy
 from sidpy.proc.fitter import SidFitter
-from sidpy.base.num_utils import get_slope
 
 # we have a function called find peaks - is it necessary?
 # or could we just use scipy.signal import find_peaks
@@ -653,16 +652,16 @@ def fit_plasmon(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float
 def angle_correction(spectrum):
 
     acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']
-    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
     # eff_beta = effective_collection_angle(energy_scale, spectrum.metadata['experiment']['convergence_angle'],
     #                                     spectrum.metadata['experiment']['collection_angle'],acceleration_voltage)
    
     
-    epc = energy_scale[1] - energy_scale[0]  # input('ev per channel : ');
+    epc = energy_scale.slope  # input('ev per channel : ');
 
     alpha = spectrum.metadata['experiment']['convergence_angle']  # input('Alpha (mrad) : ');
     beta = spectrum.metadata['experiment']['collection_angle']# input('Beta (mrad) : ');
-    e = energy_scale
+    e = energy_scale.values
     e0 = acceleration_voltage/1000 # input('E0 (keV) : ');
 
     T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
@@ -1270,7 +1269,7 @@ def second_derivative(dataset: sidpy.Dataset, sensitivity: float=2.5) -> None:
 
     spec = scipy.ndimage.gaussian_filter(spectrum, 3)
 
-    dispersion = get_slope(energy_scale)
+    dispersion = energy_scale.slope
     second_dif = np.roll(spec, -3) - 2 * spec + np.roll(spec, +3)
     second_dif[:3] = 0
     second_dif[-3:] = 0
@@ -1406,8 +1405,9 @@ def identify_edges(dataset: sidpy.Dataset, noise_level: float=2.0):
     
     """
     dim = dataset.get_spectral_dims()
-    energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
-    dispersion = get_slope(energy_scale)
+    energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
+    dispersion = energy_scale.slope
+    
     spec = scipy.ndimage.gaussian_filter(dataset, 3/dispersion)  # smooth with 3eV wideGaussian
 
     first_derivative = spec - np.roll(spec, +2) 

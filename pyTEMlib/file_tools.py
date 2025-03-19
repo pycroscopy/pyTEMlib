@@ -484,7 +484,7 @@ class ChooseDataset(object):
             self.dataset = self.datasets[self.key]
             self.dataset.title = self.dataset.title.split('/')[-1]
             self.dataset.title = self.dataset.title.split('/')[-1]
-
+    
 
 def add_to_dict(file_dict, name):
     full_name = os.path.join(file_dict['directory'], name)
