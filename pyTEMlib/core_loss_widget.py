@@ -500,8 +500,7 @@ class CoreLoss(object):
             self.core_loss_tab[11, 0].value = edge['areal_density']
             self.core_loss_tab[11, 2].value = 'a.u.'
         else:
-            dispersion = self.parent.energy_scale[1] - \
-                self.parent.energy_scale[0]
+            dispersion = self.parent.energy_scale.slope
             self.core_loss_tab[11, 0].value = np.round(
                 edge['areal_density']/self.dataset.metadata['experiment']['flux_ppm']*1e-6, 2)
             self.core_loss_tab[11, 2].value = 'atoms/nm²'
@@ -663,8 +662,7 @@ class CoreLoss(object):
 
         edge['areal_density'] = self.core_loss_tab[11, 0].value
         if self.parent.y_scale != 1.0:
-            dispersion = self.parent.energy_scale[1] - \
-                self.parent.energy_scale[0]
+            dispersion = self.parent.energy_scale.slope
             edge['areal_density'] = self.core_loss_tab[11, 0].value * \
                 self.dataset.metadata['experiment']['flux_ppm']/1e-6
         if 'model' in self.edges:

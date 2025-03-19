@@ -44,8 +44,6 @@ except ModuleNotFoundError:
 
 Dimension = sidpy.Dimension
 
-# Austin commented the line below - it is not used anywhere in the code, and it gives import errors 9-14-2024
-# get_slope = sidpy.base.num_utils.get_slopes
 __version__ = '2024.9.14'
 
 from traitlets import Unicode, Bool, validate, TraitError

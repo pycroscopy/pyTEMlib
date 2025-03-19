@@ -3,7 +3,7 @@
 """
 import numpy as np
 # import ase
-import sys
+import syss
 
 import scipy.spatial
 import scipy.optimize
@@ -19,7 +19,7 @@ import pyTEMlib.crystal_tools
 from tqdm.auto import tqdm, trange
 
 from .graph_viz import *
-
+QT_available = False
 
 ###########################################################################
 # utility functions
@@ -1200,21 +1200,16 @@ def undistort_stack(distortion_matrix, data):
     nimages = data.shape[0]
     done = 0
 
-    if QT_available:
-        progress = ft.ProgressDialog("Correct Scan Distortions", nimages)
+    
     for i in range(nimages):
-        if QT_available:
-            progress.set_value(i)
-        elif done < int((i + 1) / nimages * 50):
-            done = int((i + 1) / nimages * 50)
-            sys.stdout.write('\r')
-            # progress output :
-            sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
-            sys.stdout.flush()
+        done = int((i + 1) / nimages * 50)
+        sys.stdout.write('\r')
+        # progress output :
+        sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
+        sys.stdout.flush()
 
         interpolated[i, :, :] = griddata(corrected, intensity_values[i, :], (grid_x, grid_y), method='linear')
-    if QT_available:
-        progress.set_value(nimages)
+    
     print(':-)')
     print('You have successfully completed undistortion of image stack')
     return interpolated

@@ -907,7 +907,7 @@ def get_profile(dataset, line, spline_order=-1):
     """
     xv, yv = get_line_selection_points(line)
     if dataset.data_type.name == 'IMAGE':
-        image_dims = dataset.get_image_dims(return_axis)
+        image_dims = dataset.get_image_dims(return_axis=True)
         xv /= image_dims[0].slope
         yv /= image_dims[1].slope
         profile = scipy.ndimage.map_coordinates(np.array(dataset), [xv, yv])
