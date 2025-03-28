@@ -875,7 +875,6 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
         else:
             if isinstance(datasets, dict):
                 dataset_dict = datasets
-
             else:    
                 dataset_dict = {}
                 for index, dataset in enumerate(datasets):
@@ -917,23 +916,28 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                         dset.title = dset.title + '_SI'
                     dset = dset.T
                     dset.title = dset.title[11:]
+                    dset.add_provenance('pyTEMlib', 'open_file', version=pyTEMlib.__version__, linked_data='emi_converted_by_hyperspy')
                     dataset_dict[f'Channel_{index:03d}'] = dset
+
                 return dataset_dict
             except ImportError:
                 print('This file type needs hyperspy to be installed to be able to be read')
                 return
         elif extension == '.emd':
             reader = SciFiReaders.EMDReader(filename, sum_frames=sum_frames)
-            
+            provenance =  'SciFiReader.EMDReader'
         elif 'edax' in extension.lower():
             if 'h5' in extension:
                 reader = SciFiReaders.EDAXReader(filename)
+                provenance = 'SciFiReader.EDAXReader'
 
         elif extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
-
+            provenance = 'SciFiReader.NionReader'
+           
         elif extension in ['.mrc']:
             reader = SciFiReaders.MRCReader(filename)
+            provenance = 'SciFiReader.MRCReader'
 
         else:
             raise NotImplementedError('extension not supported')
@@ -985,6 +989,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
         if isinstance(dset, dict):
             dataset_dict = dset
             for dataset in dataset_dict.values():
+                dataset.add_provenance('pyTEMlib', 'open_file', version=pyTEMlib.__version__, linked_data =provenance)
                 dataset.metadata['filename'] = filename
 
         elif isinstance(dset, list):

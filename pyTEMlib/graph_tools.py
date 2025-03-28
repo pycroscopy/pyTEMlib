@@ -808,15 +808,18 @@ def breadth_first_search2(graph, initial, projected_crystal):
         a_lattice_vector = projection_tags['lattice_vector']['a']
         b_lattice_vector = projection_tags['lattice_vector']['b']
         main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
-        near = main
+        near = []
     else:
         # get lattice vectors to hopp along through graph
         projected_unit_cell = projected_crystal.cell[:2, :2]
         a_lattice_vector = projected_unit_cell[0]
         b_lattice_vector = projected_unit_cell[1]
         main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
-        near = np.append(main, projection_tags['near_base'], axis=0)  # all nearest atoms
+        near = projection_tags['near_base']  # all nearest atoms
     # get k next nearest neighbours for each node
+    main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
+    near = np.append(main, near, axis=0) 
+
     neighbour_tree = scipy.spatial.KDTree(graph)
     distances, indices = neighbour_tree.query(graph,  # let's get all neighbours
                                               k=50)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
@@ -852,10 +855,17 @@ def breadth_first_search2(graph, initial, projected_crystal):
 
 
 
-def breath_first_search(graph, initial, lattice_parameter, tolerance=1):
+def breadth_first_search_felxible(graph, initial, lattice_parameter, tolerance=1):
     """ breadth first search of atoms viewed as a graph
-        we only 
+        This is a rotational invariant search of atoms in a lattice, and returns the angles of unit cells.
+        We only use the ideal lattice parameter to determine the lattice.  
     """
+    if isinstance(lattice_parameter, ase.Atoms):
+        lattice_parameter = lattice_parameter.cell.lengths()[:2]
+    elif isinstance(lattice_parameter, float):
+        lattice_parameter = [lattice_parameter]
+    lattice_parameter = np.array(lattice_parameter)
+
     neighbour_tree = scipy.spatial.KDTree(graph)
     distances, indices = neighbour_tree.query(graph,  # let's get all neighbours
                                               k=50)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
