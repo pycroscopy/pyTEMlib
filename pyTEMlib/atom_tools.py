@@ -61,6 +61,8 @@ def find_atoms(image, atom_size=0.1, threshold=0.):
         threshold = np.std(im)
     atoms = blob_log(im, max_sigma=atom_size/scale_x, threshold=threshold)
 
+    
+
     return atoms
 
 

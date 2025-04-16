@@ -599,12 +599,11 @@ def demon_registration(dataset, verbose=False):
     demon_registered.title = 'Non-Rigid Registration'
     demon_registered.source = dataset.title
 
-    demon_registered.metadata = {'analysis': 'non-rigid demon registration'}
+    demon_registered.metadata =dataset.metadata.copy()
+    if 'analysis' not in demon_registered.metadata:
+        demon_registered.metadata['analysis'] = {}
+    demon_registered.metadata['analysis']['non_rigid_demon_registration'] = {'method': 'simpleITK'}
     demon_registered.metadata['experiment'] = dataset.metadata['experiment'].copy()
-    if 'input_crop' in dataset.metadata:
-        demon_registered.metadata['input_crop'] = dataset.metadata['input_crop']
-    if 'input_shape' in dataset.metadata:
-        demon_registered.metadata['input_shape'] = dataset.metadata['input_shape']
     demon_registered.metadata['input_dataset'] = dataset.source
     demon_registered.data_type = 'IMAGE_STACK'
     return demon_registered
@@ -613,7 +612,7 @@ def demon_registration(dataset, verbose=False):
 ###############################
 # Rigid Registration New 05/09/2020
 
-def rigid_registration(dataset, sub_pixel=True):
+def rigid_registration(dataset, normalization=None):
     """
     Rigid registration of image stack with pixel accuracy
 
@@ -635,51 +634,32 @@ def rigid_registration(dataset, sub_pixel=True):
         raise TypeError('We need a sidpy.Dataset')
     if dataset.data_type.name != 'IMAGE_STACK':
         raise TypeError('Registration makes only sense for an image stack')
-    
-    frame_dim = []
-    spatial_dim = []
-    selection = []
-    
-    for i, axis in dataset._axes.items():
-        if axis.dimension_type.name == 'SPATIAL':
-            spatial_dim.append(i)
-            selection.append(slice(None))
-        else:
-            frame_dim.append(i)
-            selection.append(slice(0, 1))
-    
-    if len(spatial_dim) != 2:
-        print('need two spatial dimensions')
-    if len(frame_dim) != 1:
-        print('need one frame dimensions')
-    
-    nopix = dataset.shape[spatial_dim[0]]
-    nopiy = dataset.shape[spatial_dim[1]]
-    nimages = dataset.shape[frame_dim[0]]
-    
-    print('Stack contains ', nimages, ' images, each with', nopix, ' pixels in x-direction and ', nopiy,
-          ' pixels in y-direction')
-    
-    fixed = dataset[tuple(selection)].squeeze().compute()
-    fft_fixed = np.fft.fft2(fixed)
+
+    if isinstance (normalization, str):
+        if normalization.lower() != 'phase':
+            nomralization = None
+    else:
+        normalization = None
+
+    if dataset.get_dimensions_by_type('TEMPORAL')[0] != 0:
+        raise TypeError('Image stack does not have correct frame dimension')
+        
+    stack_dim = dataset.get_dimensions_by_type('TEMPORAL', return_axis=True)[0]
+    image_dim = dataset.get_image_dims(return_axis=True)
+    if len(image_dim) != 2:
+        raise ValueError('need at least two SPATIAL dimension for an image stack')
     
     relative_drift = [[0., 0.]]
-    
-    for i in trange(nimages):
-        selection[frame_dim[0]] = slice(i, i+1)
-        moving = dataset[tuple(selection)].squeeze().compute()
-        fft_moving = np.fft.fft2(moving)
-        if sub_pixel:
-            shift = skimage.registration.phase_cross_correlation(fft_fixed, fft_moving, upsample_factor=1000,
-                                                                 space='fourier')[0]
-        else:    
-            image_product = fft_fixed * fft_moving.conj()
-            cc_image = np.fft.fftshift(np.fft.ifft2(image_product))
-            shift = np.array(ndimage.maximum_position(cc_image.real))-cc_image.shape[0]/2
-        fft_fixed = fft_moving
-        relative_drift.append(shift)
-    rig_reg, drift = rig_reg_drift(dataset, relative_drift)
-    crop_reg, input_crop = crop_image_stack(rig_reg, drift)
+    im1 = np.fft.fft2(np.array(dataset[0]))
+    for i in range(1, len(stack_dim)):
+        im2 = np.fft.fft2(np.array(dataset[i]))
+        shift, error, _ = skimage.registration.phase_cross_correlation(im1, im2, normalization=normalization, space='fourier')
+        print(shift)
+        im1 = im2.copy()
+        relative_drift.append(shift)    
+        
+    rig_reg, drift = pyTEMlib.image_tools.rig_reg_drift(dataset, relative_drift)
+    crop_reg, input_crop = pyTEMlib.image_tools.crop_image_stack(rig_reg, drift)
     
     rigid_registered = sidpy.Dataset.from_array(crop_reg, 
                                                 title='Rigid Registration', 
@@ -688,18 +668,18 @@ def rigid_registration(dataset, sub_pixel=True):
                                                 units=dataset.units)
     rigid_registered.title = 'Rigid_Registration'
     rigid_registered.source = dataset.title
-    rigid_registered.metadata = {'analysis': 'rigid sub-pixel registration', 'drift': drift,
-                                 'input_crop': input_crop, 'input_shape': dataset.shape[1:]}
+    rigid_registered.metadata['analysis'] = {'rigid_registration': {'drift': drift,
+                                 'input_crop': input_crop, 'input_shape': dataset.shape[1:]}}
     rigid_registered.metadata['experiment'] = dataset.metadata['experiment'].copy()
     rigid_registered.set_dimension(0, sidpy.Dimension(np.arange(rigid_registered.shape[0]), 
                                           name='frame', units='frame', quantity='time',
                                           dimension_type='temporal'))
     
-    array_x = dataset._axes[spatial_dim[0]][input_crop[0]:input_crop[1]].values
+    array_x = image_dim[0].values[input_crop[0]:input_crop[1]]
     rigid_registered.set_dimension(1, sidpy.Dimension(array_x,
                                           'x', units='nm', quantity='Length',
                                           dimension_type='spatial'))
-    array_y = dataset._axes[spatial_dim[1]][input_crop[2]:input_crop[3]].values
+    array_y =image_dim[1].values[input_crop[2]:input_crop[3]]
     rigid_registered.set_dimension(2, sidpy.Dimension(array_y,
                                           'y', units='nm', quantity='Length',
                                           dimension_type='spatial'))
@@ -778,13 +758,12 @@ def crop_image_stack(rig_reg, drift):
     -------
     numpy array
     """
+    xpmax = int(rig_reg.shape[1] - -np.floor(np.min(np.array(drift)[:, 0])))
+    xpmin = int(np.ceil(np.max(np.array(drift)[:, 0])))
+    ypmax = int(rig_reg.shape[1] - -np.floor(np.min(np.array(drift)[:, 1])))
+    ypmin = int(np.ceil(np.max(np.array(drift)[:, 1])))
 
-    xpmin = int(-np.floor(np.min(np.array(drift)[:, 0])))
-    xpmax = int(rig_reg.shape[1] - np.ceil(np.max(np.array(drift)[:, 0])))
-    ypmin = int(-np.floor(np.min(np.array(drift)[:, 1])))
-    ypmax = int(rig_reg.shape[2] - np.ceil(np.max(np.array(drift)[:, 1])))
-
-    return rig_reg[:, xpmin:xpmax, ypmin:ypmax], [xpmin, xpmax, ypmin, ypmax]
+    return rig_reg[:, xpmin:xpmax, ypmin:ypmax:], [xpmin, xpmax, ypmin, ypmax]
 
 
 class ImageWithLineProfile:
@@ -1416,8 +1395,6 @@ def decon_lr(o_image, probe,  verbose=False):
 
     response_ft = fftpack.fft2(probe_c)
 
-    
-
     ap_angle = o_image.metadata['experiment']['convergence_angle']
     if ap_angle > .1:
         ap_angle /= 1000  # now in rad
@@ -1452,7 +1429,7 @@ def decon_lr(o_image, probe,  verbose=False):
     # de = 100
     dest = 100
     i = 0
-    while abs(dest) > 0.001:  # or abs(de)  > .025:
+    while abs(dest) > 0.0001:  # or abs(de)  > .025:
         i += 1
         error_old = np.sum(error.real)
         est_old = est.copy()
