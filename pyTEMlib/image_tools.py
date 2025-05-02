@@ -182,24 +182,21 @@ def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
     assert isinstance(dset, sidpy.Dataset), 'Expected a sidpy Dataset'
 
     selection = []
-    image_dim = []
-    # image_dim = get_image_dims(sidpy.DimensionTypes.SPATIAL)
-
+    image_dims = pyTEMlib.sidpy_tools.get_image_dims(dset)
     if dset.data_type == sidpy.DataType.IMAGE_STACK:
-        image_dim = dset.get_image_dims()
         stack_dim = dset.get_dimensions_by_type('TEMPORAL')
 
-        if len(image_dim) != 2:
+        if len(image_dims) != 2:
             raise ValueError('need at least two SPATIAL dimension for an image stack')
 
         for i in range(dset.ndim):
-            if i in image_dim:
+            if i in image_dims:
                 selection.append(slice(None))
             if len(stack_dim) == 0:
-                stack_dim = i
+                stack_dims = i
                 selection.append(slice(None))
             elif i in stack_dim:
-                stack_dim = i
+                stack_dims = i
                 selection.append(slice(None))
             else:
                 selection.append(slice(0, 1))
@@ -229,7 +226,6 @@ def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
 
     fft_dset.set_dimension(0, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[0],
                                                                              d=dset.x[1]-dset.x[0])),
-
                                               name='u', units=units_x, dimension_type='RECIPROCAL',
                                               quantity='reciprocal_length'))
     fft_dset.set_dimension(1, sidpy.Dimension(np.fft.fftshift(np.fft.fftfreq(new_image.shape[1],
@@ -602,9 +598,10 @@ def demon_registration(dataset, verbose=False):
     demon_registered.metadata =dataset.metadata.copy()
     if 'analysis' not in demon_registered.metadata:
         demon_registered.metadata['analysis'] = {}
-    demon_registered.metadata['analysis']['non_rigid_demon_registration'] = {'method': 'simpleITK'}
-    demon_registered.metadata['experiment'] = dataset.metadata['experiment'].copy()
-    demon_registered.metadata['input_dataset'] = dataset.source
+    demon_registered.metadata['analysis']['non_rigid_demon_registration'] = {'package': 'simpleITK',
+                                                                             'method': 'DiscreteGaussian',
+                                                                             'variance': 2,
+                                                                             'input_dataset': dataset.source}
     demon_registered.data_type = 'IMAGE_STACK'
     return demon_registered
 
@@ -676,13 +673,13 @@ def rigid_registration(dataset, normalization=None):
                                           dimension_type='temporal'))
     
     array_x = image_dim[0].values[input_crop[0]:input_crop[1]]
-    rigid_registered.set_dimension(1, sidpy.Dimension(array_x,
-                                          'x', units='nm', quantity='Length',
-                                          dimension_type='spatial'))
+    rigid_registered.set_dimension(1, sidpy.Dimension(array_x, name='x',
+                                                      units='nm', quantity='Length',
+                                                      dimension_type='spatial'))
     array_y =image_dim[1].values[input_crop[2]:input_crop[3]]
-    rigid_registered.set_dimension(2, sidpy.Dimension(array_y,
-                                          'y', units='nm', quantity='Length',
-                                          dimension_type='spatial'))
+    rigid_registered.set_dimension(2, sidpy.Dimension(array_y, name='y',
+                                                      units='nm', quantity='Length',
+                                                      dimension_type='spatial'))
     rigid_registered.data_type = 'IMAGE_STACK'
     return rigid_registered.rechunk({0: 'auto', 1: -1, 2: -1})
 

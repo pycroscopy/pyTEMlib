@@ -107,6 +107,7 @@ def get_chi(ab, size_x, size_y, verbose=False):
     return chi, aperture
 
 
+
 def print_aberrations(ab):
     from IPython.display import HTML, display
     output = '<html><body>'
@@ -132,6 +133,117 @@ def print_aberrations(ab):
 
     display(HTML(output))
 
+def pol2cart(rho, theta):
+    x = rho * np.cos(theta)
+    y = rho * np.sin(theta)
+    return x, y
+
+def ceos_to_nion(ab):
+    aberrations = {'C10': 0, 'C12a': 0, 'C12b': 0, 'C21a': 0, 'C21b': 0, 'C23a': 0, 'C23b': 0, 'C30': 0.,
+                   'C32a': 0., 'C32b': -0., 'C34a': 0., 'C34b': 0., 'C41a': 0., 'C41b': -0., 'C43a': 0.,
+                   'C43b': -0., 'C45a': -0., 'C45b': -0., 'C50': 0., 'C52a': -0., 'C52b': 0.,
+                   'C54a': -0., 'C54b': -0., 'C56a': -0., 'C56b': 0., 'C70': 0.}
+    aberrations['acceleration_voltage'] = 200000
+    for key in ab.keys():
+        if key == 'C1':
+            aberrations['C10'] = ab['C10']
+        elif key == 'A1-a':
+            x, y = pol2cart(ab['A1-a'], ab['A1-p'])
+            aberrations['C12a'] = x
+            aberrations['C12b'] = y
+        elif key == 'B2-a':
+            x, y = pol2cart(ab['B2-a'], ab['B2-p'])
+            aberrations['C21a'] = 3 * x
+            aberrations['C21b'] = 3 * y
+        elif key == 'A2-a':
+            x, y = pol2cart(ab['A2-a'], ab['A2-p'])
+            aberrations['C23a'] = x
+            aberrations['C23b'] = y
+        elif key == 'C3':
+            aberrations['C30'] = ab['C3']
+        elif key == 'S3-a':
+            x, y = pol2cart(ab['S3-a'], ab['S3-p'])
+            aberrations['C32a'] = 4 * x
+            aberrations['C32b'] = 4 * y
+        elif key == 'A3-a':
+            x, y = pol2cart(ab['A3-a'], ab['A3-p'])
+            aberrations['C34a'] = x
+            aberrations['C34b'] = y
+        elif key == 'B4-a':
+            x, y = pol2cart(ab['B4-a'], ab['B4-p'])
+            aberrations['C41a'] = 4 * x
+            aberrations['C41b'] = 4 * y
+        elif key == 'D4-a':
+            x, y = pol2cart(ab['D4-a'], ab['D4-p'])
+            aberrations['C43a'] = 4 * x
+            aberrations['C43b'] = 4 * y
+        elif key == 'A4-a':
+            x, y = pol2cart(ab['A4-a'], ab['A4-p'])
+            aberrations['C45a'] = x
+            aberrations['C45b'] = y
+        elif key == 'C5':
+            aberrations['C50'] = ab['C5']
+        elif key == 'A5-a':
+            x, y = pol2cart(ab['A5-a'], ab['A5-p'])
+            aberrations['C56a'] = x
+            aberrations['C56b'] = y
+    return aberrations
+
+def cart2pol(x, y):
+    theta = np.arctan2(y, x)
+    rho = np.hypot(x, y)
+    return theta, rho
+
+def nion_to_ceos(ab):
+    aberrations = {'C1': 0, 'A1-a': 0, 'A1-b': 0, 'B2-a': 0, 'B2-p': 0, 'A2-a': 0, 'A2-p': 0, 'C3': 0.,
+                   'S3-a': 0., 'S3-p': -0., 'A3-a': 0., 'A3-p': 0., 'B4-a': 0., 'B4-p': -0., 'D4-a': 0.,
+                   'D4-p': -0., 'A4-s': -0., 'A4-p': -0., 'C5': 0., 'A5-a': -0., 'A5-p': 0.}
+    aberrations['acceleration_voltage'] = 200000
+    for key in ab.keys():
+        if key == 'C10':
+            aberrations['C1'] = ab['C10']
+        elif key == 'C12a':
+            r, p = cart2pol(ab['C12a'], ab['C12b'])
+            aberrations['A1-a'] = r
+            aberrations['A1-p'] = p
+        elif key == 'C21a':
+            r, p = cart2pol(ab['C21a'], ab['C21b'])
+            aberrations['B2-a'] = r/3
+            aberrations['B2-p'] = p
+        elif key == 'C23a':
+            r, p = cart2pol(ab['C23a'], ab['C23b'])
+            aberrations['A2-a'] = r
+            aberrations['A2-p'] = p
+        elif key == 'C30':
+            aberrations['C3'] = ab['C30']
+        elif key == 'C32a':
+            r, p = cart2pol(ab['C32a'], ab['C32b'])
+            aberrations['S3-a'] = r/4
+            aberrations['S3-p'] = p
+        elif key == 'C34a':
+            r, p = cart2pol(ab['C34a'], ab['C34b'])
+            aberrations['A3-a'] = r
+            aberrations['A3-p'] = p
+        elif key == 'C41a':
+            r, p = cart2pol(ab['C41a'], ab['C41b'])
+            aberrations['B4-a'] = r/4
+            aberrations['B4-p'] = p
+        elif key == 'C43a':
+            r, p = cart2pol(ab['C43a'], ab['C43b'])
+            aberrations['D4-a'] = r/4
+            aberrations['D4-p'] = p
+        elif key == 'C31a':
+            r, p = cart2pol(ab['C41a'], ab['C41b'])
+            aberrations['A4-a'] = r
+            aberrations['A4-p'] = p
+        elif key == 'C50':
+            aberrations['C5'] = ab['C50']
+        elif key == 'C56a':
+            r, p = cart2pol(ab['C56a'], ab['C56b'])
+            aberrations['A5-a'] = r
+            aberrations['A5-p'] = p
+
+    return aberrations
 
 def get_ronchigram(size, ab, scale='mrad'):
     """ Get Ronchigram
@@ -447,15 +559,13 @@ def get_target_aberrations(TEM_name, acceleration_voltage):
               'C30': 123,
               'C32a': 95.3047364258614, 'C32b': -189.72105710231244, 'C34a': -47.45099594807912, 'C34b': -94.67424667529909,
               'C41a': -905.31842572806, 'C41b': 981.316128853203, 'C43a': 4021.8433526960034, 'C43b': 131.72716642732158, 
-              'C45a': -4702.390968272048,  'C45b': -208.25028574642903, 'C50': -663.1, 
-              'C50': 552000., 'C52a': -0., 'C52b': 0.,
+              'C45a': -4702.390968272048,  'C45b': -208.25028574642903, 'C50': 552000., 'C52a': -0., 'C52b': 0.,
               'C54a': -0., 'C54b': -0., 'C56a': -36663.643489934424, 'C56b': 21356.079837905396,
               'acceleration_voltage': 200000,
               'FOV': 34.241659495148205,
               'Cc': 1* 1e6,
               'convergence_angle': 30,
               'wavelength': 0.0025079340450548005}
- 
     return ab
 
 

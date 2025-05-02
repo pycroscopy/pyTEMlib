@@ -989,7 +989,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
         if isinstance(dset, dict):
             dataset_dict = dset
             for dataset in dataset_dict.values():
-                dataset.add_provenance('pyTEMlib', 'open_file', version=pyTEMlib.__version__, linked_data =provenance)
+                dataset.add_provenance('pyTEMlib', 'open_file', version=pyTEMlib.__version__, linked_data = 'SciFiReader')
                 dataset.metadata['filename'] = filename
 
         elif isinstance(dset, list):
