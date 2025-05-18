@@ -1457,10 +1457,12 @@ def read_adorned_metadata(image):
     root = ET.fromstring(xml_str)
     metadata_dict = etree_to_dict(root)
     detector = 'detector'
-    if 'Detectors' in metadata_dict['Metadata']['Detectors']['ScanningDetector']:
-        if 'ScanningDetector' in metadata_dict['Metadata']['Detectors']['ScanningDetector']:
+    
+    if 'Detectors' in metadata_dict['Metadata']:
+        if 'ScanningDetector' in metadata_dict['Metadata']['Detectors']:
             detector = metadata_dict['Metadata']['Detectors']['ScanningDetector']['DetectorName']
-
+        elif 'ImagingDetector' in metadata_dict['Metadata']['Detectors']:
+            detector = metadata_dict['Metadata']['Detectors']['ImagingDetector']['DetectorName']
     segment = ''
     if 'CustomPropertyGroup' in  metadata_dict['Metadata']:
         if 'CustomProperties' in metadata_dict['Metadata']['CustomPropertyGroup']:
@@ -1476,6 +1478,29 @@ def read_adorned_metadata(image):
                                     segment = '_'+item['@value']
     return detector+segment, metadata_dict['Metadata']
 
+
+def get_metadata_from_adorned(ds):
+    ds.metadata['experiment']= {}
+    if 'Optics' in ds.original_metadata:
+        if 'LastMeasuredScreenCurrent' in ds.original_metadata['Optics']:
+            ds.metadata['experiment']['current'] = float(ds.original_metadata['Optics']['LastMeasuredScreenCurrent'])
+        if 'ConvergenceAngle' in ds.original_metadata['Optics']:
+            ds.metadata['experiment']['convergence_angle'] = float(ds.original_metadata['Optics']['ConvergenceAngle'])  
+        if 'AccelerationVoltage' in ds.original_metadata['Optics']:
+            ds.metadata['experiment']['acceleration_voltage'] = float(ds.original_metadata['Optics']['AccelerationVoltage'])    
+        if 'SpotIndex' in ds.original_metadata['Optics']:
+            ds.metadata['experiment']['spot_size'] = ds.original_metadata['Optics']['SpotIndex']    
+    if' StagesSettings' in ds.original_metadata:
+        if 'StagePosition' in ds.original_metadata['StagesSettings']:
+            ds.metadata['experiment']['stage_position'] = ds.original_metadata['StagesSettings']['StagePosition']
+    if 'Detectors' in ds.original_metadata:
+        if 'ScanningDetector' in ds.original_metadata['Detectors']:
+            ds.metadata['experiment']['detector'] = ds.original_metadata['Detectors']['ScanningDetector']['DetectorName']
+        elif 'ImagingDetector' in ds.original_metadata['Detectors']:
+            ds.metadata['experiment']['detector'] = ds.original_metadata['Detectors']['ImagingDetector']['DetectorName'] 
+            ds.metadata['experiment']['exposure_time'] = ds.original_metadata['Detectors']['ImagingDetector']['ExposureTime']       
+            
+    
 def adorned_to_sidpy(images):
     """
     Convert a list of adorned images to a dictionary of Sidpy datasets.
@@ -1519,6 +1544,7 @@ def adorned_to_sidpy(images):
             ds.set_dimension(1, sidpy.Dimension(np.arange(image.data.shape[1]) * pixel_size_x_nm,
                                           name='x', units='nm', quantity='Length', dimension_type='spatial'))
 
+        get_metadata_from_adorned(ds)
     return data_sets
 
 
