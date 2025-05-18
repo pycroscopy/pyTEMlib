@@ -133,6 +133,47 @@ def print_aberrations(ab):
 
     display(HTML(output))
 
+
+
+def print_aberrations_polar(ab):
+    from IPython.display import HTML, display
+    
+    ab['C12_r'], ab['C12_phi'] = cart2pol(ab['C12a'], ab['C12b'])
+    ab['C21_r'], ab['C21_phi'] = cart2pol(ab['C21a'], ab['C21b'])
+    ab['C23_r'], ab['C23_phi'] = cart2pol(ab['C23a'], ab['C23b'])
+    ab['C32_r'], ab['C32_phi'] = cart2pol(ab['C32a'], ab['C32b'])
+    ab['C34_r'], ab['C34_phi'] = cart2pol(ab['C34a'], ab['C34b'])
+    ab['C41_r'], ab['C41_phi'] = cart2pol(ab['C41a'], ab['C41b'])
+    ab['C43_r'], ab['C43_phi'] = cart2pol(ab['C43a'], ab['C43b'])
+    ab['C45_r'], ab['C45_phi'] = cart2pol(ab['C45a'], ab['C45b'])
+    ab['C52_r'], ab['C52_phi'] = cart2pol(ab['C52a'], ab['C52b'])
+    ab['C54_r'], ab['C54_phi'] = cart2pol(ab['C54a'], ab['C54b'])
+    ab['C56_r'], ab['C56_phi'] = cart2pol(ab['C56a'], ab['C56b'])
+    
+    output = '<html><body>'
+    output += f"Aberrations [nm] for acceleration voltage: {ab['acceleration_voltage'] / 1e3:.0f} kV"
+    output += '<table>'
+    output += f"<tr><td> C10 </td><td> {ab['C10']:.1f} </tr>"
+    output += f"<tr><td> C12(A1): r </td><td> {ab['C12_r']:20.1f} <td> φ  </td><td> {ab['C12_phi']:20.1f} </tr>"
+    output += f"<tr><td> C21a (B2): r</td><td> {ab['C21_r']:20.1f} <td> φ </td><td> {ab['C21_phi']:20.1f} "
+    output += f"    <td> C23a (A2) </td><td> {ab['C23_r']:20.1f} <td> φ  </td><td> {ab['C23_phi']:20.1f} </tr>"
+    output += f"<tr><td> C30 </td><td> {ab['C30']:.1f} </tr>"
+    output += f"<tr><td> C32 (S3) </td><td> {ab['C32_r']:20.1f} <td> φ </td><td> {ab['C32_phi']:20.1f} "
+    output += f"<td> C34a (A3) </td><td> {ab['C34a']:20.1f} <td> φ  </td><td> {ab['C34_phi']:20.1f} </tr>"
+    output += f"<tr><td> C41 (B4) </td><td> {ab['C41_r']:.3g} <td> φ  </td><td> {ab['C41_phi']:20.1f} "
+    output += f"    <td> C43 (D4) </td><td> {ab['C43_r']:.3g} <td> φ (D4) </td><td> {ab['C43_phi']:20.1f} "
+    output += f"    <td> C45 (A4) </td><td> {ab['C45_r']:.3g} <td> φ (A4)</td><td> {ab['C45_phi']:20.1f} </tr>"
+    output += f"<tr><td> C50 </td><td> {ab['C50']:.3g} </tr>"
+    output += f"<tr><td> C52 </td><td> {ab['C52a']:.3g} <td> φ </td><td> {ab['C52_phi']:20.1f} "
+    output += f"<td> C54 </td><td> {ab['C54_r']:.3g} <td> C54 φ </td><td> {ab['C54_phi']:.1f} "
+    output += f"<td> C56 </td><td> {ab['C56_r']:.3g} <td> C56  </td><td> {ab['C56_phi']:.1f} </tr>"
+    output += f"<tr><td> Cc </td><td> {ab['Cc']:.3g} </tr>"
+
+    output += '</table></body></html>'
+
+    display(HTML(output))
+
+
 def pol2cart(rho, theta):
     x = rho * np.cos(theta)
     y = rho * np.sin(theta)
@@ -187,6 +228,51 @@ def ceos_to_nion(ab):
             x, y = pol2cart(ab['A5-a'], ab['A5-p'])
             aberrations['C56a'] = x
             aberrations['C56b'] = y
+    return aberrations
+
+def ceos_carth_to_nion(ab):
+    aberrations = {'C10': 0, 'C12a': 0, 'C12b': 0, 'C21a': 0, 'C21b': 0, 'C23a': 0, 'C23b': 0, 'C30': 0.,
+                   'C32a': 0., 'C32b': -0., 'C34a': 0., 'C34b': 0., 'C41a': 0., 'C41b': -0., 'C43a': 0.,
+                   'C43b': -0., 'C45a': -0., 'C45b': -0., 'C50': 0., 'C52a': -0., 'C52b': 0.,
+                   'C54a': -0., 'C54b': -0., 'C56a': -0., 'C56b': 0., 'C70': 0.}
+    aberrations['acceleration_voltage'] = 200000
+    for key in ab.keys():
+        if key == 'C1':
+            aberrations['C10'] = ab['C1'][0]*1e9
+        elif key == 'A1':
+            aberrations['C12a'] = ab['A1'][0]*1e9
+            aberrations['C12b'] = ab['A1'][1]*1e9
+        elif key == 'B2':
+            print('B2', ab['B2'])
+            aberrations['C21a'] = 3 * ab['B2'][0]*1e9
+            aberrations['C21b'] = 3 * ab['B2'][1]*1e9
+        elif key == 'A2':
+            aberrations['C23a'] = ab['A2'][0]*1e9
+            aberrations['C23b'] = ab['A2'][1]*1e9
+        elif key == 'C3':
+            aberrations['C30'] = ab['C3'][0]*1e9
+        elif key == 'S3':
+            aberrations['C32a'] = 4 * ab['S3'][0]*1e9
+            aberrations['C32b'] = 4 * ab['S3'][1]*1e9
+        elif key == 'A3':
+            aberrations['C34a'] = ab['A3'][0]*1e9
+            aberrations['C34b'] = ab['A3'][1]*1e9
+        elif key == 'B4':
+            aberrations['C41a'] = 4 * ab['B4'][0]*1e9
+            aberrations['C41b'] = 4 * ab['B4'][1]*1e9
+        elif key == 'D4':
+            aberrations['C43a'] = 4 * ab['D4'][0]*1e9
+            aberrations['C43b'] = 4 * ab['D4'][1]*1e9
+        elif key == 'A4':
+            aberrations['C45a'] = ab['A4'][0]*1e9
+            aberrations['C45b'] = ab['A4'][1]*1e9
+        elif key == 'C5':
+            aberrations['C50'] = ab['C5'][0]*1e9
+        elif key == 'A5':
+            aberrations['C56a'] = ab['A5'][0]*1e9
+            aberrations['C56b'] = ab['A5'][1]*1e9
+
+        
     return aberrations
 
 def cart2pol(x, y):
@@ -598,7 +684,7 @@ def get_ronchigram_2(size, ab, scale='mrad', threshold=3):
     aperture[mask] = 0.
 
     v_noise = np.random.rand(size_x, size_y)
-    smoothing = 5
+    smoothing = 10
     phi_r = ndimage.gaussian_filter(v_noise, sigma=(smoothing, smoothing), order=0)
 
     sigma = 6  # 6 for carbon and thin
