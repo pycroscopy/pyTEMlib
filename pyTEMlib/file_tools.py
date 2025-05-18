@@ -23,6 +23,9 @@ import ase.io
 import SciFiReaders
 import pyNSID
 import sidpy
+import sidpy
+import xml.etree.ElementTree as ET
+import collections
 import ipywidgets as widgets
 from IPython.display import display
 
@@ -1426,6 +1429,97 @@ def h5_get_crystal_structure(structure_group):
         atoms.info = {'experiment': {'zone_axis': structure_group['zone_axis'][()]}}
     # ToDo: Read all of info dictionary
     return atoms
+
+import collections
+def etree_to_dict(element):
+    """Recursively converts an ElementTree object into a nested dictionary."""
+    d = {element.tag: {} if element.attrib else None}
+    children = list(element)
+    if children:
+        dd = collections.defaultdict(list)
+        for dc in map(etree_to_dict, children):
+            for k, v in dc.items():
+                dd[k].append(v)
+        d = {element.tag: {k: v[0] if len(v) == 1 else v for k, v in dd.items()}}
+    if element.attrib:
+        d[element.tag].update(('@' + k, v) for k, v in element.attrib.items())
+    if element.text:
+        text = element.text.strip()
+        if children or element.attrib:
+            if text:
+                d[element.tag]['#text'] = text
+        else:
+            d[element.tag] = text
+    return d
+
+def read_adorned_metadata(image):
+    xml_str = image.metadata.metadata_as_xml
+    root = ET.fromstring(xml_str)
+    metadata_dict = etree_to_dict(root)
+    detector = 'detector'
+    if 'Detectors' in metadata_dict['Metadata']['Detectors']['ScanningDetector']:
+        if 'ScanningDetector' in metadata_dict['Metadata']['Detectors']['ScanningDetector']:
+            detector = metadata_dict['Metadata']['Detectors']['ScanningDetector']['DetectorName']
+
+    segment = ''
+    if 'CustomPropertyGroup' in  metadata_dict['Metadata']:
+        if 'CustomProperties' in metadata_dict['Metadata']['CustomPropertyGroup']:
+            for list_item in metadata_dict['Metadata']['CustomPropertyGroup']['CustomProperties']:
+                
+                if isinstance(list_item, dict):
+                    for key in list_item:
+                        for item in list_item[key]:
+                            if '@name' in item:
+                                if item['@name']==  'DetectorCommercialName':
+                                    detector = item['@value']
+                                if item['@name']== 'StemSegment':
+                                    segment = '_'+item['@value']
+    return detector+segment, metadata_dict['Metadata']
+
+def adorned_to_sidpy(images):
+    """
+    Convert a list of adorned images to a dictionary of Sidpy datasets.
+    Each dataset is created from the image data and adorned metadata.       
+    The datasets are stored in a dictionary with keys 'Channel_000', 'Channel_001', etc.
+    The dimensions of the datasets are set based on the image data shape and pixel sizes.
+    The original metadata is also stored in the dataset.
+    Args:           
+        images (list or object): A list of adorned images or a single adorned image.
+        Returns:    
+        dict: A dictionary of Sidpy datasets, where each dataset corresponds to an image.
+    """
+    
+    data_sets = {}
+    if not isinstance(images, list):
+        images = [images]
+    for index, image in enumerate(images):
+        name, original_metadata = read_adorned_metadata(image)
+        data_sets[f'Channel_{index:03}'] = sidpy.Dataset.from_array(image.data.T, title=name)
+        ds = data_sets[f'Channel_{index:03}']
+        
+
+        ds.original_metadata = original_metadata
+
+        pixel_size_x_m = float(ds.original_metadata['BinaryResult']['PixelSize']['X']['#text'])
+        pixel_size_y_m = float(ds.original_metadata['BinaryResult']['PixelSize']['Y']['#text'])
+        pixel_size_x_nm = pixel_size_x_m * 1e9
+        pixel_size_y_nm = pixel_size_y_m * 1e9
+        if image.data.ndim == 3:
+            ds.data_type = 'image_stack'
+            ds.set_dimension(0, sidpy.Dimension(np.arange(image.data.shape[0]),
+                                           name='frame', units='frame', quantity='Length', dimension_type='temporal'))
+            ds.set_dimension(1, sidpy.Dimension(np.arange(image.data.shape[1]) * pixel_size_y_nm,
+                                          name='y', units='nm', quantity='Length', dimension_type='spatial'))
+            ds.set_dimension(2, sidpy.Dimension(np.arange(image.data.shape[2]) * pixel_size_x_nm,
+                                          name='x', units='nm', quantity='Length', dimension_type='spatial'))        
+        else:         
+            ds.data_type = 'image'
+            ds.set_dimension(0, sidpy.Dimension(np.arange(image.data.shape[0]) * pixel_size_y_nm,
+                                          name='y', units='nm', quantity='Length', dimension_type='spatial'))   
+            ds.set_dimension(1, sidpy.Dimension(np.arange(image.data.shape[1]) * pixel_size_x_nm,
+                                          name='x', units='nm', quantity='Length', dimension_type='spatial'))
+
+    return data_sets
 
 
 ###############################################
