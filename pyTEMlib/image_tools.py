@@ -639,8 +639,21 @@ def rigid_registration(dataset, normalization=None):
         normalization = None
 
     if dataset.get_dimensions_by_type('TEMPORAL')[0] != 0:
-        raise TypeError('Image stack does not have correct frame dimension')
-        
+        x = dataset.x
+        y = dataset.y
+        z = dataset.z
+        metadata = dataset.metadata.copy()
+        original_metadata = dataset.original_metadata.copy()
+        arr = np.rollaxis(np.array(dataset), 2, 0)
+        dataset = sidpy.Dataset.from_array(arr, title=dataset.title, data_type='IMAGE_STACK',
+                                           quantity=dataset.quantity, units=dataset.units)
+        dataset.set_dimension(0, sidpy.Dimension(z.values, name='frame', units='frame', quantity='time',       
+                                                  dimension_type='temporal'))
+        dataset.set_dimension(1, x)
+        dataset.set_dimension(2, y)
+        dataset.metadata = metadata
+        dataset.original_metadata = original_metadata
+
     stack_dim = dataset.get_dimensions_by_type('TEMPORAL', return_axis=True)[0]
     image_dim = dataset.get_image_dims(return_axis=True)
     if len(image_dim) != 2:
