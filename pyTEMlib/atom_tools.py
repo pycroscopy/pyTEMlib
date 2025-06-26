@@ -191,7 +191,7 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
             if (x - rr) < 0 or y - rr < 0 or x + rr + 1 > image.shape[0] or y + rr + 1 > image.shape[1]:
                 pass
             else:
-                [pout, _] = optimization.leastsq(gauss_difference, guess, args=area)
+                [pout, _] = optimization.leastsq(gauss_difference, guess, args=area);
 
             if (abs(pout[1]) > max_dist) or (abs(pout[2]) > max_dist):
                 pout = [0, 0, 0, 0]
