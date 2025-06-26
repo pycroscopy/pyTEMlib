@@ -143,7 +143,6 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
         dictionary containing new atom positions and other output such as intensity of the fitted Gaussian
     """
     rr = int(radius + 0.5)  # atom radius
-    print('using radius ', rr, 'pixels')
 
     pixels = np.linspace(0, 2 * rr, 2 * rr + 1) - rr
     x, y = np.meshgrid(pixels, pixels)
