@@ -182,8 +182,8 @@ def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
     assert isinstance(dset, sidpy.Dataset), 'Expected a sidpy Dataset'
 
     selection = []
-    image_dims = pyTEMlib.sidpy_tools.get_image_dims(dset)
-    if dset.data_type == sidpy.DataType.IMAGE_STACK:
+    image_dims = dset.get_image_dims(return_axis=True)
+    if dset.data_type.name == 'IMAGE_STACK':
         stack_dim = dset.get_dimensions_by_type('TEMPORAL')
 
         if len(image_dims) != 2:
@@ -203,19 +203,20 @@ def fourier_transform(dset: sidpy.Dataset) -> sidpy.Dataset:
 
         image_stack = np.squeeze(np.array(dset)[selection])
         new_image = np.sum(np.array(image_stack), axis=stack_dim)
-    elif dset.data_type == sidpy.DataType.IMAGE:
+    elif dset.data_type.name == 'IMAGE':
         new_image = np.array(dset)
     else:
         return
 
     new_image = new_image - new_image.min()
     
-    fft_transform = (np.fft.fftshift(np.fft.fft2(new_image)))
+    fft_transform = (np.fft.fftshift(np.fft.fft2(np.array(new_image))))
 
-    image_dims = pyTEMlib.sidpy_tools.get_image_dims(dset)
+    image_dims = dset.get_image_dims(return_axis=True)
 
-    units_x = '1/' + dset._axes[image_dims[0]].units
-    units_y = '1/' + dset._axes[image_dims[1]].units
+    units_x = '1/' + image_dims[0].units
+    units_y = '1/' + image_dims[1].units
+
 
     fft_dset = sidpy.Dataset.from_array(fft_transform)
     fft_dset.quantity = dset.quantity
