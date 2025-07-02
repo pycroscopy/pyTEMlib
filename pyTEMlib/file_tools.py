@@ -23,7 +23,6 @@ import ase.io
 import SciFiReaders
 import pyNSID
 import sidpy
-import sidpy
 import xml.etree.ElementTree as ET
 import collections
 import ipywidgets as widgets
