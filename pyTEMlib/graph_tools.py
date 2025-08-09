@@ -2,17 +2,9 @@
 
 """
 import numpy as np
-# import ase
-import sys
+import scipy
+import skimage
 
-import scipy.spatial
-import scipy.optimize
-import scipy.interpolate
-
-from skimage.measure import grid_points_in_poly, points_in_poly
-
-# import plotly.graph_objects as go
-# import plotly.express as px
 import matplotlib.patches as patches
 
 import pyTEMlib.crystal_tools
@@ -780,7 +772,7 @@ def sort_polyhedra_by_vertices(polyhedra, visible=range(4, 100), z_lim=[0, 100],
 ##########################
 # New Graph Stuff
 ##########################
-def breadth_first_search2(graph, initial, projected_crystal):
+def breadth_first_search(graph, initial_node_index, projected_crystal):
     """ breadth first search of atoms viewed as a graph
 
     the projection dictionary has to contain the following items
@@ -808,7 +800,7 @@ def breadth_first_search2(graph, initial, projected_crystal):
         a_lattice_vector = projection_tags['lattice_vector']['a']
         b_lattice_vector = projection_tags['lattice_vector']['b']
         main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
-        near = []
+        near =  main
     else:
         # get lattice vectors to hopp along through graph
         projected_unit_cell = projected_crystal.cell[:2, :2]
@@ -816,19 +808,17 @@ def breadth_first_search2(graph, initial, projected_crystal):
         b_lattice_vector = projected_unit_cell[1]
         main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
         near = projection_tags['near_base']  # all nearest atoms
-    # get k next nearest neighbours for each node
-    main = np.array([a_lattice_vector, -a_lattice_vector, b_lattice_vector, -b_lattice_vector])  # vectors of unit cell
-    near = np.append(main, near, axis=0) 
-
+        near = np.append(main, near, axis=0) 
+    
     neighbour_tree = scipy.spatial.KDTree(graph)
-    distances, indices = neighbour_tree.query(graph,  # let's get all neighbours
-                                              k=50)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
-    # print(projection_tags['number_of_nearest_neighbours'] * 2 + 1)
+    distances, indices = neighbour_tree.query(graph,  k=50) # let's get all neighbours
+                                                
+    
     visited = []  # the atoms we visited
     ideal = []  # atoms at ideal lattice
     sub_lattice = []  # atoms in base and disregarded
-    queue = [initial]
-    ideal_queue = [graph[initial]]
+    queue = [initial_node_index]
+    ideal_queue = [graph[initial_node_index]]
 
     while queue:
         node = queue.pop(0)
@@ -842,7 +832,6 @@ def breadth_first_search2(graph, initial, projected_crystal):
             for i, neighbour in enumerate(neighbors):
                 if neighbour not in visited:
                     distance_to_ideal = np.linalg.norm(near + graph[node] - graph[neighbour], axis=1)
-
                     if np.min(distance_to_ideal) < projection_tags['allowed_variation']:
                         direction = np.argmin(distance_to_ideal)
                         if direction > 3:  # counting starts at 0
@@ -854,11 +843,93 @@ def breadth_first_search2(graph, initial, projected_crystal):
     return graph[visited], ideal
 
 
+def get_base_atoms(graph, origins, base, tolerance=3):
+    """ get sublattices of atoms in a graph
+    This function returns the indices of atoms in a graph that are close to the base atoms.
+    Parameters
+    ----------  
+    graph: numpy array (Nx2)
+        the atom positions
+    origins: numpy array (Nx2)
+        the origin positions
+    base: numpy array (Mx2)
+        the base atom positions
+    tolerance: float
+        the distance tolerance for finding base atoms
+    Returns
+    -------
+    sublattices: list of numpy arrays
+        list of indices of atoms in the graph that are close to each base atom
+    """
+    sublattices = []
+    neighbour_tree = scipy.spatial.KDTree(graph)
+    for base_atom in base:
+         distances, indices = neighbour_tree.query(origins+base_atom[:2], k=50) 
+         sublattices.append(indices[distances < tolerance]) 
+    return sublattices
 
-def breadth_first_search_felxible(graph, initial, lattice_parameter, tolerance=1):
+def analyze_atomic_structure(dataset, crystal, start_atom_index, tolerance=1.5):
+    """ Analyze atomic structure of a crystal and return sublattices of atoms
+
+    Parameters
+    ----------
+    dataset: pyTEMlib.Dataset
+        dataset containing the atomic structure information
+    crystal: ase.Atoms
+        crystal structure to analyze
+    start_atom_index: int
+        index of the starting atom for the breadth-first search
+    tolerance: float
+        tolerance for determining the allowed variation in atom positions
+    Returns
+    -------
+    sublattices: list of numpy arrays
+        list of indices of atoms in the graph that are close to each base atom
+    """
+    if 'atoms' not in dataset.metadata:
+        TypeError('dataset.metadata needs to contain atoms information')
+        
+    graph = dataset.metadata['atoms']['positions']
+    
+    layer = pyTEMlib.crystal_tools.get_projection(crystal)
+    gamma = np.radians(layer.cell.angles()[2])
+    rotation_angle = np.radians(crystal.info['experimental']['angle']
+)
+    length = (layer.cell.lengths() /10/dataset.x.slope)[:2]
+    print(length, rotation_angle, gamma)
+    a = np.array([np.cos(rotation_angle)*length[0], np.sin(rotation_angle)*length[0]])
+    b = np.array([np.cos(rotation_angle+gamma)*length[1], np.sin(rotation_angle+gamma)*length[1]])
+    base = layer.get_scaled_positions()
+    base[:, :2] = np.dot(base[:, :2],[a,b])
+    projection_tags = {'lattice_vector': {'a': a, 'b': b},
+                       'allowed_variation': tolerance,
+                       'distance_unit_cell':  np.max(length)*1.04,
+                       'start_atom_index': start_atom_index,
+                       'base': base}
+    layer.info['projection'] = projection_tags
+
+    origins, ideal = pyTEMlib.graph_tools.breadth_first_search(graph[:,:2], start_atom_index, layer)
+    print(len(origins), 'origins found')
+    dataset.metadata['atoms']['projection'] = layer
+    sublattices = pyTEMlib.graph_tools.get_base_atoms(graph[:, :2], origins, base[:, :2], tolerance=3)
+    
+    dataset.metadata['atoms']['origins'] = origins
+    dataset.metadata['atoms']['ideal_origins'] = ideal
+    dataset.metadata['atoms']['sublattices'] = sublattices
+    dataset.metadata['atoms']['projection_tags'] = projection_tags
+    
+    return sublattices
+
+
+def breadth_first_search_felxible(graph, initial_node_index, lattice_parameter, tolerance=1):
     """ breadth first search of atoms viewed as a graph
         This is a rotational invariant search of atoms in a lattice, and returns the angles of unit cells.
         We only use the ideal lattice parameter to determine the lattice.  
+
+    Parameters
+    ----------
+    graph: numpy array (Nx2)        
+
     """
     if isinstance(lattice_parameter, ase.Atoms):
         lattice_parameter = lattice_parameter.cell.lengths()[:2]
@@ -867,12 +938,11 @@ def breadth_first_search_felxible(graph, initial, lattice_parameter, tolerance=1
     lattice_parameter = np.array(lattice_parameter)
 
     neighbour_tree = scipy.spatial.KDTree(graph)
-    distances, indices = neighbour_tree.query(graph,  # let's get all neighbours
-                                              k=50)  # projection_tags['number_of_nearest_neighbours']*2 + 1)
+    distances, indices = neighbour_tree.query(graph,  k=50) # let's get all neighbours
     visited = []  # the atoms we visited
     angles = []  # atoms at ideal lattice
     sub_lattice = []  # atoms in base and disregarded
-    queue = [initial]
+    queue = [initial_node_index]
     queue_angles=[0]
     
     while queue:
@@ -921,12 +991,7 @@ def get_distortion_matrix(atoms, ideal_lattice):
     ideal_vertices = get_significant_vertices(ideal_vertices - np.average(ideal_vertices, axis=0))
 
     distortion_matrix = []
-    for index in range(vor.points.shape[0]):
-        done = int((index + 1) / vor.points.shape[0] * 50)
-        sys.stdout.write('\r')
-        # progress output :
-        sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
-        sys.stdout.flush()
+    for index in trange(vor.points.shape[0]):
 
         # determine vertices of Voronoi polygons of an atom with number index
         poly_point = vor.points[index]
@@ -1015,7 +1080,7 @@ def transform_voronoi(vertices, ideal_voronoi):
     polygon_grid = np.swapaxes(polygon_grid, 0, 2)
     polygon_array = polygon_grid.reshape(-1, polygon_grid.shape[-1])
 
-    p = points_in_poly(polygon_array, vertices2)
+    p = skimage.measure.points_in_poly(polygon_array, vertices2)
     uncorrected = polygon_array[p]
 
     corrected = np.dot(uncorrected, aa)
@@ -1102,7 +1167,7 @@ def transform_voronoi(vertices, ideal_voronoi):
     polygon_grid = np.swapaxes(polygon_grid, 0, 2)
     polygon_array = polygon_grid.reshape(-1, polygon_grid.shape[-1])
 
-    p = points_in_poly(polygon_array, vertices2)
+    p = skimage.measure.points_in_poly(polygon_array, vertices2)
     uncorrected = polygon_array[p]
 
     corrected = np.dot(uncorrected, aa)
@@ -1211,16 +1276,9 @@ def undistort_stack(distortion_matrix, data):
     nimages = data.shape[0]
     done = 0
 
-    
-    for i in range(nimages):
-        done = int((i + 1) / nimages * 50)
-        sys.stdout.write('\r')
-        # progress output :
-        sys.stdout.write("[%-50s] %d%%" % ('=' * done, 2 * done))
-        sys.stdout.flush()
-
+    for i in trange(nimages):
         interpolated[i, :, :] = griddata(corrected, intensity_values[i, :], (grid_x, grid_y), method='linear')
-    
+
     print(':-)')
     print('You have successfully completed undistortion of image stack')
     return interpolated

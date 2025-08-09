@@ -25,7 +25,7 @@ import pyNSID
 import sidpy
 import xml.etree.ElementTree as ET
 import collections
-import ipywidgets as widgets
+import ipywidgets
 from IPython.display import display
 
 # =============================================
@@ -35,19 +35,11 @@ import pyTEMlib.crystal_tools
 from pyTEMlib.config_dir import config_path
 from pyTEMlib.sidpy_tools import *
 
-Qt_available = True
-try:
-    from PyQt5 import QtCore, QtWidgets, QtGui
-except ModuleNotFoundError:
-    print('Qt dialogs are not available')
-    Qt_available = False
-
 Dimension = sidpy.Dimension
 
-__version__ = '2024.9.14'
+__version__ = '2025.8.07'
 
 from traitlets import Unicode, Bool, validate, TraitError
-import ipywidgets 
 
 
 @ipywidgets.register
@@ -335,7 +327,8 @@ class FileWidget(ipywidgets.DOMWidget):
         self.datasets = open_file(self.file_name, sum_frames=self.sum_frames)
         self.dataset_list = []
         for key in self.datasets.keys():
-            self.dataset_list.append(f'{key}: {self.datasets[key].title}')
+            if not key.startswith('_'):
+                self.dataset_list.append(f'{key}: {self.datasets[key].title}')
         self.loaded_datasets.options = self.dataset_list
         self.loaded_datasets.value = self.dataset_list[0]
         self.debug = 5
@@ -583,134 +576,20 @@ def save_path(filename):
     return path
 
 
-if Qt_available:
-    def get_qt_app():
-        """
-        will start QT Application if not running yet
-
-        :returns: QApplication
-
-        """
-
-        # start qt event loop
-        _instance = QtWidgets.QApplication.instance()
-        if not _instance:
-            # print('not_instance')
-            _instance = QtWidgets.QApplication([])
-
-        return _instance
 
 
-def open_file_dialog_qt(file_types=None):  # , multiple_files=False):
-    """Opens a File dialog which is used in open_file() function
 
-    This function uses pyQt5.
-    The app of the Gui has to be running for QT. Tkinter does not run on Macs at this point in time.
-    In jupyter notebooks use %gui Qt early in the notebook.
-
-    The file looks first for a path.txt file for the last directory you used.
-
-    Parameters
-    ----------
-    file_types : string
-        file type filter in the form of '*.hf5'
-
-
-    Returns
-    -------
-    filename : string
-        full filename with absolute path and extension as a string
-
-    Example
-    -------
-    >> import file_tools as ft
-    >> filename = ft.openfile_dialog()
-    >> print(filename)
-
-    """
-    """will start QT Application if not running yet and returns QApplication """
-
-    # determine file types by extension
-    if file_types is None:
-        file_types = 'TEM files (*.dm3 *.dm4 *.emd *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
-                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
-    elif file_types == 'pyNSID':
-        file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.dm4 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
-                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
-
-        # file_types = [("TEM files",["*.dm*","*.hf*","*.ndata" ]),("pyNSID files","*.hf5"),("DM files","*.dm*"),
-        # ("Nion files",["*.h5","*.ndata"]),("all files","*.*")]
-
-    # Determine last path used
-    path = get_last_path()
-
-    if Qt_available:
-        _ = get_qt_app()
-        filename = sidpy.io.interface_utils.openfile_dialog_QT(file_types=file_types, file_path=path)
-        save_path(filename)
-        return filename
-
-
-def save_file_dialog_qt(file_types=None):  # , multiple_files=False):
-    """Opens a File dialog which is used in open_file() function
-
-    This function uses pyQt5.
-    The app of the Gui has to be running for QT. Tkinter does not run on Macs at this point in time.
-    In jupyter notebooks use %gui Qt early in the notebook.
-
-    The file looks first for a path.txt file for the last directory you used.
-
-    Parameters
-    ----------
-    file_types : string
-        file type filter in the form of '*.hf5'
-
-
-    Returns
-    -------
-    filename : string
-        full filename with absolute path and extension as a string
-
-    Example
-    -------
-    >> import file_tools as ft
-    >> filename = ft.openfile_dialog()
-    >> print(filename)
-
-    """
-    """will start QT Application if not running yet and returns QApplication """
-
-    # determine file types by extension
-    if file_types is None:
-        file_types = 'pyNSID files (*.hf5);;TEM files (*.dm3 *.dm4 *.qf3 *.ndata *.h5 *.hf5);;QF files ( *.qf3);;' \
-                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
-    elif file_types == 'TEM':
-        file_types = 'TEM files (*.dm3 *.dm4 *.emd *.ndata *.h5 *.hf5);;pyNSID files (*.hf5);;QF files ( *.qf3);;' \
-                     'DM files (*.dm3 *.dm4);;Nion files (*.ndata *.h5);;All files (*)'
-
-    # Determine last path used
-    path = get_last_path()
-
-    if Qt_available:
-        _ = get_qt_app()
-        filename = sidpy.io.interface_utils.savefile_dialog(file_types=file_types, file_path=path)
-        save_path(filename)
-        return filename
-
-
-def save_dataset(dataset, filename=None,  qt=False, h5_group=None):
+def save_dataset(dataset, filename,  h5_group=None):
     """ Saves a dataset to a file in pyNSID format
     Parameters
     ----------
     dataset: sidpy.Dataset
         the data
     filename: str
-        name of file to be opened, if filename is None, a QT file dialog will try to open
+        name of file to be opened
     h5_group: hd5py.Group
         not used yet
     """
-    if filename is None or qt==True:
-        filename = save_file_dialog_qt()
     h5_filename = get_h5_filename(filename)
     h5_file = h5py.File(h5_filename, mode='a')
     path, file_name = os.path.split(filename)
@@ -829,10 +708,9 @@ def read_annotation(image):
     return annotations
 
 
-def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=False):  # save_file=False,
+def open_file(filename,  h5_group=None, write_hdf_file=False, sum_frames=False):  # save_file=False,
     """Opens a file if the extension is .emd, .mrc, .hf5, .ndata, .dm3 or .dm4
 
-    If no filename is provided the QT open_file windows opens (if QT_available==True)
     Everything will be stored in a NSID style hf5 file.
     Subroutines used:
         - NSIDReader
@@ -843,7 +721,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
     Parameters
     ----------
     filename: str
-        name of file to be opened, if filename is None, a QT file dialog will try to open
+        name of file to be opened
     h5_group: hd5py.Group
         not used yet #TODO: provide hook for usage of external chosen group
     write_hdf_file: bool
@@ -855,15 +733,10 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
         sidpy dataset with location of hdf5 dataset as attribute
 
     """
-    if filename is None:
-        selected_file = open_file_dialog_qt()
-        filename = selected_file
-        
-    else:
-        if not isinstance(filename, str):
-            raise TypeError('filename must be a non-empty string or None (to a QT open file dialog)')
-        elif filename == '':
-            raise TypeError('filename must be a non-empty string or None (to a QT open file dialog)')
+    if not isinstance(filename, str):
+        raise TypeError('filename must be a non-empty string')
+    elif filename == '':
+        raise TypeError('filename must be a non-empty string')
 
     path, file_name = os.path.split(filename)
     basename, extension = os.path.splitext(file_name)
@@ -896,7 +769,7 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
                     if 'Measurement' in dset.title:
                         dset.title = dset.title.split('/')[-1]
             return dataset_dict
-    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5', '.mrc']:
+    elif extension in ['.dm3', '.dm4', '.ndata', '.ndata1', '.h5', '.emd', '.emi', '.edaxh5', '.mrc', '.rto']:
         # tags = open_file(filename)
         if extension in ['.dm3', '.dm4']:
             reader = SciFiReaders.DMReader(filename)
@@ -936,7 +809,11 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
         elif extension in ['.ndata', '.h5']:
             reader = SciFiReaders.NionReader(filename)
             provenance = 'SciFiReader.NionReader'
-           
+
+        elif extension in ['.rto']:
+            reader = SciFiReaders.BrukerReader(filename)
+            provenance = 'SciFiReader.BrukerReader'
+
         elif extension in ['.mrc']:
             reader = SciFiReaders.MRCReader(filename)
             provenance = 'SciFiReader.MRCReader'
@@ -946,6 +823,8 @@ def open_file(filename=None,  h5_group=None, write_hdf_file=False, sum_frames=Fa
 
         path, file_name = os.path.split(filename)
         basename, _ = os.path.splitext(file_name)
+
+        # ### Here we read the data into sidpy datasets
         if extension != '.emi':
             dset = reader.read()
 
@@ -1264,7 +1143,6 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
     datasets2 = open_file(filename=filename)
     first_dataset = datasets2[list(datasets2)[0]]
     if isinstance(first_dataset, sidpy.Dataset):
-            
         index = 0
         for key in datasets.keys():
             if key_name in key:
@@ -1273,9 +1151,14 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
         if single_dataset:
             datasets[key_name+f'_{index:03}'] = first_dataset
         else:
-            for dataset in datasets2.values():
-                datasets[key_name+f'_{index:03}'] = dataset
-                index += 1
+            for key, dataset in datasets2.items():
+                print(key)
+                if isinstance(dataset, sidpy.Dataset):
+                    datasets[key_name+f'_{index:03}'] = dataset
+                    index += 1
+                else:
+                    print(key)
+                    datasets[key] = dataset
             index -= 1
     else:
         return None       
@@ -1286,7 +1169,7 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
 # ##
 # Crystal Structure Read and Write
 # ##
-def read_poscar(file_name=None):
+def read_poscar(file_name):
     """
     Open a POSCAR file from Vasp
     If no file name is provided an open file dialog to select a POSCAR file appears
@@ -1302,9 +1185,6 @@ def read_poscar(file_name=None):
         crystal structure in ase format
     """
 
-    if file_name is None:
-        file_name = open_file_dialog_qt('POSCAR (POSCAR*.txt);;All files (*)')
-
     # use ase package to read file
     base = os.path.basename(file_name)
     base_name = os.path.splitext(base)[0]
@@ -1315,7 +1195,7 @@ def read_poscar(file_name=None):
     return crystal
 
 
-def read_cif(file_name=None, verbose=False):  # open file dialog to select cif file
+def read_cif(file_name, verbose=False):  # open file dialog to select cif file
     """
     Open a cif file
     If no file name is provided an open file dialog to select a cif file appears
@@ -1331,10 +1211,6 @@ def read_cif(file_name=None, verbose=False):  # open file dialog to select cif f
     crystal: ase.Atoms
         crystal structure in ase format
     """
-
-    if file_name is None:
-        file_name = open_file_dialog_qt('cif (*.cif);;All files (*)')
-    # use ase package to read file
 
     base = os.path.basename(file_name)
     base_name = os.path.splitext(base)[0]
@@ -1429,7 +1305,6 @@ def h5_get_crystal_structure(structure_group):
     # ToDo: Read all of info dictionary
     return atoms
 
-import collections
 def etree_to_dict(element):
     """Recursively converts an ElementTree object into a nested dictionary."""
     d = {element.tag: {} if element.attrib else None}

@@ -271,3 +271,5 @@ example_data/GOLD-NP-DIFF-2-7.hf5
 example_data/GOLD-NP-DIFF-2-8.hf5
 example_data/GOLD-NP-DIFF-2-9.hf5
 notebooks/Imaging/Cu.cif
+pyTEMlib/data/fluorescent_yield.csv
+pyTEMlib/data/fluorescent_yield.xlsx

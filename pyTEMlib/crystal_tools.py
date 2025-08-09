@@ -26,8 +26,7 @@ import ase.build
 import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
-from scipy.spatial import cKDTree
-import scipy
+import scipy   # cKDTree
 _spglib_present = True
 try:
     import spglib
@@ -40,9 +39,6 @@ else:
     print('spglib not installed; Symmetry functions of spglib disabled')
 
 
-# from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
-# from matplotlib.patches import Circle  # , Ellipse, Rectangle
-# from matplotlib.collections import PatchCollection
 
 
 def get_dictionary(atoms):
@@ -121,44 +117,54 @@ def set_bond_radii(atoms):
 
 
 def get_projection(crystal, layers=1):
-    zone_axis = crystal.info['experimental']['zone_axis']
-    angle = crystal.info['experimental']['angle']
-    projected_crystal = ase.build.surface(crystal, zone_axis, vacuum=.0, layers=layers)
+	zone_axis = crystal.info['experimental']['zone_axis']
+	angle = crystal.info['experimental']['angle']
+	if 'layers' in crystal.info['structure']:
+		layers = crystal.info['structure']['layers']
+	projected_crystal = ase.build.surface(crystal, zone_axis, vacuum=.0, layers=layers)
 
-    element_tree = cKDTree(projected_crystal.positions[:, 0:2])
-    done = []
-    projected = []
-    for atom in projected_crystal:
-        if atom.index not in done:
-            near = element_tree.query_ball_point(atom.position[:2], 0.05)
-            projected.append(near)
-            done.extend(near)
-    print('projected atomic numbers')
-    atomic_numbers = []
-    for pro in projected:
-        atomic_numbers.append(projected_crystal.get_atomic_numbers()[pro].sum())
-        
-    projected_crystal.rotate(np.degrees(angle) % 360, 'z', rotate_cell=True)
+	scaled = projected_crystal.get_scaled_positions()
+	projected_crystal.positions[scaled[:,0]>0.95, 0] = 0
+	projected_crystal.positions[scaled[:,1]>0.95, 1] = 0
+	# projected_crystal.positions[scaled[:,2]>0.95, 2] = 0  # do not change this because we did not add a vacuum
+
+	projected_crystal.positions[scaled[:,0]<0.05, 0] = 0
+	projected_crystal.positions[scaled[:,1]<0.05, 1] = 0
+	projected_crystal.positions[scaled[:,2]<0.05, 2] = 0
+
+	element_tree = scipy.spatial.KDTree(projected_crystal.positions[:, 0:2])
+	done = []
+	projected = []
+	for atom in projected_crystal:
+		if atom.index not in done:
+			near = element_tree.query_ball_point(atom.position[:2], 0.05)
+			projected.append(near)
+			done.extend(near)
+	atomic_numbers = []
+	for pro in projected:
+		atomic_numbers.append(projected_crystal.get_atomic_numbers()[pro].sum())
+		
+	projected_crystal.rotate(np.degrees(angle) % 360, 'z', rotate_cell=True)
     
-    near_base = np.array([projected_crystal.cell[0, :2], -projected_crystal.cell[0, :2],
-                          projected_crystal.cell[1, :2], -projected_crystal.cell[1, :2],
-                          projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2],
-                          -(projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2])])
-    lines = np.array([[[0, near_base[0, 0]], [0, near_base[0, 1]]],
-                      [[0, near_base[2, 0]], [0, near_base[2, 1]]],
-                      [[near_base[0, 0], near_base[4, 0]], [near_base[0, 1], near_base[4, 1]]],
-                      [[near_base[2, 0], near_base[4, 0]], [near_base[2, 1], near_base[4, 1]]]])
-    projected_atoms = []
-    for index in projected:
-        projected_atoms.append(index[0])
-    
-    projected_crystal.info['projection'] = {'indices': projected,
-                                            'projected': projected_atoms,
-                                            'projected_Z': atomic_numbers,
-                                            'angle': np.degrees(angle)+180 % 360,
-                                            'near_base': near_base,
-                                            'lines': lines}
-    return projected_crystal
+	near_base = np.array([projected_crystal.cell[0, :2], -projected_crystal.cell[0, :2],
+							projected_crystal.cell[1, :2], -projected_crystal.cell[1, :2],
+							projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2],
+							-(projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2])])
+	lines = np.array([[[0, near_base[0, 0]], [0, near_base[0, 1]]],
+						[[0, near_base[2, 0]], [0, near_base[2, 1]]],
+						[[near_base[0, 0], near_base[4, 0]], [near_base[0, 1], near_base[4, 1]]],
+						[[near_base[2, 0], near_base[4, 0]], [near_base[2, 1], near_base[4, 1]]]])
+	projected_atoms = []
+	for index in projected:
+		projected_atoms.append(index[0])
+
+	projected_crystal.info['projection'] = {'indices': projected,
+											'projected': projected_atoms,
+											'projected_Z': atomic_numbers,
+											'angle': np.degrees(angle)+180 % 360,
+											'near_base': near_base,
+											'lines': lines}
+	return projected_crystal
 
 
 def jmol_viewer(atoms, size=2):
@@ -443,6 +449,8 @@ def structure_by_name(crystal_name):
 
     atoms.info = {'structure': {'reference': tags['reference'], 'link': tags['link']},
                   'title': tags['crystal_name']}
+    if 'layers' in tags:
+        atoms.info['structure']['layers'] = tags['layers']
     return atoms
 
 
@@ -454,6 +462,15 @@ cdb = {'aluminum': {'crystal_name': 'aluminum',
                     'reference': 'W. Witt, Z. Naturforsch. A, 1967, 22A, 92',
                     'link': 'http://doi.org/10.1515/zna-1967-0115'}}
 cdb['al'] = cdb['aluminium'] = cdb['aluminum']
+
+cdb['theta_prime'] = {'crystal_name': 'theta_prime',
+                      'symmetry':'primitive',
+                      'elements':'Al4Cu2',
+                      'base': [(0.5,0.25,0.0), (0.0,0.25,0.5), (0.,0.75,0.5), (0.5,0.75,0.0), (0,0,0), (0.5,0.5,0.5)], 
+                      'unit_cell': [[4.05, 0, 0], [0, 4.05 * 10/7, 0], [0, 0, 4.05]],
+                      'layers': 2,
+                      'reference': '',
+                      'link': ''}
 
 cdb['gold'] = {'crystal_name': 'gold',
                'symmetry': 'FCC',

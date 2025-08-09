@@ -286,7 +286,7 @@ def zl(x, p, p_zl):
 
 
 def get_channel_zero(spectrum: np.ndarray, energy: np.ndarray, width: int = 8):
-    """Determin shift of energy scale according to zero-loss peak position
+    """Determine shift of energy scale according to zero-loss peak position
     
     This function assumes that the zero loss peak is the maximum of the spectrum. 
     """
@@ -666,22 +666,22 @@ def angle_correction(spectrum):
 
     T = 1000.0*e0*(1.+e0/1022.12)/(1.0+e0/511.06)**2  # %eV # equ.5.2a or Appendix E p 427 
     
-    tgt=e0*(1.+e0/1022.)/(1+e0/511.);
-    thetae=(e+1e-6)/tgt; # % avoid NaN for e=0
+    tgt=e0*(1.+e0/1022.)/(1+e0/511.)
+    thetae=(e+1e-6)/tgt # % avoid NaN for e=0
     # %     A2,B2,T2 ARE SQUARES OF ANGLES IN RADIANS**2
-    a2=alpha*alpha*1e-6 + 1e-7;  # % avoid inf for alpha=0
-    b2=beta*beta*1e-6;
-    t2=thetae*thetae*1e-6;
-    eta1=np.sqrt((a2+b2+t2)**2-4*a2*b2)-a2-b2-t2;
-    eta2=2.*b2*np.log(0.5/t2*(np.sqrt((a2+t2-b2)**2+4.*b2*t2)+a2+t2-b2));
-    eta3=2.*a2*np.log(0.5/t2*(np.sqrt((b2+t2-a2)**2+4.*a2*t2)+b2+t2-a2));
-    eta=(eta1+eta2+eta3)/a2/np.log(4./t2);
-    f1=(eta1+eta2+eta3)/2./a2/np.log(1.+b2/t2);
-    f2=f1;
-    if(alpha/beta>1):
-        f2=f1*a2/b2;
+    a2=alpha*alpha*1e-6 + 1e-7  # % avoid inf for alpha=0
+    b2=beta*beta*1e-6
+    t2=thetae*thetae*1e-6
+    eta1=np.sqrt((a2+b2+t2)**2-4*a2*b2)-a2-b2-t2
+    eta2=2.*b2*np.log(0.5/t2*(np.sqrt((a2+t2-b2)**2+4.*b2*t2)+a2+t2-b2))
+    eta3=2.*a2*np.log(0.5/t2*(np.sqrt((b2+t2-a2)**2+4.*a2*t2)+b2+t2-a2))
+    eta=(eta1+eta2+eta3)/a2/np.log(4./t2)
+    f1=(eta1+eta2+eta3)/2./a2/np.log(1.+b2/t2)
+    f2=f1
+    if alpha/beta > 1:
+        f2=f1*a2/b2
 
-    bstar=thetae*np.sqrt(np.exp(f2*np.log(1.+b2/t2))-1.);
+    bstar=thetae*np.sqrt(np.exp(f2*np.log(1.+b2/t2))-1.)
     anglog = f2
     """
     b = eff_beta/1000.0 # %rad
@@ -700,7 +700,7 @@ def energy_loss_function(energy_scale: np.ndarray, p: np.ndarray, anglog=1) -> n
     elf = (-1/eps).imag
     return elf*p[2]*anglog
 
-def inelatic_mean_free_path(E_p, spectrum):
+def inelastic_mean_free_path(E_p, spectrum):
     acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
     
@@ -737,13 +737,13 @@ def multiple_scattering(energy_scale: np.ndarray, p: list, core_loss=False)-> np
     ### sum contribution from each order of scattering:
     PSD = np.zeros(len(LLene))
     for order in range(15):
-        # This order convoluted spectum 
+        # This order convoluted spectrum
         # convoluted SSD is SSD2
         SSD2 = np.fft.ifft(ssd).real
     
         # scale right (could be done better? GERD) 
         # And add this order to final spectrum
-        PSD += SSD2*abs(sum(SSD)/sum(SSD2)) / scipy.special.factorial(order+1)*np.power(tmfp, (order+1))*np.exp(-tmfp) #using equation 4.1 of egerton ed2
+        PSD += SSD2*abs(sum(SSD)/sum(SSD2)) / scipy.special.factorial(order+1)*np.power(tmfp, (order+1))*np.exp(-tmfp) #using equation 4.1 of Egerton ed2
         
         # next order convolution
         ssd = ssd * ssd2
@@ -755,7 +755,7 @@ def multiple_scattering(energy_scale: np.ndarray, p: list, core_loss=False)-> np
     msd[:start_plasmon] = 0. 
     return msd
 
-def fit_multiple_scattering(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float,pin=None, number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
+def fit_multiple_scattering(dataset: Union[sidpy.Dataset, np.ndarray], startFitEnergy: float, endFitEnergy: float, pin=None, number_workers: int = 4, number_threads: int = 8) -> Union[sidpy.Dataset, np.ndarray]:
     """
     Fit multiple scattering of plasmon peak in a TEM dataset.
 
@@ -876,8 +876,8 @@ def drude_simulation(dset, e, ep, ew, tnm, eb):
         srfint[0:xs] = 0.0
 
         # if os <0:
-        p_s = np.trapz(e, srfint)  # 2 surfaces but includes negative Begrenzung contribution.
-        p_v = abs(np.trapz(e, abs(volint / tags['spec'].sum())))  # integrated volume probability
+        p_s = np.trapezoid(e, srfint)  # 2 surfaces but includes negative Begrenzung contribution.
+        p_v = abs(np.trapezoid(e, abs(volint / tags['spec'].sum())))  # integrated volume probability
         p_v = (volint / i0).sum()  # our data have he same epc and the trapez formula does not include
         lam = tnm / p_v  # does NOT depend on free-electron approximation (no damping).
         lamfe = 4.0 * 0.05292 * t / ep / np.log(1 + (b * tgt / ep) ** 2)  # Eq.(3.44) approximation
@@ -1082,7 +1082,7 @@ def get_x_sections(z: int=0) -> dict:
         if z in x_sections:
             return x_sections[z]
         else:
-            return 0
+            return {}
 
 
 def list_all_edges(z: Union[str, int]=0, verbose=False)->list[str, dict]:
@@ -1193,7 +1193,7 @@ def find_associated_edges(dataset: sidpy.Dataset) -> None:
                             peak['distance_to_onset'] = distance_onset
                 """
     
-def find_white_lines(dataset: sidpy.Dataset) -> dict:
+def find_white_lines(dataset: sidpy.Dataset) -> [None, dict]:
     white_lines_out ={'sum': {}, 'ratio': {}}
     white_lines = []
     if 'peak_fit' in dataset.metadata:
@@ -2072,7 +2072,7 @@ def gaussian_mixture_model(dataset, p_in=None):
                 spectrum = dataset.view.get_spectrum()
             else:
                 spectrum = dataset[0,0]
-            spectrum.data_type == 'SPECTRUM'
+            spectrum.data_type = 'SPECTRUM'
         else:
             spectrum = dataset
         spectrum.data_type = 'SPECTRUM'

@@ -18,6 +18,138 @@ import plotly.express as px
 import pyTEMlib.crystal_tools
 import pyTEMlib.graph_tools
 
+def plot_atoms(atoms: ase.Atoms, polyhedra_indices=None, plot_bonds=False, color='', template=None, atom_size=None, max_size=35) -> go.Figure:
+    """
+    Plot structure in a ase.Atoms object with plotly
+    
+    If the info dictionary of the atoms object contains bond or polyedra information, these can be set tobe plotted
+    
+    Partameter:
+    -----------
+    atoms: ase.Atoms object
+        structure of supercell
+    polyhedra_indices: list of integers
+        indices of polyhedra to be plotted
+    plot_bonds: boolean
+        whether to plot bonds or not
+
+    Returns:
+    --------
+    fig: plotly figure object
+        handle to figure needed to modify appearance
+    """
+    energies = np.zeros(len(atoms))
+    if 'bonds' in atoms.info:
+        if 'atom_energy' in atoms.info['bonds']:
+            energies = np.round(np.array(atoms.info['bonds']['atom_energy'] - 12 * atoms.info['bonds']['ideal_bond_energy']) *1000,0)
+    
+            for atom in atoms:
+                if atom.index not in atoms.info['bonds']['super_cell_atoms']:
+                    energies[atom.index] = 0.
+    if color == 'coordination':
+        colors = atoms.info['bonds']['coordination']
+    elif color == 'layer':
+        colors = atoms.positions[:, 2]
+    elif color == 'energy':
+        colors = energies
+        colors[colors>50] = 50
+        colors = np.log(1+ energies)
+        
+    else: 
+        colors = atoms.get_atomic_numbers()
+        
+    if atom_size is None:
+        atom_size = atoms.get_atomic_numbers()*4
+    elif isinstance(atom_size, float):
+        atom_size = atoms.get_atomic_numbers()*4*atom_size
+        atom_size[atom_size>max_size] = max_size
+    elif isinstance(atom_size, int):
+        atom_size = [atom_size]*len(atoms)
+    if len(atom_size) !=  len(atoms):
+        atom_size = [10]*len(atoms)
+        print('wrong length of atom_size parameter')
+    plot_polyhedra = False
+    data = []
+    if polyhedra_indices is not None:
+        if 'polyhedra' in atoms.info:   
+            if polyhedra_indices == -1:
+                data = plot_polyhedron(atoms.info['polyhedra']['polyhedra'], range(len(atoms.info['polyhedra']['polyhedra'])))
+                plot_polyhedra = True
+            elif isinstance(polyhedra_indices, list):
+                data = plot_polyhedron(atoms.info['polyhedra']['polyhedra'], polyhedra_indices)
+                plot_polyhedra = True
+    text = []
+    if 'bonds' in atoms.info:
+        coord = atoms.info['bonds']['coordination']
+        for atom in atoms:
+            if atom.index in atoms.info['bonds']['super_cell_atoms']:
+
+                text.append(f'Atom {atom.index}: coordination={coord[atom.index]}' +
+                            f'x:{atom.position[0]:.2f} \n y:{atom.position[1]:.2f} \n z:{atom.position[2]:.2f}')
+                if 'atom_energy' in atoms.info['bonds']:
+                    text[-1] += f"\n energy: {energies[atom.index]:.0f} meV"
+            else:
+                text.append('')
+    else: 
+        text = [''] * len(atoms)
+          
+    if plot_bonds:
+         data += get_plot_bonds(atoms)
+    if plot_polyhedra or plot_bonds:
+        fig = go.Figure(data=data)
+    else:
+        fig = go.Figure()
+    if color=='energy':
+        fig.add_trace(go.Scatter3d(
+                        mode='markers',
+                        x=atoms.positions[:,0], y=atoms.positions[:,1], z=atoms.positions[:,2],
+                        hovertemplate='<b>%{text}</b><extra></extra>',
+                        text = text,
+                        marker=dict(
+                            color=colors,
+                            size=atom_size,
+                            sizemode='diameter',
+                            colorscale='Rainbow', #px.colors.qualitative.Light24,
+                            colorbar=dict(thickness=10, orientation='h'))))
+                            #hover_name = colors)))  # ["blue", "green", "red"])))        
+    
+    elif 'bonds' in atoms.info:
+        fig.add_trace(go.Scatter3d(
+                        mode='markers',
+                        x=atoms.positions[:,0], y=atoms.positions[:,1], z=atoms.positions[:,2],
+                        hovertemplate='<b>%{text}</b><extra></extra>',
+                        text = text,
+                        marker=dict(
+                            color=colors,
+                            size=atom_size,
+                            sizemode='diameter',
+                            colorscale= px.colors.qualitative.Light24)))
+                            #hover_name = colors)))  # ["blue", "green", "red"])))         
+            
+    else:
+         fig.add_trace(go.Scatter3d(
+                        mode='markers',
+                        x=atoms.positions[:,0], y=atoms.positions[:,1], z=atoms.positions[:,2],
+                        marker=dict(
+                            color=colors,
+                            size=atom_size,
+                            sizemode='diameter',
+                            colorbar=dict(thickness=10),
+                            colorscale= px.colors.qualitative.Light24)))
+                            #hover_name = colors)))  # ["blue", "green", "red"])))         
+    fig.update_layout(width=1000, height=700, showlegend=False, template=template)
+    fig.update_layout(scene_aspectmode='data',
+                      scene_aspectratio=dict(x=1, y=1, z=1))
+
+    camera = {'up': {'x': 0, 'y': 1, 'z': 0},
+              'center': {'x': 0, 'y': 0, 'z': 0},
+              'eye': {'x': 0, 'y': 0, 'z': 1}}
+    fig.update_coloraxes(showscale=True)
+    fig.update_layout(scene_camera=camera, title=r"Al-GB $")
+    fig.update_scenes(camera_projection_type="orthographic" ) 
+    fig.show()
+    return fig
+
 
 def plot_super_cell(super_cell, shift_x=0.):
     """ make a super_cell to plot with extra atoms at periodic boundaries"""
