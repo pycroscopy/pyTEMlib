@@ -26,7 +26,8 @@ import ase.build
 import ase.data.colors
 
 import matplotlib.pylab as plt  # basic plotting
-import scipy   # cKDTree
+from scipy.spatial import cKDTree
+import scipy
 _spglib_present = True
 try:
     import spglib
@@ -39,6 +40,9 @@ else:
     print('spglib not installed; Symmetry functions of spglib disabled')
 
 
+# from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
+# from matplotlib.patches import Circle  # , Ellipse, Rectangle
+# from matplotlib.collections import PatchCollection
 
 
 def get_dictionary(atoms):
@@ -132,7 +136,7 @@ def get_projection(crystal, layers=1):
 	projected_crystal.positions[scaled[:,1]<0.05, 1] = 0
 	projected_crystal.positions[scaled[:,2]<0.05, 2] = 0
 
-	element_tree = scipy.spatial.KDTree(projected_crystal.positions[:, 0:2])
+	element_tree = cKDTree(projected_crystal.positions[:, 0:2])
 	done = []
 	projected = []
 	for atom in projected_crystal:

@@ -133,13 +133,15 @@ def detect_peaks(dataset, minimum_number_of_peaks=30, prominence=10):
     if 'EDS' not in dataset.metadata:
         dataset.metadata['EDS'] = {}
     if 'detector' not in dataset.metadata['EDS']:
-        if 'energy_resolution' not in dataset.metadata['EDS']['detector']:
-            dataset.metadata['EDS']['detector']['energy_resolution'] = 138
-            print('Using energy resolution of 138 eV')
-        if 'start_channel' not in dataset.metadata['EDS']['detector']:
-            dataset.metadata['EDS']['detector']['start_channel'] =  np.searchsorted(energy_scale, 100)
-    resolution = dataset.metadata['EDS']['detector']['energy_resolution']
+        raise ValueError('No detector information found, add detector dictionary to metadata')
 
+    if 'energy_resolution' not in dataset.metadata['EDS']['detector']:
+        dataset.metadata['EDS']['detector']['energy_resolution'] = 138
+        print('Using energy resolution of 138 eV')
+    if 'start_channel' not in dataset.metadata['EDS']['detector']:
+        dataset.metadata['EDS']['detector']['start_channel'] =  np.searchsorted(energy_scale, 100)
+    
+    resolution = dataset.metadata['EDS']['detector']['energy_resolution']
     start = dataset.metadata['EDS']['detector']['start_channel']
     ## we use half the width of the resolution for smearing
     width = int(np.ceil(resolution/(energy_scale[1]-energy_scale[0])/2)+1)

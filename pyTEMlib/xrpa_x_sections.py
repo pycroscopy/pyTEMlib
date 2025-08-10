@@ -1,6 +1,7 @@
 """  X-ray photo-absorption cross-sections for inelastic scattering from NIST
 The cross sections are given in atoms/nm^3 not barns!!
 See xsec_xrpa function in eels_tools for usage.
+https://physics.nist.gov/PhysRefData/FFast/html/form.html
 
 for pyTEMLib by Gerd
 
