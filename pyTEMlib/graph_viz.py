@@ -18,6 +18,24 @@ import plotly.express as px
 import pyTEMlib.crystal_tools
 import pyTEMlib.graph_tools
 
+
+def get_plot_bonds(atoms):
+    """Get plotly data for bonds."""
+    connectivity_matrix = atoms.info['bonds']['connectivity_matrix']
+    data = []
+    for row in range(1, connectivity_matrix.shape[0]):
+        for column in range(row):
+            if connectivity_matrix[column, row]:
+                lines = dict(type='scatter3d',
+                     x=atoms.positions[[column, row],0],
+                     y=atoms.positions[[column, row],1],
+                     z=atoms.positions[[column, row],2],
+                     mode='lines',
+                     name='',
+                     line=dict(color='rgb(70,70,70)', width=1.5))
+                data.append(lines)
+    return data
+
 def plot_atoms(atoms: ase.Atoms, polyhedra_indices=None, plot_bonds=False, color='', template=None, atom_size=None, max_size=35) -> go.Figure:
     """
     Plot structure in a ase.Atoms object with plotly
