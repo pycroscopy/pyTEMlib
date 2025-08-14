@@ -39,19 +39,7 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.signal import fftconvolve
 
 ## import all function of the image package of pycroscopy
-from pycroscopy.image import *
-
-
-_SimpleITK_present = True
-try:
-    import SimpleITK as sitk
-except ImportError:
-    sitk = False
-    _SimpleITK_present = False
-
-if not _SimpleITK_present:
-    print('SimpleITK not installed; Registration Functions for Image Stacks not available\n' +
-          'install with: conda install -c simpleitk simpleitk ')
+from .image import *
 
 
 def get_atomic_pseudo_potential(fov, atoms, size=512, rotation=0):
@@ -134,10 +122,11 @@ def get_wavelength(e0):
     -------
     wave length in 1/nm
     """
-
-    eV = const.e * e0
-    return const.h/np.sqrt(2*const.m_e*eV*(1+eV/(2*const.m_e*const.c**2)))*10**9
-
+    eV = scipy.constants.e * e0
+    h = scipy.constants.h
+    m = scipy.constants.m_e
+    c = scipy.constants.c
+    return h / np.sqrt(2 * m * eV * (1 + eV / (2 * m * c**2))) * 10**9
 
 
 def center_diffractogram(dset, return_plot = True, smoothing = 1, min_samples = 10, beamstop_size = 0.1):

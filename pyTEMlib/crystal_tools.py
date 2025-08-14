@@ -17,35 +17,27 @@ Usage:
     See the notebooks for examples of these routines
 
 """
+import typing
+import itertools
 
 import numpy as np
-import itertools
 import ase
 import ase.spacegroup
 import ase.build
+import ase.lattice
+import ase.lattice.compounds
+import ase.neighborlist
 import ase.data.colors
 
-import matplotlib.pylab as plt  # basic plotting
-from scipy.spatial import cKDTree
 import scipy
-_spglib_present = True
-try:
-    import spglib
-except ModuleNotFoundError:
-    _spglib_present = False
+import scipy.sparse
 
-if _spglib_present:
-    print('Symmetry functions of spglib enabled')
-else:
-    print('spglib not installed; Symmetry functions of spglib disabled')
+import spglib
+
+import matplotlib.pylab as plt  # basic plotting
 
 
-# from mpl_toolkits.mplot3d import Axes3D  # 3D plotting
-# from matplotlib.patches import Circle  # , Ellipse, Rectangle
-# from matplotlib.collections import PatchCollection
-
-
-def get_dictionary(atoms):
+def get_dictionary(atoms: ase.Atoms) -> dict[str, typing.Any]:
     """
     structure dictionary from ase.Atoms object
     """
@@ -57,7 +49,10 @@ def get_dictionary(atoms):
     return tags
 
 
-def atoms_from_dictionary(tags):
+def atoms_from_dictionary(tags: dict[str, typing.Any]) -> ase.Atoms:
+    """
+    Create an ase.Atoms object from a structure dictionary
+    """
     atoms = ase.Atoms(cell=tags['unit_cell'],
                       symbols=tags['elements'],
                       scaled_positions=tags['base'])
@@ -66,7 +61,7 @@ def atoms_from_dictionary(tags):
     return atoms
 
 
-def get_symmetry(atoms, verbose=True):
+def get_symmetry(atoms: ase.Atoms, verbose: bool = True):
     """
     Symmetry analysis with spglib
 
@@ -80,147 +75,105 @@ def get_symmetry(atoms, verbose=True):
 
     Returns
     -------
-
+       bool
     """
-    if _spglib_present:
+    if verbose:
+        print('#####################')
+        print('# Symmetry Analysis #')
+        print('#####################')
+
+    base = atoms.get_scaled_positions()
+    for i, atom in enumerate(atoms):
         if verbose:
-            print('#####################')
-            print('# Symmetry Analysis #')
-            print('#####################')
+            print(f'{i + 1}: {atom.number} = {atom.symbol} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
 
-        base = atoms.get_scaled_positions()
-        for i, atom in enumerate(atoms):
-            if verbose:
-                print(f'{i + 1}: {atom.number} = {2} : [{base[i][0]:.2f}, {base[i][1]:.2f}, {base[i][2]:.2f}]')
+    lattice = (atoms.cell, atoms.get_scaled_positions(), atoms.numbers)
+    spgroup = spglib.get_spacegroup(lattice, symprec=1e-2)
+    sym = spglib.get_symmetry(lattice)
 
-        lattice = (atoms.cell, atoms.get_scaled_positions(), atoms.numbers)
-        spgroup = spglib.get_spacegroup(lattice, symprec=1e-2)
-        sym = spglib.get_symmetry(lattice)
+    if verbose:
+        print(f"  Spacegroup  is {spgroup}.")
+        print(f"  Crystal has {sym['rotations'].shape[0]} symmetry operation")
 
-        if verbose:
-            print("  Spacegroup  is %s." % spgroup)
-            print('  Crystal has {0} symmetry operation'.format(sym['rotations'].shape[0]))
+    p_lattice, p_positions, p_numbers = spglib.find_primitive(lattice, symprec=1e-5)
+    print("\n########################\n #Basis vectors of primitive Cell:")
+    for i in range(3):
+        print(f'[{p_lattice[i][0]:.4f}, {p_lattice[i][1]:.4f}, {p_lattice[i][2]:.4f}]')
 
-        p_lattice, p_positions, p_numbers = spglib.find_primitive(lattice, symprec=1e-5)
-        print("\n########################\n #Basis vectors of primitive Cell:")
-        for i in range(3):
-            print('[{0:.4f}, {1:.4f}, {2:.4f}]'.format(p_lattice[i][0], p_lattice[i][1], p_lattice[i][2]))
-
-        print('There {0} atoms and {1} species in primitive unit cell:'.format(len(p_positions), p_numbers))
-    else:
-        print('spglib is not installed')
-
+    print(f'There {len(p_positions)} atoms and {p_numbers} species in primitive unit cell:')
     return True
 
 
-def set_bond_radii(atoms):
+def set_bond_radii(atoms: ase.Atoms):
+    """
+    Set bond radii for atoms in the structure from electronFF database
+    at the end of this
+    """
     bond_radii = np.ones(len(atoms))
     for i in range(len(atoms)):
         bond_radii[i] = electronFF[atoms.symbols[i]]['bond_length'][1]
     atoms.info['bond_radii'] = bond_radii
 
 
-def get_projection(crystal, layers=1):
-	zone_axis = crystal.info['experimental']['zone_axis']
-	angle = crystal.info['experimental']['angle']
-	if 'layers' in crystal.info['structure']:
-		layers = crystal.info['structure']['layers']
-	projected_crystal = ase.build.surface(crystal, zone_axis, vacuum=.0, layers=layers)
-
-	scaled = projected_crystal.get_scaled_positions()
-	projected_crystal.positions[scaled[:,0]>0.95, 0] = 0
-	projected_crystal.positions[scaled[:,1]>0.95, 1] = 0
-	# projected_crystal.positions[scaled[:,2]>0.95, 2] = 0  # do not change this because we did not add a vacuum
-
-	projected_crystal.positions[scaled[:,0]<0.05, 0] = 0
-	projected_crystal.positions[scaled[:,1]<0.05, 1] = 0
-	projected_crystal.positions[scaled[:,2]<0.05, 2] = 0
-
-	element_tree = cKDTree(projected_crystal.positions[:, 0:2])
-	done = []
-	projected = []
-	for atom in projected_crystal:
-		if atom.index not in done:
-			near = element_tree.query_ball_point(atom.position[:2], 0.05)
-			projected.append(near)
-			done.extend(near)
-	atomic_numbers = []
-	for pro in projected:
-		atomic_numbers.append(projected_crystal.get_atomic_numbers()[pro].sum())
-		
-	projected_crystal.rotate(np.degrees(angle) % 360, 'z', rotate_cell=True)
-    
-	near_base = np.array([projected_crystal.cell[0, :2], -projected_crystal.cell[0, :2],
-							projected_crystal.cell[1, :2], -projected_crystal.cell[1, :2],
-							projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2],
-							-(projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2])])
-	lines = np.array([[[0, near_base[0, 0]], [0, near_base[0, 1]]],
-						[[0, near_base[2, 0]], [0, near_base[2, 1]]],
-						[[near_base[0, 0], near_base[4, 0]], [near_base[0, 1], near_base[4, 1]]],
-						[[near_base[2, 0], near_base[4, 0]], [near_base[2, 1], near_base[4, 1]]]])
-	projected_atoms = []
-	for index in projected:
-		projected_atoms.append(index[0])
-
-	projected_crystal.info['projection'] = {'indices': projected,
-											'projected': projected_atoms,
-											'projected_Z': atomic_numbers,
-											'angle': np.degrees(angle)+180 % 360,
-											'near_base': near_base,
-											'lines': lines}
-	return projected_crystal
-
-
-def jmol_viewer(atoms, size=2):
+def get_projection(crystal: ase.Atoms, layers: int = 1) -> ase.Atoms:
     """
-    jmol viewer of ase .Atoms object
-    requires jupyter-jsmol to be installed (available through conda or pip)
-
-    Parameter
-    ---------
-    atoms: ase.Atoms
-        structure info
-    size: int, list, or np.array of size 3; default 1
-        size of unit_cell; maximum = 8
-
-    Returns
-    -------
-    view: JsmolView object
-
-    Example
-    -------
-    from jupyter_jsmol import JsmolView
-    import ase
-    import ase.build
-    import itertools
-    import numpy as np
-    atoms = ase.build.bulk('Cu', 'fcc', a=5.76911, cubic=True)
-    for pos in list(itertools.product([0.25, .75], repeat=3)):
-        atoms += ase.Atom('Al', al2cu.cell.lengths()*pos)
-
-    view = plot_ase(atoms, size = 8)
-    display(view)
+    Get the projection of a crystal structure onto a specific plane.
+    zone axis must be specified in the crystal.info['experimental'] dictionary.
     """
-    try:
-        from jupyter_jsmol import JsmolView
-        from IPython.display import display
-    except ImportError:
-        print('this function is based on jupyter-jsmol, please install with: \n '
-              'conda install -c conda-forge jupyter-jsmol')
-        return
+    if 'experimental' not in crystal.info:
+        raise ValueError("Zone axis must be specified in the crystal.info['experimental'] dictionary.")
+    if 'zone_axis' not in crystal.info['experimental']:
+        raise ValueError("Zone axis must be specified in the crystal.info['experimental'] dictionary.")
+    zone_axis = crystal.info['experimental']['zone_axis']
+    angle = crystal.info['experimental']['angle']
+    if 'layers' in crystal.info['structure']:
+        layers = crystal.info['structure']['layers']
+    projected_crystal = ase.build.surface(crystal, zone_axis, vacuum=.0, layers=layers)
 
-    if isinstance(size, int):
-        size = [size] * 3
+    scaled = projected_crystal.get_scaled_positions()
+    projected_crystal.positions[scaled[:,0]>0.95, 0] = 0
+    projected_crystal.positions[scaled[:,1]>0.95, 1] = 0
+    # do not change this because we did not add a vacuum
+    # projected_crystal.positions[scaled[:,2]>0.95, 2] = 0
 
-    [a, b, c] = atoms.cell.lengths()
-    [alpha, beta, gamma] = atoms.cell.angles()
+    projected_crystal.positions[scaled[:,0]<0.05, 0] = 0
+    projected_crystal.positions[scaled[:,1]<0.05, 1] = 0
+    projected_crystal.positions[scaled[:,2]<0.05, 2] = 0
 
-    view = JsmolView.from_ase(atoms, f"{{{size[0]} {size[1]} {size[2]}}}"
-                                     f" unitcell {{{a:.3f} {b:.3f} {c:.3f} {alpha:.3f} {beta:.3f} {gamma:.3f}}}")
+    element_tree = scipy.spatial.KDTree(projected_crystal.positions[:, 0:2])
+    done = []
+    projected = []
+    for atom in projected_crystal:
+        if atom.index not in done:
+            near = element_tree.query_ball_point(atom.position[:2], 0.05)
+            projected.append(near)
+            done.extend(near)
+    atomic_numbers = []
+    for pro in projected:
+        atomic_numbers.append(projected_crystal.get_atomic_numbers()[pro].sum())
 
-    display(view)
+    projected_crystal.rotate(np.degrees(angle) % 360, 'z', rotate_cell=True)
+    near_base = np.array([projected_crystal.cell[0, :2], -projected_crystal.cell[0, :2],
+                            projected_crystal.cell[1, :2], -projected_crystal.cell[1, :2],
+                            projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2],
+                            -(projected_crystal.cell[0, :2] + projected_crystal.cell[1, :2])])
+    lines = np.array([[[0, near_base[0, 0]], [0, near_base[0, 1]]],
+                        [[0, near_base[2, 0]], [0, near_base[2, 1]]],
+                        [[near_base[0, 0], near_base[4, 0]], [near_base[0, 1],
+                                                              near_base[4, 1]]],
+                        [[near_base[2, 0], near_base[4, 0]], [near_base[2, 1],
+                                                              near_base[4, 1]]]])
+    projected_atoms = []
+    for index in projected:
+        projected_atoms.append(index[0])
 
-    return view
+    projected_crystal.info['projection'] = {'indices': projected,
+                                            'projected': projected_atoms,
+                                            'projected_Z': atomic_numbers,
+                                            'angle': np.degrees(angle)+180 % 360,
+                                            'near_base': near_base,
+                                            'lines': lines}
+    return projected_crystal
 
 
 def plot_super_cell(super_cell, shift_x=0.):
@@ -241,13 +194,13 @@ def plot_super_cell(super_cell, shift_x=0.):
     return super_cell2plot
 
 
-def ball_and_stick(atoms, extend=1, max_bond_length=0.):
+def ball_and_stick(atoms: ase.Atoms, extend: int = 1) -> ase.Atoms:
     """Calculates the data to plot a ball and stick model
 
     Parameters
     ----------
     atoms: ase.Atoms object
-        object containing the structural information like 'cell', 'positions', and 'symbols' .
+        object containing the structural information like 'cell', and 'symbols' .
 
     extend: integer or list f 3 integers
         The *extend* argument scales the effective cell in which atoms
@@ -257,30 +210,22 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
         This will of cause make the returned cell non-repeatable, but this is
         very useful for visualisation.
 
-    max_bond_length: 1 float
-        The max_bond_length argument defines the distance for which a bond will be shown.
-        If max_bond_length is zero, the tabulated atom radii will be used.
-
     Returns
     -------
     super_cell: ase.Atoms object
         structure with additional information in info dictionary
     """
-
     if not isinstance(atoms, ase.Atoms):
         raise TypeError('Need an ase Atoms object')
-
-    from ase import neighborlist
-    from scipy import sparse
-    from scipy.sparse import dok_matrix
 
     super_cell = plot_super_cell(atoms*extend)
     cell = super_cell.cell.array
     # Corners and Outline of unit cell
     h = (0, 1)
     corner_vectors = np.dot(np.array(list(itertools.product(h, h, h))), cell)
-    corner_matrix = dok_matrix((8, 8), dtype=bool)
-    trace = [[0, 1], [1, 3], [2, 3], [0, 2], [0, 4], [4, 5], [5, 7], [6, 7], [4, 6], [1, 5], [2, 6], [3, 7]]
+    corner_matrix = scipy.sparse.dok_matrix((8, 8), dtype=bool)
+    trace = [[0, 1], [1, 3], [2, 3], [0, 2], [0, 4], [4, 5],
+             [5, 7], [6, 7], [4, 6], [1, 5], [2, 6], [3, 7]]
     for s, e in trace:
         corner_matrix[s, e] = True
 
@@ -290,7 +235,8 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
         bond_lengths.append(electronFF[atom.symbol]['bond_length'][1])
 
     super_cell.set_cell(cell*2, scale_atoms=False)   # otherwise, corner atoms have distance 0
-    neighbor_list = neighborlist.NeighborList(bond_lengths, self_interaction=False, bothways=False)
+    neighbor_list = ase.neighborlist.NeighborList(bond_lengths, self_interaction=False,
+                                                  bothways=False)
     neighbor_list.update(super_cell)
     bond_matrix = neighbor_list.get_connectivity_matrix()
 
@@ -298,18 +244,20 @@ def ball_and_stick(atoms, extend=1, max_bond_length=0.):
     bond_matrix = scipy.sparse.dok_array(bond_matrix)
     if super_cell.info is None:
         super_cell.info = {}
-    super_cell.info['plot_cell'] = {'bond_matrix': bond_matrix, 'corner_vectors': corner_vectors,
-                                    'bond_length': bond_lengths, 'corner_matrix': corner_matrix}
+    super_cell.info['plot_cell'] = {'bond_matrix': bond_matrix,
+                                    'corner_vectors': corner_vectors,
+                                    'bond_length': bond_lengths,
+                                    'corner_matrix': corner_matrix}
     super_cell.set_cell(cell/2, scale_atoms=False)
     return super_cell
 
 
-def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax=None):
+def plot_unit_cell(atoms, extend=1, ax=None):
     """
     Simple plot of unit cell
     """
 
-    super_cell = ball_and_stick(atoms, extend=extend, max_bond_length=max_bond_length)
+    super_cell = ball_and_stick(atoms, extend=extend)
 
     corners = super_cell.info['plot_cell']['corner_vectors']
     positions = super_cell.positions - super_cell.cell.lengths()/2
@@ -323,13 +271,14 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax=None):
         ax.plot3D(corners[line, 0], corners[line, 1], corners[line, 2], color="blue")
 
     # draw bonds
-    bond_matrix = super_cell.info['plot_cell']['bond_matrix']
     for bond in super_cell.info['plot_cell']['bond_matrix'].keys():
-        ax.plot3D(positions[bond, 0], positions[bond, 1], positions[bond, 2], color="black", linewidth=4)
+        ax.plot3D(positions[bond, 0], positions[bond, 1], positions[bond, 2],
+                  color="black", linewidth=4)
         # , tube_radius=0.02)
 
     # draw atoms
-    ax.scatter(super_cell.positions[:, 0], super_cell.positions[:, 1], super_cell.positions[:, 2],
+    ax.scatter(super_cell.positions[:, 0], super_cell.positions[:, 1],
+               super_cell.positions[:, 2],
                color=tuple(jmol_colors[super_cell.get_atomic_numbers()]), alpha=1.0, s=50)
     maximum_position = super_cell.positions.max()*1.05
     ax.set_proj_type('ortho')
@@ -351,11 +300,10 @@ def plot_unit_cell(atoms, extend=1, max_bond_length=1.0, ax=None):
 jmol_colors = ase.data.colors.jmol_colors
 
 
-def structure_by_name(crystal_name):
+def structure_by_name(crystal_name: str) -> ase.Atoms | None:
     """
         Provides crystal structure in ase.Atoms format.
         Additional information is stored in the info attribute as a dictionary
-
 
         Parameter
         ---------
@@ -380,9 +328,6 @@ def structure_by_name(crystal_name):
     """
 
     # Check whether name is in the crystal_data_base
-    import ase
-    import ase.build
-
     if crystal_name.lower() in cdb:
         tags = cdb[crystal_name.lower()].copy()
     else:
@@ -397,61 +342,58 @@ def structure_by_name(crystal_name):
             atoms = ase.build.bulk(tags['elements'], 'bcc', a=tags['a'], cubic=True)
 
         elif tags['symmetry'].lower() == 'diamond':
-            import ase.lattice.cubic
             atoms = ase.lattice.cubic.Diamond(tags['elements'], latticeconstant=tags['a'])
 
         elif 'rocksalt' in tags['symmetry']:  # B1
-            import ase.lattice.compounds
             atoms = ase.lattice.compounds.Rocksalt(tags['elements'], latticeconstant=tags['a'])
 
         elif 'zincblende' in tags['symmetry']:
-            import ase.lattice.compounds
             atoms = ase.lattice.compounds.B3(tags['elements'], latticeconstant=tags['a'])
 
         elif 'B2' in tags['symmetry']:
-            import ase.lattice.compounds
             atoms = ase.lattice.compounds.B2(tags['elements'], latticeconstant=tags['a'])
 
         elif 'graphite' in tags['symmetry']:
             base = [(0, 0, 0), (0, 0, 1/2), (2/3, 1/3, 0), (1/3, 2/3, 1/2)]
             structure_matrix = np.array([[tags['a'], 0., 0.],
-                                         [np.cos(np.pi/3*2)*tags['a'], np.sin(np.pi/3*2)*tags['a'], 0.],
+                                         [np.cos(np.pi/3*2)*tags['a'],
+                                          np.sin(np.pi/3*2)*tags['a'], 0.],
                                          [0., 0., tags['c']]])
 
             atoms = ase.Atoms(tags['elements'], cell=structure_matrix, scaled_positions=base)
 
         elif 'perovskite' in tags['symmetry']:
-            import ase.spacegroup
             atom_positions = [(0.0, 0.0, 0.0), (0.5, 0.5, 0.5), (0.5, 0.5, 0.0)]
-            atoms = ase.spacegroup.crystal(tags['elements'], atom_positions, spacegroup=221, cellpar=tags['a'])
+            atoms = ase.spacegroup.crystal(tags['elements'], atom_positions, spacegroup=221,
+                                           cellpar=tags['a'])
 
         elif 'wurzite' in tags['symmetry']:
-            import ase.spacegroup
             atom_positions = [(1/3, 2/3, 0.0), (1/3, 2/3, tags['u'])]
             atoms = ase.spacegroup.crystal(tags['elements'], atom_positions, spacegroup=186,
                                            cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 120])
 
         elif 'rutile' in tags['symmetry']:
-            import ase.spacegroup
             atoms = ase.spacegroup.crystal(tags['elements'], basis=[(0, 0, 0), (0.3, 0.3, 0.0)],
-                                           spacegroup=136, cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 90])
+                                           spacegroup=136, cellpar=[tags['a'], tags['a'],
+                                                                    tags['c'], 90, 90, 90])
         elif 'dichalcogenide' in tags['symmetry']:
-            import ase.spacegroup
-
             u = tags['u']
             base = [(1 / 3., 2 / 3., 1 / 4.), (2 / 3., 1 / 3., 3 / 4.),
                     (2 / 3., 1 / 3., 1 / 4. + u), (2 / 3., 1 / 3., 1 / 4. - u),
                     (1 / 3., 2 / 3., 3 / 4. + u), (1 / 3., 2 / 3., 3 / 4. - u)]
-            atoms = ase.spacegroup.crystal(tags['elements'][0] * 2 + tags['elements'][1] * 4, base, spacegroup=194,
+            atoms = ase.spacegroup.crystal(tags['elements'][0] * 2 + tags['elements'][1] * 4,
+                                           base, spacegroup=194,
                                            cellpar=[tags['a'], tags['a'], tags['c'], 90, 90, 120])
 
         elif tags['symmetry'].lower() in ['primitive', 'hexagonal']:
-            atoms = ase.Atoms(tags['elements'], cell=tags['unit_cell'], scaled_positions=tags['base'])
+            atoms = ase.Atoms(tags['elements'], cell=tags['unit_cell'],
+                              scaled_positions=tags['base'])
 
         else:
-            print(' symmetry of structure is wrong')
+            raise ValueError("Symmetry of structure is wrong")
 
-    atoms.info = {'structure': {'reference': tags['reference'], 'link': tags['link']},
+    atoms.info = {'structure': {'reference': tags['reference'],
+                                'link': tags['link']},
                   'title': tags['crystal_name']}
     if 'layers' in tags:
         atoms.info['structure']['layers'] = tags['layers']
@@ -470,7 +412,9 @@ cdb['al'] = cdb['aluminium'] = cdb['aluminum']
 cdb['theta_prime'] = {'crystal_name': 'theta_prime',
                       'symmetry':'primitive',
                       'elements':'Al4Cu2',
-                      'base': [(0.5,0.25,0.0), (0.0,0.25,0.5), (0.,0.75,0.5), (0.5,0.75,0.0), (0,0,0), (0.5,0.5,0.5)], 
+                      'base': [(0.5,0.25,0.0), (0.0,0.25,0.5),
+                               (0.,0.75,0.5), (0.5,0.75,0.0),
+                               (0,0,0), (0.5,0.5,0.5)],
                       'unit_cell': [[4.05, 0, 0], [0, 4.05 * 10/7, 0], [0, 0, 4.05]],
                       'layers': 2,
                       'reference': '',
@@ -516,7 +460,7 @@ cdb['silicon'] = {'crystal_name': 'silicon',
                   'symmetry': 'diamond',
                   'elements': 'Si',
                   'a': 5.430880,  # Angstrom for 300K
-                  'reference': 'C. R. Hubbard, H. E. Swanson, and F. A. Mauer, J. Appl. Crystallogr., 1975, 8, 45',
+                  'reference': 'C. R. Hubbard, et al., J. Appl. Crystallogr., 1975, 8, 45',
                   'link': 'https://doi.org/10.1107/S0021889875009508'}
 cdb['si'] = cdb['silicon']
 
@@ -524,7 +468,7 @@ cdb['gaas'] = {'crystal_name': 'GaAs',
                'symmetry': 'zincblende(B3)',
                'elements': ['Ga', 'As'],
                'a': 5.65325,  # Angstrom for 300K
-               'reference': 'J.F.C. Baker, M. Hart, M.A.G. Halliwell, R. Heckingbottom, Solid-State Electronics, 19, '
+               'reference': 'J.F.C. Baker, et al., Solid-State Electronics, 19, '
                             '1976, 331-334,',
                'link': 'https://doi.org/10.1016/0038-1101(76)90031-9'}
 
@@ -532,16 +476,17 @@ cdb['fcc fe'] = {'crystal_name': 'FCC Fe',
                  'symmetry': 'FCC',
                  'elements': 'Fe',
                  'a': 3.3571,  # Angstrom
-                 'reference': 'R. Kohlhaas, P. Donner, and N. Schmitz-Pranghe, Z. Angew. Phys., 1967, 23, 245',
+                 'reference': 'R. Kohlhaas, et al., Z. Angew. Phys., 1967, 23, 245',
                  'link': ''}
 
 cdb['iron'] = {'crystal_name': 'BCC Fe',
                'symmetry': 'BCC',
                'elements': 'Fe',
                'a': 2.866,  # Angstrom
-               'reference': 'Z. S. Basinski, W. Hume-Rothery and A. L. Sutton, Proceedings of the Royal Society of '
-                            'London. Series A, Mathematical and Physical Sciences Vol. 229, No. 1179 '
-                            '(May 24, 1955), pp. 459-467',
+               'reference': 'Z. S. Basinski, W. Hume-Rothery and A. L. Sutton'+
+                            'Proceedings of the Royal Society of '+
+                            'London. Series A, Mathematical and Physical Sciences'+
+                            'Vol. 229, No. 1179 (May 24, 1955), pp. 459-467',
                'link': 'http://www.jstor.org/stable/99693'}
 cdb['bcc fe'] = cdb['alpha iron'] = cdb['iron']
 
@@ -549,7 +494,7 @@ cdb['srtio3'] = {'crystal_name': 'SrTiO3',
                  'symmetry': 'perovskite',
                  'elements': ['Sr', 'Ti', 'O'],
                  'a': 3.905268,  # Angstrom
-                 'reference': 'M. Schmidbauer, A. Kwasniewski and J. Schwarzkopf, Acta Cryst. (2012). B68, 8-14',
+                 'reference': 'M. Schmidbauer, et al., Acta Cryst. (2012). B68, 8-14',
                  'link': 'http://doi.org/10.1107/S0108768111046738'}
 cdb['strontium titanate'] = cdb['srtio3']
 
@@ -639,18 +584,16 @@ cdb['mose2'] = {'crystal_name': 'MoSe2',
                 'c': 15.45142322,  # Angstrom
                 'u': 0.108249,
                 'reference': '', 'link': ''}
-a_l = 0.3336
-c_l = 0.4754
-base_l = [(2. / 3., 1. / 3., .5), (1. / 3., 2. / 3., 0.), (2. / 3., 1. / 3., 0.), (1. / 3., 2. / 3., .5)]
 
+base_l = [(2./3., 1./3., .5), (1./3., 2./3., 0.), (2./3., 1./3., 0.), (1./3., 2./3., .5)]
 cdb['zno hexagonal'] = {'crystal_name': 'ZnO hexagonal',
                         'symmetry': 'hexagonal',
-                        'a': a_l,  # nm
-                        'c': c_l,  # not np.sqrt(8/3)*1
+                        'a': 0.3336,  # nm
+                        'c': 0.4754,  # not np.sqrt(8/3)*1
                         'elements': ['Zn', 'Zn', 'O', 'O'],
-                        'unit_cell': [[a_l, 0., 0.],
-                                      [np.cos(120 / 180 * np.pi) * a_l, np.sin(120 / 180 * np.pi) * a_l, 0.],
-                                      [0., 0., c_l]],
+                        'unit_cell': [[0.3336, 0., 0.],
+                                      [np.cos(120/180 * np.pi) * 0.3336, np.sin(120/180 * np.pi) * 0.3336, 0.],
+                                      [0., 0., 0.4754]],
                         'base': np.array(base_l),
                         'reference': '', 'link': ''}
 
