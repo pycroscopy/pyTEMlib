@@ -300,7 +300,7 @@ def diffractogram_spots(dset, spot_threshold, return_center=True, eps=0.1):
     Returns
     -------
     spots: numpy array
-        sorted position (x,y) and radius (r) of all spots
+        sorted position (x,y) and angle (rad) of all spots
     """
 
     # spot detection (for future reference there is no symmetry assumed here)
