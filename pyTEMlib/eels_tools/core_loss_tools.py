@@ -92,7 +92,7 @@ def find_all_edges(edge_onset: float,
     out_text = ''
     for z in np.arange(1, 93):
         x_section = get_x_sections(z)
-        name = x_section[key].get('name', '')
+        name = x_section.get('name', '')
         for key in x_section:
             if not isinstance(x_section[key], dict):
                 continue
@@ -685,7 +685,8 @@ def fit_edges(spectrum, energy_scale, region_tags, edges):
     edges['model']['blurred'] = blurred
     edges['model']['mask'] = mask
     edges['model']['fit_parameter'] = p
-    edges['model']['fit_area_start'] = fit_area['start_x']
+    edges['model']['fit_area_sta' \
+    'rt'] = fit_area['start_x']
     edges['model']['fit_area_end'] = fit_area['start_x'] + fit_area['width_x']
     return edges
 
