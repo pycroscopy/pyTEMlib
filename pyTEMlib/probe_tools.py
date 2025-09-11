@@ -14,7 +14,7 @@ def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
     size_y = size_y / 2
     x, y = np.mgrid[-size_x:size_x, -size_y:size_y]
     g = np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / 2.0 / width ** 2)
-    probe = g / g.sum() * intensity
+    probe = g / (g.sum()+ 0.00001) * intensity
 
     return probe
 
