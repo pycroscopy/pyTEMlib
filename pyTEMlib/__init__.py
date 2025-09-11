@@ -3,10 +3,11 @@
 PyTEMlib
 --------
 A Python package for analyzing and processing transmission electron microscopy (TEM) data.
-This package provides tools for data quantification through a model-based approach, including functionalities for imaging, 
-spectra analysis, and data visualization.
+This package provides tools for data quantification through a model-based approach, 
+including functionalities for imaging, spectra analysis, and data visualization.
 
-The package is part of the pycrosccopy ecosystem and the dataformat is based on sidpy, the fileformat is based on pyNSDI.
+The package is part of the pycrosccopy ecosystem and the dataformat is based on sidpy, 
+the fileformat is based on pyNSDI.
 Created on Sat Jan 19 10:07:35 2019
 Update on Sun Jul 20 2025
 
@@ -20,14 +21,13 @@ from .image import image_atoms as atom_tools
 from . import graph_tools
 from . import probe_tools
 from . import eels_tools
+from . import eds_tools
 from . import crystal_tools
 from . import kinematic_scattering
 from . import dynamic_scattering
+from .config_dir import config_path
 
-
-__all__ = ['__version__', 'file_tools', 'image_tools', 'atom_tools', 
-           'graph_tools', 'probe_tools', 'eels_tools', 'crystal_tools',
-           'kinematic_scattering', 'dynamic_scattering']
+__all__ = ['__version__', 'file_tools', 'image_tools', 'atom_tools',
+           'graph_tools', 'probe_tools', 'eels_tools', 'eds_tools',
+           'crystal_tools', 'kinematic_scattering', 'dynamic_scattering', 'config_path']
 __author__ = 'Gerd Duscher'
-
-name = "pyTEMlib"

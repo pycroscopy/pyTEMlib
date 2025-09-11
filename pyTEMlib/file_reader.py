@@ -12,13 +12,9 @@ import xml
 import numpy as np
 
 
-# For structure files of various flavor for instance POSCAR and other theory packages
-import ase.io
-
 # =============================================
 #   Include  pycroscopy libraries                                      #
 # =============================================
-import SciFiReaders
 import pyNSID
 import sidpy
 
@@ -71,6 +67,7 @@ def read_adorned_metadata(image: typing.Any) -> tuple[str, dict[str, typing.Any]
 
 
 def get_metadata_from_adorned(ds: sidpy.Dataset):
+    """Extract relevant metadata from adorned image metadata and add to sidpy.Dataset"""
     exp_meta = {}
     orig_meta = ds.original_metadata
     if 'Optics' in orig_meta:
@@ -93,7 +90,8 @@ def get_metadata_from_adorned(ds: sidpy.Dataset):
             exp_meta['exposure_time'] = orig_meta['Detectors']['ImagingDetector']['ExposureTime']
     ds.metadata['experiment'] = exp_meta
 
-def adorned_to_sidpy(images: typing.Union[list[typing.Any], typing.Any]) -> dict[str, sidpy.Dataset]:
+def adorned_to_sidpy(images: typing.Union[list[typing.Any], typing.Any]
+                     ) -> dict[str, sidpy.Dataset]:
     """
     Convert a list of adorned images to a dictionary of Sidpy datasets.
     Each dataset is created from the image data and adorned metadata.       
@@ -105,7 +103,7 @@ def adorned_to_sidpy(images: typing.Union[list[typing.Any], typing.Any]) -> dict
         Returns:    
         dict: A dictionary of Sidpy datasets, where each dataset corresponds to an image.
     """
-    
+
     data_sets = {}
     if not isinstance(images, list):
         images = [images]
@@ -113,7 +111,6 @@ def adorned_to_sidpy(images: typing.Union[list[typing.Any], typing.Any]) -> dict
         name, original_metadata = read_adorned_metadata(image)
         data_sets[f'Channel_{index:03}'] = sidpy.Dataset.from_array(image.data.T, title=name)
         ds = data_sets[f'Channel_{index:03}']
-        
 
         ds.original_metadata = original_metadata
 
@@ -124,18 +121,22 @@ def adorned_to_sidpy(images: typing.Union[list[typing.Any], typing.Any]) -> dict
         if image.data.ndim == 3:
             ds.data_type = 'image_stack'
             ds.set_dimension(0, sidpy.Dimension(np.arange(image.data.shape[0]),
-                                           name='frame', units='frame', quantity='Length', dimension_type='temporal'))
+                                           name='frame', units='frame', quantity='Length',
+                                           dimension_type='temporal'))
             ds.set_dimension(1, sidpy.Dimension(np.arange(image.data.shape[1]) * pixel_size_y_nm,
-                                          name='y', units='nm', quantity='Length', dimension_type='spatial'))
+                                          name='y', units='nm', quantity='Length',
+                                          dimension_type='spatial'))
             ds.set_dimension(2, sidpy.Dimension(np.arange(image.data.shape[2]) * pixel_size_x_nm,
-                                          name='x', units='nm', quantity='Length', dimension_type='spatial'))        
-        else:         
+                                          name='x', units='nm', quantity='Length',
+                                          dimension_type='spatial'))
+        else:
             ds.data_type = 'image'
             ds.set_dimension(0, sidpy.Dimension(np.arange(image.data.shape[0]) * pixel_size_y_nm,
-                                          name='y', units='nm', quantity='Length', dimension_type='spatial'))   
+                                          name='y', units='nm', quantity='Length',
+                                          dimension_type='spatial'))
             ds.set_dimension(1, sidpy.Dimension(np.arange(image.data.shape[1]) * pixel_size_x_nm,
-                                          name='x', units='nm', quantity='Length', dimension_type='spatial'))
-
+                                          name='x', units='nm', quantity='Length',
+                                          dimension_type='spatial'))
         get_metadata_from_adorned(ds)
     return data_sets
 

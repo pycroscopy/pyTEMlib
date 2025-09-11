@@ -9,9 +9,7 @@ config_dir: setup of directory ~/.pyTEMlib for custom sources and database
 import os
 
 # import wget
-if os.name == 'posix':
-    config_path = os.path.join(os.path.expanduser('~'), '.pyTEMlib')
-elif os.name in ['nt', 'dos']:
+if os.name in ['nt', 'dos', 'posix']:
     config_path = os.path.join(os.path.expanduser('~'), '.pyTEMlib')
 else:
     config_path = '.'

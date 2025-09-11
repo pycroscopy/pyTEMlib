@@ -356,7 +356,7 @@ def read_dm_annotation(image: sidpy.Dataset) -> typing.Dict[str, typing.Any]:
     return annotations
 
 
-def open_file(filename, write_hdf_file=False, sum_frames=False):
+def open_file(filename, write_hdf_file=False, sum_frames=False, sum_eds=True):
     """Opens a file if the extension is .emd, .mrc, .hf5, .ndata, .dm3 or .dm4
 
     Everything will be stored in a NSID style hf5 file.
@@ -482,6 +482,31 @@ def open_file(filename, write_hdf_file=False, sum_frames=False):
 
         for key in dset:
             read_dm_annotation(dset[key])
+
+    elif extension == '.emd':
+        if not sum_eds:
+            return
+        eds_keys = []
+        for key, item in dset.items():
+            if 'SuperX' in item.title or 'UltraX' in item.title:
+                if len(eds_keys) == 0:
+                    spectrum = item.copy()
+                else:
+                    spectrum += item
+                eds_keys.append(key)
+        spectrum.compute()
+
+        spectrum.data_type = dset[eds_keys[0]].data_type
+        if 'SuperX' in dset[eds_keys[0]].title:
+            spectrum.title = 'EDS_SuperX'
+        if 'UltraX' in dset[eds_keys[0]].title:
+            spectrum.title = 'EDS_UltraX'
+        spectrum.original_metadata = dset[eds_keys[0]].original_metadata.copy()
+        spectrum.metadata = dset[eds_keys[0]].metadata.copy()
+
+        for key in eds_keys:
+            del dset[key]
+        dset['SuperX'] = spectrum
 
     if isinstance(dset, dict):
         dataset_dict = dset
@@ -618,7 +643,6 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
     key_name: str
         actual last used name of dictionary key
     """
-
     datasets2 = open_file(filename=filename)
     first_dataset = datasets2[list(datasets2)[0]]
     if isinstance(first_dataset, sidpy.Dataset):

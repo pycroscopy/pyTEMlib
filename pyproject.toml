@@ -71,7 +71,7 @@ platforms = ["Linux", "Mac OSX", "Windows 11/10"]
 include-package-data = true
 
 [tool.setuptools.packages.find]
-exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests", "build"]
 
 [tool.setuptools.package-data]
 pyTEMlib = ["data/*"]

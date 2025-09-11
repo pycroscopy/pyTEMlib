@@ -8,7 +8,7 @@ revision: 01/11/2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+from matplotlib import patches
 
 from ipywidgets import widgets
 from IPython.display import display
@@ -50,8 +50,8 @@ def geometric_ray_diagram(focal_length=1., magnification=False):
     ax.add_patch(ellipse)
     ax.plot([1.5, -1.5], [0, 0], '--', color='black')
     ax.plot([0, 0], [u, -v], '--', color='black')
-    single_prop = dict(arrowstyle="->", shrinkA=0, shrinkB=0)
-    double_prop = dict(arrowstyle="<->", shrinkA=0, shrinkB=0)
+    single_prop = {"arrowstyle": '->', "shrinkA": 0, "shrinkB": 0}
+    double_prop = {"arrowstyle": "<->", "shrinkA": 0, "shrinkB": 0}
 
     if magnification:
         ax.annotate("", xy=(-x, u), xytext=(x, u), arrowprops=single_prop)
@@ -120,14 +120,16 @@ def add_lens(z, f, diam, lens_labels):
 def add_aperture(z, diam, radius, lens_labels):
     """add aperture to propagate beam plot"""
 
-    ww, tw, rad = diam / 10.0, diam / 3.0, diam / 2.0
+    # ww, tw, rad = diam / 10.0, diam / 3.0, diam / 2.0
+    rad = diam / 2
     radius = radius / 2
     plt.plot([z, z], [-rad, -radius], 'k', linewidth=2)
     plt.plot([z, z], [rad, radius], 'k', linewidth=2)
     plt.text(z, -rad - 2.0, lens_labels, fontsize=12)
 
 
-def propagate_beam(source_position, numerical_aperture, number_of_rays, lens_positions, focal_lengths,
+def propagate_beam(source_position, numerical_aperture, number_of_rays, 
+                   lens_positions, focal_lengths,
                    lens_labels='', color='b'):
     """geometrical propagation of light rays from given source
 
@@ -242,33 +244,35 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
     k_0[1] += shift_y
 
     # Ewald Sphere
-    ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0), clip_on=False, zorder=10, linewidth=1,
+    ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0), 
+                                  clip_on=False, zorder=10, linewidth=1,
                                   edgecolor=color, fill=False)
     plt.gca().add_artist(ewald_sphere)
 
-    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, 1 / d / 2, head_width=0.03, head_length=0.04, fc='k', ec='k',
-                    length_includes_head=True)
-    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, -1 / d / 2, head_width=0.03, head_length=0.04, fc='k', ec='k',
-                    length_includes_head=True)
-    plt.gca().annotate("$|g_{HOLZ}|$", xytext=(g[-1] + .1 / d / 3, 1 / d / 3), xy=(g[-1] + 1 / d / 3, 1 / d / 3))
-
-    # k_0
+    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, 1 / d / 2, head_width=0.03, 
+                    head_length=0.04, fc='k', ec='k', length_includes_head=True)
+    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, -1 / d / 2, head_width=0.03, 
+                    head_length=0.04, fc='k', ec='k', length_includes_head=True)
+    plt.gca().annotate("$|g_{HOLZ}|$", xytext=(g[-1] + .1 / d / 3, 1 / d / 3), 
+                       xy=(g[-1] + 1 / d / 3, 1 / d / 3))
     plt.scatter(k_0[0], k_0[1])
-    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + shift_x, -k_0[1] + shift_y, head_width=0.03, head_length=0.04, fc=color,
-                    ec=color, length_includes_head=True)
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + shift_x, -k_0[1] + shift_y, head_width=0.03, 
+                    head_length=0.04, fc=color, ec=color, length_includes_head=True)
     plt.gca().annotate("K$_0$", xytext=(k_0[0] / 2, k_0[1] / 3), xy=(k_0[0] / 2, k_0[1] / 2))
 
     # K_d Bragg of HOLZ reflection
-    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + g_d[0] + shift_x, -k_0[1] + g_d[1] + s_g + shift_y, head_width=0.03,
-                    head_length=0.04, fc=color,
-                    ec=color, length_includes_head=True)
-    plt.gca().annotate("K$_d$", xytext=(k_0[0] + (g_d[0] - k_0[0]) / 2, k_0[1] / 2), xy=(6.5 / d / 2, k_0[1] / 2))
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + g_d[0] + shift_x, -k_0[1] + g_d[1] + s_g + shift_y, 
+                    head_width=0.03, head_length=0.04, fc=color, ec=color, 
+                    length_includes_head=True)
+    plt.gca().annotate("K$_d$", xytext=(k_0[0] + (g_d[0] - k_0[0]) / 2, k_0[1] / 2), 
+                       xy=(6.5 / d / 2, k_0[1] / 2))
 
     # s_g excitation Error of HOLZ reflection
     if s_g > 0:
         plt.gca().arrow(g_d[0], g_d[1], 0, s_g, head_width=0.03, head_length=0.04, fc='k',
                         ec='k', length_includes_head=True)
-        plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3), xy=(g_d[0] * 1.01, g_d[1] + s_g / 3))
+        plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3), 
+                           xy=(g_d[0] * 1.01, g_d[1] + s_g / 3))
 
     # Bragg angle
     g_sg = g_d
@@ -311,6 +315,7 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
 
 
 def deficient_kikuchi_line(s_g=0., color_b='black'):
+    """Draw the deficient Kikuchi line in the plot."""
     k_len = 1 / ks.get_wavelength(20)
     d = 2  # lattice parameter in nm
 
@@ -391,7 +396,7 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
     plt.gca().set_xlim(-.2, 1.03)
 
 
-class InteractiveAberration(object):
+class InteractiveAberration():
     """
     ### Interactive explanation of aberrations
 
@@ -423,6 +428,7 @@ class InteractiveAberration(object):
         # self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
 
     def on_button_clicked(self, b):
+        """Handle button click events to update the analysis options"""
         # print(b['owner'].description)
         selection = b['owner'].description
         if selection in self.analysis:
@@ -432,6 +438,7 @@ class InteractiveAberration(object):
         self.update()
 
     def update(self):
+        """Update the plot based on the selected analysis options"""
         ax = self.ax
         ax.clear()
         selection = self.analysis
@@ -519,7 +526,7 @@ class InteractiveAberration(object):
             plt.gca().add_patch(aberration2)
 
 
-class InteractiveRonchigramMagnification(object):
+class InteractiveRonchigramMagnification():
     """    
     ### Interactive explanation of magnification 
 
@@ -551,6 +558,7 @@ class InteractiveRonchigramMagnification(object):
         # self.cid = self.figure.canvas.mpl_connect('button_press_event', self.onclick)
 
     def on_button_clicked(self, b):
+        """Handle button click events"""
         # print(b['owner'].description)
         selection = b['owner'].description
         if selection in self.analysis:
@@ -560,6 +568,7 @@ class InteractiveRonchigramMagnification(object):
         self.update()
 
     def update(self):
+        """Update the plot based on the selected analysis options"""
         ax = self.ax
         ax.clear()
         selection = self.analysis
