@@ -140,7 +140,6 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
         dictionary containing new atom positions and other output
     """
     rr = int(radius + 0.5)  # atom radius
-    print('using radius ', rr, 'pixels')
 
     pixels = np.linspace(0, 2 * rr, 2 * rr + 1) - rr
     x, y = np.meshgrid(pixels, pixels)
@@ -159,7 +158,7 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     gauss_amplitude = []
     gauss_intensity = []
 
-    for i in trange(len(atoms)):
+    for i in range(len(atoms)):
         x, y = atoms[i][0:2]
         x = int(x)
         y = int(y)
@@ -190,7 +189,6 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
                 pass
             else:
                 [pout, _] = scipy.optimize.leastsq(gauss_difference, guess, args=area)
-
             if (abs(pout[1]) > max_dist) or (abs(pout[2]) > max_dist):
                 pout = [0, 0, 0, 0]
 
