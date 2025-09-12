@@ -1,6 +1,7 @@
 """  X-ray photo-absorption cross-sections for inelastic scattering from NIST
 The cross sections are given in atoms/nm^3 not barns!!
 See xsec_xrpa function in eels_tools for usage.
+https://physics.nist.gov/PhysRefData/FFast/html/form.html
 
 for pyTEMLib by Gerd
 
@@ -21,6 +22,7 @@ Z = 1 -100
 page 25
 by: S. T. Perkins, D. E. CuUen, M. H. Chen, J. H. Hubbell, J. Rathkopf, J. Scofield
 https://www.osti.gov/servlets/purl/10121422
+
 """
 
 import numpy as np
@@ -1017,7 +1019,7 @@ x_sections = {'1': {'name': 'H',
 		       'lines': {'K-L3': {'weight': 1.0, 'position': 1253.6},
 			          'K-L2': {'weight': 0.507, 'position': 1253.6},
 			         },
-                    'fluorescent_yield': {'K': 0.027775},
+                    'fluorescent_yield': {'K': 0.02333},
                     'total_fluorescent_yield': {'K': 0.027692},
                      'L3': {'filename': 'Mg.L3', 'excl before': 5, 'excl after': 50, 'onset': 51.4, 'factor': 1.0,
                             'twin': 'L2', 'shape': 'hydrogenic'},
@@ -4863,6 +4865,8 @@ x_sections = {'1': {'name': 'H',
         3.97919316e+12, 3.28605194e+12, 2.69759840e+12, 2.21449596e+12,
         1.81803617e+12, 1.49269500e+12, 1.22431507e+12, 1.00189688e+12,
         8.19920778e+11, 6.71022793e+11]), },
+        
+        
               '36': {'name': 'Kr',
                      'barns': 1391530000000.0,
                      'NumEdges': 9,
@@ -6435,7 +6439,7 @@ x_sections = {'1': {'name': 'H',
 			          'M4-N2': {'weight': 0.01, 'position': 263.8},
 			          'M5-N3': {'weight': 0.1, 'position': 259.1},
 			         },
-                     'fluorescent_yield':{'K': 0.81257, 'L': 0.04641, 'M': 0.000961},
+                     'fluorescent_yield':{'K': 0.81257, 'L': 0.04641, 'M': 0.000836},
                      'total_fluorescent_yield':{'K': 0.808090, 'L1': 0.049941, 'L2': 0.054357, 'L3': 0.048963, 'M1': 0.001151, 'M2': 0.001219, 'M3': 0.001128, 'M4': 0.000349, 'M5': 0.000309},
                      'N5': {'filename': 'None', 'excl before': 5, 'excl after': 50, 'onset': 2.5, 'factor': 1.0,
                             'twin': 'N4'},

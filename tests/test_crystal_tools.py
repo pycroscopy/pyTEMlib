@@ -24,7 +24,7 @@ class TestUtilityFunctions(unittest.TestCase):
 
     def test_ball_and_stick(self):
         atoms = ase.build.bulk('Fe', 'bcc', cubic=True)
-        cell_2_plot = cs.ball_and_stick(atoms, extend=1, max_bond_length=1.)
+        cell_2_plot = cs.ball_and_stick(atoms, extend=1)
 
         self.assertTrue(len(cell_2_plot.info['plot_cell']['corner_matrix']) == 12)
 

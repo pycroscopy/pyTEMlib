@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyTEMlib"
+dynamic = ["version"]
+description = "pyTEM: TEM Data Quantification library through a model-based approach"
+readme = "README.rst"
+license = "MIT"
+authors = [
+    {name = "Gerd Duscher", email = "gduscher@utk.edu"}
+]
+keywords = [
+    "imaging", "spectra", "transmission", "electron", "microscopy",
+    "scientific", "scanning", "eels", "visualization", "processing",
+    "storage", "hdf5", "diffraction"
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering :: Information Analysis"
+]
+requires-python = ">=3.9"
+dependencies = [
+    "scipy",
+    "numpy", 
+    "pillow",
+    "ase",
+    "tqdm",
+    "plotly",
+    "pandas",
+    "requests",
+    "lxml",
+    "ipympl",
+    "spglib",
+    "simpleitk",
+    "scikit-image",
+    "scikit-learn",
+    "pyNSID>=0.0.7",
+    "sidpy>=0.12.7",
+    "SciFiReaders>=0.0.8",
+]
+
+[project.urls]
+Homepage = "https://pycroscopy.github.io/pyTEMlib/about.html"
+Repository = "https://github.com/pycroscopy/pyTEMlib"
+Documentation = "https://pycroscopy.github.io/pyTEMlib/"
+
+[project.scripts]
+pyTEMlib = "pyTEMlib:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-runner"
+]
+
+[tool.setuptools]
+platforms = ["Linux", "Mac OSX", "Windows 11/10"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests", "build"]
+
+[tool.setuptools.package-data]
+pyTEMlib = ["data/*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pyTEMlib.version.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "docs"]

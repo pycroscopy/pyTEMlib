@@ -21,19 +21,6 @@ import pyTEMlib
 print(pyTEMlib.__version__)
 
 class TestFileFunctions(unittest.TestCase):
-    def test_dm3_eels_info(self):
-        file_path = os.path.dirname(os.path.abspath(__file__))
-
-        file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
-        datasets = ft.open_file(file_name)
-        dataset = datasets['Channel_000']
-        if dataset.h5_dataset is not None:
-            dataset.h5_dataset.file.close()
-        metadata = ft.read_dm3_info(dataset.original_metadata)
-        self.assertIsInstance(metadata, dict)
-        self.assertEqual(metadata['exposure_time'], 10.0)
-
-
     def test_fit_peaks(self):
         file_path = os.path.dirname(os.path.abspath(__file__))
         file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')

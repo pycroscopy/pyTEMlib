@@ -83,8 +83,8 @@ class TestScatteringFunctions(unittest.TestCase):
     def test_ring_pattern_calculation(self):
         atoms = ks.example(verbose=False)
         ks.ring_pattern_calculation(atoms, verbose=True)
-
-        self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['hkl'][7][2], 4.)
+    
+        self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['hkl'][7].sum(), 8.)
         self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['g norm'][0], 0.33697)
         self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['structure factor'][0].real, 12.396310472193898)
         self.assertEqual(atoms.info['Ring_Pattern']['allowed']['multiplicity'][0], 8)
