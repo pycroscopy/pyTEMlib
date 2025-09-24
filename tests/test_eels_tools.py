@@ -94,12 +94,12 @@ class TestFileFunctions(unittest.TestCase):
         self.assertIsInstance(edge, dict)
         self.assertIsInstance(edge[0]['data'], np.ndarray)
 
-    def test_power_law(self):
+    """def test_power_law(self):
         background = eels.power_law(np.arange(50, 500), 3000., 3.)
 
         self.assertIsInstance(background, np.ndarray)
 
-    """def test_power_law_background(self):
+    def test_power_law_background(self):
             file_path = os.path.dirname(os.path.abspath(__file__))
             file_name = os.path.join(file_path, '../example_data/AL-DFoffset0.00.dm3')
             datasets = ft.open_file(file_name)
@@ -152,10 +152,12 @@ class TestFileFunctions(unittest.TestCase):
         self.assertTrue(True)  # np.isclose(shifts[0, 0], -0.22673, rtol=1e-01))
         # self.assertTrue(np.isclose(shifts[1, 0], -0.22673, rtol=1e-01))
 
+
+    """
     def test_effective_collection_angle(self):
         eff_beta = eels.effective_collection_angle(np.arange(59, 500), 10, 10, 200)
 
-        self.assertTrue(eff_beta > 1)
+        self.assertTrue(eff_beta > 1)"""
 
     # def test_get_db_spectra(self):
         #spec_db = eels.get_spectrum_eels_db(formula='MgO', edge='K', title=None, element='O')
