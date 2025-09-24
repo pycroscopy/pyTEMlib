@@ -20,6 +20,7 @@ attribute of the sidpy.Dataset
 import os
 import csv
 import json
+import xml
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,11 +33,11 @@ import sklearn  # .mixture import GaussianMixture
 import sidpy
 
 import pyTEMlib
-
+import pyTEMlib.file_reader
+from .utilities import elements
+from . eds_xsections import quantify_cross_section, quantification_k_factors
 from .config_dir import config_path
-elements_list = pyTEMlib.utilities.elements
-shell_occupancy = pyTEMlib.utilities.shell_occupancy
-
+elements_list = elements
 
 
 def detector_response(dataset):
@@ -192,7 +193,7 @@ def find_elements(spectrum, minor_peaks):
     if not isinstance(spectrum, sidpy.Dataset):
         raise TypeError(' Need a sidpy dataset')
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
-    elements = set()
+    element_list = set()
     peaks = minor_peaks[np.argsort(spectrum[minor_peaks])]
     accounted_peaks = set()
     for i, peak in reversed(list(enumerate(peaks))):
@@ -203,7 +204,7 @@ def find_elements(spectrum, minor_peaks):
             # element = edge_info['name']
             lines = edge_info.get('lines', {})
             if abs(lines.get('K-L3', {}).get('position', 0) - energy_scale[peak]) <40:
-                elements.add(edge_info['name'])
+                element_list.add(edge_info['name'])
                 for key, line in lines.items():
                     dist = np.abs(energy_scale[peaks]-line.get('position', 0))
                     if key[0] == 'K' and np.min(dist)< 40:
@@ -212,19 +213,19 @@ def find_elements(spectrum, minor_peaks):
             # This is a special case for boron and carbon
             elif abs(lines.get('K-L2', {}).get('position', 0) - energy_scale[peak]) <30:
                 accounted_peaks.add(i)
-                elements.add(edge_info['name'])
+                element_list.add(edge_info['name'])
 
             if abs(lines.get('L3-M5', {}).get('position', 0) - energy_scale[peak]) <50:
-                elements.add(edge_info['name'])
+                element_list.add(edge_info['name'])
                 for key, line in edge_info['lines'].items():
                     dist = np.abs(energy_scale[peaks]-line.get('position', 0))
                     if key[0] == 'L' and np.min(dist)< 40 and line['weight'] > 0.01:
                         ind = np.argmin(dist)
                         accounted_peaks.add(ind)
-    return list(elements)
+    return list(element_list)
 
 
-def get_x_ray_lines(spectrum, elements):
+def get_x_ray_lines(spectrum, element_list):
     """
     Analyze the given spectrum to identify and characterize the X-ray emission lines
     associated with the specified elements.
@@ -252,7 +253,7 @@ def get_x_ray_lines(spectrum, elements):
     out_tags = {}
     x_sections = pyTEMlib.xrpa_x_sections.x_sections
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
-    for element in elements:
+    for element in element_list:
         atomic_number = pyTEMlib.eds_tools.elements_list.index(element)
         out_tags[element] ={'Z': atomic_number}
         lines = pyTEMlib.xrpa_x_sections.x_sections.get(str(atomic_number), {}).get('lines', {})
@@ -287,7 +288,6 @@ def get_x_ray_lines(spectrum, elements):
                     if line['weight'] > m_weight:
                         m_weight = line['weight']
                         m_main = key
-
         if k_weight > 0:
             out_tags[element]['K-family'] = {'main': k_main, 'weight': k_weight, 'lines': k_lines}
             position = x_sections[str(atomic_number)]['lines'][k_main]['position']
@@ -309,18 +309,7 @@ def get_x_ray_lines(spectrum, elements):
             out_tags[element]['M-family']['height'] = height/m_weight
             for key in m_lines :
                 out_tags[element]['M-family'][key] = x_sections[str(atomic_number)]['lines'][key]
-
-        xs = get_eds_cross_sections(atomic_number)
-        if 'K' in xs and 'K-family' in out_tags[element]:
-            out_tags[element]['K-family']['probability'] = xs['K']
-        if 'L' in xs and 'L-family' in out_tags[element]:
-            out_tags[element]['L-family']['probability'] = xs['L']
-        if 'M' in xs and 'M-family' in out_tags[element]:
-            out_tags[element]['M-family']['probability'] = xs['M']
-
-    if 'EDS' not in spectrum.metadata:
-        spectrum.metadata['EDS'] = {}
-    spectrum.metadata['EDS'].update(out_tags)
+    spectrum.metadata.setdefault('EDS', {}).update(out_tags)
     return out_tags
 
 
@@ -417,11 +406,11 @@ def get_model(spectrum):
     if detector_efficiency is not None:
         bremsstrahlung = (pp[-3] + pp[-2] * (e_0 - energy_scale) / energy_scale +
                           pp[-1] * (e_0 - energy_scale) ** 2 / energy_scale)
-        model += detector_efficiency * bremsstrahlung
-
+        model += bremsstrahlung
+        model *= detector_efficiency
     return model
 
-def fit_model(spectrum, elements, use_detector_efficiency=False):
+def fit_model(spectrum, use_detector_efficiency=False):
     """
     Fit the EDS spectrum using a model composed of elemental peaks and bremsstrahlung background.
 
@@ -460,15 +449,15 @@ def fit_model(spectrum, elements, use_detector_efficiency=False):
         for i in range(len(pp)-4):
             model += peaks[i]*pp[i]
         if use_detector_efficiency:
-            model *= efficiency
             bremsstrahlung = (pp[-3] + pp[-2] * (e_0 - energy_scale) / energy_scale +
                               pp[-1] * (e_0 - energy_scale)**2 / energy_scale)
-            model += efficiency * bremsstrahlung
+            model += bremsstrahlung
+            model *= efficiency
         err = np.abs(yy - model)  # /np.sqrt(np.abs(yy[start:])+1e-12)
         return err
 
     y = np.array(spectrum)  # .compute()
-    [p, _] = scipy.optimize.leastsq(residuals, pin, args=(y,))
+    [p, _] = scipy.optimize.leastsq(residuals, pin, args=(y,), maxfev=10000)
 
     update_fit_values(spectrum.metadata['EDS'], peaks, p)
     return np.array(peaks), np.array(p)
@@ -498,115 +487,6 @@ def update_fit_values(out_tags, peaks, p):
             lines['M-family']['peaks'] = peaks[index]
             index += 1
     out_tags['bremsstrahlung'] = p[-4:]
-
-
-def get_eds_cross_sections(z, acceleration_voltage=200000):
-    """
-    Calculate the EDS cross sections for a given atomic number and acceleration voltage.
-
-    Parameters:
-    - z: Atomic number of the element.
-    - acceleration_voltage: Acceleration voltage in volts (default is 200,000 V).
-
-    Returns:
-    - eds_cross_sections: Dictionary containing the calculated cross sections for various edges.
-    """
-    energy_scale = np.arange(1,40000)
-    x_section = pyTEMlib.eels_tools.xsec_xrpa(energy_scale,
-                                             acceleration_voltage/1000.,
-                                             z, 400.)
-    edge_info = pyTEMlib.eels_tools.get_x_sections(z)
-
-    eds_cross_sections = {}
-    x_yield = edge_info['total_fluorescent_yield']
-    if 'K' in x_yield:
-        start_bgd = edge_info['K1']['onset'] * 0.8
-        end_bgd = edge_info['K1']['onset']  - 5
-        if start_bgd > end_bgd:
-            start_bgd = end_bgd-100
-        if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
-            eds_xsection = get_eds_xsection(x_section, energy_scale, start_bgd, end_bgd)
-            eds_xsection[eds_xsection<0] = 0.
-            start_sum = np.searchsorted(energy_scale, edge_info['K1']['onset'])
-            end_sum = min(start_sum+600, len(x_section)-1)
-            eds_cross_sections['K1'] = eds_xsection[start_sum:end_sum].sum()
-            eds_cross_sections['K'] = eds_xsection[start_sum:end_sum].sum() * x_yield['K']
-
-    if 'L3' in x_yield:
-        start_bgd = edge_info['L3']['onset'] * 0.8
-        end_bgd = edge_info['L3']['onset']  - 5
-        if start_bgd > end_bgd:
-            start_bgd = end_bgd-100
-        if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
-            eds_xsection = get_eds_xsection(x_section, energy_scale, start_bgd, end_bgd)
-            eds_xsection[eds_xsection<0] = 0.
-            start_sum = np.searchsorted(energy_scale, edge_info['L3']['onset'])
-            end_sum = min(start_sum+600, len(x_section)-1)
-            end_sum = min(end_sum, np.searchsorted(energy_scale, edge_info['K1']['onset']) - 10)
-            eds_cross_sections['L'] = eds_xsection[start_sum:end_sum].sum()
-            l1_channel =  np.searchsorted(energy_scale, edge_info['L1']['onset'])
-            m_start = start_sum-100
-            if m_start < 2:
-                m_start = start_sum-20
-            l3_rise = (np.max(x_section[m_start: l1_channel-10])-
-                       np.min(x_section[m_start: l1_channel-10]))
-            l1_rise = (np.max(x_section[l1_channel-10: l1_channel+100])-
-                       np.min(x_section[l1_channel-10: l1_channel+100]))
-            l1_ratio = l1_rise/l3_rise
-
-            eds_cross_sections['L1'] = l1_ratio * eds_cross_sections['L']
-            eds_cross_sections['L2'] = eds_cross_sections['L']*(1-l1_ratio)*1/3
-            eds_cross_sections['L3'] = eds_cross_sections['L']*(1-l1_ratio)*2/3
-            eds_cross_sections['yield_L1'] = x_yield['L1']
-            eds_cross_sections['yield_L2'] = x_yield['L2']
-            eds_cross_sections['yield_L3'] = x_yield['L3']
-
-            eds_cross_sections['L'] = (eds_cross_sections['L1']*x_yield['L1']+
-                                       eds_cross_sections['L2']*x_yield['L2']+
-                                       eds_cross_sections['L3']*x_yield['L3'])
-            # eds_cross_sections['L'] /= 8
-    if 'M5' in x_yield:
-        start_bgd = edge_info['M5']['onset'] * 0.8
-        end_bgd = edge_info['M5']['onset']  - 5
-        if start_bgd > end_bgd:
-            start_bgd = end_bgd-100
-        if start_bgd > energy_scale[0] and end_bgd< energy_scale[-1]-100:
-            eds_xsection = get_eds_xsection(x_section, energy_scale, start_bgd, end_bgd)
-            eds_xsection[eds_xsection<0] = 0.
-            start_sum = np.searchsorted(energy_scale, edge_info['M5']['onset'])
-            end_sum = start_sum + 600
-            end_sum = min(end_sum, np.searchsorted(energy_scale, edge_info['L3']['onset']) - 10)
-            eds_cross_sections['M'] = eds_xsection[start_sum:end_sum].sum()
-            #print(edge_info['M5']['onset'] - edge_info['M1']['onset'])
-            l3_channel =  np.searchsorted(energy_scale, edge_info['M3']['onset'])
-            m1_channel =  np.searchsorted(energy_scale, edge_info['M1']['onset'])
-            m5_rise = (np.max(x_section[start_sum-100: l3_channel-10])-
-                       np.min(x_section[start_sum-100: l3_channel-10]))
-            m3_rise = (np.max(x_section[l3_channel-10: m1_channel-10])-
-                       np.min(x_section[l3_channel-10: m1_channel-10]))
-            m1_rise = (np.max(x_section[m1_channel-10: m1_channel+100])-
-                       np.min(x_section[m1_channel-10: m1_channel+100]))
-            m1_ratio = m1_rise/m5_rise
-            m3_ratio = m3_rise/m5_rise
-            m5_ratio = 1-(m1_ratio+m3_ratio)
-            #print(m1_ratio, m3_ratio, 1-(m1_ratio+m3_ratio))
-            eds_cross_sections['M1'] = m1_ratio * eds_cross_sections['M']
-            eds_cross_sections['M2'] = m3_ratio * eds_cross_sections['M']*1/3
-            eds_cross_sections['M3'] = m3_ratio * eds_cross_sections['M']*2/3
-            eds_cross_sections['M4'] = m5_ratio * eds_cross_sections['M']*2/5
-            eds_cross_sections['M5'] = m5_ratio * eds_cross_sections['M']*3/5
-            eds_cross_sections['yield_M1'] = x_yield['M1']
-            eds_cross_sections['yield_M2'] = x_yield['M2']
-            eds_cross_sections['yield_M3'] = x_yield['M3']
-            eds_cross_sections['yield_M4'] = x_yield['M4']
-            eds_cross_sections['yield_M5'] = x_yield['M5']
-            eds_cross_sections['M'] = (eds_cross_sections['M1']*x_yield['M1']+
-                                       eds_cross_sections['M2']*x_yield['M2']+
-                                       eds_cross_sections['M3']*x_yield['M3']+
-                                       eds_cross_sections['M4']*x_yield['M4']+
-                                       eds_cross_sections['M5']*x_yield['M5'])
-            #eds_cross_sections['M'] /= 18
-    return eds_cross_sections
 
 
 def get_phases(dataset, mode='kmeans', number_of_phases=4):
@@ -756,159 +636,67 @@ def get_eds_xsection(x_section, energy_scale, start_bgd, end_bgd):
     return cross_section_core
 
 
-def get_eds_line_strength(z: int,
-                          acceleration_voltage: float,
-                          max_ev: int = 60000
-                          ) -> dict[str, dict[str, float]]:
-    """Get EDS line strength for a given element."""
-    energy_scale = np.arange(10, max_ev, 1)
-    edge_info = pyTEMlib.eels_tools.get_x_sections(z)
-    eds_cross_sections = {'_element': {'atomic_weight': edge_info['atomic_weight'],
-                                      'name': edge_info['name'],
-                                      'nominal_density': edge_info['nominal_density']}}
-    x_section = pyTEMlib.eels_tools.xsec_xrpa(energy_scale, acceleration_voltage, z, 1000. )
-    if 'K1' in edge_info:
-        start_bgd = edge_info['K1']['onset'] * 0.8
-        if edge_info['K1']['onset'] - start_bgd >100:
-            start_bgd = edge_info['K1']['onset'] - 100
-        end_bgd = edge_info['K1']['onset'] - 5
-        eds_xsection = get_eds_xsection(x_section, energy_scale, start_bgd, end_bgd)
-        eds_cross_sections['K'] = {'x-section': eds_xsection[int(end_bgd) : int(end_bgd)+300].sum(),
-                                   'strength':  eds_xsection[int(end_bgd) : int(end_bgd)+300].sum()}
-        fluorescent_yield = edge_info.get('fluorescent_yield', {}).get('K', 0)
-        if fluorescent_yield > 0:
-            eds_cross_sections['K']['fluorescent_yield'] = fluorescent_yield
-        eds_cross_sections['K']['strength'] *= fluorescent_yield
-    if 'L3' in edge_info:
-        if edge_info['L3']['onset'] > 100:
-            start_bgd = edge_info['L3']['onset'] * 0.8
-            if edge_info['L3']['onset'] - start_bgd >100:
-                start_bgd = edge_info['L3']['onset'] - 100
-            end_bgd = edge_info['L3']['onset'] - 5
-            eds_xsection = get_eds_xsection(x_section, energy_scale, start_bgd, end_bgd)
-            area = eds_xsection[int(end_bgd) : int(end_bgd)+300].sum()
-            eds_cross_sections['L'] = {'x-section': area,
-                                       'strength':  area}
-            fluorescent_yield = edge_info.get('fluorescent_yield', {}).get('L', 0)
-            if fluorescent_yield > 0:
-                eds_cross_sections['L']['fluorescent_yield'] = fluorescent_yield
-            eds_cross_sections['L']['strength'] *= fluorescent_yield
-    if 'M5' in edge_info:
-        if(edge_info['M5']['onset']) >100:
-            start_bgd = edge_info['M5']['onset'] * 0.8
-            if edge_info['M5']['onset'] - start_bgd >100:
-                start_bgd = edge_info['M5']['onset'] - 100
-            end_bgd = edge_info['M5']['onset'] - 5
-            eds_xsection = get_eds_xsection(x_section, energy_scale, start_bgd, end_bgd)
-            eds_cross_sections['M'] = {
-                'x-section': eds_xsection[int(end_bgd) : int(end_bgd)+300].sum(),
-                'strength':  eds_xsection[int(end_bgd) : int(end_bgd)+300].sum()
-            }
-            fluorescent_yield = edge_info.get('fluorescent_yield', {}).get('M', 0)
-            if fluorescent_yield > 0:
-                eds_cross_sections['M']['fluorescent_yield'] = fluorescent_yield
-            eds_cross_sections['M']['strength'] *= fluorescent_yield
-    return eds_cross_sections
+def add_k_factors(element_dict, element, k_factors):
+    """Add k-factors to element dictionary."""
+    family = element_dict.get('K-family', {})
+    line = k_factors.get(element, {}).get('Ka1', False)
+    if not line:
+        line = k_factors.get(element, {}).get('Ka2', False)
+    if line and family:
+        family['k_factor'] = float(line)
+
+        family = element_dict.get('L-family', False)
+        line = k_factors.get(element, {}).get('La1', False)
+        if line and family:
+            family['k_factor'] = float(line)
+
+        family = element_dict.get('M-family', False)
+        line = k_factors.get(element, {}).get('Ma1', False)
+        if line and family:
+            family['k_factor'] = float(line)
 
 
-def quantify_EDS(spectrum, k_factors=None, mask=None ):
-    """Quantify EDS spectrum."""
-    if k_factors is None:
-        k_factors = {}
-    acceleration_voltage = spectrum.metadata.get('experiment', {}
-                                                 ).get('acceleration_voltage', 0.)
-    print('quantifying EDS at', acceleration_voltage, 'V')
+def quantify_EDS(spectrum, quantification_dict=None, mask=['Cu'] ):
+    """Calculate quantification for EDS spectrum with either k-factors or cross sections."""
+
     for key in spectrum.metadata['EDS']:
         element = 0
         if isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
             element = spectrum.metadata['EDS'][key].get('Z', 0)
         if element < 1:
             continue
-        tags = get_eds_line_strength(spectrum.metadata['EDS'][key]['Z'],
-                                        acceleration_voltage, max_ev=60000 )
-        spectrum.metadata['EDS'][key]['atomic_weight'] = tags['_element']['atomic_weight']
-        spectrum.metadata['EDS'][key]['nominal_density'] = tags['_element']['nominal_density']
+        if quantification_dict is None:
+            quantification_dict = {}
 
-        line_tags = tags.get('K', False)
-        family = spectrum.metadata['EDS'][key].get('K-family', False)
-        line = k_factors.get(key, {}).get('Ka1', False)
-        if not line:
-            line = k_factors.get(key, {}).get('Ka2', False)
-        if line_tags and family:
-            family.update(line_tags)
-        if line_tags and family and line:
-            family['k_factor'] = float(line)
+        edge_info = pyTEMlib.eels_tools.get_x_sections(element)
+        spectrum.metadata['EDS'][key]['atomic_weight'] = edge_info['atomic_weight']
+        spectrum.metadata['EDS'][key]['nominal_density'] = edge_info['nominal_density']
 
-        line_tags = tags.get('L', False)
-        family = spectrum.metadata['EDS'][key].get('L-family', False)
-        line = k_factors.get(key, {}).get('La1', False)
-        if line_tags and family:
-            family.update(line_tags)
-        if line_tags and family and line:
-            family['k_factor'] = float(line)
+        for family, item in edge_info['fluorescent_yield'].items():
+            spectrum.metadata['EDS'][key][f"{family}-family"
+                                          ]['fluorescent_yield'] = item
+        if quantification_dict.get('metadata', {}).get('type', '') == 'k_factor':
+            k_factors = quantification_dict.get('table', {})
+            add_k_factors(spectrum.metadata['EDS'][key], key, k_factors)
 
-        line_tags = tags.get('M', False)
-        family = spectrum.metadata['EDS'][key].get('M-family', False)
-        line = k_factors.get(key, {}).get('Ma1', False)
-        if line_tags and family:
-            family.update(line_tags)
-        if line_tags and family and line:
-            family['k_factor'] = float(line)
-    quantification_k_factors(spectrum, mask=mask)
+    if quantification_dict is None:
+        print('using cross sections for quantification')
+        quantify_cross_section(spectrum, None, mask=mask)
+    elif not isinstance(quantification_dict, dict):
+        pass
+    elif quantification_dict.get('metadata', {}).get('type', '') == 'k_factor':
+        print('using k-factors for quantification')
+        quantification_k_factors(spectrum, mask=mask)  # , quantification_dict['table'],
+    elif quantification_dict.get('metadata', {}).get('type', '') == 'cross_section':
+        print('using cross sections for quantification')
+        quantify_cross_section(spectrum, quantification_dict['table'], mask=mask)
+    else:
+        print('using cross sections for quantification')
+        quantify_cross_section(spectrum, None, mask=mask)
+        # print('Need either k-factor or cross section dictionary')
 
 
-def quantification_k_factors(spectrum, mask=None):
-    """Calculate quantification for EDS spectrum with k-factors."""
-    tags = {}
-    if not isinstance(mask, list) or mask is None:
-        mask = []
-    atom_sum = 0.
-    weight_sum  = 0.
-    for key in spectrum.metadata['EDS']:
-        intensity = 0.
-        k_factor = 0.
-        if key in mask + ['detector', 'quantification']:
-            pass
-        elif isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
-            family = spectrum.metadata['EDS'][key].get('GUI', {}).get('symmetry', None)
-            if family is None:
-                if 'K-family' in spectrum.metadata['EDS'][key]:
-                    family = 'K-family'
-                elif 'L-family' in spectrum.metadata['EDS'][key]:
-                    family = 'L-family'
-                elif 'M-family' in spectrum.metadata['EDS'][key]:
-                    family = 'M-family'
-            spectrum.metadata['EDS']['GUI'][key] = {'symmetry': family}
-
-            intensity = spectrum.metadata['EDS'][key][family]['areal_density']
-            k_factor = spectrum.metadata['EDS'][key][family]['k_factor']
-
-            atomic_weight = spectrum.metadata['EDS'][key]['atomic_weight']
-            tags[key] =  {'atom%': intensity*k_factor/ atomic_weight,
-                          'weight%': (intensity*k_factor) ,
-                          'k_factor': k_factor,
-                          'intensity': intensity}
-            atom_sum += intensity*k_factor/ atomic_weight
-            weight_sum += intensity*k_factor
-        tags['sums'] = {'atom%': atom_sum, 'weight%': weight_sum}
-
-    spectrum.metadata['EDS']['quantification'] = tags
-    eds_dict = spectrum.metadata['EDS']
-    for key in eds_dict['quantification']:
-        if key != 'sums':
-            tags = eds_dict['quantification']
-            out_string = f"{key:2}: {tags[key]['atom%']/tags['sums']['atom%']*100:.2f} at%"
-            out_string += f" {tags[key]['weight%']/tags['sums']['weight%']*100:.2f} wt%"
-            if key in eds_dict['GUI']:
-                eds_dict['GUI'][key]['atom%'] = tags[key]['atom%']/tags['sums']['atom%']*100
-                eds_dict['GUI'][key]['weight%'] = tags[key]['weight%']/tags['sums']['weight%']*100
-    print('excluded from quantification ', mask)
-
-import pyTEMlib.file_reader
-import xml
-from pyTEMlib.utilities import elements
-
-def read_esl_k_factors(filename):
+def read_esl_k_factors(filename, reduced=False):
     """ Read k-factors from esl file."""
     k_factors = {}
     if not os.path.isfile(filename):
@@ -935,7 +723,16 @@ def read_esl_k_factors(filename):
                 k_factors[elements[index]]['Ma1'] =  float(item)
     primary = int(float(k_dict.get('ClassInstance', {}).get('Header', {}).get('PrimaryEnergy', 0)))
     name = f'k_factors_Bruker_{primary}keV.json'
-    return k_factors, name
+    metadata = {'origin': 'pyTEMlib',
+                'source_file': filename,
+                'reduced': reduced,
+                'version': pyTEMlib.__version__,
+                'type': 'k-factors',
+                'spectroscopy': 'EDS',
+                'acceleration_voltage': primary,
+                'microscope': 'Bruker',
+                'name': name}
+    return k_factors, metadata
 
 
 def read_csv_k_factors(filename, reduced=True):
@@ -957,7 +754,16 @@ def read_csv_k_factors(filename, reduced=True):
                         k_factors[element][line] = row[k_column]
                 else:
                     k_factors[element][line] = row[k_column]
-    return k_factors, 'k_factors_Thermo_200keV.json'
+    metadata = {'origin': 'pyTEMlib',
+                'source_file': filename,
+                'reduced': reduced,
+                'microscope': 'ThermoFisher', 
+                'acceleration_voltage': 200000,
+                'version': pyTEMlib.__version__,
+                'type': 'k-factors',
+                'spectroscopy': 'EDS',
+                'name': 'k_factors_Thermo_200keV.json'}
+    return k_factors, metadata
 
 
 def convert_k_factor_file(file_name, reduced=True, new_name=None):
@@ -965,19 +771,19 @@ def convert_k_factor_file(file_name, reduced=True, new_name=None):
     if not os.path.isfile(file_name):
         print('k-factor file not found', file_name)
         return None
-    path, filename = os.path.split(file_name)
-    name, extension = os.path.splitext(filename)
+    _, filename = os.path.split(file_name)
+    _, extension = os.path.splitext(filename)
     if extension == '.csv':
-        k_factors, name = read_csv_k_factors(file_name, reduced=reduced)
+        k_factors, metadata = read_csv_k_factors(file_name, reduced=reduced)
     elif extension == '.esl':
-        k_factors, name = read_esl_k_factors(file_name)
+        k_factors, metadata = read_esl_k_factors(file_name)
     else:
         print('unknown k-factor file format', extension)
         return None
     if new_name is None:
-        new_name = name
-    write_k_factors(k_factors, file_name=new_name)
-    return k_factors, new_name
+        new_name = metadata['name']
+    write_k_factors(k_factors, metadata, file_name=new_name)
+    return k_factors, metadata
 
 
 def get_k_factor_files():
@@ -989,11 +795,12 @@ def get_k_factor_files():
     return k_factor_files
 
 
-def write_k_factors(k_factors, file_name='k_factors.json'):
+def write_k_factors(k_factors, metadata, file_name='k_factors.json'):
     """ Write k-factors to a json file."""
     file_name = os.path.join(config_path, file_name)
-    with open(file_name, 'w', newline='', encoding='utf-8') as json_file:
-        json.dump(k_factors, json_file, indent=4)
+    save_dict = {"table" : k_factors, "metadata" : metadata}
+    with open(file_name, "w", encoding='utf-8') as json_file:
+        json.dump(save_dict, json_file, indent=4, encoding='utf-8')
 
 
 def read_k_factors(file_name='k_factors.json'):
@@ -1002,16 +809,18 @@ def read_k_factors(file_name='k_factors.json'):
         print('k-factor file not found', file_name)
         return None
     with open(os.path.join(config_path, file_name), 'r', encoding='utf-8') as json_file:
-        k_factors = json.load(json_file)
-    return k_factors
+        table, metadata = json.load(json_file)
+    return table, metadata
 
 
 def load_k_factors(reduced=True):
     """ Load k-factors from csv files in the .pyTEMlib folder."""
     k_factors = {}
-    config_path = os.path.join(os.path.expanduser('~'), '.pyTEMlib')
-    for file_name in os.listdir(config_path):
+    metadata = {}
+    data_path = os.path.join(os.path.expanduser('~'), '.pyTEMlib')
+    for file_name in os.listdir(data_path):
         if 'k-factors' in file_name:
-            path = os.path.join(config_path, file_name)
-            k_factors = read_csv_k_factors(path, reduced=reduced)
-    return k_factors
+            path = os.path.join(data_path, file_name)
+            k_factors, metadata = read_csv_k_factors(path, reduced=reduced)
+            metadata['type'] = 'k_factor'
+    return {'table': k_factors, 'metadata': metadata}
