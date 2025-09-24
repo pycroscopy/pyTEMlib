@@ -533,7 +533,7 @@ def histogram_plot(image_tags):
     hist, bin_edges = np.histogram(data, np.linspace(vmin, vmax, nbins), density=True)
 
     width = bin_edges[1]-bin_edges[0]
-
+    event2 = None
     def onselect(vmin, vmax):
         ax1.clear()
         cmap = plt.cm.get_cmap(image_tags['color_map'])
