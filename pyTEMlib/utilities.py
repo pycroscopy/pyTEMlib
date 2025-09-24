@@ -191,6 +191,9 @@ def gauss(x, p):  # p[0]==mean, p[1]= amplitude p[2]==fwhm,
         return x * 0.
     return p[1] * np.exp(-(x - p[0])**2 / (2.0 * (p[2] / 2.3548)**2))
 
+def get_atomic_number(z):
+    """Returns the atomic number independent of input as a string or number"""
+    return get_z(z)
 
 def get_z(z: typing.Union[int, str]) -> int:
     """Returns the atomic number independent of input as a string or number
