@@ -351,15 +351,23 @@ def quantify_cross_section(spectrum, x_section=None, mask=None):
         total_amu += intensity * x_sect * amu
 
     for key, family in families.items():
+        intensity  = spectrum.metadata['EDS'][key][family['symmetry']].get('areal_density', 0)
         if key in mask:
+            spectrum.metadata['EDS']['GUI'][key] = {'atom%': 0,
+                                                    'weight%': 0,
+                                                    'excluded': True,
+                                                    'intensity': intensity,
+                                                    'symmetry': family['symmetry']}
             continue
         amu = spectrum.metadata['EDS'][key]['atomic_weight']
-        intensity  = spectrum.metadata['EDS'][key][family['symmetry']].get('areal_density', 0)
         x_sect = spectrum.metadata['EDS']['GUI'][key]['cross_section']
-        spectrum.metadata['EDS']['GUI'][key] = {'atom%': intensity*x_sect/total,
-                                                'weight%': intensity*x_sect*amu/total}
-        out_text = f"{key:2}: {intensity*x_sect/total*100:.2f} at% "
-        out_text += f"{intensity*x_sect*amu/total_amu*100:.2f} wt%"
+        spectrum.metadata['EDS']['GUI'][key] = {'atom%': intensity*x_sect/total*100,
+                                                'weight%': intensity*x_sect*amu/total_amu*100,
+                                                'excluded': False,
+                                                'intensity': intensity,
+                                                'symmetry': family['symmetry']}
+        element = spectrum.metadata['EDS']['GUI'][key]
+        out_text = f"{key:2}: {element['atom%']:.2f} at% {element['weight%']:.2f} wt%"
         print(out_text)
 
 
@@ -374,7 +382,7 @@ def quantification_k_factors(spectrum, mask=None):
     for key in spectrum.metadata['EDS']:
         intensity = 0.
         k_factor = 0.
-        if key in mask + ['detector', 'quantification']:
+        if key in ['detector', 'quantification']:
             pass
         elif isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
             family = spectrum.metadata['EDS'][key].get('GUI', {}).get('symmetry', None)
@@ -386,14 +394,22 @@ def quantification_k_factors(spectrum, mask=None):
                 elif 'M-family' in spectrum.metadata['EDS'][key]:
                     family = 'M-family'
             spectrum.metadata['EDS']['GUI'][key] = {'symmetry': family}
-
             intensity = spectrum.metadata['EDS'][key][family]['areal_density']  # /peaks_max
             k_factor = spectrum.metadata['EDS'][key][family]['k_factor']
             atomic_weight = spectrum.metadata['EDS'][key]['atomic_weight']
+            if key in mask:
+                spectrum.metadata['EDS']['GUI'][key] = {'atom%': 0,
+                                                        'weight%': 0,
+                                                        'excluded': True,
+                                                        'k_factor': k_factor,
+                                                        'intensity': intensity}
+                continue
+        
             tags[key] =  {'atom%': intensity*k_factor/ atomic_weight,
                           'weight%': (intensity*k_factor) ,
                           'k_factor': k_factor,
-                          'intensity': intensity}
+                          'intensity': intensity,
+                          'excluded': False}
             atom_sum += intensity*k_factor/ atomic_weight
             weight_sum += intensity*k_factor
         tags['sums'] = {'atom%': atom_sum, 'weight%': weight_sum}
@@ -409,6 +425,9 @@ def quantification_k_factors(spectrum, mask=None):
                 eds_dict['GUI'][key]['atom%'] = tags[key]['atom%']/tags['sums']['atom%']*100
                 eds_dict['GUI'][key]['weight%'] = tags[key]['weight%']/tags['sums']['weight%']*100
                 print(out_string)
+                eds_dict['GUI'][key]['excluded'] = tags[key]['excluded']
+                eds_dict['GUI'][key]['k_factor'] = tags[key]['k_factor']
+                eds_dict['GUI'][key]['intensity'] = tags[key]['intensity']
     print('excluded from quantification ', mask)
 
     return tags

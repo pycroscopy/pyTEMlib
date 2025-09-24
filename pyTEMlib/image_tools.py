@@ -533,8 +533,9 @@ def histogram_plot(image_tags):
     hist, bin_edges = np.histogram(data, np.linspace(vmin, vmax, nbins), density=True)
 
     width = bin_edges[1]-bin_edges[0]
-    event2 = None
+
     def onselect(vmin, vmax):
+        """on select update histogram"""
         ax1.clear()
         cmap = plt.cm.get_cmap(image_tags['color_map'])
         colors = cmap(np.linspace(0., 1., nbins))
@@ -557,8 +558,9 @@ def histogram_plot(image_tags):
         image_tags['maximum_intensity'] = vmax
 
     def onclick(event):
-        global event2
-        event2 = event
+        """on click change color map"""
+        # global event2
+        # event2 = event
         button_click = 'double' if event.dblclick else 'single'
         print(f"{button_click} click: button={event.button},"
               + f" x={event.x}, y={event.y}, xdata={event.xdata}, ydata={event.ydata}")
