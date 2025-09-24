@@ -50,6 +50,7 @@ dependencies = [
     "pyNSID>=0.0.7",
     "sidpy>=0.12.7",
     "SciFiReaders>=0.0.8",
+    "xraylib",
 ]
 
 [project.urls]
