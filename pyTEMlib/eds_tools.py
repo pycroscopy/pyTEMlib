@@ -34,7 +34,7 @@ import sidpy
 
 import pyTEMlib
 import pyTEMlib.file_reader
-from .utilities import elements
+from .utilities import elements, get_atomic_number
 from . eds_xsections import quantify_cross_section, quantification_k_factors
 from .config_dir import config_path
 elements_list = elements
@@ -61,6 +61,14 @@ def detector_response(dataset):
     detector_efficiency[start:] += get_detector_response(tags, energy_scale[start:])
     tags['detector']['detector_efficiency'] = detector_efficiency
     return detector_efficiency
+
+def get_absorption(z, thickness, energy_scale):
+    """ Calculate absorption for material with atomic number z and thickness t in m"""
+    x_sections = pyTEMlib.eels_tools.get_x_sections()
+    photoabsorption = x_sections[str(z)]['dat']/1e10/x_sections[str(z)]['photoabs_to_sigma']
+    lin = scipy.interpolate.interp1d(x_sections[str(z)]['ene'], photoabsorption, kind='linear')
+    mu = lin(energy_scale) * x_sections[str(z)]['nominal_density']*100  #1/cm -> 1/m
+    return np.exp(-mu * thickness)
 
 
 def get_detector_response(detector_definition, energy_scale):
@@ -108,7 +116,7 @@ def get_detector_response(detector_definition, energy_scale):
     E_0= 200000
     background = np.zeros(len(spectrum))
     bremsstrahlung =  p[0] + p[1]*(E_0-energy_scale)/energy_scale 
-     bremsstrahlung += p[2]*(E_0-energy_scale)**2/energy_scale
+    bremsstrahlung += p[2]*(E_0-energy_scale)**2/energy_scale
     background[start:] = detector_Efficiency * bremsstrahlung
 
     plt.figure()
@@ -118,21 +126,16 @@ def get_detector_response(detector_definition, energy_scale):
 
     """
     response = np.ones(len(energy_scale))
-    x_sections = pyTEMlib.eels_tools.get_x_sections()
-
-    def get_absorption(z, t):
-        photoabsorption = x_sections[str(z)]['dat']/1e10/x_sections[str(z)]['photoabs_to_sigma']
-        lin = scipy.interpolate.interp1d(x_sections[str(z)]['ene'], photoabsorption, kind='linear')
-        mu = lin(energy_scale) * x_sections[str(z)]['nominal_density']*100.  #1/cm -> 1/m
-        return np.exp(-mu * t)
 
     for layer in detector_definition['detector']['layers'].values():
         if layer['Z'] != 14:
-            response *= get_absorption(layer['Z'], layer['thickness'])
+            response *= get_absorption(layer['Z'], layer['thickness'], energy_scale)
     if 'SiDeadThickness' in  detector_definition['detector']:
-        response *= get_absorption(14, detector_definition['detector']['SiDeadThickness'])
+        response *= get_absorption(14, detector_definition['detector']['SiDeadThickness'],
+                                   energy_scale)
     if 'SiLiveThickness' in  detector_definition['detector']:
-        response *= 1-get_absorption(14, detector_definition['detector']['SiLiveThickness'])
+        response *= 1-get_absorption(14, detector_definition['detector']['SiLiveThickness'],
+                                     energy_scale)
     return response
 
 
@@ -696,6 +699,60 @@ def quantify_EDS(spectrum, quantification_dict=None, mask=['Cu'] ):
         # print('Need either k-factor or cross section dictionary')
 
 
+def get_absorption_correction(spectrum, thickness=50):
+    """
+    Calculate absorption correction for all elements in the spectrum based on thickness t in nm
+    Updates the element in spectrum.metadata['EDS']['GUI'] dictionary
+    Parameters:
+    - spectrum: A sidpy.Dataset object containing the spectral data and metadata.
+    - t: Thickness in nm
+    Returns:
+        None
+    """
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    start_channel = np.searchsorted(energy_scale, 120)
+    absorption = energy_scale[start_channel:]*0.
+    take_off_angle = spectrum.metadata['EDS']['detector'].get('ElevationAngle', 0)
+    path_length = thickness / np.cos(take_off_angle) * 1e-9 # /2?    in m
+    count = 1
+    
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        part = lines['atom%']/100
+        if part > 0 :
+            count += 1
+        absorption += get_absorption(get_atomic_number(element), path_length*part, 
+                                     energy_scale[start_channel:])
+        
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():    
+        symmetry = lines['symmetry']
+        peaks = spectrum.metadata['EDS'][element][symmetry]['peaks'][start_channel:] 
+        peaks *= absorption/count
+        lines['absorption'] = peaks.sum()
+        lines['thickness'] = thickness
+
+
+def apply_absorption_correction(spectrum, thickness):
+    """ 
+    Apply Absorption Correction to Quantification
+    Updates the element in spectrum.metadata['EDS']['GUI'] dictionary
+    Parameters:
+    - spectrum: A sidpy.Dataset object containing the spectral data and metadata.
+    - thickness: Thickness in nm
+    Returns:
+        None
+    """
+    get_absorption_correction(spectrum, thickness)
+
+    atom_sum = 0.
+    weight_sum = 0.
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        atom_sum += lines['atom%'] / lines['absorption']
+        weight_sum += lines['weight%'] / lines['absorption']
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        lines['corrected-atom%'] = lines['atom%'] / lines['absorption'] / atom_sum*100
+        lines['corrected-weight%'] = lines['weight%'] / lines['absorption'] / weight_sum*100
+
+
 def read_esl_k_factors(filename, reduced=False):
     """ Read k-factors from esl file."""
     k_factors = {}
@@ -733,6 +790,56 @@ def read_esl_k_factors(filename, reduced=False):
                 'microscope': 'Bruker',
                 'name': name}
     return k_factors, metadata
+
+
+def get_absorption_correction(spectrum, thickness=50):
+    """
+    Calculate absorption correction for all elements in the spectrum based on thickness t in nm
+    Updates the element in spectrum.metadata['EDS']['GUI'] dictionary
+    Parameters:
+    - spectrum: A sidpy.Dataset object containing the spectral data and metadata.
+    - t: Thickness in nm
+    Returns:
+        None
+    """
+    start_channel = np.searchsorted(spectrum.energy_scale.values, 120)
+    absorption = spectrum.energy_scale.values[start_channel:]*0.
+    take_off_angle = spectrum.metadata['EDS']['detector'].get('ElevationAngle', 0)
+    path_length = thickness / np.cos(take_off_angle) * 1e-9 # /2?    in m
+    count = 1
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        part = lines['atom%']/100
+        if part > 0 :
+            count += 1
+        absorption += get_absorption(pyTEMlib.utilities.get_atomic_number(element), path_length*part, spectrum.energy_scale[start_channel:])
+        
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():    
+        symmetry = 'K-family' # lines['symmetry']
+        peaks = spectrum.metadata['EDS'][element][symmetry]['peaks'][start_channel:] *absorption/count
+        lines['absorption'] = peaks.sum()
+        lines['thickness'] = thickness
+
+
+def apply_absorption_correction(spectrum, thickness):
+    """ 
+    Apply Absorption Correction to Quantification
+    Updates the element in spectrum.metadata['EDS']['GUI'] dictionary
+    Parameters:
+    - spectrum: A sidpy.Dataset object containing the spectral data and metadata.
+    - thickness: Thickness in nm
+    Returns:
+        None
+    """
+    get_absorption_correction(spectrum, thickness)
+
+    atom_sum = 0.
+    weight_sum = 0.
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        atom_sum += lines['atom%'] / lines['absorption']
+        weight_sum += lines['weight%'] / lines['absorption']
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        lines['corrected-atom%'] = lines['atom%'] / lines['absorption'] / atom_sum*100
+        lines['corrected-weight%'] = lines['weight%'] / lines['absorption'] / weight_sum*100
 
 
 def read_csv_k_factors(filename, reduced=True):
@@ -824,3 +931,20 @@ def load_k_factors(reduced=True):
             k_factors, metadata = read_csv_k_factors(path, reduced=reduced)
             metadata['type'] = 'k_factor'
     return {'table': k_factors, 'metadata': metadata}
+
+
+def get_bote_salvat_dict(z=0):
+    filename = os.path.join(pyTEMlib.config_path, 'xrays_X_section_200kV.json')
+    x_sections = json.load(open(filename, 'r', encoding='utf-8'))
+    if z > 0:
+        return x_sections['table'][str(z)]
+    return x_sections
+
+
+def get_bote_salvat_x_section(z, shell):
+    x_section =  get_bote_salvat_dict(z)
+    cs = 0.0
+    for key, item in x_section.items():
+        if key[0] == shell[0]:
+            cs += item['cs']
+    return cs
