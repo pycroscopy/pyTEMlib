@@ -217,6 +217,24 @@ def get_z(z: typing.Union[int, str]) -> int:
     return z_out
 
 
+def get_element_symbol(z: typing.Union[int, str]) -> str:
+    """Returns the element symbol independent of input as a string or number
+
+    Parameter
+    ---------
+    z: int, str
+        atomic number of chemical symbol (0 if not valid)
+    Return:
+    ------
+    symbol: str
+        element symbol
+    """
+    z_num = get_z(z)
+    if 0 < z_num < len(elements):
+        return elements[int(z_num)]
+    return ''
+
+
 def get_x_sections(z: int=0) -> dict:
     """Reads X-ray fluorescent cross-sections from a dictionary.
 

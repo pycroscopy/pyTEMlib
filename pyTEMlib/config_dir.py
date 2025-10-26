@@ -7,12 +7,16 @@
 config_dir: setup of directory ~/.pyTEMlib for custom sources and database
 """
 import os
+import importlib
+import shutil
 
 # import wget
 if os.name in ['nt', 'dos', 'posix']:
     config_path = os.path.join(os.path.expanduser('~'), '.pyTEMlib')
 else:
     config_path = '.'
+
+origin_path = os.path.join(importlib.resources.files('pyTEMlib'), 'data')
 
 if os.path.isdir(config_path) is False:
     # messages.information("Creating config directory: %s" % config_path)
@@ -29,3 +33,11 @@ config_file = os.path.join(config_path, 'microscopes.csv')
 if os.path.isfile(config_file) is False:  # Do not overwrite users microscopy files
     with open(config_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
+
+for filename in os.listdir(origin_path):
+    source_file = os.path.join(origin_path, filename)
+    target_file = os.path.join(config_path, filename)
+    if os.path.isfile(source_file)is False:
+        continue
+    if os.path.isfile(target_file) is False:  # Do not overwrite users files
+        shutil.copy(source_file, target_file)

@@ -274,3 +274,8 @@ notebooks/Imaging/Cu.cif
 pyTEMlib/data/fluorescent_yield.csv
 pyTEMlib/data/fluorescent_yield.xlsx
 notebooks/Spectroscopy/EDS-Copy2.ipynb
+pyTEMlib/eds_xsections - Copy.py
+pyTEMlib/eds_xsections-old.py
+eds_absorption.py
+pyTEMlib/client.py
+pyTEMlib/server.py

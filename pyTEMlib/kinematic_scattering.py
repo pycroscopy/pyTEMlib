@@ -41,7 +41,7 @@ from pyTEMlib.diffraction_plot import *
 
 _version_ = "0.2022.1.0"
 
-print(f'Using kinematic_scattering library version {_version_ }  by G.Duscher')
+# print(f'Using kinematic_scattering library version {_version_ }  by G.Duscher')
 
 inputKeys = ['acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_inputKeys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad', 'mistilt', 'thickness',
