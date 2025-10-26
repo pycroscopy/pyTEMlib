@@ -684,7 +684,7 @@ def quantify_EDS(spectrum, quantification_dict=None, mask=['Cu'] ):
 
     if quantification_dict is None:
         print('using cross sections for quantification')
-        quantify_cross_section(spectrum, None, mask=mask)
+        quantify_cross_section(spectrum, mask=mask)
     elif not isinstance(quantification_dict, dict):
         pass
     elif quantification_dict.get('metadata', {}).get('type', '') == 'k_factor':
@@ -695,7 +695,7 @@ def quantify_EDS(spectrum, quantification_dict=None, mask=['Cu'] ):
         quantify_cross_section(spectrum, quantification_dict['table'], mask=mask)
     else:
         print('using cross sections for quantification')
-        quantify_cross_section(spectrum, None, mask=mask)
+        quantify_cross_section(spectrum, mask=mask)
         # print('Need either k-factor or cross section dictionary')
 
 
@@ -832,15 +832,17 @@ def apply_absorption_correction(spectrum, thickness):
     """
     get_absorption_correction(spectrum, thickness)
 
+    
     atom_sum = 0.
     weight_sum = 0.
     for element, lines in spectrum.metadata['EDS']['GUI'].items():
-        atom_sum += lines['atom%'] / lines['absorption']
-        weight_sum += lines['weight%'] / lines['absorption']
+        atom_sum += lines['atom%'] * lines['absorption']
+        weight_sum += lines['weight%'] * lines['absorption']
     for element, lines in spectrum.metadata['EDS']['GUI'].items():
-        lines['corrected-atom%'] = lines['atom%'] / lines['absorption'] / atom_sum*100
-        lines['corrected-weight%'] = lines['weight%'] / lines['absorption'] / weight_sum*100
+        lines['corrected-atom%'] = lines['atom%'] * lines['absorption'] / atom_sum*100
+        lines['corrected-weight%'] = lines['weight%'] * lines['absorption'] / weight_sum*100
 
+      
 
 def read_csv_k_factors(filename, reduced=True):
     """ Read k-factors from csv file of ThermoFisher TEMs."""
@@ -933,18 +935,3 @@ def load_k_factors(reduced=True):
     return {'table': k_factors, 'metadata': metadata}
 
 
-def get_bote_salvat_dict(z=0):
-    filename = os.path.join(pyTEMlib.config_path, 'xrays_X_section_200kV.json')
-    x_sections = json.load(open(filename, 'r', encoding='utf-8'))
-    if z > 0:
-        return x_sections['table'][str(z)]
-    return x_sections
-
-
-def get_bote_salvat_x_section(z, shell):
-    x_section =  get_bote_salvat_dict(z)
-    cs = 0.0
-    for key, item in x_section.items():
-        if key[0] == shell[0]:
-            cs += item['cs']
-    return cs
