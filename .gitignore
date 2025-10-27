@@ -279,3 +279,5 @@ pyTEMlib/eds_xsections-old.py
 eds_absorption.py
 pyTEMlib/client.py
 pyTEMlib/server.py
+pyTEMlib/eds_xsections2.py
+notebooks/Spectroscopy/EDS-old.ipynb
