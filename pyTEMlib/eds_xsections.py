@@ -120,7 +120,8 @@ def get_bote_salvat_dict(acceleration_voltage, z=0):
     """ Get Bote and Salvat X-ray cross section dictionary."""
     filename = os.path.join(config_path, f'xrays_X_section_{int(acceleration_voltage/1000)}kV.json')
     # print('Loading cross sections from ', filename)
-    x_sections = json.load(open(filename, 'r', encoding='utf-8'))
+    with open(filename, 'r', encoding='utf-8') as file:
+        x_sections = json.load(file)
     if z > 0:
         return x_sections['table'][str(z)]
     return x_sections
@@ -160,8 +161,8 @@ def quantify_cross_section(spectrum, mask=None):
         # print(f'Element: {key}, Peaks: {peaks.sum():.2f}')
         intensity  = spectrum.metadata['EDS'][key][family['symmetry']].get('areal_density', 0)
         z = get_atomic_number(key)
-        x_sect = family_ionization(z, 'K', acceleration_voltage)*1e23
-     
+        x_sect = family_ionization(z, family['symmetry'][0], acceleration_voltage)*1e23
+
         spectrum.metadata['EDS']['GUI'][key]['cross_section'] = x_sect
         spectrum.metadata['EDS']['GUI'][key]['composition_counts'] = intensity/x_sect
         total += intensity / x_sect
