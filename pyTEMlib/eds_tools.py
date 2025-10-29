@@ -657,7 +657,7 @@ def add_k_factors(element_dict, element, k_factors):
             family['k_factor'] = float(line)
 
 
-def quantify_EDS(spectrum, quantification_dict=None, mask=None ):
+def quantify_eds(spectrum, quantification_dict=None, mask=None ):
     """Calculate quantification for EDS spectrum with either k-factors or cross sections."""
 
     for key in spectrum.metadata['EDS']:
@@ -668,7 +668,7 @@ def quantify_EDS(spectrum, quantification_dict=None, mask=None ):
             continue
         if quantification_dict is None:
             quantification_dict = {}
-        
+
         edge_info = pyTEMlib.eels_tools.get_x_sections(element)
         spectrum.metadata['EDS'][key]['atomic_weight'] = edge_info['atomic_weight']
         spectrum.metadata['EDS'][key]['nominal_density'] = edge_info['nominal_density']
@@ -757,7 +757,7 @@ def get_absorption_correction(spectrum, thickness=50):
             absorption += get_absorption(pyTEMlib.utilities.get_atomic_number(element),
                                         path_length*part,
                                         spectrum.energy_scale[start_channel:])
-            
+
     for element, lines in spectrum.metadata['EDS']['GUI'].items():
         symmetry = 'K-family' # lines['symmetry']
         peaks = spectrum.metadata['EDS'][element][symmetry]['peaks'][start_channel:]
