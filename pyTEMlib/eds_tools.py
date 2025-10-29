@@ -142,11 +142,13 @@ def detect_peaks(dataset, minimum_number_of_peaks=30, prominence=10):
     Detect peaks in the given spectral dataset.
 
     Parameters:
+    -----------
     - dataset: A sidpy.Dataset object containing the spectral data.
     - minimum_number_of_peaks: The minimum number of peaks to detect.
     - prominence: The prominence threshold for peak detection.
 
     Returns:
+    --------
     - An array of indices representing the positions of detected peaks in the spectrum.
     """
     if not isinstance(dataset, sidpy.Dataset):
@@ -225,6 +227,31 @@ def find_elements(spectrum, minor_peaks):
                         accounted_peaks.add(ind)
     return list(element_list)
 
+
+def get_elements(spectrum, minimum_number_of_peaks=10, verbose=False):
+    """ Get the elments in a EDS spectrum 
+    Parameters:
+    -----------
+    minimum_number_of_peaks: int
+        approximate number of peaks in spectrum
+
+    Returns:
+    -------
+    elements: list
+        list of all elements found    
+    """
+    minor_peaks = detect_peaks(spectrum, minimum_number_of_peaks=minimum_number_of_peaks)
+
+    keys = list(spectrum.metadata['EDS'].keys())
+    for key in keys:
+        if len(key) < 3:
+            del spectrum.metadata['EDS'][key]
+    
+    elements = find_elements(spectrum, minor_peaks)
+    if verbose:
+        print(elements)
+    spectrum.metadata['EDS'].update(get_x_ray_lines(spectrum, elements))
+    return elements
 
 def get_x_ray_lines(spectrum, element_list):
     """
