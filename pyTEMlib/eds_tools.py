@@ -142,11 +142,13 @@ def detect_peaks(dataset, minimum_number_of_peaks=30, prominence=10):
     Detect peaks in the given spectral dataset.
 
     Parameters:
+    -----------
     - dataset: A sidpy.Dataset object containing the spectral data.
     - minimum_number_of_peaks: The minimum number of peaks to detect.
     - prominence: The prominence threshold for peak detection.
 
     Returns:
+    --------
     - An array of indices representing the positions of detected peaks in the spectrum.
     """
     if not isinstance(dataset, sidpy.Dataset):
@@ -179,7 +181,7 @@ def detect_peaks(dataset, minimum_number_of_peaks=30, prominence=10):
         minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
     return np.array(minor_peaks)+start
 
-def find_elements(spectrum, minor_peaks):
+def peaks_element_correlation(spectrum, minor_peaks):
     """
     Identify elements present in the spectrum based on detected minor peaks.
 
@@ -225,6 +227,36 @@ def find_elements(spectrum, minor_peaks):
                         accounted_peaks.add(ind)
     return list(element_list)
 
+
+def get_elements(spectrum, minimum_number_of_peaks=10, verbose=False):
+    """ Get the elments in a EDS spectrum 
+    Parameters:
+    -----------
+    minimum_number_of_peaks: int
+        approximate number of peaks in spectrum
+
+    Returns:
+    -------
+    elements: list
+        list of all elements found    
+    """
+    if not isinstance(spectrum, sidpy.Dataset):
+        raise TypeError(' Need a sidpy dataset')
+    if not isinstance(minimum_number_of_peaks, int):
+        raise TypeError(' Need an integer for minimum_number_of_peaks')
+
+    minor_peaks = detect_peaks(spectrum, minimum_number_of_peaks=minimum_number_of_peaks)
+
+    keys = list(spectrum.metadata['EDS'].keys())
+    for key in keys:
+        if len(key) < 3:
+            del spectrum.metadata['EDS'][key]
+    
+    elements = peaks_element_correlation(spectrum, minor_peaks)
+    if verbose:
+        print(elements)
+    spectrum.metadata['EDS'].update(get_x_ray_lines(spectrum, elements))
+    return elements
 
 def get_x_ray_lines(spectrum, element_list):
     """
@@ -748,7 +780,7 @@ def get_absorption_correction(spectrum, thickness=50):
     start_channel = np.searchsorted(spectrum.energy_scale.values, 120)
     absorption = spectrum.energy_scale.values[start_channel:]*0.
     take_off_angle = spectrum.metadata['EDS']['detector'].get('ElevationAngle', 0)
-    path_length = thickness / np.cos(take_off_angle) * 1e-9 # /2?    in m
+    path_length = thickness *2 / np.cos(take_off_angle) * 1e-9 # /2?    in m
     count = 1
     for element, lines in spectrum.metadata['EDS']['GUI'].items():
         part = lines['atom%']/100
@@ -780,12 +812,11 @@ def apply_absorption_correction(spectrum, thickness):
     atom_sum = 0.
     weight_sum = 0.
     for lines in spectrum.metadata['EDS']['GUI'].values():
-        atom_sum += lines['atom%'] * lines['absorption']
-        weight_sum += lines['weight%'] * lines['absorption']
+        atom_sum += lines['atom%'] / lines['absorption']
+        weight_sum += lines['weight%'] / lines['absorption']
     for lines in spectrum.metadata['EDS']['GUI'].values():
-        lines['corrected-atom%'] = lines['atom%'] * lines['absorption'] / atom_sum*100
-        lines['corrected-weight%'] = lines['weight%'] * lines['absorption'] / weight_sum*100
-
+        lines['corrected-atom%'] = lines['atom%'] / lines['absorption'] / atom_sum*100
+        lines['corrected-weight%'] = lines['weight%'] / lines['absorption'] / weight_sum*100
 
 def read_csv_k_factors(filename, reduced=True):
     """ Read k-factors from csv file of ThermoFisher TEMs."""

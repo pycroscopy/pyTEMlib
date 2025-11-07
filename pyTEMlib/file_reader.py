@@ -39,6 +39,7 @@ def etree_to_dict(element: xml.etree.ElementTree.Element) -> dict[str, typing.An
             d[element.tag] = text
     return d
 
+
 def read_adorned_metadata(image: typing.Any) -> tuple[str, dict[str, typing.Any]]:
     """Extract metadata from an adorned image."""
     xml_str = image.metadata.metadata_as_xml

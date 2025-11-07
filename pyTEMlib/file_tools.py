@@ -489,11 +489,12 @@ def open_file(filename, write_hdf_file=False, sum_frames=False, sum_eds=True):
             return
         eds_keys = []
         for key, item in dset.items():
-            if 'SuperX' in item.title or 'UltraX' in item.title:
-                if len(eds_keys) == 0:
-                    spectrum = item.copy()
-                else:
-                    spectrum += item
+            if item.title[-2:].isnumeric() or 'UltraX' in item.title:
+                if item.title[-2].isdigit():
+                    if len(eds_keys) == 0:
+                        spectrum = item.copy()
+                    else:
+                        spectrum += item
                 eds_keys.append(key)
         spectrum.compute()
 
