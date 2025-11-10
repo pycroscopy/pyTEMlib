@@ -32,14 +32,11 @@ def get_dataset():
     datasets = pyTEMlib.file_tools.open_file(file_name)
     dataset = datasets['SuperX']
     return dataset
-# spectrum = get_dataset()
+spectrum = get_dataset()
 
 class TestFileFunctions(unittest.TestCase):
    
-    def test_nix(self):
-        pass
-
-    """def test_dataset(self):
+    def test_dataset(self):
         """Test loading dataset"""
         
         start = np.searchsorted(spectrum.energy_scale.values, 100)
@@ -59,7 +56,7 @@ class TestFileFunctions(unittest.TestCase):
             if len(key) < 3:
                 del spectrum.metadata['EDS'][key]
 
-        elements = pyTEMlib.eds_tools.find_elements(spectrum, minor_peaks)
+        elements = pyTEMlib.eds_tools.peaks_element_correlation(spectrum, minor_peaks)
         spectrum.metadata['EDS'].update(pyTEMlib.eds_tools.get_x_ray_lines(spectrum, elements))
         print(spectrum.metadata['EDS'].keys())
         self.assertIsInstance(elements, list)
@@ -90,4 +87,4 @@ class TestFileFunctions(unittest.TestCase):
     def test_r_absorption(self):
         """Test absorption correction"""
         pyTEMlib.eds_tools.apply_absorption_correction(spectrum, 30)
-        self.assertIn('corrected-atom%', spectrum.metadata['EDS']['GUI']['Ti'])"""
+        self.assertIn('corrected-atom%', spectrum.metadata['EDS']['GUI']['Ti'])
