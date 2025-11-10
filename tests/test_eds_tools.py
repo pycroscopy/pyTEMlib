@@ -73,14 +73,14 @@ class TestFileFunctions(unittest.TestCase):
 
     def test_quantify_xsection(self):
         """Test quantification using cross sections"""
-        pyTEMlib.eds_tools.quantify_EDS(spectrum, mask=['Cu'])
+        pyTEMlib.eds_tools.quantify_eds(spectrum, mask=['Cu'])
         self.assertIn('GUI', spectrum.metadata['EDS'])
         self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
 
     def test_quantify_kfactors(self):
         """Test quantification using k-factors"""
         q_dict = pyTEMlib.eds_tools.load_k_factors()
-        pyTEMlib.eds_tools.quantify_EDS(spectrum, q_dict, mask=['Cu'])
+        pyTEMlib.eds_tools.quantify_eds(spectrum, q_dict, mask=['Cu'])
         self.assertIsInstance(q_dict, dict)
         self.assertIn('GUI', spectrum.metadata['EDS'])
         self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])

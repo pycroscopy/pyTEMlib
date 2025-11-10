@@ -497,20 +497,20 @@ def open_file(filename, write_hdf_file=False, sum_frames=False, sum_eds=True):
                                 spectrum = item.copy()
                             else:
                                 spectrum += item
-                        eds_keys.append(key)
-                    spectrum.compute()
+                        eds_keys.append(key)       
+        if eds_keys:
+            spectrum.compute()
+            spectrum.data_type = dset[eds_keys[0]].data_type
+            if 'SuperX' in dset[eds_keys[0]].title:
+                spectrum.title = 'EDS_SuperX'
+            if 'UltraX' in dset[eds_keys[0]].title:
+                spectrum.title = 'EDS_UltraX'
+            spectrum.original_metadata = dset[eds_keys[0]].original_metadata.copy()
+            spectrum.metadata = dset[eds_keys[0]].metadata.copy()
 
-                    spectrum.data_type = dset[eds_keys[0]].data_type
-                    if 'SuperX' in dset[eds_keys[0]].title:
-                        spectrum.title = 'EDS_SuperX'
-                    if 'UltraX' in dset[eds_keys[0]].title:
-                        spectrum.title = 'EDS_UltraX'
-                    spectrum.original_metadata = dset[eds_keys[0]].original_metadata.copy()
-                    spectrum.metadata = dset[eds_keys[0]].metadata.copy()
-
-                    for key in eds_keys:
-                        del dset[key]
-                    dset['SuperX'] = spectrum
+            for key in eds_keys:
+                del dset[key]
+            dset['SuperX'] = spectrum
 
     if isinstance(dset, dict):
         dataset_dict = dset
