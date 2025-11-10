@@ -28,7 +28,7 @@ print(pyTEMlib.__version__)
 
 def get_dataset():
     file_path = os.path.dirname(os.path.abspath(__file__))
-    file_name = os.path.join(file_path, '../../example_data/EDS-STO.emd')
+    file_name = os.path.join(file_path, '../example_data/EDS-STO.emd')
     datasets = pyTEMlib.file_tools.open_file(file_name)
     dataset = datasets['SuperX']
     return dataset
