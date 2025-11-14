@@ -77,7 +77,7 @@ class TestFileFunctions(unittest.TestCase):
         self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])"""
         pass
 
-     def test_quantify_kfactors(self):
+    def test_quantify_kfactors(self):
         """Test quantification using k-factors"""
         pass
         """q_dict = pyTEMlib.eds_tools.load_k_factors()
