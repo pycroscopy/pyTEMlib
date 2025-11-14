@@ -82,7 +82,7 @@ def make_gauss(size_x, size_y, width=1.0, x0=0.0, y0=0.0, intensity=1.0):
     return probe
 
 
-def decon_lr(o_image, resolution=0.1,  verbose=False):
+def decon_lr(o_image, resolution=0.1, verbose=False):
 
     """
     # This task generates a restored image from an input image and point spread function (PSF) using
@@ -131,6 +131,7 @@ def decon_lr(o_image, resolution=0.1,  verbose=False):
     image_dimensions = o_image.get_image_dims(return_axis=True)
     scale_x = image_dimensions[0].slope
     gauss_diameter = resolution/scale_x
+    print(gauss_diameter, resolution, scale_x)
     probe = make_gauss(o_image.shape[0], o_image.shape[1], gauss_diameter)
 
     probe_c = np.ones(probe.shape, dtype=np.complex64)

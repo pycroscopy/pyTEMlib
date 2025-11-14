@@ -18,8 +18,6 @@ import sklearn.cluster
 import scipy.spatial
 import scipy.optimize
 
-from tqdm.auto import trange
-
 import sidpy
 import pyTEMlib
 
@@ -139,15 +137,13 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     sym: dict
         dictionary containing new atom positions and other output
     """
-    rr = int(radius + 0.5)  # atom radius
+    atom_radius = int(radius + 0.5)  # atom radius
 
-    pixels = np.linspace(0, 2 * rr, 2 * rr + 1) - rr
+    pixels = np.linspace(0, 2 * atom_radius, 2 * atom_radius + 1) - atom_radius
     x, y = np.meshgrid(pixels, pixels)
-    mask = (x ** 2 + y ** 2) < rr ** 2
+    mask = (x ** 2 + y ** 2) < atom_radius**2
 
-    guess = [rr * 2, 0.0, 0.0, 1]
-
-    sym = {'number_of_atoms': len(atoms)}
+    guess = [atom_radius * 2, 0.0, 0.0, 1]
 
     volume = []
     position = []
@@ -158,36 +154,30 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
     gauss_amplitude = []
     gauss_intensity = []
 
-    for i in range(len(atoms)):
-        x, y = atoms[i][0:2]
-        x = int(x)
-        y = int(y)
-
-        area = image[x - rr:x + rr + 1, y - rr:y + rr + 1]
-
+    for atom in atoms:
+        x = int(atom[0])
+        y = int(atom[1])
+        area = image[x - atom_radius:x + atom_radius + 1, y - atom_radius:y + atom_radius + 1]
         append = False
 
-        if x-rr < 0 or y-rr < 0 or x+rr+1 > image.shape[0] or y+rr+1 > image.shape[1]:
-            position.append(-1)
-            intensities.append(-1.)
-            maximum_area.append(-1.)
-        else:  # atom found
+        if (atom_radius < x < image.shape[0] - atom_radius and
+            atom_radius < y < image.shape[1] - atom_radius):
             position.append(1)
             intensities.append((area * mask).sum())
             maximum_area.append((area * mask).max())
+        else:  # atom on rim
+            position.append(-1)
+            intensities.append(-1.)
+            maximum_area.append(-1.)
 
-        if max_int > 0:
-            if area.sum() < max_int:
-                if area.sum() > min_int:
-                    append = True
+        if max_int > 0 and min_int < area.sum() < max_int:
+            append = True
         elif area.sum() > min_int:
             append = True
 
         pout = [0, 0, 0, 0]
         if append:
-            if x-rr < 0 or y-rr < 0 or x+rr+1 > image.shape[0] or y+rr+1 > image.shape[1]:
-                pass
-            else:
+            if position[-1] > 0:
                 [pout, _] = scipy.optimize.leastsq(gauss_difference, guess, args=area)
             if (abs(pout[1]) > max_dist) or (abs(pout[2]) > max_dist):
                 pout = [0, 0, 0, 0]
@@ -204,14 +194,15 @@ def atom_refine(image, atoms, radius, max_int=0, min_int=0, max_dist=4):
         gauss_width.append(pout[0])
         gauss_amplitude.append(pout[3])
 
-    sym['inside'] = position
-    sym['intensity_area'] = intensities
-    sym['maximum_area'] = maximum_area
-    sym['atoms'] = new_atoms
-    sym['gauss_width'] = gauss_width
-    sym['gauss_amplitude'] = gauss_amplitude
-    sym['gauss_intensity'] = gauss_intensity
-    sym['gauss_volume'] = volume
+    sym = {'number_of_atoms': len(atoms),
+           'inside': position,
+           'intensity_area': intensities,
+           'maximum_area': maximum_area,
+           'atoms': new_atoms,
+           'gauss_width': gauss_width,
+           'gauss_amplitude': gauss_amplitude,
+           'gauss_intensity': gauss_intensity,
+           'gauss_volume': volume}
 
     return sym
 
@@ -220,17 +211,17 @@ def intensity_area(image, atoms, radius):
     """
     integrated intensity of atoms in an image with a mask around each atom of radius radius
     """
-    rr = int(radius + 0.5)  # atom radius
-    print('using radius ', rr, 'pixels')
+    atom_radius = int(radius + 0.5)  # atom radius
+    print('using radius ', atom_radius, 'pixels')
 
-    pixels = np.linspace(0, 2 * rr, 2 * rr + 1) - rr
+    pixels = np.linspace(0, 2 * atom_radius, 2 * atom_radius + 1) - atom_radius
     x, y = np.meshgrid(pixels, pixels)
-    mask = np.array((x ** 2 + y ** 2) < rr ** 2)
+    mask = np.array((x ** 2 + y ** 2) < atom_radius ** 2)
     intensities = []
     for atom in atoms:
         x = int(atom[1])
         y = int(atom[0])
-        area = image[x - rr:x + rr + 1, y - rr:y + rr + 1]
+        area = image[x - atom_radius:x + atom_radius + 1, y - atom_radius:y + atom_radius + 1]
         if area.shape == mask.shape:
             intensities.append((area * mask).sum())
         else:

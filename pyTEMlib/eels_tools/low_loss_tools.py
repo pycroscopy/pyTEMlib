@@ -426,7 +426,7 @@ def kroeger_core(e_data, a_data, eps_data, acceleration_voltage_kev, thickness, 
        return P, P*scale*1e2,p_vol*1e2, p_simple*1e2
     
 
-    $d^2P/(dEd\Omega) = \frac{1}{\pi^2 a_0 m_0 v^2} \Im \left[ \frac{t\mu^2}{\varepsilon \phi^2 } \right]
+    $d^2P/(dEd\\Omega) = \\frac{1}{\\pi^2 a_0 m_0 v^2} \\Im \left[ \\frac{t\\mu^2}{\\varepsilon \\phi^2 } \right]
     
     # Internally everything is calculated in SI units
     # acceleration_voltage_kev = 200 #keV

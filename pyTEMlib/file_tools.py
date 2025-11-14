@@ -489,26 +489,28 @@ def open_file(filename, write_hdf_file=False, sum_frames=False, sum_eds=True):
             return
         eds_keys = []
         for key, item in dset.items():
-            if item.title[-2:].isnumeric() or 'UltraX' in item.title:
-                if item.title[-2].isdigit():
-                    if len(eds_keys) == 0:
-                        spectrum = item.copy()
-                    else:
-                        spectrum += item
-                eds_keys.append(key)
-        spectrum.compute()
+            if item.data_type.name in ['SPECTRUM', 'SPECTRAL_IMAGE']:     
+                if ('SuperX' in item.title or 'UltraX' in item.title) and item.data_type.name in ['SPECTRUM', 'SPECTRAL_IMAGE']:
+                    if item.title[-2:].isnumeric():
+                        if item.title[-2].isdigit():
+                            if len(eds_keys) == 0:
+                                spectrum = item.copy()
+                            else:
+                                spectrum += item
+                        eds_keys.append(key)       
+        if eds_keys:
+            spectrum.compute()
+            spectrum.data_type = dset[eds_keys[0]].data_type
+            if 'SuperX' in dset[eds_keys[0]].title:
+                spectrum.title = 'EDS_SuperX'
+            if 'UltraX' in dset[eds_keys[0]].title:
+                spectrum.title = 'EDS_UltraX'
+            spectrum.original_metadata = dset[eds_keys[0]].original_metadata.copy()
+            spectrum.metadata = dset[eds_keys[0]].metadata.copy()
 
-        spectrum.data_type = dset[eds_keys[0]].data_type
-        if 'SuperX' in dset[eds_keys[0]].title:
-            spectrum.title = 'EDS_SuperX'
-        if 'UltraX' in dset[eds_keys[0]].title:
-            spectrum.title = 'EDS_UltraX'
-        spectrum.original_metadata = dset[eds_keys[0]].original_metadata.copy()
-        spectrum.metadata = dset[eds_keys[0]].metadata.copy()
-
-        for key in eds_keys:
-            del dset[key]
-        dset['SuperX'] = spectrum
+            for key in eds_keys:
+                del dset[key]
+            dset['SuperX'] = spectrum
 
     if isinstance(dset, dict):
         dataset_dict = dset

@@ -9,10 +9,7 @@ import unittest
 import numpy as np
 import ase
 
-import sys
-sys.path.append("../pyTEMlib/")
 import pyTEMlib.kinematic_scattering as ks
-import pyTEMlib.crystal_tools as cs
 
 
 class TestUtilityFunctions(unittest.TestCase):
@@ -62,7 +59,8 @@ class TestUtilityFunctions(unittest.TestCase):
             ks.get_wavelength('lattice_parameter')
 
     def test_get_rotation_matrix(self):
-        tags = {'zone_hkl': [1, 1, 1], 'mistilt_alpha': 0, 'mistilt_beta': 0, 'reciprocal_unit_cell': np.identity(3)}
+        tags = {'zone_hkl': [1, 1, 1], 'mistilt_alpha': 0, 'mistilt_beta': 0,
+                'reciprocal_unit_cell': np.identity(3)}
 
         matrix = ks.get_zone_rotation(tags)
         matrix_desired = [[0.81649658,  0., 0.57735027],
@@ -83,17 +81,20 @@ class TestScatteringFunctions(unittest.TestCase):
     def test_ring_pattern_calculation(self):
         atoms = ks.example(verbose=False)
         ks.ring_pattern_calculation(atoms, verbose=True)
-    
+
         self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['hkl'][7].sum(), 8.)
         self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['g norm'][0], 0.33697)
-        self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['structure factor'][0].real, 12.396310472193898)
+        self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['structure factor'][0].real,
+                               12.396310472193898)
         self.assertEqual(atoms.info['Ring_Pattern']['allowed']['multiplicity'][0], 8)
 
     def test_kinematic_scattering(self):
         atoms = ks.example(verbose=False)
         ks.kinematic_scattering(atoms, verbose=True)
         self.assertIsInstance(atoms.info['diffraction']['HOLZ'], dict)
-        self.assertAlmostEqual(atoms.info['experimental']['wave_length'], 0.03717657397994318, delta=1e-6)
+        self.assertAlmostEqual(atoms.info['experimental']['wave_length'],
+                               0.03717657397994318,
+                               delta=1e-6)
 
     def test_feq(self):
         self.assertAlmostEqual(ks.feq('Au', 0.36), 7.43164303450277)
