@@ -211,17 +211,17 @@ def intensity_area(image, atoms, radius):
     """
     integrated intensity of atoms in an image with a mask around each atom of radius radius
     """
-    rr = int(radius + 0.5)  # atom radius
-    print('using radius ', rr, 'pixels')
+    atom_radius = int(radius + 0.5)  # atom radius
+    print('using radius ', atom_radius, 'pixels')
 
-    pixels = np.linspace(0, 2 * rr, 2 * rr + 1) - rr
+    pixels = np.linspace(0, 2 * atom_radius, 2 * atom_radius + 1) - atom_radius
     x, y = np.meshgrid(pixels, pixels)
-    mask = np.array((x ** 2 + y ** 2) < rr ** 2)
+    mask = np.array((x ** 2 + y ** 2) < atom_radius ** 2)
     intensities = []
     for atom in atoms:
         x = int(atom[1])
         y = int(atom[0])
-        area = image[x - rr:x + rr + 1, y - rr:y + rr + 1]
+        area = image[x - atom_radius:x + atom_radius + 1, y - atom_radius:y + atom_radius + 1]
         if area.shape == mask.shape:
             intensities.append((area * mask).sum())
         else:
