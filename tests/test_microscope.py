@@ -5,11 +5,8 @@ Created on Tue Nov  3 15:07:16 2020
 @author: Gerd Duscher
 """
 import unittest
-import sys
 
-sys.path.append("../pyTEMlib/")
 from pyTEMlib.microscope import Microscope
-
 
 class TestPackageImport(unittest.TestCase):
 
