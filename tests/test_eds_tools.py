@@ -84,6 +84,7 @@ class TestFileFunctions(unittest.TestCase):
         self.assertIn('GUI', spectrum.metadata['EDS'])
         self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
 
+
     def test_r_absorption(self):
         """Test absorption correction"""
         pyTEMlib.eds_tools.apply_absorption_correction(spectrum, 30)
