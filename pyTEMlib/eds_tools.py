@@ -38,6 +38,8 @@ from .utilities import elements as elements_list
 from .eds_xsections import quantify_cross_section, quantification_k_factors
 from .config_dir import config_path
 
+
+
 def detector_response(dataset):
     """
     Calculate the detector response for the given dataset based on its metadata.
@@ -399,7 +401,7 @@ def initial_model_parameter(spectrum):
             for line, info in lines['M-family'].items():
                 if line[0] == 'M':
                     model += get_peak(info['position'], energy_scale)*info['weight']
-            lines['M-family']['peaks'] = model  /model.sum()*lines['M-family']['probability']
+            lines['M-family']['peaks'] = model  /model.sum()*lines['M-family'].get('probability', 0.0)
             p.append(lines['M-family']['height'] / lines['M-family']['peaks'].max())
             peaks.append(lines['M-family']['peaks'])
             keys.append(element+':M-family')

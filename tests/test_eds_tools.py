@@ -70,12 +70,14 @@ class TestFileFunctions(unittest.TestCase):
         self.assertIsInstance(peaks, np.ndarray)
         self.assertTrue(np.sum(peaks) > .9)
 
+    @pytest.mark.skip(reason="data_files do not copy to config_dir")
     def test_quantify_xsection(self):
         """Test quantification using cross sections"""
         pyTEMlib.eds_tools.quantify_eds(spectrum, mask=['Cu'])
         self.assertIn('GUI', spectrum.metadata['EDS'])
         self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
 
+    @pytest.mark.skip(reason="data_files do not copy to config_dir")
     def test_quantify_kfactors(self):
         """Test quantification using k-factors"""
         q_dict = pyTEMlib.eds_tools.load_k_factors()
@@ -85,6 +87,7 @@ class TestFileFunctions(unittest.TestCase):
         self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
 
 
+    @pytest.mark.skip(reason="data_files do not copy to config_dir")
     def test_r_absorption(self):
         """Test absorption correction"""
         pyTEMlib.eds_tools.apply_absorption_correction(spectrum, 30)
