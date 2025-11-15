@@ -16,7 +16,6 @@ sys.path.insert(0, "../")
 sys.path.insert(0, './')
 
 import pyTEMlib
-print(pyTEMlib.__version__)
 from pyTEMlib import atom_tools
 
 
@@ -101,10 +100,8 @@ class TestUtilityFunctions(unittest.TestCase):
         params = [2 * 2, 0.0, 0.0, 1]
 
         diff = atom_tools.gauss_difference(params, area)
-        self.assertTrue(pyTEMlib.__version__[-4:] == '11.1')
         self.assertTrue((np.abs(diff) < .1).all())
 
 
 if __name__ == '__main__':
-    print(pyTEMlib.__version__)
     unittest.main()
