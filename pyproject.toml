@@ -49,7 +49,7 @@ dependencies = [
     "scikit-learn",
     "pyNSID>=0.0.7",
     "sidpy>=0.12.7",
-    "SciFiReaders>=0.0.8",
+    "SciFiReaders>=0.12.4",
     "xraylib",
 ]
 
