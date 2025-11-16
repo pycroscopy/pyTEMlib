@@ -75,7 +75,7 @@ include-package-data = true
 exclude = ["*.tests", "*.tests.*", "tests.*", "tests", "build"]
 
 [tool.setuptools.package-data]
-pyTEMlib = ["../data/*.json", "example_data/*"]
+pyTEMlib = ["data/*.json", "example_data/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "pyTEMlib.version.__version__"}
