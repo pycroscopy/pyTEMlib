@@ -24,10 +24,10 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Cython",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Scientific/Engineering :: Information Analysis"
 ]
@@ -75,7 +75,7 @@ include-package-data = true
 exclude = ["*.tests", "*.tests.*", "tests.*", "tests", "build"]
 
 [tool.setuptools.package-data]
-pyTEMlib = ["data/*", "example_data/*"]
+pyTEMlib = ["../data/*.json", "example_data/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "pyTEMlib.version.__version__"}

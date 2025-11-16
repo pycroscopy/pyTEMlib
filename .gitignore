@@ -54,7 +54,7 @@ coverage.xml
 
 # Translations
 *.mo
-*.pot
+*.p
 
 # Django stuff:
 *.log
@@ -266,13 +266,11 @@ example_data/0sto.hf5
 example_data/GOLD-NP-DIFF-2-10.hf5
 example_data/GOLD-NP-DIFF-2-11.hf5
 example_data/GOLD-NP-DIFF-2-5.hf5
-example_data/GOLD-NP-DIFF-2-6.hf5
+example_data/GOLD-NP-DIFF-2-6.hf5ls
 example_data/GOLD-NP-DIFF-2-7.hf5
 example_data/GOLD-NP-DIFF-2-8.hf5
 example_data/GOLD-NP-DIFF-2-9.hf5
 notebooks/Imaging/Cu.cif
-pyTEMlib/data/fluorescent_yield.csv
-pyTEMlib/data/fluorescent_yield.xlsx
 notebooks/Spectroscopy/EDS-Copy2.ipynb
 pyTEMlib/eds_xsections - Copy.py
 pyTEMlib/eds_xsections-old.py
