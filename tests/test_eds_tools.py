@@ -72,23 +72,19 @@ class TestFileFunctions(unittest.TestCase):
 
     def test_quantify_xsection(self):
         """Test quantification using cross sections"""
-        """pyTEMlib.eds_tools.quantify_eds(spectrum, mask=['Cu'])
+        pyTEMlib.eds_tools.quantify_eds(spectrum, mask=['Cu'])
         self.assertIn('GUI', spectrum.metadata['EDS'])
-        self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])"""
-        pass
+        self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
 
     def test_quantify_kfactors(self):
         """Test quantification using k-factors"""
-        pass
-        """q_dict = pyTEMlib.eds_tools.load_k_factors()
+        q_dict = pyTEMlib.eds_tools.load_k_factors()
         pyTEMlib.eds_tools.quantify_eds(spectrum, q_dict, mask=['Cu'])
         self.assertIsInstance(q_dict, dict)
         self.assertIn('GUI', spectrum.metadata['EDS'])
         self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
-        """
 
     def test_r_absorption(self):
         """Test absorption correction"""
-        """pyTEMlib.eds_tools.apply_absorption_correction(spectrum, 30)
-        self.assertIn('corrected-atom%', spectrum.metadata['EDS']['GUI']['Ti'])"""
-        pass
+        pyTEMlib.eds_tools.apply_absorption_correction(spectrum, 30)
+        self.assertIn('corrected-atom%', spectrum.metadata['EDS']['GUI']['Ti'])
