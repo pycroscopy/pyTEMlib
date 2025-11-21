@@ -43,6 +43,43 @@ def get_wave_length(e0: float) -> float:
     return h / np.sqrt(2 * m_e * ev * (1 + ev / (2 * m_e * c**2)))
 
 
+def depth_of_focus(acceleration_voltage: float, convergence_angle: float) -> float:
+    """calculate depth of focus
+
+    Parameters
+    ----------
+    acceleration_voltage : float
+        acceleration voltage in eV
+    convergence_angle : float
+        convergence angle in radians
+
+    Returns
+    -------
+    float
+        depth of focus in meters
+    """
+
+    wavelength = get_wavelength(acceleration_voltage)
+    return wavelength / convergence_angle**2
+
+
+def current_to_number_of_electrons(current: float) -> float:
+    """convert current in Ampere to number of electrons per second
+
+    Parameters
+    ----------
+    current : float
+        current in Ampere
+
+    Returns
+    -------
+    float
+        number of electrons per second
+    """
+    return current / scipy.constants.elementary_charge
+
+
+
 def effective_collection_angle(energy_scale: np.ndarray,
                                alpha: float,
                                beta: float,
