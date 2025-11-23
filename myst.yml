@@ -20,9 +20,8 @@ project:
         - file: notebooks\Imaging\Adaptive_Fourier_Filter.ipynb
     - file: notebooks\3_Spectroscopy_Tools.ipynb
       children:
-        - file: notebooks/Spectroscopy/Analyse_Low_Loss
+        - file: notebooks/Spectroscopy/Analyse_EELS
         - file: notebooks\Spectroscopy\EDS.ipynb
-    - file: api
 site:
   options:
     logo: logo.png
