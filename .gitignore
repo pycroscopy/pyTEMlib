@@ -279,3 +279,6 @@ pyTEMlib/client.py
 pyTEMlib/server.py
 pyTEMlib/eds_xsections2.py
 notebooks/Spectroscopy/EDS-old.ipynb
+
+# MyST build outputs
+_build

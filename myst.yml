@@ -1,0 +1,30 @@
+version: 1
+project:
+  title: pyTEMlib
+  authors:
+    - name: Gerd Duscher
+  copyright: '2024'
+  github: pycroscopy/pyTEMlib
+  bibliography:
+    - references.bib
+  exports:
+    - format: pdf
+      template: plain_latex_book
+      output: exports/book.pdf
+  toc:
+    - file: intro.md
+    - file: installation.md
+    - file: notebooks\1_Diffraction_Tools.ipynb
+    - file: notebooks\2_Image_Tools.ipynb
+      children:
+        - file: notebooks\Imaging\Adaptive_Fourier_Filter.ipynb
+    - file: notebooks\3_Spectroscopy_Tools.ipynb
+      children:
+        - file: notebooks/Spectroscopy/Analyse_Low_Loss
+        - file: notebooks\Spectroscopy\EDS.ipynb
+    - file: api
+site:
+  options:
+    logo: logo.png
+    folders: true
+  template: book-theme
