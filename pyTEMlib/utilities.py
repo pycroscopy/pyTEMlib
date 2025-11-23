@@ -4,6 +4,7 @@
 # ################################################################
 """
 import typing
+import warnings
 import numpy as np
 from numba import jit
 import scipy
@@ -34,13 +35,58 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
             'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
             'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi']
 
-def get_wave_length(e0: float) -> float:
+def get_wavelength(e0: float) -> float:
     """get deBroglie wavelength of electron accelerated by energy (in eV) e0"""
     ev = scipy.constants.e * e0
     m_e = scipy.constants.m_e
     c = scipy.constants.c
     h = scipy.constants.h
     return h / np.sqrt(2 * m_e * ev * (1 + ev / (2 * m_e * c**2)))
+
+
+def get_wave_length(acceleration_voltage: float) -> float:
+    """Deprecated function, use get_wavelength instead"""
+    warnings.warn("get_wave_length is deprecated, use get_wavelength instead",
+                  DeprecationWarning,
+                  stacklevel=2)
+    return get_wavelength(acceleration_voltage)
+
+
+def depth_of_focus(acceleration_voltage: float, convergence_angle: float) -> float:
+    """calculate depth of focus
+
+    Parameters
+    ----------
+    acceleration_voltage : float
+        acceleration voltage in eV
+    convergence_angle : float
+        convergence angle in radians
+
+    Returns
+    -------
+    float
+        depth of focus in meters
+    """
+
+    wavelength = get_wavelength(acceleration_voltage)
+    return wavelength / convergence_angle**2
+
+
+def current_to_number_of_electrons(current: float) -> float:
+    """convert current in Ampere to number of electrons per second
+
+    Parameters
+    ----------
+    current : float
+        current in Ampere
+
+    Returns
+    -------
+    float
+        number of electrons per second
+    """
+    return current / scipy.constants.elementary_charge
+
 
 
 def effective_collection_angle(energy_scale: np.ndarray,

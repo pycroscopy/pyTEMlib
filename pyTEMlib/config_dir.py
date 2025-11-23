@@ -10,8 +10,6 @@ import os
 import importlib
 import shutil
 
-# import wget
-print('using config dir')
 if os.name in ['nt', 'dos', 'posix']:
     config_path = os.path.join(os.path.expanduser('~'), '.pyTEMlib')
 else:
@@ -36,10 +34,10 @@ if os.path.isfile(config_file) is False:  # Do not overwrite users microscopy fi
         f.write('\n'.join(lines))
 
 for filename in os.listdir(origin_path):
-    print(origin_path, filename)
     source_file = os.path.join(origin_path, filename)
     target_file = os.path.join(config_path, filename)
     if os.path.isfile(source_file)is False:
         continue
     if os.path.isfile(target_file) is False:  # Do not overwrite users files
         shutil.copy(source_file, target_file)
+        print(f"copied from {origin_path}: {filename}")

@@ -321,9 +321,10 @@ def read_dm_annotation(image: sidpy.Dataset) -> typing.Dict[str, typing.Any]:
     """
     if 'MAGE' not in image.data_type.name:
         return {}
-    scale_x = np.abs(image.x[1]-image.x[0])
-    scale_y = np.abs(image.y[1]-image.y[0])
-    rec_scale = np.array([scale_x, scale_y,scale_x, scale_y])
+    dimensions = image.get_image_dims(return_axis=True)
+    scale_x = np.abs(dimensions[0].slope)
+    scale_y = np.abs(dimensions[1].slope)
+    rec_scale = np.array([scale_x, scale_y, scale_x, scale_y])
     annotations = {}
     tags = image.original_metadata.get('DocumentObjectList', {}).get('0', {}).get('AnnotationGroupList', {})
 

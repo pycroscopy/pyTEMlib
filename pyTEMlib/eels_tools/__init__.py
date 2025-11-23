@@ -6,7 +6,7 @@ Copyright by Gerd Duscher
 seperated into different files 09/2025
 """
 from ..utilities import major_edges, all_edges, first_close_edges, elements
-from ..utilities import get_wave_length, effective_collection_angle, set_default_metadata
+from ..utilities import get_wavelength, effective_collection_angle, set_default_metadata
 from ..utilities import lorentz, gauss, get_x_sections, get_z, get_spectrum
 
 from .zero_loss_tools import zero_loss_function, get_resolution_functions
