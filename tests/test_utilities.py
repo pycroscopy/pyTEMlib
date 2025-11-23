@@ -6,9 +6,9 @@ import importlib
 import pyTEMlib.utilities as utilities
 
 
-def test_get_wave_length_positive():
+def test_get_wavelength_positive():
     # wavelength should be positive and finite for typical electron energy
-    wl = utilities.get_wave_length(200000.0)  # 200 keV
+    wl = utilities.get_wavelength(200000.0)  # 200 keV
     assert isinstance(wl, float)
     assert wl > 0.0
     assert math.isfinite(wl)
@@ -102,4 +102,4 @@ def test_effective_collection_angle_basic():
 # Reload module to ensure tests are isolated when needed
 def test_module_reload_no_errors():
     importlib.reload(utilities)
-    assert hasattr(utilities, "get_wave_length")
+    assert hasattr(utilities, "get_wavelength")

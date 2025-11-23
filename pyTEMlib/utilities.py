@@ -4,6 +4,7 @@
 # ################################################################
 """
 import typing
+import warnings
 import numpy as np
 from numba import jit
 import scipy
@@ -44,7 +45,10 @@ def get_wavelength(e0: float) -> float:
 
 
 def get_wave_length(acceleration_voltage: float) -> float:
-    DeprecationWarning("get_wave_length is deprecated, use get_wavelength instead")
+    """Deprecated function, use get_wavelength instead"""
+    warnings.warn("get_wave_length is deprecated, use get_wavelength instead",
+                  DeprecationWarning,
+                  stacklevel=2)
     return get_wavelength(acceleration_voltage)
 
 
