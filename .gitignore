@@ -282,3 +282,4 @@ notebooks/Spectroscopy/EDS-old.ipynb
 
 # MyST build outputs
 _build
+.github/workflows/deploy-old.yml
