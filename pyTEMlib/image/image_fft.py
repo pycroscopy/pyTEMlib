@@ -11,6 +11,7 @@ import collections
 
 import numpy as np
 import scipy
+import skimage
 import sklearn
 
 import sidpy
@@ -165,9 +166,9 @@ def diffractogram_spots(dset: sidpy.Dataset,
     data = data/data.max()
     # some images are strange and blob_log does not work on the power spectrum
     try:
-        spots_random = scipy.features.blob_log(data, max_sigma=5, threshold=spot_threshold)
+        spots_random = skimage.feature.blob_log(data, max_sigma=5, threshold=spot_threshold)
     except ValueError:
-        spots_random = scipy.features.peak_local_max(np.array(data.T),
+        spots_random = skimage.feature.peak_local_max(np.array(data.T),
                                                      min_distance=3,
                                                      threshold_rel=spot_threshold)
         spots_random = np.hstack(spots_random, np.zeros((spots_random.shape[0], 1)))

@@ -29,7 +29,7 @@ from .core_loss_tools import fit_dataset, auto_chemical_composition, make_edges
 from .core_loss_tools import cl_model, core_loss_model, fit_edges, xsec_xrpa
 
 
-__all__ = ['major_edges', 'all_edges', 'first_close_edges', 'elements', 'get_wave_length',
+__all__ = ['major_edges', 'all_edges', 'first_close_edges', 'elements', 'get_wavelength',
            'effective_collection_angle', 'set_default_metadata', 'lorentz', 'gauss',
            'get_x_sections', 'get_z', 'get_spectrum', 'zero_loss_function',
            'get_resolution_functions', 'get_zero_loss_energy', 'shift_energy', 'align_zero_loss',
