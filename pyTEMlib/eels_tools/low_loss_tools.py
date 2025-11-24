@@ -7,7 +7,7 @@ import scipy
 import sidpy
 from sidpy.proc.fitter import SidFitter
 
-from ..utilities import get_wave_length, effective_collection_angle
+from ..utilities import get_wavelength, effective_collection_angle
 from ..utilities import gauss, lorentz
 from .zero_loss_tools import zl
 
@@ -435,7 +435,7 @@ def kroeger_core(e_data, a_data, eps_data, acceleration_voltage_kev, thickness, 
     a_data = np.array(a_data)
     e_data = np.array(e_data)
     # adjust input to si units
-    # wavelength = get_wave_length(acceleration_voltage_kev * 1e3)  # in m
+    # wavelength = get_wavelength(acceleration_voltage_kev * 1e3)  # in m
     thickness = thickness * 1e-9  # input thickness now in m
 
     # Define constants
@@ -550,7 +550,7 @@ def plot_dispersion(plotdata, units, a_data, e_data, max_p, title, ee):
     z = plotdata
     # lev = np.array([0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 3, 4, 4.9]) * max_p / 5
 
-    wavelength = get_wave_length(ee)
+    wavelength = get_wavelength(ee)
     # q = a_data[1024:2048] / (wavelength * 1e9)  # in [1/nm]
     scale = np.array([0, a_data[-1], e_data[0], e_data[-1]])
     ev2hertz = scipy.constants.value('electron volt-hertz relationship')

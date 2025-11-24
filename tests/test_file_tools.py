@@ -13,7 +13,6 @@ import ase.build
 sys.path.insert(0, "../")
 
 import sidpy
-import pyNSID
 import pyTEMlib.file_tools as ft
 
 class TestFileFunctions(unittest.TestCase):
