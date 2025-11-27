@@ -151,14 +151,13 @@ def quantify_cross_section(spectrum, mask=None):
     acceleration_voltage = spectrum.metadata.get('experiment', {}).get('acceleration_voltage',
                                                                        200000)
     families = get_families(spectrum)
+
     total = 0
     total_amu = 0
     for key, family in families.items():
         if key in mask:
             continue
         amu = spectrum.metadata['EDS'][key]['atomic_weight']
-        # peaks = spectrum.metadata['EDS'][key][family['symmetry']].get('peaks', [1])
-        # print(f'Element: {key}, Peaks: {peaks.sum():.2f}')
         intensity  = spectrum.metadata['EDS'][key][family['symmetry']].get('areal_density', 0)
         z = get_atomic_number(key)
         x_sect = family_ionization(z, family['symmetry'][0], acceleration_voltage)*1e23
@@ -166,7 +165,6 @@ def quantify_cross_section(spectrum, mask=None):
         spectrum.metadata['EDS']['GUI'][key]['cross_section'] = x_sect
         spectrum.metadata['EDS']['GUI'][key]['composition_counts'] = intensity/x_sect
         total += intensity / x_sect
-        # print(f'Element: {key}, Intensity: {intensity:.0f}, X-section: {x_sect:.2f}, ')
         total_amu += intensity / x_sect * amu
 
     for key, family in families.items():
@@ -204,7 +202,7 @@ def quantification_k_factors(spectrum, mask=None):
         if key in ['detector', 'quantification']:
             pass
         elif isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
-            family = spectrum.metadata['EDS'][key].get('GUI', {}).get('symmetry', None)
+            family = spectrum.metadata['EDS'].get('GUI', {}).get(key, {}).get('symmetry', None)
             if family is None:
                 if 'K-family' in spectrum.metadata['EDS'][key]:
                     family = 'K-family'
@@ -213,8 +211,8 @@ def quantification_k_factors(spectrum, mask=None):
                 elif 'M-family' in spectrum.metadata['EDS'][key]:
                     family = 'M-family'
             spectrum.metadata['EDS']['GUI'][key] = {'symmetry': family}
-            intensity = spectrum.metadata['EDS'][key][family]['areal_density']  # /peaks_max
-            k_factor = spectrum.metadata['EDS'][key][family]['k_factor']
+            intensity = spectrum.metadata['EDS'][key][family].get('areal_density', 0)
+            k_factor = spectrum.metadata['EDS'][key][family].get('k_factor', 0)
             atomic_weight = spectrum.metadata['EDS'][key]['atomic_weight']
             if key in mask:
                 spectrum.metadata['EDS']['GUI'][key] = {'atom%': 0,
