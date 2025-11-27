@@ -26,8 +26,11 @@ from . import crystal_tools
 from . import kinematic_scattering
 from . import dynamic_scattering
 from .config_dir import config_path
+from . import utilities
+from . import xrpa_x_sections
 
 __all__ = ['__version__', 'file_tools', 'image_tools', 'atom_tools',
            'graph_tools', 'probe_tools', 'eels_tools', 'eds_tools',
-           'crystal_tools', 'kinematic_scattering', 'dynamic_scattering', 'config_path']
+           'crystal_tools', 'kinematic_scattering', 'dynamic_scattering', 
+           'config_path', 'utilities', 'xrpa_x_sections']
 __author__ = 'Gerd Duscher'

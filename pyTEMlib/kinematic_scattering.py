@@ -25,9 +25,10 @@ All the input and output is done through a ase.Atoms object and the dictionary i
 """
 
 # numerical packages used
+import itertools
+
 import numpy as np
 import scipy
-import itertools
 
 import ase
 import ase.build
@@ -35,11 +36,11 @@ import ase.build
 # plotting package used
 import matplotlib.pylab as plt  # basic plotting
 
-import pyTEMlib.file_tools as ft
+import pyTEMlib
 from pyTEMlib.crystal_tools import *
 from pyTEMlib.diffraction_plot import *
 
-_version_ = "0.2022.1.0"
+_version_ = "0.2025.12.0"
 
 # print(f'Using kinematic_scattering library version {_version_ }  by G.Duscher')
 
@@ -51,7 +52,7 @@ optional_inputKeys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad
 def read_poscar(filename):
     print('read_poscar and read_cif moved to file_tools, \n'
           'please use that library in the future!')
-    ft.read_poscar(filename)
+    pyTEMlib.file_tools.read_poscar(filename)
 
 
 def example(verbose=True):
@@ -1177,8 +1178,7 @@ def feq(element, q):
     if element not in electronFF:
         if len(element) > 2:
             raise TypeError('Please use standard convention for element abbreviation with not more than two letters')
-        else:
-            raise TypeError('Element {element} not known to electron diffraction should')
+        raise TypeError('Element {element} not known to electron diffraction should')
     if not isinstance(q, (float, int)):
         raise TypeError('Magnitude of scattering vector has to be a number of type float')
 
