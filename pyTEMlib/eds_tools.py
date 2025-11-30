@@ -318,8 +318,9 @@ def get_x_ray_lines(spectrum, element_list):
                 position = x_sections[str(atomic_number)]['lines'][family['main']]['position']
                 height = spectrum[np.searchsorted(energy_scale, position)].compute()
                 out_tags[element][f'{key}-family']['height'] = height/family['weight']
+                z = str(atomic_number)
                 for key in family['lines']:
-                    out_tags[element][f'{key[0]}-family'][key] = x_sections[str(atomic_number)]['lines'][key]
+                    out_tags[element][f'{key[0]}-family'][key] = x_sections[z]['lines'][key]
         spectrum.metadata.setdefault('EDS', {}).update(out_tags)
     return out_tags
 
@@ -707,7 +708,7 @@ def quantify_eds(spectrum, quantification_dict=None, mask=None ):
     else:
         print('using cross sections for quantification')
         quantify_cross_section(spectrum, mask=mask)
-        # print('Need either k-factor or cross section dictionary')
+
 
 def read_esl_k_factors(filename, reduced=False):
     """ Read k-factors from esl file."""

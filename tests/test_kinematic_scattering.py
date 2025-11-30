@@ -14,8 +14,8 @@ import pyTEMlib.kinematic_scattering as ks
 
 class TestUtilityFunctions(unittest.TestCase):
 
-    def test_Zuo_fig_3_18(self):
-        atoms = ks.Zuo_fig_3_18(verbose=True)
+    def test_zuo_fig_3_18(self):
+        atoms = ks.zuo_fig_3_18(verbose=True)
         self.assertIsInstance(atoms.info, dict)
         self.assertEqual(atoms.symbols[0], 'Si')
         self.assertEqual(atoms.cell[0, 0], 5.14)
