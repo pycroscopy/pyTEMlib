@@ -1,25 +1,19 @@
-import numpy as np
+""" Testing image fft functions
+"""
 import unittest
+import numpy as np
+
+import sidpy
 from pyTEMlib.image import image_fft
-
-try:
-    import sidpy  # type: ignore
-except ImportError:
-    sidpy = None  # noqa: E305
-try:
-    import skimage.feature  # noqa: F401
-except ImportError:
-    skimage_feature = None  # noqa: F401
-
 
 def _make_simple_image_dataset():
     """Create a synthetic sidpy image dataset with sinusoidal components."""
-    N = 64
+    n = 64
     dx = 0.5  # nm
-    x_vals = np.linspace(0, (N - 1) * dx, N)
-    y_vals = np.linspace(0, (N - 1) * dx, N)
+    x_vals = np.linspace(0, (n - 1) * dx, n)
+    y_vals = np.linspace(0, (n - 1) * dx, n)
     x_grid, y_grid = np.meshgrid(x_vals, y_vals, indexing='ij')
-    img = np.sin(2 * np.pi * 3 * x_grid / (N * dx)) + np.sin(2 * np.pi * 5 * y_grid / (N * dx))
+    img = np.sin(2 * np.pi * 3 * x_grid / (n * dx)) + np.sin(2 * np.pi * 5 * y_grid / (n * dx))
     dset = sidpy.Dataset.from_array(img)
     dset.data_type = 'IMAGE'
     dset.quantity = 'intensity'
@@ -34,10 +28,10 @@ def _make_simple_image_dataset():
 
 def _make_synthetic_diffractogram():
     """Create a synthetic diffractogram sidpy dataset with bright spots."""
-    N = 64
-    u_vals = np.linspace(-5, 5, N)
-    v_vals = np.linspace(-5, 5, N)
-    data = np.zeros((N, N))
+    n = 64
+    u_vals = np.linspace(-5, 5, n)
+    v_vals = np.linspace(-5, 5, n)
+    data = np.zeros((n, n))
     spot_positions = [(-3, 0), (3, 0), (0, -4), (0, 4)]
     for (u0, v0) in spot_positions:
         ui = np.argmin(np.abs(u_vals - u0))
@@ -46,9 +40,11 @@ def _make_synthetic_diffractogram():
     dset = sidpy.Dataset.from_array(data)
     dset.data_type = 'IMAGE'
     dset.title = 'synthetic diffractogram'
-    dset.set_dimension(0, sidpy.Dimension(u_vals, name='u', units='1/nm', quantity='reciprocal_length',
+    dset.set_dimension(0, sidpy.Dimension(u_vals, name='u', units='1/nm',
+                                          quantity='reciprocal_length',
                                           dimension_type='RECIPROCAL'))
-    dset.set_dimension(1, sidpy.Dimension(v_vals, name='v', units='1/nm', quantity='reciprocal_length',
+    dset.set_dimension(1, sidpy.Dimension(v_vals, name='v', units='1/nm',
+                                          quantity='reciprocal_length',
                                           dimension_type='RECIPROCAL'))
     return dset, spot_positions
 
@@ -61,6 +57,7 @@ class TestImageFFT(unittest.TestCase):
         self.simple_image = _make_simple_image_dataset()
 
     def test_fourier_transform_basic(self):
+        """Test basic Fourier transform properties."""
         fft_dset = image_fft.fourier_transform(self.simple_image)
         self.assertIsInstance(fft_dset, sidpy.Dataset)
         self.assertEqual(fft_dset.shape, self.simple_image.shape)
@@ -74,13 +71,16 @@ class TestImageFFT(unittest.TestCase):
         self.assertEqual(fft_dset.units, 'a.u.')
 
     def test_power_spectrum_metadata(self):
+        """Test power spectrum calculation and metadata."""
         ps = image_fft.power_spectrum(self.simple_image, smoothing=2)
         self.assertIn('fft', ps.metadata)
         self.assertEqual(ps.metadata['fft']['smoothing'], 2)
-        self.assertLess(ps.metadata['fft']['minimum_intensity'], ps.metadata['fft']['maximum_intensity'])
+        self.assertLess(ps.metadata['fft']['minimum_intensity'],
+                        ps.metadata['fft']['maximum_intensity'])
         self.assertTrue(ps.title.startswith('power spectrum'))
 
     def test_rotational_symmetry_diffractogram(self):
+        """Test rotational symmetry detection on synthetic spots."""
         spots = np.array([
             [1.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
@@ -94,6 +94,7 @@ class TestImageFFT(unittest.TestCase):
         self.assertNotIn(6, sym)
 
     def test_diffractogram_spots_detection(self):
+        """Test spot detection in synthetic diffractogram."""
         dset, expected = _make_synthetic_diffractogram()
         spots, center = image_fft.diffractogram_spots(dset, spot_threshold=0.2, return_center=True)
         self.assertEqual(spots.shape[1], 3)
@@ -106,6 +107,7 @@ class TestImageFFT(unittest.TestCase):
         self.assertTrue(np.all(spots[:, 2] >= -np.pi))
 
     def test_adaptive_fourier_filter_preserves_selected_frequencies(self):
+        """Test adaptive Fourier filtering on synthetic image."""
         fft_dset = image_fft.fourier_transform(self.simple_image)
         mag = np.abs(np.array(fft_dset))
         center_idx = (mag.shape[0] // 2, mag.shape[1] // 2)
@@ -121,7 +123,10 @@ class TestImageFFT(unittest.TestCase):
             angle = np.arctan2(u, v)
             spots_list.append([u, v, angle])
         spots = np.array(spots_list)
-        filtered = image_fft.adaptive_fourier_filter(self.simple_image, spots, low_pass=0.15, reflection_radius=0.25)
+        filtered = image_fft.adaptive_fourier_filter(self.simple_image,
+                                                     spots,
+                                                     low_pass=0.15,
+                                                     reflection_radius=0.25)
         self.assertEqual(filtered.shape, self.simple_image.shape)
         self.assertIn('analysis', filtered.metadata)
         self.assertEqual(filtered.metadata['analysis'], 'adaptive fourier filtered')
@@ -135,7 +140,8 @@ class TestImageFFT(unittest.TestCase):
         original_masked_mag = np.abs(np.array(fft_dset)) * mask
         filtered_fft = image_fft.fourier_transform(filtered)
         filtered_mag = np.abs(np.array(filtered_fft))
-        outside_ratio = filtered_mag[mask == 0].sum() / np.abs(np.array(fft_dset))[mask == 0].sum()
+        # outside_ratio = filtered_mag[mask == 0].sum()
+        #/ np.abs(np.array(fft_dset))[mask == 0].sum()
         # self.assertLess(outside_ratio, 1.)
         inside_ratio = filtered_mag[mask == 1].sum() / original_masked_mag[mask == 1].sum()
         self.assertGreater(inside_ratio, 0.5)

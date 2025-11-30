@@ -13,8 +13,10 @@ import pyTEMlib.kinematic_scattering as ks
 
 
 class TestUtilityFunctions(unittest.TestCase):
+    """Unittest conversion of pytest-based utility function tests."""
 
     def test_zuo_fig_3_18(self):
+        """Test loading of Zuo Fig. 3.18 example."""
         atoms = ks.zuo_fig_3_18(verbose=True)
         self.assertIsInstance(atoms.info, dict)
         self.assertEqual(atoms.symbols[0], 'Si')
@@ -24,10 +26,12 @@ class TestUtilityFunctions(unittest.TestCase):
         np.testing.assert_allclose(atoms.info['experimental']['zone_hkl'], np.array([-2, 2, 1]))
 
     def test_example(self):
+        """Test loading of example structure."""
         atoms = ks.example(verbose=False)
         self.assertEqual(atoms.info['output']['plot_HOLZ'], 1)
 
     def test_zone_mistilt(self):
+        """Test zone axis rotation with mistilt angles."""
         rotated_zone_axis = ks.zone_mistilt([1, 0, 0], [45, 0, 0])
         np.testing.assert_allclose(rotated_zone_axis, [1, 0, 0])
 
@@ -41,15 +45,18 @@ class TestUtilityFunctions(unittest.TestCase):
             ks.zone_mistilt([1j, 0, 0], [0,  0])
 
     def test_metric_tensor(self):
+        """Test metric tensor calculation."""
         # Todo: better testing
         np.testing.assert_allclose(ks.get_metric_tensor(np.identity(3)), np.identity(3))
 
     def test_make_pretty_labels(self):
+        """Test making pretty hkl labels."""
         labels = ks.make_pretty_labels(np.array([[1, 0, 0], [1, 1, -1]]))
         self.assertEqual(labels[0], '[$\\bar {1},0,0} $]')
         self.assertEqual(labels[1], '[$\\bar {1},1,\\bar {1} $]')
 
     def test_get_wavelength(self):
+        """Test electron wavelength calculation."""
         wavelength = ks.get_wavelength(200000)
         self.assertEqual(np.round(wavelength * 100, 3), 2.508)
         wavelength = ks.get_wavelength(60000.)
@@ -59,6 +66,7 @@ class TestUtilityFunctions(unittest.TestCase):
             ks.get_wavelength('lattice_parameter')
 
     def test_get_rotation_matrix(self):
+        """Test zone axis rotation matrix calculation."""
         tags = {'zone_hkl': [1, 1, 1], 'mistilt_alpha': 0, 'mistilt_beta': 0,
                 'reciprocal_unit_cell': np.identity(3)}
 
@@ -69,6 +77,7 @@ class TestUtilityFunctions(unittest.TestCase):
         np.testing.assert_allclose(matrix, matrix_desired, 1e-5)
 
     def test_check_sanity(self):
+        """Test sanity check for ASE atoms object."""
         atoms = ase.Atoms()
         self.assertFalse(atoms)
 
@@ -77,8 +86,10 @@ class TestUtilityFunctions(unittest.TestCase):
 
 
 class TestScatteringFunctions(unittest.TestCase):
+    """Unittest conversion of pytest-based scattering function tests."""
 
     def test_ring_pattern_calculation(self):
+        """Test ring pattern calculation."""
         atoms = ks.example(verbose=False)
         ks.ring_pattern_calculation(atoms, verbose=True)
 
@@ -89,6 +100,7 @@ class TestScatteringFunctions(unittest.TestCase):
         self.assertEqual(atoms.info['Ring_Pattern']['allowed']['multiplicity'][0], 8)
 
     def test_kinematic_scattering(self):
+        """Test kinematic scattering calculation."""
         atoms = ks.example(verbose=False)
         ks.kinematic_scattering(atoms, verbose=True)
         self.assertIsInstance(atoms.info['diffraction']['HOLZ'], dict)
@@ -97,13 +109,16 @@ class TestScatteringFunctions(unittest.TestCase):
                                delta=1e-6)
 
     def test_feq(self):
+        """Test atomic scattering factor calculation."""
         self.assertAlmostEqual(ks.feq('Au', 0.36), 7.43164303450277)
         self.assertAlmostEqual(ks.feq('Si', 1.26), 0.5398190143297035)
 
 
 class TestScatteringFunctions2(unittest.TestCase):
+    """Unittest conversion of pytest-based scattering function tests."""
 
     def test_ring_pattern_plot(self):
+        """Test ring pattern plotting function."""
         pass
 
     """
