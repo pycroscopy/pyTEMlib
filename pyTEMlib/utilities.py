@@ -35,13 +35,28 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
             'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
             'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi']
 
-def get_wavelength(e0: float) -> float:
-    """get deBroglie wavelength of electron accelerated by energy (in eV) e0"""
-    ev = scipy.constants.e * e0
-    m_e = scipy.constants.m_e
-    c = scipy.constants.c
-    h = scipy.constants.h
-    return h / np.sqrt(2 * m_e * ev * (1 + ev / (2 * m_e * c**2)))
+def get_wavelength(acceleration_voltage: float) -> float:
+    """
+    Calculates the relativistic corrected de Broglie wavelength of an electron in meter
+
+    Parameter:
+    ---------
+    acceleration_voltage: float
+        acceleration voltage in volt
+    Returns:
+    -------
+    wavelength: float
+        wave length in meter
+    """
+    if not isinstance(acceleration_voltage, (int, float)):
+        raise TypeError('Acceleration voltage has to be a real number')
+
+    ev = acceleration_voltage * scipy.constants.elementary_charge
+    h = scipy.constants.Planck
+    m0 = scipy.constants.electron_mass
+    c = scipy.constants.speed_of_light
+    wavelength = h / np.sqrt(2 * m0 * ev * (1 + (ev / (2 * m0 * c ** 2))))
+    return wavelength
 
 
 def get_wave_length(acceleration_voltage: float) -> float:
@@ -376,3 +391,41 @@ def second_derivative(dataset: sidpy.Dataset) -> None:
     # slope = (noise_level_end - noise_level_start) / (len(energy_scale) - 400)
     # noise_level = noise_level_start #+ np.arange(len(energy_scale)) * slope
     return second_dif , noise_level
+
+def get_rotation_matrix(angles, in_radians=False):
+    """ Rotation of zone axis by mistilt
+
+        Parameters
+        ----------
+        angles: ist or numpy array of float
+            list of mistilt angles (default in degrees)
+        in_radians: boolean default False
+            default is angles in degrees
+
+        Returns
+        -------
+        rotation_matrix: np.ndarray (3x3)
+            rotation matrix in 3d
+        """
+
+    if not isinstance(angles, (np.ndarray, list)):
+        raise TypeError('angles must be a list of float of length 3')
+    if len(angles) != 3:
+        raise TypeError('angles must be a list of float of length 3')
+
+    if in_radians:
+        alpha, beta, gamma = angles
+    else:
+        alpha, beta, gamma = np.radians(angles)
+    # first we rotate alpha about x-axis
+    c, s = np.cos(alpha), np.sin(alpha)
+    rot_x = np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
+
+    # second we rotate beta about y-axis
+    c, s = np.cos(beta), np.sin(beta)
+    rot_y = np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
+
+    # third we rotate gamma about z-axis
+    c, s = np.cos(gamma), np.sin(gamma)
+    rot_z = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+    return np.dot(np.dot(rot_x, rot_y), rot_z)

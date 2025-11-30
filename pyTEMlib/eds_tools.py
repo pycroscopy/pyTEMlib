@@ -253,7 +253,7 @@ def get_elements(spectrum, minimum_number_of_peaks=10, verbose=False):
     for key in keys:
         if len(key) < 3:
             del spectrum.metadata['EDS'][key]
-    
+
     elements = peaks_element_correlation(spectrum, minor_peaks)
     if verbose:
         print(elements)
@@ -294,57 +294,34 @@ def get_x_ray_lines(spectrum, element_list):
         lines = pyTEMlib.xrpa_x_sections.x_sections.get(str(atomic_number), {}).get('lines', {})
         if not lines:
             break
-        k_weight = 0
-        k_main = 'None'
-        k_lines = []
-        l_weight = 0
-        l_main = 'None'
-        l_lines = []
-        m_weight = 0
-        m_main = 'None'
-        m_lines  = []
+        line_dict = {'K': {'lines': [],
+                           'main': None,
+                           'weight': 0}, 
+                     'L': {'lines': [],
+                           'main': None,
+                           'weight': 0}, 
+                     'M': {'lines': [],
+                           'main': None,
+                           'weight': 0}}
 
         for key, line in lines.items():
-            if 'K' == key[0]:
+            if key[0] in line_dict:
                 if line['position'] < energy_scale[-1]:
-                    k_lines.append(key)
-                    if line['weight'] > k_weight:
-                        k_weight = line['weight']
-                        k_main = key
-            if 'L' == key[0]:
-                if line['position'] < energy_scale[-1]:
-                    l_lines.append(key)
-                    if line['weight'] > l_weight:
-                        l_weight = line['weight']
-                        l_main = key
-            if 'M' == key[0]:
-                if line['position'] < energy_scale[-1]:
-                    m_lines .append(key)
-                    if line['weight'] > m_weight:
-                        m_weight = line['weight']
-                        m_main = key
-        if k_weight > 0:
-            out_tags[element]['K-family'] = {'main': k_main, 'weight': k_weight, 'lines': k_lines}
-            position = x_sections[str(atomic_number)]['lines'][k_main]['position']
-            height = spectrum[np.searchsorted(energy_scale, position)].compute()
-            out_tags[element]['K-family']['height'] = height/k_weight
-            for key in k_lines:
-                out_tags[element]['K-family'][key] = x_sections[str(atomic_number)]['lines'][key]
-        if l_weight > 0:
-            out_tags[element]['L-family'] = {'main': l_main, 'weight': l_weight, 'lines': l_lines}
-            position = x_sections[str(atomic_number)]['lines'][l_main]['position']
-            height = spectrum[np.searchsorted(energy_scale, position)].compute()
-            out_tags[element]['L-family']['height'] = height/l_weight
-            for key in l_lines:
-                out_tags[element]['L-family'][key] = x_sections[str(atomic_number)]['lines'][key]
-        if m_weight > 0:
-            out_tags[element]['M-family'] = {'main': m_main, 'weight': m_weight, 'lines': m_lines }
-            position = x_sections[str(atomic_number)]['lines'][m_main]['position']
-            height = spectrum[np.searchsorted(energy_scale, position)].compute()
-            out_tags[element]['M-family']['height'] = height/m_weight
-            for key in m_lines :
-                out_tags[element]['M-family'][key] = x_sections[str(atomic_number)]['lines'][key]
-    spectrum.metadata.setdefault('EDS', {}).update(out_tags)
+                    line_dict[key[0]]['lines'].append(key)
+                    if line['weight'] > line_dict[key[0]]['weight']:
+                        line_dict[key[0]]['weight'] = line['weight']
+                        line_dict[key[0]]['main'] = key
+
+        for key, family in line_dict.items():
+            if family['weight'] > 0:
+                out_tags[element].setdefault(f'{key}-family', {}).update(family)
+                position = x_sections[str(atomic_number)]['lines'][family['main']]['position']
+                height = spectrum[np.searchsorted(energy_scale, position)].compute()
+                out_tags[element][f'{key}-family']['height'] = height/family['weight']
+                z = str(atomic_number)
+                for key in family['lines']:
+                    out_tags[element][f'{key[0]}-family'][key] = x_sections[z]['lines'][key]
+        spectrum.metadata.setdefault('EDS', {}).update(out_tags)
     return out_tags
 
 
@@ -401,8 +378,13 @@ def initial_model_parameter(spectrum):
             for line, info in lines['M-family'].items():
                 if line[0] == 'M':
                     model += get_peak(info['position'], energy_scale)*info['weight']
-            lines['M-family']['peaks'] = model  /model.sum()*lines['M-family'].get('probability', 0.0)
-            p.append(lines['M-family']['height'] / lines['M-family']['peaks'].max())
+            peaks_max = lines['M-family'].get('peaks', np.zeros(3)).max()
+            model_normalized = model / model.sum()*lines['M-family'].get('probability', 0.0)
+            lines['M-family']['peaks'] = model_normalized
+            if peaks_max >0:
+                p.append(lines['M-family']['height'] / peaks_max)
+            else:
+                p.append(0)
             peaks.append(lines['M-family']['peaks'])
             keys.append(element+':M-family')
 
@@ -677,18 +659,17 @@ def add_k_factors(element_dict, element, k_factors):
     line = k_factors.get(element, {}).get('Ka1', False)
     if not line:
         line = k_factors.get(element, {}).get('Ka2', False)
-    if line and family:
-        family['k_factor'] = float(line)
-
-        family = element_dict.get('L-family', False)
+    if not line:
+        family = element_dict.get('L-family', {})
         line = k_factors.get(element, {}).get('La1', False)
-        if line and family:
-            family['k_factor'] = float(line)
-
+        family['k_factor'] = float(line)
+        print('using L k-factor for', element)
+    if not line:
         family = element_dict.get('M-family', False)
         line = k_factors.get(element, {}).get('Ma1', False)
-        if line and family:
-            family['k_factor'] = float(line)
+        if line:
+            print('using M k-factor for', element)
+    family['k_factor'] = float(line)
 
 
 def quantify_eds(spectrum, quantification_dict=None, mask=None ):
@@ -708,12 +689,11 @@ def quantify_eds(spectrum, quantification_dict=None, mask=None ):
         spectrum.metadata['EDS'][key]['nominal_density'] = edge_info['nominal_density']
 
         for family, item in edge_info['fluorescent_yield'].items():
-            spectrum.metadata['EDS'][key][f"{family}-family"
-                                          ]['fluorescent_yield'] = item
+            if spectrum.metadata['EDS'][key].get(f"{family}-family", {}):
+                spectrum.metadata['EDS'][key][f"{family}-family"]['fluorescent_yield'] = item
         if quantification_dict.get('metadata', {}).get('type', '') == 'k_factor':
             k_factors = quantification_dict.get('table', {})
             add_k_factors(spectrum.metadata['EDS'][key], key, k_factors)
-
     if quantification_dict is None:
         print('using cross sections for quantification')
         quantify_cross_section(spectrum, mask=mask)
@@ -728,7 +708,7 @@ def quantify_eds(spectrum, quantification_dict=None, mask=None ):
     else:
         print('using cross sections for quantification')
         quantify_cross_section(spectrum, mask=mask)
-        # print('Need either k-factor or cross section dictionary')
+
 
 def read_esl_k_factors(filename, reduced=False):
     """ Read k-factors from esl file."""
@@ -785,18 +765,26 @@ def get_absorption_correction(spectrum, thickness=50):
     path_length = thickness *2 / np.cos(take_off_angle) * 1e-9 # /2?    in m
     count = 1
     for element, lines in spectrum.metadata['EDS']['GUI'].items():
-        part = lines['atom%']/100
-        if part > 0.01:
-            count += 1
-            absorption += get_absorption(pyTEMlib.utilities.get_atomic_number(element),
-                                        path_length*part,
-                                        spectrum.energy_scale[start_channel:])
+        if element in elements_list:
+            part = lines['atom%']/100
+            if part > 0.01:
+                count += 1
+                absorption += get_absorption(pyTEMlib.utilities.get_atomic_number(element),
+                                            path_length*part,
+                                            spectrum.energy_scale[start_channel:])
 
     for element, lines in spectrum.metadata['EDS']['GUI'].items():
-        symmetry = 'K-family' # lines['symmetry']
-        peaks = spectrum.metadata['EDS'][element][symmetry]['peaks'][start_channel:]
-        lines['absorption'] = (peaks * absorption / count).sum()
-        lines['thickness'] = thickness
+        symmetry =  lines['symmetry']
+        peaks = []
+        if symmetry in spectrum.metadata['EDS'][element]:
+            peaks = spectrum.metadata['EDS'][element][symmetry].get('peaks', [])
+        if len(peaks) > 0:
+            peaks = peaks[start_channel:]
+            lines['absorption'] = (peaks * absorption / count).sum()
+            lines['thickness'] = thickness
+        else:
+            lines['absorption'] = 1.0
+            lines['thickness'] = 0.0
 
 
 def apply_absorption_correction(spectrum, thickness):
@@ -814,11 +802,13 @@ def apply_absorption_correction(spectrum, thickness):
     atom_sum = 0.
     weight_sum = 0.
     for lines in spectrum.metadata['EDS']['GUI'].values():
-        atom_sum += lines['atom%'] / lines['absorption']
-        weight_sum += lines['weight%'] / lines['absorption']
+        atom_sum += lines.get('atom%', 0) / lines.get('absorption', 1)
+        weight_sum += lines.get('weight%', 0) / lines.get('absorption', 1)
     for lines in spectrum.metadata['EDS']['GUI'].values():
-        lines['corrected-atom%'] = lines['atom%'] / lines['absorption'] / atom_sum*100
-        lines['corrected-weight%'] = lines['weight%'] / lines['absorption'] / weight_sum*100
+        absorb = lines.get('absorption', 1)
+        lines['corrected-atom%'] = lines.get('atom%', 0) / absorb / atom_sum * 100
+        lines['corrected-weight%'] = lines.get('weight%', 0) / absorb / weight_sum * 100
+
 
 def read_csv_k_factors(filename, reduced=True):
     """ Read k-factors from csv file of ThermoFisher TEMs."""
