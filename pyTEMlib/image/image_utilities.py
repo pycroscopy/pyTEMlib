@@ -161,7 +161,7 @@ def cart2pol(points):
         angle
     """
 
-    rho = np.linalg.norm(points[:, 0:2], axis=1)
+    rho = np.hypot(points[:, 1], points[:, 0])
     phi = np.arctan2(points[:, 1], points[:, 0])
 
     return rho, phi
@@ -182,7 +182,6 @@ def pol2cart(rho, phi):
     x: float or numpy array
         x coordinates of converted points(Nx2)
     """
-
     x = rho * np.cos(phi)
     y = rho * np.sin(phi)
     return x, y

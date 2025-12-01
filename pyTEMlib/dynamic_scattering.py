@@ -132,7 +132,9 @@ def get_transmission(potential, acceleration_voltage):
     return np.exp(1j * sigma * potential)
 
 
-def get_propagator(size_in_pixel, delta_z, number_layers, wavelength, field_of_view, bandwidth_factor, verbose=True):
+def get_propagator(size_in_pixel, delta_z, number_layers,
+                   wavelength, field_of_view, bandwidth_factor,
+                   verbose=True):
     """Get propagator function
 
     has to be convoluted with wave function after transmission
@@ -165,7 +167,8 @@ def get_propagator(size_in_pixel, delta_z, number_layers, wavelength, field_of_v
         print(f"   (= {wavelength * k2max * 1000.0:.2f} mrad)  for symmetrical anti-aliasing.")
     k2max = k2max * k2max
 
-    kx, ky = np.mgrid[-size_in_pixel / 2:size_in_pixel / 2, -size_in_pixel / 2:size_in_pixel / 2] / field_of_view
+    kx, ky = np.mgrid[-size_in_pixel / 2:size_in_pixel / 2,
+                      -size_in_pixel / 2:size_in_pixel / 2] / field_of_view
     k_square = kx ** 2 + ky ** 2
     k_square[k_square > k2max] = 0  # bandwidth limiting
 
@@ -204,11 +207,12 @@ def multi_slice(wave, number_of_unit_cell_z, number_layers, transmission, propag
     complex numpy array
     """
 
-    for i in range(number_of_unit_cell_z):
+    for _ in range(number_of_unit_cell_z):
         for layer in range(number_layers):
             wave = wave * transmission[layer]  # transmission  - real space
             wave = np.fft.fft2(wave)
-            wave = wave * propagator[layer]  # propagation; propagator is defined in reciprocal space
+             # propagation; propagator is defined in reciprocal space
+            wave = wave * propagator[layer]
             wave = np.fft.ifft2(wave)  # back to real space
     return wave
 
@@ -232,7 +236,8 @@ def make_chi(theta, phi, aberrations):
             # print(n, m)
 
             if m > 0:
-                if f'C{n}{m}a' not in aberrations:  # Set non existent aberrations coefficient to zero
+                # Set non existent aberrations coefficient to zero
+                if f'C{n}{m}a' not in aberrations:
                     aberrations[f'C{n}{m}a'] = 0.
                 if f'C{n}{m}b' not in aberrations:
                     aberrations[f'C{n}{m}b'] = 0.
@@ -241,9 +246,9 @@ def make_chi(theta, phi, aberrations):
                 second_sum = second_sum + aberrations[f'C{n}{m}a'] * np.cos(m * phi) + aberrations[
                     f'C{n}{m}b'] * np.sin(m * phi)
             else:
-                if f'C{n}{m}' not in aberrations:  # Set non existent aberrations coefficient to zero
+                # Set non existent aberrations coefficient to zero
+                if f'C{n}{m}' not in aberrations:
                     aberrations[f'C{n}{m}'] = 0.
-
                 # term in second sum
                 second_sum = second_sum + aberrations[f'C{n}{m}']
         chi = chi + term_first_sum * second_sum * 2 * np.pi / aberrations['wavelength']

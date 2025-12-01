@@ -4,6 +4,9 @@ Created on January 23 2021
 
 @author: Gerd Duscher
 """
+import pyTEMlib
+from pyTEMlib import atom_tools
+
 import sys
 
 import unittest
@@ -14,9 +17,6 @@ import sidpy
 
 sys.path.insert(0, "../")
 sys.path.insert(0, './')
-
-import pyTEMlib
-from pyTEMlib import atom_tools
 
 
 def make_test_data():
@@ -47,7 +47,7 @@ class TestUtilityFunctions(unittest.TestCase):
         image, atoms_placed = make_test_data()
 
         with self.assertRaises(TypeError):
-            atom_tools.find_atoms(np.array(image))
+            pyTEMlib.atom_tools.find_atoms(np.array(image))
         with self.assertRaises(TypeError):
             image.data_type = 'spectrum'
             atom_tools.find_atoms(image)

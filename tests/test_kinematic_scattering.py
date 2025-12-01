@@ -121,7 +121,7 @@ class TestScatteringFunctions2(unittest.TestCase):
         """Test ring pattern plotting function."""
         pass
 
-    """
+ 
     def test_plotSAED(self):
         atoms, tags, output = ks.example(verbose=False)
 
