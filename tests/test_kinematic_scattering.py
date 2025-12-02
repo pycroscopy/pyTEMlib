@@ -6,6 +6,8 @@ Created on Tue Feb 14 15:07:16 2021
 """
 
 import unittest
+import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import ase
 
@@ -119,51 +121,52 @@ class TestScatteringFunctions2(unittest.TestCase):
 
     def test_ring_pattern_plot(self):
         """Test ring pattern plotting function."""
-        pass
+        atoms = ks.example(verbose=False)
+        ks.ring_pattern_calculation(atoms, verbose=False)
+        figure = ks.plot_ring_pattern(atoms)
+        self.assertIsNotNone(figure)
+        self.assertIsInstance(figure, matplotlib.figure.Figure)
 
- 
+
     def test_plotSAED(self):
-        atoms, tags, output = ks.example(verbose=False)
+        atoms = ks.example(verbose=False)
 
-        ks.kinematic_scattering(atoms, tags, output)
-        ks.plotSAED(tags)
+        ks.kinematic_scattering(atoms)
+        atoms.info['diffraction'].update(ks.plotSAED_parameter())
+
+        figure = ks.plot_diffraction_pattern(atoms)
+        self.assertIsInstance(figure, matplotlib.figure.Figure)
     
     def test_plotKikuchi(self):
-        atoms, tags, output = ks.example(verbose=False)
-
-        ks.kinematic_scattering(atoms, tags, output)
-        # ks.plotKikuchi(tags)
-
-    def test_plotHOLZ(self):
-        tags = ks.example(verbose=False)
-
-        ks.kinematic_scattering(atoms, tags, output)
-        # ks.plotHOLZ(tags)
-
-    def test_plotCBED(self):
-        atoms, tags, output = ks.example(verbose=False)
-
-        ks.kinematic_scattering(atoms, tags, output)
-        # ks.plotCBED(tags)
-
-    def test_circles(self):
-        atoms, tags, output = ks.example(verbose=False)
-
-        ks.kinematic_scattering(v)
-        # ks.circles(tags)
+        """Kikuchi plotting parameter integration with diffraction pattern."""
+        atoms = ks.example(verbose=False)
+        ks.kinematic_scattering(atoms, verbose=False)
+        kikuchi_tags = ks.plotKikuchi()
+        atoms.info['diffraction'].update(kikuchi_tags)
+        fig = ks.plot_diffraction_pattern(atoms)
+        self.assertIsInstance(fig, matplotlib.figure.Figure)
 
     def test_plot_diffraction_pattern(self):
-        atoms, tags, output = ks.example(verbose=False)
+        """Spot pattern plotting returns a matplotlib figure."""
+        atoms = ks.example(verbose=False)
+        ks.kinematic_scattering(atoms, verbose=False)
+        saed_tags = ks.plotSAED_parameter()
+        atoms.info['diffraction'].update(saed_tags)
+        fig = ks.plot_diffraction_pattern(atoms)
+        self.assertIsInstance(fig, matplotlib.figure.Figure)
 
-        ks.kinematic_scattering(atoms, tags, output)
-        # ks.plot_diffraction_pattern(tags)
+    def test_plotHOLZ_parameter_only(self):
+        """HOLZ parameter function returns a dict of tags."""
+        holz_tags = ks.plotHOLZ_parameter()
+        self.assertIsInstance(holz_tags, dict)
+        self.assertIn('plot_HOLZ', holz_tags)
 
-    def test_diffraction_pattern(self):
-        atoms, tags, output = ks.example(verbose=False)
-
-        ks.kinematic_scattering(atoms, tags, output)
-        # ks.diffraction_pattern(tags)
-    """
+    def test_plotCBED_parameter_only(self):
+        """CBED parameter function returns a dict of tags."""
+        cbed_tags = ks.plotCBED_parameter()
+        self.assertIsInstance(cbed_tags, dict)
+        self.assertIn('plot_Kikuchi', cbed_tags)
+    
 
 if __name__ == '__main__':
     unittest.main()

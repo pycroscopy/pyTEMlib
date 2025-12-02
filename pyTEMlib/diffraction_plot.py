@@ -355,8 +355,8 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
     if isinstance(atoms, dict):
         tags = atoms
     elif isinstance(atoms, ase.Atoms):
-        if 'diffraction' in atoms.info:
-            tags = atoms.info['diffraction']
+        if 'Ring_Pattern' in atoms.info:
+            tags = atoms.info
             plot_diffraction_pattern = True
         else:
             raise TypeError('Diffraction information must be in metadata')
@@ -393,7 +393,7 @@ def plot_ring_pattern(atoms, diffraction_pattern=None, grey=False):
     ####
     # show image in background
     ####
-    if plot_diffraction_pattern is not None:
+    if diffraction_pattern is not None:
         plt.imshow(diffraction_pattern, extent=diffraction_pattern.get_extent(), cmap='gray')
 
     ax.set_aspect("equal")
@@ -496,7 +496,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
     label = tags_out['allowed']['label']
     hkl_label = tags_out['allowed']['hkl']
 
-    angle = np.radians(atoms.info['output']['plot_rotation'])  # mrad
+    angle = np.radians(atoms.info['output'].get('plot_rotation', 0))  # rad
     c = np.cos(angle)
     s = np.sin(angle)
     r_mat = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
@@ -754,3 +754,4 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, grey=False):
 
     # plt.title( tags_out['crystal'])
     plt.show()
+    return fig
