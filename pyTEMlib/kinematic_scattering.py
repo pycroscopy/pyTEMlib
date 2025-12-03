@@ -527,8 +527,8 @@ def ring_pattern_calculation(atoms, verbose=False):
     # wavelength
     tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'])
 
-    #  volume of unit_cell
-    tags['metric_tensor'] = get_metric_tensor(atoms.cell.array)  # converts hkl to g vectors and back
+    tags['metric_tensor'] = get_metric_tensor(atoms.cell.array)
+    # converts hkl to g vectors and back
 
     ##################################
     # Calculate Structure Factors

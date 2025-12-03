@@ -43,7 +43,7 @@ def geometric_ray_diagram(focal_length=1., magnification=False):
 
     x = 0.4
 
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
 
     # add an ellipse
     ellipse = patches.Ellipse((0.0, 0.0), 3.4, 0.3, alpha=0.3, color='blue')
@@ -128,7 +128,7 @@ def add_aperture(z, diam, radius, lens_labels):
     plt.text(z, -rad - 2.0, lens_labels, fontsize=12)
 
 
-def propagate_beam(source_position, numerical_aperture, number_of_rays, 
+def propagate_beam(source_position, numerical_aperture, number_of_rays,
                    lens_positions, focal_lengths,
                    lens_labels='', color='b'):
     """geometrical propagation of light rays from given source
@@ -244,61 +244,70 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
     k_0[1] += shift_y
 
     # Ewald Sphere
-    ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0), 
+    ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0),
                                   clip_on=False, zorder=10, linewidth=1,
                                   edgecolor=color, fill=False)
     plt.gca().add_artist(ewald_sphere)
 
-    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, 1 / d / 2, head_width=0.03, 
+    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, 1 / d / 2, head_width=0.03,
                     head_length=0.04, fc='k', ec='k', length_includes_head=True)
-    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, -1 / d / 2, head_width=0.03, 
+    plt.gca().arrow(g[-1] + .1 / d / 4, 1 / d / 2, 0, -1 / d / 2, head_width=0.03,
                     head_length=0.04, fc='k', ec='k', length_includes_head=True)
-    plt.gca().annotate("$|g_{HOLZ}|$", xytext=(g[-1] + .1 / d / 3, 1 / d / 3), 
+    plt.gca().annotate("$|g_{HOLZ}|$", xytext=(g[-1] + .1 / d / 3, 1 / d / 3),
                        xy=(g[-1] + 1 / d / 3, 1 / d / 3))
     plt.scatter(k_0[0], k_0[1])
-    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + shift_x, -k_0[1] + shift_y, head_width=0.03, 
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + shift_x, -k_0[1] + shift_y, head_width=0.03,
                     head_length=0.04, fc=color, ec=color, length_includes_head=True)
     plt.gca().annotate("K$_0$", xytext=(k_0[0] / 2, k_0[1] / 3), xy=(k_0[0] / 2, k_0[1] / 2))
 
     # K_d Bragg of HOLZ reflection
-    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + g_d[0] + shift_x, -k_0[1] + g_d[1] + s_g + shift_y, 
-                    head_width=0.03, head_length=0.04, fc=color, ec=color, 
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0] + g_d[0] + shift_x, -k_0[1] + g_d[1] + s_g + shift_y,
+                    head_width=0.03, head_length=0.04, fc=color, ec=color,
                     length_includes_head=True)
-    plt.gca().annotate("K$_d$", xytext=(k_0[0] + (g_d[0] - k_0[0]) / 2, k_0[1] / 2), 
+    plt.gca().annotate("K$_d$", xytext=(k_0[0] + (g_d[0] - k_0[0]) / 2, k_0[1] / 2),
                        xy=(6.5 / d / 2, k_0[1] / 2))
 
     # s_g excitation Error of HOLZ reflection
     if s_g > 0:
         plt.gca().arrow(g_d[0], g_d[1], 0, s_g, head_width=0.03, head_length=0.04, fc='k',
                         ec='k', length_includes_head=True)
-        plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3), 
+        plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3),
                            xy=(g_d[0] * 1.01, g_d[1] + s_g / 3))
 
     # Bragg angle
     g_sg = g_d
     g_sg[1] = g_d[1] + s_g
-    plt.plot([0 + shift_x, g_sg[0] + shift_x], [0 + shift_y, g_d[1] + shift_y], color=color, linewidth=1, alpha=0.5,
-             linestyle='--')
-    plt.plot([k_0[0], g_sg[0] / 2 + shift_x], [k_0[1], g_sg[1] / 2 + shift_y], color=color, linewidth=1, alpha=0.5,
-             linestyle='--')
+    plt.plot([0 + shift_x, g_sg[0] + shift_x],
+             [0 + shift_y, g_d[1] + shift_y],
+             color=color, linewidth=1, alpha=0.5, linestyle='--')
+    plt.plot([k_0[0], g_sg[0] / 2 + shift_x],
+             [k_0[1], g_sg[1] / 2 + shift_y],
+             color=color, linewidth=1, alpha=0.5, linestyle='--')
     # d_theta = np.degrees(np.arctan(k_0[0]/k_0[1]))
-    bragg_angle = patches.Arc((k_0[0], k_0[1]), width=k_0[1], height=k_0[1], theta1=-90 + d_theta,
-                              theta2=-90 + d_theta + np.degrees(np.arcsin(np.linalg.norm(g_sg / 2) / k_0[1])), fc=color,
-                              ec=color)
+    bragg_angle = patches.Arc((k_0[0], k_0[1]), width=k_0[1],
+                              height=k_0[1], theta1=-90 + d_theta,
+                              theta2=(-90 + d_theta +
+                                      np.degrees(np.arcsin(np.linalg.norm(g_sg / 2)
+                                                           / k_0[1]))),
+                                      fc=color, ec=color)
 
-    plt.gca().annotate(r"$\theta $", xytext=(k_0[0] / 1.3, k_0[1] / 1.5), xy=(k_0[0] / 2 + g_d[0] / 4, k_0[1] / 2))
+    plt.gca().annotate(r"$\theta $", xytext=(k_0[0] / 1.3, k_0[1] / 1.5),
+                       xy=(k_0[0] / 2 + g_d[0] / 4, k_0[1] / 2))
     plt.gca().add_patch(bragg_angle)
 
     # deviation/tilt angle
     if np.abs(d_theta) > 0:
         if shift:
-            deviation_angle = patches.Arc((k_0[0], k_0[1]), width=k_0[1] * 1.5, height=k_0[1] * 1.5,
+            deviation_angle = patches.Arc((k_0[0], k_0[1]),
+                                          width=k_0[1] * 1.5,
+                                          height=k_0[1] * 1.5,
                                           theta1=-90 + d_theta,
                                           theta2=-90,
                                           fc=color, ec=color, linewidth=3)
             plt.gca().annotate(r"$d \theta $", xytext=(k_0[0] - .13, k_0[1] / 3.7),
                                xy=(k_0[0] + g_d[0] / 4, k_0[1] / 2))
-            plt.gca().arrow(shift_x, -.2, 0, .2, head_width=0.05, head_length=0.06, fc=color, ec='black',
+            plt.gca().arrow(shift_x, -.2, 0, .2, head_width=0.05, head_length=0.06,
+                            fc=color, ec='black',
                             length_includes_head=True, linewidth=3)
             plt.gca().annotate("deficient line", xytext=(shift_x * 2, -.2), xy=(shift_x, 0))
         else:
@@ -337,32 +346,41 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
     kk_d = np.array([-np.sin(theta) * k_len, np.cos(theta) * k_len])
 
     # Ewald Sphere
-    ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0), clip_on=False, zorder=10, linewidth=1,
+    ewald_sphere = patches.Circle((k_0[0], k_0[1]), radius=np.linalg.norm(k_0),
+                                  clip_on=False, zorder=10, linewidth=1,
                                   edgecolor=color_b, fill=False)
     plt.gca().add_artist(ewald_sphere)
 
     # K_0
-    plt.plot([k_0[0], k_0[0]], [k_0[1], k_0[1] + .4], color='gray', linestyle='-', alpha=0.3)
+    plt.plot([k_0[0], k_0[0]], [k_0[1], k_0[1] + .4],
+             color='gray', linestyle='-', alpha=0.3)
 
-    plt.gca().arrow(k_0[0] + k_i[0], k_0[1] + k_i[1], -k_i[0], -k_i[1], head_width=0.01, head_length=0.015, fc=color_b,
+    plt.gca().arrow(k_0[0] + k_i[0], k_0[1] + k_i[1], -k_i[0], -k_i[1],
+                    head_width=0.01, head_length=0.015, fc=color_b,
                     ec=color_b, length_includes_head=True)
-    plt.plot([k_0[0] + k_i_t[0], k_0[0] - k_i_t[0]], [k_0[1] + k_i_t[1], k_0[1] - k_i_t[1]], color='black',
-             linestyle='--', alpha=0.5)
+    plt.plot([k_0[0] + k_i_t[0], k_0[0] - k_i_t[0]],
+             [k_0[1] + k_i_t[1], k_0[1] - k_i_t[1]],
+             color='black', linestyle='--', alpha=0.5)
     plt.scatter(k_0[0], k_0[1], color='black')
-    plt.gca().arrow(k_0[0], k_0[1], -k_0[0], -k_0[1], head_width=0.01, head_length=0.015, fc=color_b,
+    plt.gca().arrow(k_0[0], k_0[1], -k_0[0], -k_0[1],
+                    head_width=0.01, head_length=0.015, fc=color_b,
                     ec=color_b, length_includes_head=True)
-    plt.gca().annotate("K$_0$", xytext=(-k_0[0] / 2, 0), xy=(k_0[0] / 2, 0))
+    plt.gca().annotate("K$_0$", xytext=(-k_0[0] / 2, 0),xy=(k_0[0] / 2, 0))
 
-    plt.gca().arrow(k_0[0], k_0[1], -k_d[0], -k_d[1], head_width=0.01, head_length=0.015, fc=color_b,
+    plt.gca().arrow(k_0[0], k_0[1], -k_d[0], -k_d[1],
+                    head_width=0.01, head_length=0.015, fc=color_b,
                     ec=color_b, length_includes_head=True)
     # K_e excess line
-    plt.gca().arrow(k_0[0], k_0[1], -kk_e[0], -kk_e[1], head_width=0.01, head_length=0.015, fc='red',
+    plt.gca().arrow(k_0[0], k_0[1], -kk_e[0], -kk_e[1],
+                    head_width=0.01, head_length=0.015, fc='red',
                     ec='red', length_includes_head=True)
-    plt.gca().annotate("excess", xytext=(k_0[0] - kk_e[0], -1), xy=(-kk_e[0] + k_0[0], 0))
+    plt.gca().annotate("excess", xytext=(k_0[0] - kk_e[0], -1),
+                       xy=(-kk_e[0] + k_0[0], 0))
     plt.plot([k_0[0] - kk_e[0], k_0[0] - kk_e[0]], [-.1, .1], color='red')
 
     # k_d deficient line
-    plt.gca().arrow(k_0[0], k_0[1], -kk_d[0], -kk_d[1], head_width=0.01, head_length=0.015, fc='blue',
+    plt.gca().arrow(k_0[0], k_0[1], -kk_d[0], -kk_d[1],
+                    head_width=0.01, head_length=0.015, fc='blue',
                     ec='blue', length_includes_head=True)
     plt.plot([k_0[0] - kk_d[0], k_0[0] - kk_d[0]], [-.1, .1], color='blue')
     plt.gca().annotate("deficient", xytext=(k_0[0] - kk_d[0], -1), xy=(k_0[0] - kk_d[0], 0))
@@ -370,13 +388,15 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
     # s_g excitation Error of HOLZ reflection
     plt.gca().arrow(g_d[0], g_d[1], 0, s_g, head_width=0.01, head_length=0.015, fc='k',
                     ec='k', length_includes_head=True)
-    plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3), xy=(g_d[0] * 1.01, g_d[1] + s_g / 3))
+    plt.gca().annotate("s$_g$", xytext=(g_d[0] * 1.01, g_d[1] + s_g / 3),
+                       xy=(g_d[0] * 1.01, g_d[1] + s_g / 3))
 
     theta = np.degrees(theta)
     alpha = np.degrees(alpha)
 
     bragg_angle = patches.Arc((k_0[0], k_0[1]), width=.55, height=.55,
-                              theta1=90 + theta - alpha, theta2=90 - alpha, fc='black', ec='black')
+                              theta1=90 + theta - alpha, theta2=90 - alpha,
+                              fc='black', ec='black')
     if alpha > 0:
         deviation_angle = patches.Arc((k_0[0], k_0[1]), width=.6, height=.6,
                                       theta1=90 - alpha, theta2=90, fc='black', ec='red')
@@ -384,8 +404,10 @@ def deficient_kikuchi_line(s_g=0., color_b='black'):
         deviation_angle = patches.Arc((k_0[0], k_0[1]), width=.6, height=.6,
                                       theta1=90, theta2=90 - alpha, fc='black', ec='red')
 
-    plt.gca().annotate(r"$\theta$", xytext=(k_0[0] + k_i_t[0] / 20, k_0[1] + .2), xy=(k_0[0] + k_i_t[0], k_0[1] + .2))
-    plt.gca().annotate(r"$\alpha$", xytext=(k_0[0] + k_i_t[0] / 10, k_0[1] + .3), xy=(k_0[0] + k_i_t[0], k_0[1] + .3),
+    plt.gca().annotate(r"$\theta$", xytext=(k_0[0] + k_i_t[0] / 20, k_0[1] + .2),
+                       xy=(k_0[0] + k_i_t[0], k_0[1] + .2))
+    plt.gca().annotate(r"$\alpha$", xytext=(k_0[0] + k_i_t[0] / 10, k_0[1] + .3),
+                       xy=(k_0[0] + k_i_t[0], k_0[1] + .3),
                        color='red')
     plt.gca().add_patch(bragg_angle)
     plt.gca().add_patch(deviation_angle)
@@ -409,15 +431,17 @@ class InteractiveAberration():
                                     align_items='stretch',
                                     width='100%')
 
-        self.words = ['ideal rays', 'aberrated rays', 'aberrated wavefront', 'aberration function']
+        self.words = ['ideal rays', 'aberrated rays',
+                      'aberrated wavefront', 'aberration function']
 
-        self.buttons = [widgets.ToggleButton(value=False, description=word, disabled=False) for word in self.words]
+        self.buttons = [widgets.ToggleButton(value=False, description=word,
+                                             disabled=False) for word in self.words]
         box = widgets.Box(children=self.buttons, layout=box_layout)
         display(box)
 
         # Button(description='edge_quantification')
         for button in self.buttons:
-            button.observe(self.on_button_clicked, 'value')  # on_click(self.on_button_clicked)
+            button.observe(self.on_button_clicked, 'value')
 
         self.figure = plt.figure()
         self.ax = plt.gca()
@@ -518,10 +542,9 @@ class InteractiveAberration():
                                          color=color, alpha=.5)
 
             aberration2 = patches.Polygon(np.array(
-                [np.append(np.abs(dif), [0, 0]) * 2 + 2.5, np.append(np.linspace(-3.3, 3.3, len(dif)), [3.3, -3.3])]).T,
-                                          fill=True,
-                                          color=color, alpha=.9)
-
+                [np.append(np.abs(dif), [0, 0]) * 2 + 2.5,
+                 np.append(np.linspace(-3.3, 3.3, len(dif)), [3.3, -3.3])]).T,
+                 fill=True, color=color, alpha=.9)
             plt.gca().add_patch(aberration)
             plt.gca().add_patch(aberration2)
 
@@ -539,9 +562,11 @@ class InteractiveRonchigramMagnification():
                                     align_items='stretch',
                                     width='100%')
 
-        self.words = ['ideal rays', 'radial circle rays', 'axial circle rays', 'over-focused rays']
+        self.words = ['ideal rays', 'radial circle rays',
+                      'axial circle rays', 'over-focused rays']
 
-        self.buttons = [widgets.ToggleButton(value=False, description=word, disabled=False) for word in self.words]
+        self.buttons = [widgets.ToggleButton(value=False, description=word,
+                                             disabled=False) for word in self.words]
         box = widgets.Box(children=self.buttons, layout=box_layout)
         display(box)
 
@@ -616,7 +641,8 @@ class InteractiveRonchigramMagnification():
             ax.add_patch(circle2)
             circle3 = patches.Ellipse((24, 0), width=.6, height=5.6, fill=False, color=color)
             ax.add_patch(circle3)
-            circle3 = patches.Ellipse((24, 0), width=.7, height=7.3, fill=False, color=color, linewidth=5, alpha=.5)
+            circle3 = patches.Ellipse((24, 0), width=.7, height=7.3,
+                                      fill=False, color=color, linewidth=5, alpha=.5)
             ax.add_patch(circle3)
 
         if self.words[2] in selection:
@@ -636,5 +662,6 @@ class InteractiveRonchigramMagnification():
             ax.plot([4, 24], [5, -13], color=color, linestyle='--')
             ax.plot([4, 24], [-5, 13], color=color, linestyle='--')
 
-            circle6 = patches.Ellipse((24, 0), width=4, height=26, fill=False, color=color, linestyle='--')
+            circle6 = patches.Ellipse((24, 0), width=4, height=26,
+                                      fill=False, color=color, linestyle='--')
             plt.gca().add_patch(circle6)

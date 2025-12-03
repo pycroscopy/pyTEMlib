@@ -17,7 +17,7 @@ microscopes_file = os.path.join(config_path, 'microscopes.csv')
 
 
 
-class Microscope(object):
+class Microscope():
     """Class to read configuration file and provide microscope information"""
     microscopes = {}
     name = None
@@ -33,27 +33,28 @@ class Microscope(object):
         self.set_microscope(default_tem['Microscope'])
 
     def load_microscopes(self):
-        f = open(microscopes_file, 'r')
+        """Load microscope parameters from CSV file."""
+        with open(microscopes_file, 'r', encoding='utf-8') as f:
+            labels = f.readline().strip().split(',')
+            # print labels
+            csv_read = csv.DictReader(f, labels, delimiter=",")
 
-        labels = f.readline().strip().split(',')
-        # print labels
-        csv_read = csv.DictReader(f, labels, delimiter=",")
-
-        for line in csv_read:
-            tem = line['Microscope']
-            self.microscopes[tem] = line
-            for i in self.microscopes[tem]:
-                if i != 'Microscope':
-                    self.microscopes[tem][i] = float(self.microscopes[tem][i])
-        f.close()
+            for line in csv_read:
+                tem = line['Microscope']
+                self.microscopes[tem] = line
+                for i in self.microscopes[tem]:
+                    if i != 'Microscope':
+                        self.microscopes[tem][i] = float(self.microscopes[tem][i])
 
     def get_available_microscope_names(self):
+        """Return list of available microscope names."""
         tem = []
-        for scope in self.microscopes.keys():
+        for scope in self.microscopes:
             tem.append(scope)
         return tem
 
     def set_microscope(self, microscope_name):
+        """Set current microscope by name."""
         if microscope_name in self.microscopes:
             self.name = microscope_name
 
