@@ -4,16 +4,15 @@ Created on January 23 2021
 
 @author: Gerd Duscher
 """
-import pyTEMlib
-from pyTEMlib import atom_tools
-
 import sys
-
 import unittest
+
 import numpy as np
 import scipy
-
 import sidpy
+
+import pyTEMlib
+from pyTEMlib import atom_tools
 
 sys.path.insert(0, "../")
 sys.path.insert(0, './')
