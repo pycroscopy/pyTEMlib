@@ -92,7 +92,6 @@ def get_chi(ab, size_x, size_y, verbose=False):
     chi = make_chi(phi, theta, ab)
 
     # Aperture function
-    print(aperture_angle)
     mask = theta >= aperture_angle
 
     aperture = np.ones((size_x, size_y), dtype=float)
