@@ -233,12 +233,17 @@ def get_incident_wave_vector(atoms, tags, verbose):
     tags['incident_wave_vector'] = np.sqrt(1 / wl**2 + u0/volume_unit_cell)  # 1/Ang
     return tags['incident_wave_vector']
 
-def get_projection(atoms, zone_hkl, g_hkl, center_ewald):
+def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     """ Get projection of g_hkl points onto 2D detector plane"""
-    zone_vector = np.dot(zone_hkl, atoms.cell.reciprocal())
-    rotation_matrix, theta, phi = zone_rotation(zone_vector)
+    tags['reciprocal_unit_cell'] = atoms.cell.reciprocal()
+    tags['mistilt_alpha'] = 0.
+    tags['mistilt_beta'] = 0.
+
+    rotation_matrix = get_zone_rotation(tags)
+    # rotation_matrix, theta, phi = zone_rotation(zone_vector)
     center_ewald = np.dot(center_ewald, rotation_matrix)
     g_hkl_rotated = np.dot(g_hkl, rotation_matrix)
+    laue_distance =  np.sum(np.dot(atoms.cell.reciprocal(), rotation_matrix), axis=0)[2]
 
     center_ewald[:2] = 0.
     g_hkl_spherical = g_hkl_rotated + center_ewald
@@ -248,7 +253,7 @@ def get_projection(atoms, zone_hkl, g_hkl, center_ewald):
     phi = np.atan2(g_hkl_spherical[:, 0], g_hkl_spherical[:, 1])
     r = np.tan(theta) * center_ewald[2]
 
-    return np.stack((r, phi, g_hkl_rotated[:, 2]), axis=1)
+    return np.stack((r, phi, g_hkl_rotated[:, 2]), axis=1), laue_distance
 
 
 def get_all_reflections(atoms, hkl_max, sg_max=None, ewald_center=None, verbose=False):
@@ -298,14 +303,14 @@ def calculate_holz(dif):
     kg[:] = k_0
     
     g_allowed = dif['allowed']['g']
-    d_theta = (np.arcsin(g_norm_allowed/k_0/2.)
-              -np.arcsin(np.abs(g_allowed[:,2])/g_norm_allowed))
+    d_theta = np.abs(np.arcsin(g_norm_allowed/k_0/2.)
+                     -np.arcsin(np.abs(g_allowed[:,2])/(g_norm_allowed+1e-15)))
 
     
     #calculate length of distance of deficient cone to K0 in ZOLZ plane
     
     gd_length =2*np.sin(d_theta.real/2 )*k_0
-    print(d_theta)
+    
     # calculate length of distance of deficient cone to K0 in ZOLZ plane
     
     # Calculate nearest point of HOLZ and Kikuchi lines
@@ -338,7 +343,7 @@ def sort_bragg(atoms, g_hkl):
 
 
 
-def get_bragg_reflections(atoms, in_tags, verbose=True):
+def get_bragg_reflections(atoms, in_tags, verbose=False):
     """ sort reflection in allowed and forbidden"""
 
     zone_hkl = in_tags.get('zone_hkl', None)
@@ -351,14 +356,14 @@ def get_bragg_reflections(atoms, in_tags, verbose=True):
     center_ewald = ewald_sphere_center(acceleration_voltage, atoms, zone_hkl)
     
     hkl, g_hkl, sg  = get_all_reflections(atoms, hkl_max, sg_max, center_ewald, verbose=verbose)
-    g = get_projection(atoms, zone_hkl, g_hkl, center_ewald)
-    
+    g, laue_distance = get_projection(atoms, zone_hkl, g_hkl, center_ewald, in_tags)
     allowed, forbidden, structure_factors = sort_bragg(atoms, g_hkl)
     
     if verbose:
         print(f'Of the {hkl.shape[0]} possible reflection {allowed.sum()} are allowed.')
 
-    laue_zone = np.floor(abs(np.dot(hkl[allowed], zone_hkl)))# works only for cubic crystal systems
+    #laue_zone = np.floor(abs(np.dot(hkl[allowed], zone_hkl)))# works only for cubic crystal systems
+    laue_zone = np.round(g[:, 2] / laue_distance, 1)
     # zone_axis = np.dot(zone_hkl, atoms.cell.array)
     # laue_zone = np.floor(abs(np.dot(g[allowed], zone_axis)) ) # works for all crystal systems
 
@@ -372,14 +377,17 @@ def get_bragg_reflections(atoms, in_tags, verbose=True):
                             'g': g[allowed, :],
                             'excitation_error': sg[allowed],
                             'intensities': structure_factors[allowed]**2,
-                            'Laue_Zone': laue_zone,
-                            'ZOLZ': laue_zone == 0,
-                            'FOLZ': laue_zone == 1,
-                            'SOLZ': laue_zone == 2,
-                            'HOLZ': laue_zone > 0,
-                            'HOLZ_plus': laue_zone > 2},
+                            'Laue_Zone': laue_zone[allowed],
+                            'ZOLZ': laue_zone[allowed] == 0,
+                            'FOLZ': laue_zone[allowed] == 1,
+                            'SOLZ': laue_zone[allowed] == 2,
+                            'HOLZ': laue_zone[allowed] > 0,
+                            'HOLZ_plus': laue_zone[allowed] > 2},
                 'forbidden':{'hkl':  hkl[forbidden][:],
-                             'g':  g[forbidden, :],},
+                             'g':  g[forbidden, :],
+                             'Laue_Zone': laue_zone[forbidden],
+                            'ZOLZ': laue_zone[forbidden] == 0,
+                            'HOLZ': laue_zone[forbidden] > 0,},
                 'K_0': np.linalg.norm(center_ewald)}
 
     laue_zone_f = np.floor(abs(np.dot(hkl[forbidden], zone_hkl)))
@@ -391,7 +399,7 @@ def get_bragg_reflections(atoms, in_tags, verbose=True):
         print (f'Of those, there are {out_tags["allowed"]["ZOLZ"].sum()} in ZOLZ',
                f' and {out_tags["allowed"]["HOLZ"].sum()} in HOLZ')
 
-    # calculate_holz(out_tags)
+    calculate_holz(out_tags)
     get_dynamically_activated(out_tags, verbose=verbose)
     return out_tags
 
