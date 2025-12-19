@@ -28,6 +28,7 @@ from warnings import warn
 import itertools
 
 import numpy as np
+import scipy
 import matplotlib.pylab as plt  # basic plotting
 
 import ase
@@ -35,10 +36,12 @@ import ase.build
 
 import pyTEMlib
 from pyTEMlib.crystal_tools import electronFF
+from ..utilities import get_wavelength, get_rotation_matrix
+
 
 inputKeys = ['acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_input_keys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad',
-                      'mistilt', 'thickness', 'dynamic correction', 'dynamic correction K0']
+                       'mistilt', 'thickness', 'dynamic correction', 'dynamic correction K0']
 
 
 def read_poscar(filename):
@@ -141,7 +144,6 @@ def zuo_fig_3_18(verbose=True):
 
     return atoms
 
-get_rotation_matrix = pyTEMlib.utilities.get_rotation_matrix
 
 def zone_mistilt(zone, angles):
     """ Rotation of zone axis by mistilt
@@ -173,26 +175,9 @@ def get_metric_tensor(matrix):
 
 def vector_norm(g):
     """ Length of vector
-
     depreciated - use np.linalg.norm
     """
     return np.linalg.norm(g)
-
-
-def get_wavelength(acceleration_voltage) -> float:
-    """
-    Calculates the relativistic corrected de Broglie wavelength of an electron in Angstrom
-
-    Parameter:
-    ---------
-    acceleration_voltage: float or int
-        acceleration voltage in volt
-    Returns:
-    -------
-    wavelength: float
-        wave length in Angstrom (= meter *10**10)
-    """
-    return pyTEMlib.utilities.get_wavelength(acceleration_voltage) * 1e10
 
 
 def get_all_miller_indices(hkl_max):
@@ -219,6 +204,27 @@ def get_structure_factors(atoms, g_hkl):
         structure_factors.append(structure_factor)
     return np.array(structure_factors)
 
+
+def get_inner_potential(atoms):
+    """ inner potential in Volts """
+    u_0 = 0  # in (Ang)
+    # atom form factor of zero reflection angle is the inner potential in 1/A
+    for atom in atoms:
+        u_0 += form_factor(atom.symbol, 0)
+    scattering_factor_to_volts = ((scipy.constants.h*1e10)**2
+                                  / (2 * np.pi * scipy.constants.m_e * scipy.constants.e)
+                                  / atoms.cell.volume)
+    return u_0 * scattering_factor_to_volts
+
+def ewald_sphere_center(acceleration_voltage, atoms, zone_hkl):
+    """ Ewald sphere center in 1/Angstrom """
+    wavelength = get_wavelength(acceleration_voltage, unit='Å')  # in Angstrom
+    u_0 = get_inner_potential(atoms)
+    incident_wave_vector = np.sqrt(1/wavelength**2 + u_0 )#1/Ang
+
+    center = np.dot(zone_hkl, atoms.cell.reciprocal())
+    center = center / np.linalg.norm(center) * incident_wave_vector
+    return center
 
 def find_nearest_zone_axis(tags):
     """Test all zone axis up to a maximum of hkl_max"""
@@ -436,6 +442,7 @@ def gaussian(xx, pp):
     s1 = pp[2] / 2.3548
     prefactor = 1.0 / np.sqrt(2 * np.pi * s1 ** 2)
     y = (pp[1] * prefactor) * np.exp(-(xx - pp[0]) ** 2 / (2 * s1 ** 2))
+    
     return y
 
 
@@ -453,28 +460,28 @@ def get_unit_cell(atoms, tags):
 def output_verbose(atoms, tags):
     """ Verbose output of experimental parameters"""
     print('Experimental Parameters:')
-    print(f"Acceleration Voltage: {tags['acceleration_voltage_V']*1000:.1f} kV")
-    print(f"Convergence Angle: {tags['convergence_angle_mrad']:.2f} mrad",
-          f" = {tags['convergence_angle_A-1']:.2f} 1/Ang")
-    print(f"Wavelength: {tags['wave_length']*1000:.3f} pm")
-    print(f"Incident Wave Vector: {tags['incident_wave_vector']*10} 1/nm in material ",
-          f"; in vacumm: {1/tags['wave_length']:.4f} 1/nm")
+    print(f"Acceleration Voltage: {tags.get('acceleration_voltage_V', 0)*1000:.1f} kV")
+    print(f"Convergence Angle: {tags.get('convergence_angle_mrad', None):.2f} mrad",
+          f" = {tags.get('convergence_angle_A-1', None):.2f} 1/Ang")
+    print(f"Wavelength: {tags.get('wave_length', 0)*1000:.3f} pm")
+    print(f"Incident Wave Vector: {tags.get('incident_wave_vector', 0)*10} 1/nm in material ",
+          f"; in vacumm: {1/tags.get('wave_length', 0):.4f} 1/nm")
     print("\n Rotation to tilt zone axis onto z-axis:")
-    print(f"Rotation alpha {np.rad2deg(tags['y-axis rotation alpha']):.1f} degree, "
-              f" beta {np.rad2deg(tags['x-axis rotation beta']):.1f} degree")
-    print(f"from zone axis {tags['zone_hkl']}")
-    print(f"Tilting {1} by {np.rad2deg(tags['mistilt_alpha']):.2f} "
-          f" in alpha and {np.rad2deg(tags['mistilt_beta']):.2f}" +
+    print(f"Rotation alpha {np.rad2deg(tags.get('y-axis rotation alpha', None)):.1f} degree, "
+              f" beta {np.rad2deg(tags.get('x-axis rotation beta', None)):.1f} degree")
+    print(f"from zone axis {tags.get('zone_hkl', None)}")
+    print(f"Tilting {1} by {np.rad2deg(tags.get('mistilt_alpha', None)):.2f} "
+          f" in alpha and {np.rad2deg(tags.get('mistilt_beta', None)):.2f}" +
           " in beta direction results in :")
-    nearest = tags['nearest_zone_axes']
+    nearest = tags.get('nearest_zone_axes', {})
     print('Next nearest zone axes are:')
-    for i in range(1, nearest['amount']):
+    for i in range(1, nearest.get('amount', 0)):
         print(f"{nearest[str(i)]['hkl']}: mistilt:",
                 f" {np.rad2deg(nearest[str(i)]['mistilt_alpha']):6.2f}, "
                 f"{np.rad2deg(nearest[str(i)]['mistilt_beta']):6.2f}")
-    print('Center of Ewald sphere ', tags['k0_vector'])
-    dif = atoms.info['diffraction']
-    print('Center or Laue circle', dif['Laue_circle'])
+    print('Center of Ewald sphere ', tags.get('k0_vector', None))
+    dif = atoms.info.get('diffraction', {})
+    print('Center or Laue circle', dif.get('Laue_circle', None))
 
 
 def make_pretty_labels(hkls, hex_label=False):

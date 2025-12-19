@@ -35,28 +35,35 @@ elements = [' ', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
             'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
             'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi']
 
-def get_wavelength(acceleration_voltage: float) -> float:
+units_spatial  = {'m': 1, 'mm': 1e3, 'μm': 1e6, 'nm': 1e9, 'A': 1e10, 'Å': 1e10, 'pm':1e12}
+    
+def get_wavelength(acceleration_voltage: float, unit: str ='m') -> float:
     """
     Calculates the relativistic corrected de Broglie wavelength of an electron in meter
+    and converts it to the desired unit (m, mm, μm, nm, A, Å, pm)
 
     Parameter:
     ---------
     acceleration_voltage: float
         acceleration voltage in volt
+    unit: str   
+        unit of the wavelength, default is meter ('m')
     Returns:
     -------
     wavelength: float
-        wave length in meter
+        wave length in units given, default meter
+    
     """
     if not isinstance(acceleration_voltage, (int, float)):
         raise TypeError('Acceleration voltage has to be a real number')
+    unit_factor = units_spatial.get(unit, 1.0)
 
     ev = acceleration_voltage * scipy.constants.elementary_charge
     h = scipy.constants.Planck
     m0 = scipy.constants.electron_mass
     c = scipy.constants.speed_of_light
     wavelength = h / np.sqrt(2 * m0 * ev * (1 + (ev / (2 * m0 * c ** 2))))
-    return wavelength
+    return wavelength * unit_factor
 
 
 def get_wave_length(acceleration_voltage: float) -> float:

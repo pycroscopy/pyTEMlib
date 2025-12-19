@@ -12,10 +12,10 @@ from .basic import output_verbose, feq, form_factor
 
 from .kinematic import kinematic_scattering
 from .kinematic import calculate_kikuchi, calculate_holz
-from .kinematic import get_dynamical_allowed, calculate_laue_zones, center_of_laue_circle
-from .kinematic import find_sorted_bragg_reflections, get_incident_wave_vector
-from .kinematic import get_dynamically_allowed, ring_pattern_calculation, get_reflection_families
-from .kinematic import get_allowed_reflections
+from .kinematic import calculate_laue_zones, center_of_laue_circle
+from .kinematic import get_bragg_reflections, get_incident_wave_vector
+from .kinematic import get_dynamically_activated, ring_pattern_calculation, get_reflection_families
+from .kinematic import get_allowed_reflections, get_all_reflections
 
 from .diffraction_plot import plot_diffraction_pattern, plot_ring_pattern, warp
 from .diffraction_plot import plot_saed_parameter, plot_cbed_parameter, plot_holz_parameter
@@ -28,9 +28,9 @@ __all__ = ['read_poscar', 'example', 'zone_mistilt', 'check_sanity',
            'get_metric_tensor', 'get_structure_factors', 'find_nearest_zone_axis', 
            'find_angles', 'stage_rotation_matrix', 'get_zone_rotation',  'scattering_matrix',
            'gaussian', 'get_unit_cell', 'output_verbose', 'feq', 'form_factor',
-           'kinematic_scattering', 'calculate_kikuchi', 'calculate_holz', 'get_dynamical_allowed',
-           'calculate_laue_zones', 'center_of_laue_circle', 'find_sorted_bragg_reflections',
-           'get_incident_wave_vector', 'get_dynamically_allowed', 'ring_pattern_calculation',
+           'kinematic_scattering', 'calculate_kikuchi', 'calculate_holz', 'get_dynamically_activated',
+           'calculate_laue_zones', 'center_of_laue_circle', 'get_bragg_reflections',
+           'get_incident_wave_vector', 'ring_pattern_calculation', get_all_reflections,
            'get_reflection_families', 'get_allowed_reflections',
            'plot_diffraction_pattern', 'plot_ring_pattern', 'warp',
            'plot_saed_parameter', 'plot_cbed_parameter', 'plot_holz_parameter',

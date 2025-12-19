@@ -3,16 +3,16 @@ Diffraction pattern plotting tools
 part of pyTEMlib's diffraction tools subpackage
 author: Gerd Duscher, UTK
 """
-import matplotlib.pyplot as plt
 
-import scipy
 import matplotlib
+import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 
 import ase
 import numpy as np
+import scipy
 import sidpy
 import skimage
 
@@ -37,7 +37,7 @@ def scattering_profiles(diff_pattern, center):
     """
     polar_projection = skimage.transform.warp_polar(diff_pattern, center=center).T
     polar_projection[polar_projection<0.] = 0.
-    
+
     out_tags={'center': center,
               'polar_projection': polar_projection,
               'radial_average': polar_projection.sum(axis=1)}
@@ -359,22 +359,25 @@ def topolar(img, order=1):
     return polar, (rads, angs)
 
 def set_center(main_dataset, center, scale=None):
+    """ Set the u and v axes of a diffraction pattern dataset to center on origin"""
     if scale is None:
         axes= main_dataset.get_image_dims(return_axis=True)
         scale = (axes[0].slope, axes[1].slope)
     if isinstance(scale, float):
         scale = (scale, scale)
-    
+
     x_axis = np.linspace(0, main_dataset.shape[0]-1, main_dataset.shape[0])-center[1]
     x_axis *= scale[0]
     y_axis = np.linspace(0, main_dataset.shape[1]-1, main_dataset.shape[1])-center[0]
     y_axis *= -scale[1]
     x = sidpy.Dimension(name='u', values=x_axis)
-    
+
     main_dataset.set_dimension(0, sidpy.Dimension(name='u', values=x_axis, units='1/nm',
-                                                  dimension_type='spatial', quantity='reciprocal distance'))
+                                                  dimension_type='spatial',
+                                                  quantity='reciprocal distance'))
     main_dataset.set_dimension(1, sidpy.Dimension(name='v', values=y_axis, units='1/nm',
-                                                  dimension_type='spatial', quantity='reciprocal distance'))
+                                                  dimension_type='spatial',
+                                                  quantity='reciprocal distance'))
 
 
 def plot_ring_pattern(atoms, diffraction_pattern=None):
@@ -420,22 +423,19 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
     profile *=  extent[1]*0.5 /profile.max()
     profile_x = np.linspace(1,len(profile),len(profile))*scale
     intensity *= extent[1]*0.25 /intensity.max()
-    
+
     tags.setdefault('label_color', 'navy')
     tags.setdefault('profile color', 'navy')
     tags.setdefault('ring color', 'red')
     tags.setdefault('label_size', 10)
     tags.setdefault('profile height', 5)
     tags.setdefault('plot_scalebar', False)
-    
-    fig = plt.figure()
-    
 
-    
-    ####
+    fig = plt.figure()
+    # ###
     # show image in background
-    ####
-    
+    # ###
+
     if diffraction_pattern is not None:
         im = plt.imshow(np.log2(1+diffraction_pattern), extent=extent, cmap='gray')
         plt.colorbar(im)
@@ -463,12 +463,12 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
         if unique[j] < len(profile)*scale:
             # plot lines
             plt.plot([unique[j],unique[j]], [0, intensity[j]],c='r')
-            arc = matplotlib.patches.Arc((0,0), unique[j]*2, unique[j]*2, 
-                            angle=90.0, 
-                            theta1=0.0, theta2=270.0, 
+            arc = matplotlib.patches.Arc((0,0), unique[j]*2, unique[j]*2,
+                            angle=90.0,
+                            theta1=0.0, theta2=270.0,
                             color='r', fill= False, alpha = 0.5)
             ax.add_artist(arc)
-        
+
     # ####
     # plot profile
     # ####
@@ -480,7 +480,6 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
         index = '{'+f'{family[i][0]:.0f} {family[i][1]:.0f} {family[i][2]:.0f}'+'}' # pretty index string
         ax.text(unique[i],-0.05, index, horizontalalignment='center',
                 verticalalignment='top', rotation = 'vertical', fontsize=8, color = 'white')
-    
     return fig
 
 
