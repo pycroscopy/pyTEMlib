@@ -678,7 +678,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
         if tags_out['output'].setdefault('plot_forbidden', False):
             g_forbidden = plotting_coordinates(tags_out['forbidden']['g'])
             forbidden_g = g_forbidden[np.logical_not(activated), :]
-            hkl_forbidden = tags_out[['forbidden']['hkl']
+            hkl_forbidden = tags_out['forbidden']['hkl']
             forbidden_hkl = hkl_forbidden[np.logical_not(activated), :]
             ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
             if out_tags['output'].setdefault('plot_labels', False):
