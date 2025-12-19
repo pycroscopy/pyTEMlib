@@ -483,6 +483,14 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
     return fig
 
 
+def plotting_coordinates(g, rotation=0, feature='spot'):
+    x = g[:, 0] * np.cos(g[:, 1]+rotation)*10
+    y = g[:, 0] * np.sin(g[:, 1]+rotation)*10
+
+    if feature == 'line':
+        return np.stack((x, y, np.tan(g[:, 1]+np.pi/2)), axis= 1)
+    return np.stack((x, y), axis= 1) 
+
 def plot_diffraction_pattern(atoms, diffraction_pattern=None):
     """
     Plot of spot diffraction pattern with matplotlib
@@ -516,7 +524,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
     else:
         raise TypeError('Diffraction info must be in ase.Atoms object or dictionary form')
 
-    if 'output' not in atoms.info:
+    if 'output' not in tags_out:
         return None
 
     # Get information from dictionary
@@ -526,100 +534,68 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
 
     laue_zone = tags_out['allowed']['Laue_Zone']
 
-    label = tags_out['allowed']['label']
+    # label = tags_out['allowed']['label']
     hkl_label = tags_out['allowed']['hkl']
 
-    angle = np.radians(atoms.info['output'].get('plot_rotation', 0))  # rad
-    c = np.cos(angle)
-    s = np.sin(angle)
-    r_mat = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+    angle = np.radians(tags_out['output'].get('plot_rotation', 0))  # rad
+    
 
     # HOLZ and Kikuchi lines coordinates in Hough space
-    lc = tags_out['Laue_circle']
-    gd = np.dot(tags_out['HOLZ']['g_deficient'] + lc, r_mat)
-    ge = np.dot(tags_out['HOLZ']['g_excess'], r_mat)
-    points = np.dot(tags_out['allowed']['g'] + lc, r_mat)
-
-    theta = tags_out['HOLZ']['theta'] + angle
-
-    if 'thickness' not in tags_out:
-        tags_out['thickness'] = 0.
-    if tags_out['thickness'] > 0.1:
+    lc = tags_out.get('Laue_circle',[0,0,0])
+    gd = tags_out['HOLZ']['g_deficient']
+    
+    ge = tags_out['HOLZ']['g_excess']
+    points = tags_out['allowed']['g'] + lc
+    
+    tags_out.get('thickness',  0)
+    if tags_out.setdefault('thickness', 0) > 0.1:
         intensity = np.real(tags_out['allowed']['Ig'])
     else:
         intensity = tags_out['allowed']['intensities']
 
-    radius = atoms.info['experimental']['convergence_angle_A-1']
+    radius = tags_out.get('convergence_angle_A-1', 0)
 
     if radius < 0.1:
         radius_i = 2
     else:
         radius_i = radius
-    # Beginning and ends of HOLZ lines
-    max_length = radius_i * 1.3
-    h_xp = gd[:, 0] + max_length * np.cos(np.pi - theta)
-    h_yp = gd[:, 1] + max_length * np.sin(np.pi - theta)
-    h_xm = gd[:, 0] - max_length * np.cos(np.pi - theta)
-    h_ym = gd[:, 1] - max_length * np.sin(np.pi - theta)
-
-    # Beginning and ends of excess HOLZ lines
-    max_length = radius_i * .8
-    e_xp = ge[:, 0] + max_length * np.cos(np.pi - theta)
-    e_yp = ge[:, 1] + max_length * np.sin(np.pi - theta)
-    e_xm = ge[:, 0] - max_length * np.cos(np.pi - theta)
-    e_ym = ge[:, 1] - max_length * np.sin(np.pi - theta)
-
-    # Beginning and ends of Kikuchi lines
-    if 'max_length' not in tags_out['Kikuchi']:
-        tags_out['Kikuchi']['max_length'] = 20
-    max_length = tags_out['Kikuchi']['max_length']
-
-    gd = tags_out['Kikuchi']['g_deficient']
-    theta = tags_out['Kikuchi']['theta']
-    k_xp = gd[:, 0] + max_length * np.cos(np.pi - theta)
-    k_yp = gd[:, 1] + max_length * np.sin(np.pi - theta)
-    k_xm = gd[:, 0] - max_length * np.cos(np.pi - theta)
-    k_ym = gd[:, 1] - max_length * np.sin(np.pi - theta)
-
-    if atoms.info['output']['linewidth_Kikuchi'] < 0:
+    if tags_out['output'].setdefault('linewidth_Kikuchi', 1) < 0:
         if len(intensity[zolz]) > 0:
             intensity_kikuchi = intensity * 4. / intensity[zolz].max()
         else:
             intensity_kikuchi = intensity
     else:
-        intensity_kikuchi = np.ones(len(intensity)) * atoms.info['output']['linewidth_Kikuchi']
+        intensity_kikuchi = np.ones(len(intensity)) * tags_out['output']['linewidth_Kikuchi']
 
-    if atoms.info['output']['linewidth_HOLZ'] < 0:
+    if tags_out['output'].setdefault('linewidth_HOLZ', 1) < 0:
         intensity_holz = np.log(intensity + 1)
 
-        if tags_out['HOLZ']['HOLZ'].any():
+        if tags_out['HOLZ'].get('HOLZ', {}):
             pass  # intensity_holz = intensity/intensity[tags_out['HOLZ']['HOLZ']].max()*4.
     else:
-        intensity_holz = np.ones(len(intensity)) * atoms.info['output']['linewidth_HOLZ']
+        intensity_holz = np.ones(len(intensity)) * tags_out['output']['linewidth_HOLZ']
 
     # #######
     # Plot #
     # #######
     # cms = mpl.cm
     # cm = cms.plasma#jet#, cms.gray, cms.autumn]
-    cm = plt.get_cmap(atoms.info['output']['color_map'])
+    cm = plt.get_cmap(tags_out['output'].setdefault('color_map', 'hot'))
 
     # fig = plt.figure()
     fig = plt.figure()
 
     ax = plt.gca()
-    if 'background' not in atoms.info['output']:
-        atoms.info['output']['background'] = None
-    if atoms.info['output']['background'] is not None:
-        ax.set_facecolor(atoms.info['output']['background'])
+    tags_out['output'].setdefault('background', None)
+    if tags_out['output']['background'] is not None:
+        ax.set_facecolor(tags_out['output']['background'])
 
     if diffraction_pattern is not None:
         plt.imshow(diffraction_pattern, extent=diffraction_pattern.get_extent([0, 1]), cmap='gray')
 
-    ix = np.argsort((points ** 2).sum(axis=1))
-    p = points[ix]
-    inten = intensity[ix]
-    reflection = hkl_label[ix]
+    # ix = np.argsort((points ** 2).sum(axis=1))
+    inten = intensity # [ix]
+    reflection = hkl_label# [ix]
     laue_color = []
 
     label_p = ''
@@ -649,36 +625,35 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
             print(f'Reflection: [{h:d},{k:d},{l:d}]')
 
     for i in range(int(laue_zone.max()) + 1):
-        if i < len(atoms.info['output']['color_Laue_Zones']):
-            laue_color.append(atoms.info['output']['color_Laue_Zones'][i])
+        if i < len(tags_out['output'].setdefault('color_Laue_Zones', ['blue', 'green', 'red'])):
+            laue_color.append(tags_out['output']['color_Laue_Zones'][i])
         else:
-            laue_color.append(atoms.info['output']['color_Laue_Zones'][-1])
+            laue_color.append(tags_out['output']['color_Laue_Zones'][-1])
 
-    if 'plot_labels' not in atoms.info['output']:
-        atoms.info['output']['plot_labels'] = True
-    if atoms.info['output']['plot_reflections']:
+    tags_out['output'].setdefault('plot_labels', False) 
+    if tags_out['output'].setdefault('plot_reflections', True):
+        points = plotting_coordinates(tags_out['allowed']['g'])
         if radius < 0.01:
-            if atoms.info['output']['color_reflections'] == 'intensity':
+            if tags_out['output'].setdefault('color_reflections', None) == 'intensity':
                 for i in range(len(points)):
                     ax.scatter(points[i, 0], points[i, 1],
                                c=np.log(intensity[i] + 1), cmap=cm, s=100)
 
-                    if atoms.info['output']['plot_labels']:
+                    if tags_out['output'].setdefault('plot_labels', False):
                         plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
             else:
                 for i, zone in enumerate(laue_zone):
                     color = laue_color[int(zone)]
-                    ax.scatter(points[i, 0], points[i, 1], c=color, cmap=cm, s=100)
-                    if atoms.info['output']['plot_labels']:
+                    ax.scatter(points[i, 0], points[i, 1], c=color, cmap=cm, s=10)
+                    if tags_out['output']['plot_labels']:
                         plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
 
-            ax.scatter(lc[0], lc[1], c=atoms.info['output']['color_zero'], s=100)
+            ax.scatter(lc[0], lc[1], c=tags_out['output'].setdefault('color_zero', 'blue'), s=100)
             radius = .2
+    
         else:
-            ix = np.argsort((points ** 2).sum(axis=1))
-            p = points[ix]
-            inten = intensity[ix]
-            if atoms.info['output']['color_reflections'] == 'intensity':
+            inten = intensity
+            if tags_out['output'].setdefault('color_reflections', None) == 'intensity':
                 circles(p[:, 0], p[:, 1], s=radius, c=np.log(inten + 1),
                         cmap=cm, alpha=0.9, edgecolor=None, picker=5)
             else:
@@ -688,54 +663,44 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
                             alpha=0.9, edgecolor='', picker=5)  #
                     plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
 
-    if 'plot_dynamically_allowed' not in atoms.info['output']:
-        atoms.info['output']['plot_dynamically_allowed'] = False
-    if 'plot_forbidden' not in atoms.info['output']:
-        atoms.info['output']['plot_forbidden'] = False
+    
+    if tags_out['output'].setdefault('plot_dynamically_allowed', False):
+        activated = tags_out['forbidden']['dynamically_activated']
+        points = plotting_coordinates(tags_out['forbidden']['g'])
+        dyn_allowed = points[activated]
+        dyn_label = atags_out['forbidden']['hkl'][activated]
 
-    if atoms.info['output']['plot_dynamically_allowed']:
-        if 'dynamically_allowed' not in atoms.info['diffraction']['forbidden']:
-            print('To plot dynamically allowed reflections you must run the get_dynamically_allowed'
-                  'function of kinematic_scattering library first!')
-        else:
-            points = atoms.info['diffraction']['forbidden']['g']
-            dynamically_allowed = atoms.info['diffraction']['forbidden']['dynamically_allowed']
-            dyn_allowed = atoms.info['diffraction']['forbidden']['g'][dynamically_allowed, :]
-            dyn_label = atoms.info['diffraction']['forbidden']['hkl'][dynamically_allowed, :]
-
-            color = laue_color[0]
-            ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
-            if atoms.info['output']['plot_labels']:
-                for i in range(len(dyn_allowed)):
-                    plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
-            if atoms.info['output']['plot_forbidden']:
-                g_forbidden = atoms.info['diffraction']['forbidden']['g']
-                forbidden_g = g_forbidden[np.logical_not(dynamically_allowed), :]
-                hkl_forbidden = atoms.info['diffraction']['forbidden']['hkl']
-                forbidden_hkl = hkl_forbidden[np.logical_not(dynamically_allowed), :]
-                ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
-                if atoms.info['output']['plot_labels']:
-                    for i in range(len(forbidden_g)):
-                        plt.text(forbidden_g[i, 0], forbidden_g[i, 1], forbidden_hkl[i], fontsize=8)
-    elif atoms.info['output']['plot_forbidden']:
-        forbidden_g = atoms.info['diffraction']['forbidden']['g']
-        forbidden_hkl = atoms.info['diffraction']['forbidden']['hkl']
+        color = laue_color[0]
+        ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
+        if tags_out['output'].setdefault('plot_labels', False):
+            for i in range(len(dyn_allowed)):
+                plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
+        if tags_out['output'].setdefault('plot_forbidden', False):
+            g_forbidden = plotting_coordinates(tags_out['forbidden']['g'])
+            forbidden_g = g_forbidden[np.logical_not(activated), :]
+            hkl_forbidden = tags_out[['forbidden']['hkl']
+            forbidden_hkl = hkl_forbidden[np.logical_not(activated), :]
+            ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
+            if out_tags['output'].setdefault('plot_labels', False):
+                for i in range(len(forbidden_g)):
+                    plt.text(forbidden_g[i, 0], forbidden_g[i, 1], forbidden_hkl[i], fontsize=8)
+    elif tags_out['output'].setdefault('plot_forbidden', False):
+        g_forbidden = plotting_coordinates(tags_out['forbidden']['g'])
+        forbidden_g = g_forbidden[np.logical_not(activated), :]
+        hkl_forbidden = tags_out['forbidden']['hkl']
         ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
-        if atoms.info['output']['plot_labels']:
+        if out_tags['output'].setdefault('plot_labels', False):
             for i in range(len(forbidden_g)):
                 plt.text(forbidden_g[i, 0], forbidden_g[i, 1], forbidden_hkl[i], fontsize=8)
 
-    if atoms.info['output']['plot_HOLZ']:
-        for i, h_xpp in enumerate(h_xp):
-            if tags_out['HOLZ']['HOLZ'][i]:
-                color = laue_color[int(laue_zone[i])]
-                if atoms.info['output']['plot_HOLZ']:
-                    # plot HOLZ lines
-                    _, = plt.plot((h_xpp, h_xm[i]), (h_yp[i], h_ym[i]),
-                                  c=color, linewidth=intensity_holz[i], picker=5)
-                    if atoms.info['output']['label_HOLZ']:  # Add indices
-                        plt.text(h_xpp, h_yp[i], label[i], fontsize=8)
-                    line_label.append(hkl_label[i])
+    if out_tags['output'].setdefault('plot_HOLZ', False):
+        holz = plotting_coordinates(diff_dict['HOLZ']['g_deficient'], feature='line')
+        for i, coord in enumerate(holz):
+            color = laue_color[int(laue_zone[i])]
+            plt.axline(xy[:2], slope=xy[2], c=color)
+            if out_tags['output'].setdefault('label_HOLZ', False):
+                plt.text(coord[0], coord[1], diff_dict['HOLZ']['hkl'][i], fontsize=8)
+            line_label.append(hkl_label[i])
                     # print(i, hkl_label[i], intensity_holz[i])
 
                 if atoms.info['output']['plot_HOLZ_excess']:
