@@ -703,20 +703,20 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
             line_label.append(hkl_label[i])
                     # print(i, hkl_label[i], intensity_holz[i])
 
-                if atoms.info['output']['plot_HOLZ_excess']:
-                    plt.plot((e_xp[i], e_xm[i]), (e_yp[i], e_ym[i]),
-                             c=color, linewidth=intensity_holz[i])
-                    line_label.append(hkl_label[i])
+            if atoms.info['output']['plot_HOLZ_excess']:
+                plt.plot((e_xp[i], e_xm[i]), (e_yp[i], e_ym[i]),
+                            c=color, linewidth=intensity_holz[i])
+                line_label.append(hkl_label[i])
 
-                    if atoms.info['output']['label_HOLZ']:  # Add indices
-                        plt.text(e_xp[i], e_yp[i], label[i], fontsize=8)
+                if atoms.info['output']['label_HOLZ']:  # Add indices
+                    plt.text(e_xp[i], e_yp[i], label[i], fontsize=8)
 
-                    elif atoms.info['output']['label_Kikuchi']:  # Add indices
-                        if zolz[i]:
-                            plt.text(k_xp[i], k_yp[i], label[i],
-                                     fontsize=atoms.info['output']['label_size'],
-                                     color=atoms.info['output']['label_color'])
-                    line_label.append(hkl_label[i])
+                elif atoms.info['output']['label_Kikuchi']:  # Add indices
+                    if zolz[i]:
+                        plt.text(k_xp[i], k_yp[i], label[i],
+                                    fontsize=atoms.info['output']['label_size'],
+                                    color=atoms.info['output']['label_color'])
+                line_label.append(hkl_label[i])
     if atoms.info['output']['plot_Kikuchi']:
         # Beginning and ends of Kikuchi lines
         if atoms.info['output']['label_Kikuchi']:
