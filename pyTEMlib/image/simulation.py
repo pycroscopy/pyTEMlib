@@ -1,3 +1,7 @@
+import scipy
+import numpy as np
+import pyTEMlib
+
 def get_atomic_pseudo_potential(fov, atoms, size=512, rotation=0):
     """Big assumption: the atoms are not near the edge of the unit cell
     # If any atoms are close to the edge (ex. [0,0]) then the potential will be clipped
