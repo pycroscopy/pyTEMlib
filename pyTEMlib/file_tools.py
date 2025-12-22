@@ -49,7 +49,7 @@ class FileWidget(sidpy.FileWidget):
     The widget converts the name of the nion file to the one in Nion's swift software,
     because it is otherwise incomprehensible
 
-    Attributes
+    Attributess
     ----------
     dir_name: str
         name of starting directory
