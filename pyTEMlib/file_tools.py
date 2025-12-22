@@ -40,6 +40,7 @@ __version__ = '2025.8.07'
 
 
 ChooseDataset = sidpy.ChooseDataset
+FileDialog = sidpy.FileWidget
 
 class FileWidget(sidpy.FileWidget):
     """Widget to select directories or widgets from a list

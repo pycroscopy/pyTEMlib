@@ -3,7 +3,7 @@ project:
   title: pyTEMlib
   authors:
     - name: Gerd Duscher
-  copyright: '2024'
+  copyright: '2025'
   github: pycroscopy/pyTEMlib
   bibliography:
     - references.bib
@@ -14,14 +14,25 @@ project:
   toc:
     - file: intro.md
     - file: installation.md
+      children:
+        - file: installation.md
+        - file: notebooks/Introduction/2_usefull_equations.ipynb
     - file: notebooks\1_Diffraction_Tools.ipynb
+      children:
+        - file: notebooks\Diffraction\D1_Diffraction_Rings.ipynb
+        - file: notebooks\Diffraction\D2_Diffraction_Spots.ipynb
+        - file: notebooks\Diffraction\D3_Ronchigram.ipynb
     - file: notebooks\2_Image_Tools.ipynb
       children:
-        - file: notebooks\Imaging\Adaptive_Fourier_Filter.ipynb
+        - file: notebooks\Imaging\I1_Adaptive_Fourier_Filter.ipynb
+        - file: notebooks\Imaging\I2_Image_Registration.ipynb
+        - file: notebooks\Imaging\I3_Probe.ipynb
+        - file: notebooks\Imaging\I4_Structure_Analysis.ipynb
     - file: notebooks\3_Spectroscopy_Tools.ipynb
       children:
-        - file: notebooks/Spectroscopy/Analyse_EELS
+        - file: notebooks/Spectroscopy/Analyse_EELS.ipynb
         - file: notebooks\Spectroscopy\EDS.ipynb
+        - file: notebooks\Spectroscopy\EDS-SI.ipynb
 site:
   options:
     logo: logo.png

@@ -54,7 +54,7 @@ def get_allowed_reflections(structure, verbose=False):
         raise ValueError('Input must be ase.Atoms or sidpy.Dataset object')
     tags['reciprocal_unit_cell'] = atoms.cell.reciprocal()
     
-    hkl, g_hkl = get_all_reflections(atoms, tags.get('hkl_max', 10))
+    hkl, g_hkl, _ = get_all_reflections(atoms, tags.get('hkl_max', 10))
 
     allowed, forbidden, structure_factors = sort_bragg(atoms, g_hkl)
 
@@ -71,6 +71,7 @@ def get_allowed_reflections(structure, verbose=False):
     hkl_sorted = hkl_allowed[ind][:]
     f_sorted = f_allowed[ind]
     g_sorted = g_allowed[ind, :]
+    print('here')
     return hkl_sorted, g_sorted, f_sorted
 
 
@@ -243,6 +244,8 @@ def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     # rotation_matrix, theta, phi = zone_rotation(zone_vector)
     center_ewald = np.dot(center_ewald, rotation_matrix)
     g_hkl_rotated = np.dot(g_hkl, rotation_matrix)
+    d_theta = get_d_theta(g_hkl_rotated, np.linalg.norm(center_ewald)) # as distance
+
     laue_distance =  np.sum(np.dot(atoms.cell.reciprocal(), rotation_matrix), axis=0)[2]
 
     center_ewald[:2] = 0.
@@ -253,7 +256,7 @@ def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     phi = np.atan2(g_hkl_spherical[:, 0], g_hkl_spherical[:, 1])
     r = np.tan(theta) * center_ewald[2]
 
-    return np.stack((r, phi, g_hkl_rotated[:, 2]), axis=1), laue_distance
+    return np.stack((r, phi, g_hkl_rotated[:, 2], d_theta), axis=1), laue_distance
 
 
 def get_all_reflections(atoms, hkl_max, sg_max=None, ewald_center=None, verbose=False):
@@ -334,6 +337,25 @@ def calculate_holz(dif):
 
     return dif
 
+def get_d_theta(g_allowed, k_0):
+    """ Calculate HOLZ lines (of allowed reflections)"""
+    g_norm_allowed = np.linalg.norm(g_allowed[:, :3], axis=1)
+    # Dynamic Correction
+    # Equation Spence+Zuo 3.86a
+    #gamma_1 = - 1./(2.*k_0) * (intensities / (2.*k_0*diff_dict['allowed']['excitation_error'])).sum()
+    # Equation Spence+Zuo 3.84
+    #kg = k_0 - k_0*gamma_1/(diff_dict['allowed']['g'][:, 2]+1e-15)
+    #kg[diff_dict['allowed']['ZOLZ']] = k_0
+
+    # Calculate angle between K0 and deficient cone vector
+    # For dynamic calculations K0 is replaced by kg
+    #kg[:] = k_0
+
+    d_theta =(np.arcsin(g_norm_allowed/k_0/2.) 
+              - np.arcsin(np.abs(g_allowed[:,2])/(g_norm_allowed+1e-15) ))
+    return 2.0 * np.sin(d_theta.real/2) * k_0
+     
+
 def sort_bragg(atoms, g_hkl):
     """ Sort """
     structure_factors = get_structure_factors(atoms, g_hkl)
@@ -349,30 +371,29 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     zone_hkl = in_tags.get('zone_hkl', None)
     if zone_hkl is None:
         raise ValueError('zone_hkl must be provided in tags')
-    hkl_max = in_tags.get('hkl_max', 10)
-    sg_max = in_tags.get('Sg_max', 0.1)  # 1/Ang  maximum allowed excitation error
-    acceleration_voltage = in_tags.get('acceleration_voltage', 100e3)
+    hkl_max = in_tags.setdefault('hkl_max', 10)
+    sg_max = in_tags.setdefault('Sg_max', 0.1)  # 1/Ang  maximum allowed excitation error
+    acceleration_voltage = in_tags.setdefault('acceleration_voltage', 100e3)
 
     center_ewald = ewald_sphere_center(acceleration_voltage, atoms, zone_hkl)
     
     hkl, g_hkl, sg  = get_all_reflections(atoms, hkl_max, sg_max, center_ewald, verbose=verbose)
+    
     g, laue_distance = get_projection(atoms, zone_hkl, g_hkl, center_ewald, in_tags)
     allowed, forbidden, structure_factors = sort_bragg(atoms, g_hkl)
+
     
     if verbose:
         print(f'Of the {hkl.shape[0]} possible reflection {allowed.sum()} are allowed.')
 
-    #laue_zone = np.floor(abs(np.dot(hkl[allowed], zone_hkl)))# works only for cubic crystal systems
     laue_zone = np.round(g[:, 2] / laue_distance, 1)
-    # zone_axis = np.dot(zone_hkl, atoms.cell.array)
-    # laue_zone = np.floor(abs(np.dot(g[allowed], zone_axis)) ) # works for all crystal systems
-
+    
     # thickness = tags['thickness']
     # if thickness > 0.1:
     #    i_g = np.real(np.pi ** 2 / xi_g**2 * np.sin(np.pi * thickness * sg[allowed])**2
     #                  / (np.pi * sg[allowed])**2)
     #    dif['allowed']['Ig'] = i_g
-    
+
     out_tags = {'allowed': {'hkl': hkl[allowed][:],
                             'g': g[allowed, :],
                             'excitation_error': sg[allowed],

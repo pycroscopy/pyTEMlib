@@ -216,12 +216,36 @@ def get_inner_potential(atoms):
                                   / atoms.cell.volume)
     return u_0 * scattering_factor_to_volts
 
+def get_incident_wave_vector(atoms, acceleration_voltage, verbose=False):
+    """ Incident wave vector K0 in vacuum and material"""
+    u0 = 0.0  # in (Ang)
+    # atom form factor of zero reflection angle is the
+    # inner potential in 1/A
+    for atom in atoms:
+        u0 += form_factor(atom.symbol, 0.0)
+
+    e = scipy.constants.elementary_charge
+    h = scipy.constants.Planck
+    m0 = scipy.constants.electron_mass
+
+    volume_unit_cell = atoms.cell.volume
+    if verbose:
+        scattering_factor_to_volts = (h**2) * (1e10**2) / (2 * np.pi * m0 * e) * volume_unit_cell
+        print(f'The inner potential is {u0* scattering_factor_to_volts:.1f} V')
+
+    # Calculating incident wave vector magnitude 'k0' in material
+    # wl = tags['wave_length']
+    wavelength = get_wavelength(acceleration_voltage, unit='A')  # in Angstrom
+    
+    #tags['incident_wave_vector_vacuum'] = 1 / wavelength
+
+    incident_wave_vector = np.sqrt(1 / wavelength**2 + u0/volume_unit_cell)  # 1/Ang
+    return incident_wave_vector
+
+
 def ewald_sphere_center(acceleration_voltage, atoms, zone_hkl):
     """ Ewald sphere center in 1/Angstrom """
-    wavelength = get_wavelength(acceleration_voltage, unit='Å')  # in Angstrom
-    u_0 = get_inner_potential(atoms)
-    incident_wave_vector = np.sqrt(1/wavelength**2 + u_0 )#1/Ang
-
+    incident_wave_vector = get_incident_wave_vector(atoms, acceleration_voltage)
     center = np.dot(zone_hkl, atoms.cell.reciprocal())
     center = center / np.linalg.norm(center) * incident_wave_vector
     return center

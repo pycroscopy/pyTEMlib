@@ -621,7 +621,6 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
         else:
             ind = event.ind[0]
             h, k, l = reflection[ind]
-
             print(f'Reflection: [{h:d},{k:d},{l:d}]')
 
     for i in range(int(laue_zone.max()) + 1):
@@ -638,7 +637,6 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
                 for i in range(len(points)):
                     ax.scatter(points[i, 0], points[i, 1],
                                c=np.log(intensity[i] + 1), cmap=cm, s=100)
-
                     if tags_out['output'].setdefault('plot_labels', False):
                         plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
             else:
@@ -647,10 +645,9 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
                     ax.scatter(points[i, 0], points[i, 1], c=color, cmap=cm, s=10)
                     if tags_out['output']['plot_labels']:
                         plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
-
             ax.scatter(lc[0], lc[1], c=tags_out['output'].setdefault('color_zero', 'blue'), s=100)
             radius = .2
-    
+
         else:
             inten = intensity
             if tags_out['output'].setdefault('color_reflections', None) == 'intensity':
@@ -663,12 +660,11 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
                             alpha=0.9, edgecolor='', picker=5)  #
                     plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
 
-    
     if tags_out['output'].setdefault('plot_dynamically_allowed', False):
         activated = tags_out['forbidden']['dynamically_activated']
         points = plotting_coordinates(tags_out['forbidden']['g'])
         dyn_allowed = points[activated]
-        dyn_label = atags_out['forbidden']['hkl'][activated]
+        dyn_label = tags_out['forbidden']['hkl'][activated]
 
         color = laue_color[0]
         ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
@@ -689,60 +685,52 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
         forbidden_g = g_forbidden[np.logical_not(activated), :]
         hkl_forbidden = tags_out['forbidden']['hkl']
         ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
-        if out_tags['output'].setdefault('plot_labels', False):
+        if tags_out['output'].setdefault('plot_labels', False):
             for i in range(len(forbidden_g)):
                 plt.text(forbidden_g[i, 0], forbidden_g[i, 1], forbidden_hkl[i], fontsize=8)
 
-    if out_tags['output'].setdefault('plot_HOLZ', False):
-        holz = plotting_coordinates(diff_dict['HOLZ']['g_deficient'], feature='line')
+    if tags_out['output'].setdefault('plot_HOLZ', False):
+        holz = plotting_coordinates(tags_out['HOLZ']['g_deficient'], feature='line')
         for i, coord in enumerate(holz):
             color = laue_color[int(laue_zone[i])]
-            plt.axline(xy[:2], slope=xy[2], c=color)
-            if out_tags['output'].setdefault('label_HOLZ', False):
-                plt.text(coord[0], coord[1], diff_dict['HOLZ']['hkl'][i], fontsize=8)
+            plt.axline(coord[:2], slope=coord[2], c=color)
+            if tags_out['output'].setdefault('label_HOLZ', False):
+                plt.text(coord[0], coord[1], tags_out['HOLZ']['hkl'][i], fontsize=8)
             line_label.append(hkl_label[i])
                     # print(i, hkl_label[i], intensity_holz[i])
 
-            if atoms.info['output']['plot_HOLZ_excess']:
-                plt.plot((e_xp[i], e_xm[i]), (e_yp[i], e_ym[i]),
-                            c=color, linewidth=intensity_holz[i])
-                line_label.append(hkl_label[i])
+            if tags_out['output'].setdefault('plot_HOLZ_excess', False):
+                for i, coord in enumerate(holz):
+                    color = laue_color[int(laue_zone[i])]
+                    plt.axline(coord[:2], slope=coord[2], c=color)
+                    if tags_out['output'].setdefault('label_HOLZ', False):
+                        plt.text(coord[0], coord[1], tags_out['HOLZ']['hkl'][i], fontsize=8)
 
-                if atoms.info['output']['label_HOLZ']:  # Add indices
-                    plt.text(e_xp[i], e_yp[i], label[i], fontsize=8)
-
-                elif atoms.info['output']['label_Kikuchi']:  # Add indices
-                    if zolz[i]:
-                        plt.text(k_xp[i], k_yp[i], label[i],
-                                    fontsize=atoms.info['output']['label_size'],
-                                    color=atoms.info['output']['label_color'])
-                line_label.append(hkl_label[i])
-    if atoms.info['output']['plot_Kikuchi']:
+    if tags_out['output'].setdefault('plot_Kikuchi', False):
         # Beginning and ends of Kikuchi lines
-        if atoms.info['output']['label_Kikuchi']:
-            label_kikuchi = []
-            for i, text in enumerate(label):
-                if zolz[i]:
-                    label_kikuchi.append(text)
-        for i, k_x in enumerate(k_xp):
-            _, = plt.plot((k_x, k_xm[i]), (k_yp[i], k_ym[i]),
-                          c=atoms.info['output']['color_Kikuchi'], linewidth=2)
-            if atoms.info['output']['label_Kikuchi']:  # Add indices
-                plt.text(k_xp[i], k_yp[i], label[i],
-                         fontsize=atoms.info['output']['label_size'],
-                         color=atoms.info['output']['label_color'])
+        label_kikuchi = []
+        zolz = tags_out['HOLZ']['ZOLZ']
+        kikuchi = plotting_coordinates(tags_out['HOLZ']['g_deficient'][zolz], feature='line')
+        color = tags_out['output'].setdefault('color_Kikuchi', laue_color[0])
+        if tags_out['output'].setdefault('label_Kikuchi', False):
+            labels = tags_out['HOLZ']['hkl'][zolz]
+        for i, coord in enumerate(kikuchi):
+            plt.axline(coord[:2], slope=coord[2], c=color)
+            if tags_out['output'].setdefault('label_Kikuchi', False):
+                plt.text(coord[0], coord[1], labels[i], fontsize=8)
+                label_kikuchi.append(labels[i])
 
     def format_coord(x, y):
         return label_p + f'x={x:.4f}, y={y:.4f}'
 
     ax.format_coord = format_coord
 
-    if atoms.info['output']['color_ring_zero'] != 'None':
-        ring = plt.Circle(lc, radius, color=atoms.info['output']['color_ring_zero'],
+    if tags_out['output'].setdefault('color_ring_zero', 'None') != 'None':
+        ring = plt.Circle(lc, radius, color=tags_out['output']['color_ring_zero'],
                           fill=False, linewidth=2)
         ax.add_artist(ring)
-    if atoms.info['output']['color_zero'] != 'None':
-        circle = plt.Circle(lc, radius, color=atoms.info['output']['color_zero'], linewidth=2)
+    if tags_out['output'].setdefault('color_zero', 'None') != 'None':
+        circle = plt.Circle(lc, radius, color=tags_out['output']['color_zero'], linewidth=2)
         ax.add_artist(circle)
 
     plt.axis('equal')

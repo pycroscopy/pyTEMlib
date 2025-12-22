@@ -57,7 +57,7 @@ def get_wavelength(acceleration_voltage: float, unit: str ='m') -> float:
     if not isinstance(acceleration_voltage, (int, float)):
         raise TypeError('Acceleration voltage has to be a real number')
     unit_factor = units_spatial.get(unit, 1.0)
-
+    
     ev = acceleration_voltage * scipy.constants.elementary_charge
     h = scipy.constants.Planck
     m0 = scipy.constants.electron_mass
