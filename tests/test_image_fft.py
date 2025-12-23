@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 import sidpy
-from pyTEMlib.image import image_fft
+from pyTEMlib.image_tools import image_fft
 
 def _make_simple_image_dataset():
     """Create a synthetic sidpy image dataset with sinusoidal components."""

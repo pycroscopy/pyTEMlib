@@ -19,8 +19,7 @@ import sidpy
 import pyTEMlib
 
 ## import all function of the image package of pycroscopy
-from .image import *
-from .image.image_utilities import pol2cart, cart2pol, xy2polar
+from .image_utilities import pol2cart, cart2pol, xy2polar
 
 
 def get_atomic_pseudo_potential(fov, atoms, size=512, rotation=0):
@@ -654,7 +653,6 @@ def get_rotation(experiment_spots, crystal_spots):
     rotation_matrix = np.array([[ct, -st], [st, ct]])
 
     return rotation_matrix, rotation_angle
-
 
 def calibrate_image_scale(fft_tags, spots_reference, spots_experiment):
     """depreciated get change of scale from comparison of spots to Bragg angles """
