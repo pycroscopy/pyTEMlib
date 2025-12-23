@@ -246,6 +246,7 @@ def circles(x, y, s, c='b', vmin=None, vmax=None, **kwargs):
     (http://opensource.org/licenses/BSD-3-Clause)
     """
 
+    
     if np.isscalar(c):
         kwargs.setdefault('color', c)
         c = None
@@ -401,13 +402,15 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
         tags = atoms
     elif isinstance(atoms, ase.Atoms):
         if 'Ring_Pattern' in atoms.info:
-            tags = atoms.info
-        elif diffraction_pattern.metadata.get('diffraction', {}). get('Ring_Pattern', {}):
-            tags = diffraction_pattern.metadata['diffraction']
+            tags = atoms.info   
         else:
-            raise TypeError('Diffraction information must be in metadata')
+           raise TypeError('Ring_Pattern information must be in info')
+ 
+    elif hasattr(diffraction_pattern, 'metadata'):
+        if diffraction_pattern.metadata.get('Ring_Pattern', {}):
+            tags = diffraction_pattern.metadata['Ring_Pattern']
     else:
-        raise TypeError('Diffraction info must be in sidpy Dataset or dictionary form')
+        raise TypeError('Ring_Pattern info must be in sidpy Dataset or dictionary form')
     if diffraction_pattern is not None:
         if not(diffraction_pattern, sidpy.Dataset):
             print('diffraction_pattern must be a sidpy.Dataset \n -> Ignoring this variable')
@@ -416,12 +419,17 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
     family = tags['Ring_Pattern']['allowed']['hkl']
     intensity = np.array(tags['Ring_Pattern']['allowed']['structure_factor'])
     # label = tags['Ring_Pattern']['allowed']['label']
-    profile = tags['radial_average']
-
-    scale = diffraction_pattern.get_image_dims(return_axis=True)[0].slope
-    extent=diffraction_pattern.get_extent([0,1])
-    profile *=  extent[1]*0.5 /profile.max()
-    profile_x = np.linspace(1,len(profile),len(profile))*scale
+    
+    if diffraction_pattern is not None:
+        scale = diffraction_pattern.get_image_dims(return_axis=True)[0].slope
+        extent=diffraction_pattern.get_extent([0,1])
+        profile = tags.setdefault('radial_average', None)
+        profile *=  extent[1]*0.5 /profile.max()
+        profile_x = np.linspace(1,len(profile),len(profile))*scale
+    else:
+        scale = 0.01  # 1/nm per pixel
+        extent = (-256*scale, 256*scale, -256*scale, 256*scale)
+        profile = None  
     intensity *= extent[1]*0.25 /intensity.max()
 
     tags.setdefault('label_color', 'navy')
@@ -459,8 +467,13 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
     # ###
     # plot arcs of the rings
     # ###
+    if profile is not None:
+        max_radius = len(profile)
+    else:
+        max_radius = 512
+
     for j in range(len(unique)-1):
-        if unique[j] < len(profile)*scale:
+        if unique[j] < max_radius*scale:
             # plot lines
             plt.plot([unique[j],unique[j]], [0, intensity[j]],c='r')
             arc = matplotlib.patches.Arc((0,0), unique[j]*2, unique[j]*2,
@@ -472,8 +485,9 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
     # ####
     # plot profile
     # ####
-    ax.plot(profile_x, profile, c=tags['profile color'])
-    ax.plot([0, profile_x[-1]], [0, 0], c=tags['profile color'])
+    if profile is not None:
+        ax.plot(profile_x, profile, c=tags['profile color'])
+        ax.plot([0, profile_x[-1]], [0, 0], c=tags['profile color'])
     ax.scatter(0,0)
     ax.set_xlim(extent[0], extent[1])
     for i in range(6):
@@ -656,7 +670,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
                 for i, zone in enumerate(laue_zones):
                     color = laue_color[i]
                     circles(points[zone, 0], points[zone, 1], s=radius, c=color, cmap=cm,
-                            alpha=0.9, edgecolor='', picker=5)  #
+                            alpha=0.9, edgecolor=None, picker=5)  #
                     #plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
 
     tags_out['output'].setdefault('plot_forbidden', False)

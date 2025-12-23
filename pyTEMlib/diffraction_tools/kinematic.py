@@ -54,7 +54,7 @@ def get_allowed_reflections(structure, verbose=False):
         raise ValueError('Input must be ase.Atoms or sidpy.Dataset object')
     tags['reciprocal_unit_cell'] = atoms.cell.reciprocal()
     
-    hkl, g_hkl, _ = get_all_reflections(atoms, tags.get('hkl_max', 10))
+    hkl, g_hkl = get_all_reflections(atoms, tags.get('hkl_max', 10))
 
     allowed, forbidden, structure_factors = sort_bragg(atoms, g_hkl)
 
@@ -122,7 +122,7 @@ def ring_pattern_calculation(structure, verbose=False):
     # Check sanity
     if isinstance(structure, ase.Atoms):
         tags = structure.info['experimental']
-        out_tags = structure.info.setdefault('diffraction', {}).setdefault('Ring_Pattern', {})
+        out_tags = structure.info.setdefault('Ring_Pattern', {})
         atoms = structure
     elif isinstance(structure, sidpy.Dataset):
         tags = structure.metadata['experiment']
@@ -131,7 +131,7 @@ def ring_pattern_calculation(structure, verbose=False):
     else:
         raise ValueError('Input must be ase.Atoms or sidpy.Dataset object')
     # wavelength
-    tags['wave_length'] = get_wavelength(tags['acceleration_voltage'], unit='Å')
+    tags['wave_length'] = get_wavelength(tags['acceleration_voltage'], unit='A')
 
     tags['metric_tensor'] = get_metric_tensor(atoms.cell.array)
     # converts hkl to g vectors and back
@@ -149,7 +149,7 @@ def ring_pattern_calculation(structure, verbose=False):
                            'g norm': g_norm,
                            'structure_factor': reflections_f,
                            'multiplicity': multiplicity}
-    print(structure.metadata['diffraction']['Ring_Pattern'].keys())
+    # print(structure.info['diffraction']['Ring_Pattern'].keys())
     out_tags['profile_x'] = np.linspace(0, g_norm.max(), 2048)
     step_size = out_tags['profile_x'][1]
     intensity = np.zeros(2048)
