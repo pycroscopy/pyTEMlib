@@ -22,7 +22,7 @@ class TestUtilityFunctions(unittest.TestCase):
         self.assertIsInstance(atoms.info, dict)
         self.assertEqual(atoms.symbols[0], 'Si')
         self.assertEqual(atoms.cell[0, 0], 5.14)
-        self.assertEqual(atoms.info['experimental']['acceleration_voltage_V'], 99.2*1000.0)
+        self.assertEqual(atoms.info['experimental']['acceleration_voltage'], 99.2*1000.0)
         self.assertEqual(atoms.info['experimental']['convergence_angle_mrad'], 7.15)
         np.testing.assert_allclose(atoms.info['experimental']['zone_hkl'], np.array([-2, 2, 1]))
 
@@ -59,13 +59,14 @@ class TestUtilityFunctions(unittest.TestCase):
 
     def test_get_wavelength(self):
         """Test electron wavelength calculation."""
-        wavelength = pyTEMlib.diffraction_tools.get_wavelength(200000)
+        wavelength = pyTEMlib.diffraction_tools.get_wavelength(200000, unit='A')
         self.assertEqual(np.round(wavelength * 100, 3), 2.508)
-        wavelength = pyTEMlib.diffraction_tools.get_wavelength(60000.)
+        wavelength = pyTEMlib.diffraction_tools.get_wavelength(60000., unit='A')
         self.assertEqual(np.round(wavelength * 100, 3), 4.866)
 
         with self.assertRaises(TypeError):
             pyTEMlib.diffraction_tools.get_wavelength('lattice_parameter')
+
     def test_get_rotation_matrix(self):
         """Test zone axis rotation matrix calculation."""
         tags = {'zone_hkl': [1, 1, 1], 'mistilt_alpha': 0, 'mistilt_beta': 0,
@@ -96,18 +97,18 @@ class TestScatteringFunctions(unittest.TestCase):
 
         self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['hkl'][7].sum(), 8.)
         self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['g norm'][0], 0.33697)
-        self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['structure factor'][0].real,
+        self.assertAlmostEqual(atoms.info['Ring_Pattern']['allowed']['structure_factor'][0].real,
                                12.396310472193898)
         self.assertEqual(atoms.info['Ring_Pattern']['allowed']['multiplicity'][0], 8)
 
     def test_kinematic_scattering(self):
         """Test kinematic scattering calculation."""
         atoms = pyTEMlib.diffraction_tools.example(verbose=False)
-        pyTEMlib.diffraction_tools.kinematic_scattering(atoms, verbose=True)
-        self.assertIsInstance(atoms.info['diffraction']['HOLZ'], dict)
-        self.assertAlmostEqual(atoms.info['experimental']['wave_length'],
-                               0.03717657397994318,
-                               delta=1e-6)
+        diff_dict = pyTEMlib.diffraction_tools.get_bragg_reflections(atoms, atoms.info['experimental'], verbose=True)
+        self.assertIsInstance(diff_dict['allowed'], dict)
+        self.assertAlmostEqual(diff_dict['K_0'],
+                               26.90502565,
+                               delta=1e-4)
 
     def test_feq(self):
         """Test atomic scattering factor calculation."""
@@ -132,28 +133,28 @@ class TestScatteringFunctions2(unittest.TestCase):
     def test_plotSAED(self):
         atoms = pyTEMlib.diffraction_tools.example(verbose=False)
 
-        pyTEMlib.diffraction_tools.kinematic_scattering(atoms)
-        atoms.info['diffraction'].update(pyTEMlib.diffraction_tools.plot_saed_parameter())
+        diff_dict = pyTEMlib.diffraction_tools.get_bragg_reflections(atoms, atoms.info['experimental'], verbose=False)
+        diff_dict.update(pyTEMlib.diffraction_tools.plot_saed_parameter())
 
-        figure = pyTEMlib.diffraction_tools.plot_diffraction_pattern(atoms)
+        figure = pyTEMlib.diffraction_tools.plot_diffraction_pattern(diff_dict)
         self.assertIsInstance(figure, matplotlib.figure.Figure)
     
     def test_plotKikuchi(self):
         """Kikuchi plotting parameter integration with diffraction pattern."""
         atoms = pyTEMlib.diffraction_tools.example(verbose=False)
-        pyTEMlib.diffraction_tools.kinematic_scattering(atoms, verbose=False)
+        diff_dict = pyTEMlib.diffraction_tools.get_bragg_reflections(atoms, atoms.info['experimental'], verbose=False)
         kikuchi_tags = pyTEMlib.diffraction_tools.plot_kikuchi()
-        atoms.info['diffraction'].update(kikuchi_tags)
-        fig = pyTEMlib.diffraction_tools.plot_diffraction_pattern(atoms)
+        diff_dict.update(kikuchi_tags)
+        fig = pyTEMlib.diffraction_tools.plot_diffraction_pattern(diff_dict)
         self.assertIsInstance(fig, matplotlib.figure.Figure)
 
     def test_plot_diffraction_pattern(self):
         """Spot pattern plotting returns a matplotlib figure."""
         atoms = pyTEMlib.diffraction_tools.example(verbose=False)
-        pyTEMlib.diffraction_tools.kinematic_scattering(atoms, verbose=False)
+        diff_dict = pyTEMlib.diffraction_tools.get_bragg_reflections(atoms, atoms.info['experimental'], verbose=False)
         saed_tags = pyTEMlib.diffraction_tools.plot_saed_parameter()
-        atoms.info['diffraction'].update(saed_tags)
-        fig = pyTEMlib.diffraction_tools.plot_diffraction_pattern(atoms)
+        diff_dict.update(saed_tags)
+        fig = pyTEMlib.diffraction_tools.plot_diffraction_pattern(diff_dict)
         self.assertIsInstance(fig, matplotlib.figure.Figure)
 
     def test_plotHOLZ_parameter_only(self):

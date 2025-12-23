@@ -260,6 +260,16 @@ def get_elements(spectrum, minimum_number_of_peaks=10, verbose=False):
     spectrum.metadata['EDS'].update(get_x_ray_lines(spectrum, elements))
     return elements
 
+
+def add_element(spectrum, elements):
+    """ Add element information to spectrum metadata"""
+    if isinstance(elements, str):
+        elements = [elements]
+    if not isinstance(elements, list):
+        raise ValueError("elements must be a string or a list of strings")
+    spectrum.metadata['EDS'].update(get_x_ray_lines(spectrum, elements))
+
+
 def get_x_ray_lines(spectrum, element_list):
     """
     Analyze the given spectrum to identify and characterize the X-ray emission lines

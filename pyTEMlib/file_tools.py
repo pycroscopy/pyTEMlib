@@ -40,6 +40,7 @@ __version__ = '2025.8.07'
 
 
 ChooseDataset = sidpy.ChooseDataset
+FileDialog = sidpy.FileWidget
 
 class FileWidget(sidpy.FileWidget):
     """Widget to select directories or widgets from a list
@@ -48,7 +49,7 @@ class FileWidget(sidpy.FileWidget):
     The widget converts the name of the nion file to the one in Nion's swift software,
     because it is otherwise incomprehensible
 
-    Attributes
+    Attributess
     ----------
     dir_name: str
         name of starting directory

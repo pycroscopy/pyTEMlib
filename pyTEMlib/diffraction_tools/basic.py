@@ -39,7 +39,7 @@ from pyTEMlib.crystal_tools import electronFF
 from ..utilities import get_wavelength, get_rotation_matrix
 
 
-inputKeys = ['acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max']
+inputKeys = ['acceleration_voltage', 'zone_hkl', 'Sg_max', 'hkl_max']
 optional_input_keys = ['crystal', 'lattice_parameter_nm', 'convergence_angle_mrad',
                        'mistilt', 'thickness', 'dynamic correction', 'dynamic correction K0']
 
@@ -89,7 +89,7 @@ def zuo_fig_3_18(verbose=True):
     a = 5.14  # A
     atoms = ase.build.bulk('Si', 'diamond', a=a, cubic=True)
 
-    experiment = {'acceleration_voltage_V': 99.2 * 1000.0,  # V
+    experiment = {'acceleration_voltage': 99.2 * 1000.0,  # V
                   'convergence_angle_mrad': 7.15,  # mrad;
                   'zone_hkl': np.array([-2, 2, 1]),
                   'mistilt': np.array([0, 0, 0]),  # mistilt in degrees
@@ -216,12 +216,36 @@ def get_inner_potential(atoms):
                                   / atoms.cell.volume)
     return u_0 * scattering_factor_to_volts
 
+def get_incident_wave_vector(atoms, acceleration_voltage, verbose=False):
+    """ Incident wave vector K0 in vacuum and material"""
+    u0 = 0.0  # in (Ang)
+    # atom form factor of zero reflection angle is the
+    # inner potential in 1/A
+    for atom in atoms:
+        u0 += form_factor(atom.symbol, 0.0)
+
+    e = scipy.constants.elementary_charge
+    h = scipy.constants.Planck
+    m0 = scipy.constants.electron_mass
+
+    volume_unit_cell = atoms.cell.volume
+    if verbose:
+        scattering_factor_to_volts = (h**2) * (1e10**2) / (2 * np.pi * m0 * e) * volume_unit_cell
+        print(f'The inner potential is {u0* scattering_factor_to_volts:.1f} V')
+
+    # Calculating incident wave vector magnitude 'k0' in material
+    # wl = tags['wave_length']
+    wavelength = get_wavelength(acceleration_voltage, unit='A')  # in Angstrom
+    
+    #tags['incident_wave_vector_vacuum'] = 1 / wavelength
+
+    incident_wave_vector = np.sqrt(1 / wavelength**2 + u0/volume_unit_cell)  # 1/Ang
+    return incident_wave_vector
+
+
 def ewald_sphere_center(acceleration_voltage, atoms, zone_hkl):
     """ Ewald sphere center in 1/Angstrom """
-    wavelength = get_wavelength(acceleration_voltage, unit='Å')  # in Angstrom
-    u_0 = get_inner_potential(atoms)
-    incident_wave_vector = np.sqrt(1/wavelength**2 + u_0 )#1/Ang
-
+    incident_wave_vector = get_incident_wave_vector(atoms, acceleration_voltage)
     center = np.dot(zone_hkl, atoms.cell.reciprocal())
     center = center / np.linalg.norm(center) * incident_wave_vector
     return center
@@ -362,7 +386,7 @@ def check_sanity(atoms, verbose_level=0):
     stop = False
     output = atoms.info['output']
     tags = atoms.info['experimental']
-    for key in ['acceleration_voltage_V']:
+    for key in ['acceleration_voltage']:
         if key not in tags:
             print(f'Necessary parameter {key} not defined')
             stop = True
@@ -460,7 +484,7 @@ def get_unit_cell(atoms, tags):
 def output_verbose(atoms, tags):
     """ Verbose output of experimental parameters"""
     print('Experimental Parameters:')
-    print(f"Acceleration Voltage: {tags.get('acceleration_voltage_V', 0)*1000:.1f} kV")
+    print(f"Acceleration Voltage: {tags.get('acceleration_voltage', 0)*1000:.1f} kV")
     print(f"Convergence Angle: {tags.get('convergence_angle_mrad', None):.2f} mrad",
           f" = {tags.get('convergence_angle_A-1', None):.2f} 1/Ang")
     print(f"Wavelength: {tags.get('wave_length', 0)*1000:.3f} pm")
