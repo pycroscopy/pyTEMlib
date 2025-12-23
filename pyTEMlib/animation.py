@@ -13,7 +13,7 @@ from matplotlib import patches
 from ipywidgets import widgets
 from IPython.display import display
 
-import pyTEMlib.kinematic_scattering as ks
+import pyTEMlib.diffraction_tools
 
 
 def geometric_ray_diagram(focal_length=1., magnification=False):
@@ -205,7 +205,7 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
         color of wave vectors and Ewald sphere
     """
 
-    k_0 = [0, 1 / ks.get_wavelength(600)]
+    k_0 = [0, 1 / pyTEMlib.diffraction_tools.get_wavelength(600)]
 
     d = 5.  # lattice parameter in nm
 
@@ -325,7 +325,7 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
 
 def deficient_kikuchi_line(s_g=0., color_b='black'):
     """Draw the deficient Kikuchi line in the plot."""
-    k_len = 1 / ks.get_wavelength(20)
+    k_len = 1 / pyTEMlib.diffraction_tools.get_wavelength(20)
     d = 2  # lattice parameter in nm
 
     g = np.linspace(-2, 2, 5) * 1 / d
