@@ -17,7 +17,7 @@ from .version import  __version__
 
 from . import file_tools
 from . import  image_tools
-from .image import image_atoms as atom_tools
+from .image_tools import image_atoms as atom_tools
 from . import graph_tools
 from . import probe_tools
 from . import eels_tools
