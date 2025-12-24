@@ -286,3 +286,4 @@ _build
 example_data/GOLD-NP-DIFF-2-6.hf5
 notebooks/Diffraction/unit_cell.ini
 notebooks/Diffraction/unit_cell.pov
+example_data/2-STEM SI.hf5
