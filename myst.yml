@@ -15,8 +15,8 @@ project:
     - file: intro.md
     - file: installation.md
       children:
-        - file: notebooks/Introduction/1_Installatioo.ipynb
-        - file: notebooks/Introduction/2_Open_File.ipynb
+        - file: notebooks/Introduction/1_Installation.ipynb
+        - file: notebooks/Introduction/2_Open_Files.ipynb
         - file: notebooks/Introduction/3_Usefull_Equations.ipynb
     - file: notebooks/1_Diffraction_Tools.ipynb
       children:
