@@ -22,6 +22,10 @@ from .diffraction_plot import plot_saed_parameter, plot_cbed_parameter, plot_hol
 from .diffraction_plot import plot_kikuchi, plot_reciprocal_unit_cell_2d
 from .diffraction_plot import scattering_profiles, set_center
 
+from .dynamic import potential_1dim, potential_2dim, interaction_parameter
+from .dynamic import get_transmission, get_propagator, multi_slice, make_chi
+from .dynamic import objective_lens_function
+
 
 __all__ = ['read_poscar', 'example', 'zone_mistilt', 'check_sanity',
            'make_pretty_labels', 'get_all_miller_indices', 'get_wavelength',
@@ -35,4 +39,5 @@ __all__ = ['read_poscar', 'example', 'zone_mistilt', 'check_sanity',
            'plot_diffraction_pattern', 'plot_ring_pattern', 'warp',
            'plot_saed_parameter', 'plot_cbed_parameter', 'plot_holz_parameter',
            'plot_kikuchi', 'plot_reciprocal_unit_cell_2d', 'scattering_profiles',
-           'set_center']
+           'set_center', 'potential_1dim', 'potential_2dim', 'interaction_parameter', 
+           'get_transmission', 'get_propagator', 'multi_slice', 'make_chi', 'objective_lens_function']

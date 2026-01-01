@@ -358,7 +358,10 @@ def read_dm_annotation(image: sidpy.Dataset) -> typing.Dict[str, typing.Any]:
     return annotations
 
 
-def open_file(filename, write_hdf_file=False, sum_frames=False, sum_eds=True):
+def open_file(filename, write_hdf_file=False, 
+              sum_frames=False, 
+              sum_eds=True, 
+              eds_stream=False) -> typing.Dict[str, sidpy.Dataset]:
     """Opens a file if the extension is .emd, .mrc, .hf5, .ndata, .dm3 or .dm4
 
     Everything will be stored in a NSID style hf5 file.
@@ -446,7 +449,9 @@ def open_file(filename, write_hdf_file=False, sum_frames=False, sum_eds=True):
             print('This file type needs hyperspy to be installed to be able to be read')
             return
     elif extension == '.emd':
-        reader = SciFiReaders.EMDReader(filename, sum_frames=sum_frames)
+        reader = SciFiReaders.EMDReader(filename,
+                                        sum_frames=sum_frames)
+        #                                eds_stream=eds_stream)
         provenance =  'SciFiReader.EMDReader'
     elif 'edax' in extension.lower():
         if 'h5' in extension:
@@ -472,7 +477,9 @@ def open_file(filename, write_hdf_file=False, sum_frames=False, sum_eds=True):
     basename, _ = os.path.splitext(file_name)
 
     # ### Here we read the data into sidpy datasets
-    if extension != '.emi':
+    if extension == '.emd' and eds_stream:
+        dset = reader.read(eds_stream=eds_stream)
+    elif extension != '.emi':
         dset = reader.read()
 
     if extension in ['.dm3', '.dm4']:

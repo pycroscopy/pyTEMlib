@@ -287,3 +287,8 @@ example_data/GOLD-NP-DIFF-2-6.hf5
 notebooks/Diffraction/unit_cell.ini
 notebooks/Diffraction/unit_cell.pov
 example_data/2-STEM SI.hf5
+notebooks/Spectroscopy/atom_view_x3d.ipynb
+pyTEMlib/eds_tools/eds_xsections - Copy.py
+pyTEMlib/eds_tools/eds_xsections2.py
+pyTEMlib/eds_tools/eds_xsections-old.py
+pyTEMlib/eds_tools/get_bote_salvat.py

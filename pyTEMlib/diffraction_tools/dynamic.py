@@ -223,7 +223,7 @@ def make_chi(theta, phi, aberrations):
     ###
     phi and theta are meshgrids of the angles in polar coordinates.
     aberrations is a dictionary with the aberrations coefficients
-    Attention: an empty aberration dictionary will give you a perfect aberration
+    Note: an empty aberration dictionary will give you a perfect aberration
     """
 
     chi = np.zeros(theta.shape)
