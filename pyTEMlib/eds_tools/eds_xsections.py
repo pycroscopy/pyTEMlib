@@ -1,22 +1,14 @@
 """
-Module for calculating electron ionization cross sections for EDS quantification.
-Based on the Bote & Salvat (2008, 2009) cross sections for inner shell ionization
-by electron impact.
-Also includes cascade corrections for Coster-Kronig, Auger, and fluorescence
-emission.
-Values from xraylib package are used for fluorescence yields, radiative rates,
-Coster-Kronig probabilities, and Auger yields/rates.
-References:
-- D. Bote and F. Salvat, "Calculations of inner-shell ionization by electron 
-  impact with the distorted-wave and plane-wave Born approximations","
-- Bote, David, et al. "Cross sections for ionization of K, L and M shells of 
-  atoms by impact of electrons and positrons with energies up to 1 GeV: 
-  Analytical formulas." 
-  Atomic Data and Nuclear Data Tables 95.6 (2009): 871-909. 
-- Browning, N. D., et al. "A model for calculating cross sections for electron
-  impact ionization of atoms from threshold to 10 MeV." 
-    Journal of Applied Physics 83.11 (1998): 5736-5744.
+Cross-Sections and k-factor file reading and writing
+Use em_tables or manufactorers k-factor data for quantification.
+
+part of pyTEMlib
+
+Author: Gerd Duscher
+
+collected in directory 12/2025
 """
+
 import os
 import json
 import numpy as np
