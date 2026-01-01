@@ -16,9 +16,9 @@ import scipy
 import csv
 import xml
 
-from .config_dir import config_path
-from .utilities import elements as elements_list
-from .utilities import get_z
+from ..config_dir import config_path
+from ..utilities import elements as elements_list
+from ..utilities import get_z
 
 import pyTEMlib
 

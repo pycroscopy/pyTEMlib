@@ -29,7 +29,7 @@ import sidpy
 
 import pyTEMlib
 import pyTEMlib.file_reader
-from .utilities import elements as elements_list
+from ..utilities import elements as elements_list
 from .eds_xsections import quantify_cross_section, quantification_k_factors
 
 
@@ -294,7 +294,7 @@ def get_x_ray_lines(spectrum, element_list):
     x_sections = pyTEMlib.xrpa_x_sections.x_sections
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
     for element in element_list:
-        atomic_number = pyTEMlib.eds_tools.elements_list.index(element)
+        atomic_number = elements_list.index(element)
         out_tags[element] ={'Z': atomic_number}
         lines = pyTEMlib.xrpa_x_sections.x_sections.get(str(atomic_number), {}).get('lines', {})
         if not lines:
