@@ -35,14 +35,14 @@ def test_lorentz_peak_normalization():
 def test_gauss_zero_width_returns_zeros():
     x = np.linspace(-5, 5, 11)
     p = [0.0, 1.0, 0.0]  # p[2] == 0 should yield zeros
-    y = utilities.gauss(x, p)
+    y = utilities.gauss(x, np.array(p))
     assert np.allclose(y, 0.0)
 
 
 def test_gauss_peak_at_center():
     x = np.linspace(-5, 5, 101)
     p = [0.0, 3.0, 1.2]  # mean=0, amplitude=3
-    y = utilities.gauss(x, p)
+    y = utilities.gauss(x,np.array(p))
     # maximum value should be close to amplitude
     assert pytest.approx(3.0, rel=1e-5) == float(np.max(y))
     # center value equals maximum
