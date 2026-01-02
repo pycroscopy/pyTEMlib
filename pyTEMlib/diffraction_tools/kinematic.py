@@ -180,7 +180,7 @@ def zone_rotation(zone, verbose=False):
     if zone[0] == 0:
         phi= np.pi/2
     else: 
-        phi = np.atan2(zone[1], zone[0])
+        phi = np.arctan2(zone[1], zone[0])
 
     if verbose:
         print('Rotation theta ',np.degrees(theta),' phi ',np.degrees(phi))
@@ -251,9 +251,9 @@ def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     center_ewald[:2] = 0.
     g_hkl_spherical = g_hkl_rotated + center_ewald
     r_spherical = np.linalg.norm(g_hkl_spherical, axis = 1)
-    theta = np.acos(g_hkl_spherical[:, 2] / r_spherical)
+    theta = np.arccos(g_hkl_spherical[:, 2] / r_spherical)
 
-    phi = np.atan2(g_hkl_spherical[:, 0], g_hkl_spherical[:, 1])
+    phi = np.arctan2(g_hkl_spherical[:, 0], g_hkl_spherical[:, 1])
     r = np.tan(theta) * center_ewald[2]
 
     return np.stack((r, phi, g_hkl_rotated[:, 2], d_theta), axis=1), laue_distance
