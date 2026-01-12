@@ -42,7 +42,7 @@ def test_gauss_zero_width_returns_zeros():
 def test_gauss_peak_at_center():
     x = np.linspace(-5, 5, 101)
     p = [0.0, 3.0, 1.2]  # mean=0, amplitude=3
-    y = utilities.gauss(x,np.array(p))
+    y = utilities.gauss(x, np.array(p))
     # maximum value should be close to amplitude
     assert pytest.approx(3.0, rel=1e-5) == float(np.max(y))
     # center value equals maximum
