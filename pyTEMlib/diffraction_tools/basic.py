@@ -179,7 +179,7 @@ def vector_norm(g):
     """
     return np.linalg.norm(g)
     
-def intensity_with_thickness(thickness, k0_magnitude, f_allowed, sg):
+def intensity_with_thickness(thickness, atoms, k0_magnitude, f_allowed, sg):
     """ Calculate intensity of diffracted beams according to Reimer&Kohl equ.7.25 
     
     Parameters:
