@@ -222,9 +222,6 @@ def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     g_hkl_rotated = np.dot(g_hkl, rotation_matrix)
     d_theta = get_d_theta(g_hkl_rotated, np.linalg.norm(center_ewald)) # as distance
 
-    laue_distance =  np.sum(np.dot(atoms.cell.reciprocal(), rotation_matrix), axis=0)[2]
-    print('laue_distance', laue_distance)
-    #center_ewald[:2] = 0.
     g_hkl_spherical = g_hkl_rotated + center_ewald
     r_spherical = np.linalg.norm(g_hkl_spherical, axis = 1)
     theta = np.acos(g_hkl_spherical[:, 2] / r_spherical)
@@ -232,7 +229,7 @@ def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     phi = np.atan2(g_hkl_spherical[:, 0], g_hkl_spherical[:, 1])
     r = np.tan(theta) * center_ewald[2]
 
-    return np.stack((r, phi, g_hkl_rotated[:, 2], d_theta), axis=1), laue_distance
+    return np.stack((r, phi, g_hkl_rotated[:, 2], d_theta), axis=1), 0
 
 
 def get_all_reflections(atoms, hkl_max, sg_max=None, ewald_center=None, verbose=False):
@@ -341,6 +338,7 @@ def sort_bragg(atoms, g_hkl):
 
 
 def get_reflections(atom, g, hkl, tags, zolz_only=False):
+    """ Get all reflection close to Ewald sphere)"""
 
     k0_magnitude = tags['ewald_center'][2]
     center_rotated=[0,0,k0_magnitude ]
@@ -352,9 +350,7 @@ def get_reflections(atom, g, hkl, tags, zolz_only=False):
     sg = s[reflections]
     g_hkl = g[reflections]
     hkl = hkl[reflections]
-    laue_zone = np.abs(np.round(g_hkl[:, 2] / tags['laue_distance'], 0))
-    
-    tags['reflections'] = reflections
+    laue_zone = np.sum(hkl * tags['zone_hkl'], axis=1)
     if zolz_only:
         zolz = laue_zone == 0
     else:
@@ -389,7 +385,6 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     # in zone axis:
     theta, phi = find_angles(zone_hkl)
     rotation_matrix = get_rotation_matrix([-phi, theta, 0], in_radians=True)
-    laue_distance =  np.sum(np.dot(atoms.cell.reciprocal(), rotation_matrix), axis=1)[2]
     center_rotated = [0, 0, k0_magnitude]
 
     laue_circle = [np.tan(mistilt_alpha) * k0_magnitude, -np.sin(mistilt_beta) * k0_magnitude]
@@ -397,19 +392,9 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     # rotate in zone axis
     g, hkl = get_all_g_vectors(hkl_max, atoms)
     g_rotated = np.dot(g, rotation_matrix)
-    
-    dist = np.unique(np.round(np.abs(g_rotated[:,2]),3))
-    if len(dist)>10:
-        laue_distance = dist[10]/10
-    else:  
-        laue_distance= dist[-1]/(len(dist)-1)
-    
-    print(  laue_distance)
+
     in_tags.update({'ewald_center': center_rotated,
-                 'laue_distance': laue_distance,
-                 'laue_circle': laue_circle})
-    
-    
+                    'laue_circle': laue_circle})
     out_tags = {}
     
     # Do we have a mistilt
@@ -433,17 +418,15 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     allowed = np.absolute(structure_factors) > 0.000001
     forbidden = np.logical_not(allowed)
     
-    #laue_zone = np.abs(np.round(g_spherical[:, 2] / laue_distance, 0))
-    #laue_zone = np.floor(np.abs(g_spherical[:, 2] / laue_distance))
-    laue_zone = np.abs(np.round(g_rotated[:, 2] / laue_distance, 0))[in_tags['reflections']]
+    f_allowed = structure_factors[allowed]
+    # Weiss Zone Law
+    laue_zone = np.sum(hkl * zone_hkl, axis=1)
+    
     if verbose:
         print(f'Of the {hkl.shape[0]} possible reflection {allowed.sum()} are allowed.')
 
-    # thickness = tags['thickness']
-    # if thickness > 0.1:
-    #    i_g = np.real(np.pi ** 2 / xi_g**2 * np.sin(np.pi * thickness * sg[allowed])**2
-    #                  / (np.pi * sg[allowed])**2)
-    #    dif['allowed']['Ig'] = i_g
+    
+        
     zolz = laue_zone[allowed] == 0
     out_tags['allowed'] = {'hkl': hkl[allowed][:],
                            'g': g_spherical[allowed, :],
@@ -462,9 +445,21 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
                              'HOLZ': laue_zone[forbidden] > 0}
     out_tags.update({'K_0': k0_magnitude,
                      'laue_zone': laue_zone,
-                     'laue_distance': laue_distance,
                      'Laue_circle': laue_circle,
                      'allowed_all': allowed})
+                     
+    # Calculate Intensity of beams  Reimer 7.25
+    thickness = in_tags.setdefault('thickness', 0.0)
+    if thickness > 0.1:
+        # Calculate Extinction Distance  Reimer 7.23
+        # - makes only sense for non-zero structure_factor
+        xi_g = np.real(np.pi * atoms.cell.volume * k0_magnitude / f_allowed)
+        s_eff = np.sqrt(sg[allowed]**2 + xi_g**-2)
+
+        i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
+        out_tags['allowed']['Ig'] = i_g
+        out_tags['thickness'] = thickness
+        
     out_tags['parameters'] = in_tags
     if 'Kikuchi' not in out_tags:
         out_tags['Kikuchi'] = {'hkl': hkl[allowed][zolz],
@@ -556,8 +551,9 @@ def find_sorted_bragg_reflections2(atoms, tags, verbose):
         tags['thickness'] = 0.
     thickness = tags['thickness']
     if thickness > 0.1:
-        i_g = np.real(np.pi ** 2 / xi_g**2 * np.sin(np.pi * thickness * sg[allowed])**2
-                      / (np.pi * sg[allowed])**2)
+        s_eff = np.sqrt(sg[allowed]**2 +1/xi_g**2)
+
+        i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
         dif['allowed']['Ig'] = i_g
 
     dif['allowed']['intensities'] = np.real(f_allowed)**2

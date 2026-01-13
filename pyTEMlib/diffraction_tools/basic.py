@@ -178,6 +178,35 @@ def vector_norm(g):
     depreciated - use np.linalg.norm
     """
     return np.linalg.norm(g)
+    
+def intensity_with_thickness(thickness, k0_magnitude, f_allowed, sg):
+    """ Calculate intensity of diffracted beams according to Reimer&Kohl equ.7.25 
+    
+    Parameters:
+    ----------
+    thickness: float
+        thickness of sample in Angstrom
+    k0_magnitude: float
+        incident wave vector in 1/A
+    f_allowed: np.array (1dim)
+        structure factors (non-zero =  allowed)
+    sg: np.array (1dm)
+        excitation errors 
+    Returns:
+    --------
+    i_g: np.array (1dim)
+        intensities of g vectors at excitation error sg
+    """
+    if thickness < 0:
+        return None
+    # Calculate Extinction Distance  Reimer 7.23
+    # - makes only sense for non-zero structure_factor
+    xi_g = np.real(np.pi * atoms.cell.volume * k0_magnitude / f_allowed)
+    s_eff = np.sqrt(sg**2 + xi_g**-2)
+
+    i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
+    return i_g
+    
 
 
 def get_all_miller_indices(hkl_max):

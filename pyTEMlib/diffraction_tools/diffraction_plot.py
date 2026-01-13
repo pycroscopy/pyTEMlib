@@ -581,6 +581,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
     laue_circle = tags_out['Laue_circle']
     tags_out.setdefault('thickness', 0)
     if tags_out['thickness'] > 0.1:
+        print('thickness' , tags_out['thickness'])
         intensity = np.real(tags_out['allowed']['Ig'])
     else:
         intensity = tags_out['allowed']['intensities']
@@ -665,7 +666,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
                     if tags_out['output']['plot_labels']:
                         plt.text(points[zone, 0], points[zone, 1], label[i], fontsize=8)
             # TODO in right coordinates
-            ax.scatter(laue_circle[0], laue_circle[1],
+            ax.scatter(laue_circle[0]*10, laue_circle[1]*10,
                        c=tags_out['output'].setdefault('color_zero', 'blue'), s=100)
             radius = 2
         else:
@@ -718,8 +719,6 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
         if i == 0:
             if tags_out['output'].setdefault('plot_Kikuchi',
                                              tags_out['output'].setdefault('plot_HOLZ', False)):
-                print('kikuchi')
-                
                 kikuchi = plotting_coordinates(tags_out['Kikuchi']['g'], rotation=rotation,
                                                      laue_circle=np.array(tags_out['Laue_circle']),
                                                      feature='Kikuchi')
@@ -739,14 +738,15 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
                            zone_names[i], label)
 
             if tags_out['output'].setdefault('plot_HOLZ_excess', False):
-                excess_s = tags_out['allowed']['g']
+                """excess_s = tags_out['allowed']['g']
                 excess_s[:, 3] = tags_out['allowed']['g'][:, 1] - tags_out['allowed']['g'][:, 3]
                 excess_s[:, 1] += np.pi
                 lines_excess = plotting_coordinates(excess_s, feature='line')
                 plot_lines(lines_excess[zone], laue_color[i], 0.6-i*0.1,
                            intensity_holz[zone],
                            zone_names[i])
-
+                """
+                pass
 
     """    if atoms.info['output']['plot_Kikuchi']:
             # Beginning and ends of Kikuchi lines
@@ -769,16 +769,17 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
     ax.format_coord = format_coord
 
     if tags_out['output'].setdefault('color_ring_zero', None) is not None:
-        ring = plt.Circle(laue_circle, radius, color=tags_out['output']['color_ring_zero'],
+        ring = plt.Circle(laue_circle*10, radius, color=tags_out['output']['color_ring_zero'],
                           fill=False, linewidth=2)
         ax.add_artist(ring)
     if tags_out['output'].setdefault('color_zero', None) is not None:
-        circle = plt.Circle(laue_circle, radius,
-                            color=tags_out['output']['color_zero'],
+        circle = plt.Circle(np.array(laue_circle)*10, radius,
+                            edgecolor=tags_out['output']['color_zero'],
+                            facecolor=None,
                             linewidth=2)
         ax.add_artist(circle)
 
-    plt.axis('equal')
+    plt.gca().set_aspect('equal')
     if tags_out['output'].setdefault('plot_FOV', None):
         l = -tags_out['output']['plot_FOV'] / 2
         r = tags_out['output']['plot_FOV'] / 2
