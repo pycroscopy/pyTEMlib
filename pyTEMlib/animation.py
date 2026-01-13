@@ -205,7 +205,7 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
         color of wave vectors and Ewald sphere
     """
 
-    k_0 = [0, 1 / pyTEMlib.diffraction_tools.get_wavelength(600)]
+    k_0 = [0, 1 / pyTEMlib.diffraction_tools.get_wavelength(600, unit='A')]
 
     d = 5.  # lattice parameter in nm
 
@@ -325,7 +325,7 @@ def deficient_holz_line(exact_bragg=False, shift=False, laue_zone=1, color='blac
 
 def deficient_kikuchi_line(s_g=0., color_b='black'):
     """Draw the deficient Kikuchi line in the plot."""
-    k_len = 1 / pyTEMlib.diffraction_tools.get_wavelength(20)
+    k_len = 1 / pyTEMlib.diffraction_tools.get_wavelength(20, unit='A')
     d = 2  # lattice parameter in nm
 
     g = np.linspace(-2, 2, 5) * 1 / d

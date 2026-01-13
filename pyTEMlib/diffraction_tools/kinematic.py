@@ -32,11 +32,11 @@ import sidpy
 
 import ase
 
-from .basic import check_sanity
+from .basic import check_sanity, find_angles, get_all_g_vectors
 from .basic import make_pretty_labels, get_all_miller_indices
 from .basic import get_metric_tensor, get_structure_factors
 from .basic import get_zone_rotation, gaussian, get_unit_cell
-from .basic import output_verbose, form_factor
+from .basic import output_verbose, form_factor, get_incident_wave_vector
 from .basic import get_rotation_matrix, ewald_sphere_center
 
 from ..utilities import get_wavelength
@@ -209,46 +209,19 @@ def get_dynamically_activated(out_tags, verbose=False):
               f"{dynamically_activated.sum()} can be dynamically activated.")
 
 
-def get_incident_wave_vector(atoms, tags, verbose):
-    """ Incident wave vector K0 in vacuum and material"""
-    u0 = 0.0  # in (Ang)
-    # atom form factor of zero reflection angle is the
-    # inner potential in 1/A
-    for atom in atoms:
-        u0 += form_factor(atom.symbol, 0.0)
-
-    e = scipy.constants.elementary_charge
-    h = scipy.constants.Planck
-    m0 = scipy.constants.electron_mass
-
-    volume_unit_cell = atoms.cell.volume
-    scattering_factor_to_volts = (h**2) * (1e10**2) / (2 * np.pi * m0 * e) * volume_unit_cell
-    tags['inner_potential_V'] = u0 * scattering_factor_to_volts
-    if verbose:
-        print(f'The inner potential is {u0:.1f} V')
-
-    # Calculating incident wave vector magnitude 'k0' in material
-    wl = tags['wave_length']
-    tags['incident_wave_vector_vacuum'] = 1 / wl
-
-    tags['incident_wave_vector'] = np.sqrt(1 / wl**2 + u0/volume_unit_cell)  # 1/Ang
-    return tags['incident_wave_vector']
-
 def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     """ Get projection of g_hkl points onto 2D detector plane"""
     tags['reciprocal_unit_cell'] = atoms.cell.reciprocal()
-    tags['mistilt_alpha'] = 0.
-    tags['mistilt_beta'] = 0.
-
+    tags.setdefault('mistilt_alpha', 0.)
+    tags.setdefault('mistilt_beta', 0.)
+ 
     rotation_matrix = get_zone_rotation(tags)
     # rotation_matrix, theta, phi = zone_rotation(zone_vector)
     center_ewald = np.dot(center_ewald, rotation_matrix)
+    print(center_ewald, rotation_matrix)
     g_hkl_rotated = np.dot(g_hkl, rotation_matrix)
     d_theta = get_d_theta(g_hkl_rotated, np.linalg.norm(center_ewald)) # as distance
 
-    laue_distance =  np.sum(np.dot(atoms.cell.reciprocal(), rotation_matrix), axis=0)[2]
-
-    center_ewald[:2] = 0.
     g_hkl_spherical = g_hkl_rotated + center_ewald
     r_spherical = np.linalg.norm(g_hkl_spherical, axis = 1)
     theta = np.arccos(g_hkl_spherical[:, 2] / r_spherical)
@@ -256,7 +229,7 @@ def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
     phi = np.arctan2(g_hkl_spherical[:, 0], g_hkl_spherical[:, 1])
     r = np.tan(theta) * center_ewald[2]
 
-    return np.stack((r, phi, g_hkl_rotated[:, 2], d_theta), axis=1), laue_distance
+    return np.stack((r, phi, g_hkl_rotated[:, 2], d_theta), axis=1), 0
 
 
 def get_all_reflections(atoms, hkl_max, sg_max=None, ewald_center=None, verbose=False):
@@ -364,58 +337,134 @@ def sort_bragg(atoms, g_hkl):
     return allowed, forbidden, structure_factors
 
 
+def get_reflections(atom, g, hkl, tags, zolz_only=False):
+    """ Get all reflection close to Ewald sphere)"""
+
+    k0_magnitude = tags['ewald_center'][2]
+    center_rotated=[0,0,k0_magnitude ]
+    # Calculate excitation errors for all reciprocal lattice points
+    ## Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
+    s = (k0_magnitude**2-np.linalg.norm(g - center_rotated, axis=1)**2)/(2*k0_magnitude)
+    # Determine reciprocal lattice points with excitation error less than the maximum allowed one: Sg_max
+    reflections = abs(s)< tags['Sg_max']
+    sg = s[reflections]
+    g_hkl = g[reflections]
+    hkl = hkl[reflections]
+    laue_zone = np.sum(hkl * tags['zone_hkl'], axis=1)
+    if zolz_only:
+        zolz = laue_zone == 0
+    else:
+        zolz = [True]*len(g_hkl[:, 2])
+    structure_factors = get_structure_factors(atom, g_hkl[zolz])
+    
+    if zolz_only:
+        allowed = np.absolute(structure_factors) > 0.000001
+        g = np.array(g_hkl[zolz])[allowed]
+        g_spherical = np.stack([np.linalg.norm(g[:, :2], axis=1), np.arctan2(g[:, 1], g[:, 0]), g[:, 2]], axis=-1)
+        return g_spherical, (hkl[zolz])[allowed], structure_factors[allowed], sg
+    else:
+        d_theta = get_d_theta(g_hkl, k0_magnitude) # as distance
+        g_spherical = (np.stack((np.linalg.norm(g_hkl[:, :2], axis=1), np.arctan2(g_hkl[:, 1], g_hkl[:, 0]), g_hkl[:, 2], d_theta), axis=1))
+        return g_spherical, hkl, structure_factors, sg
+
 
 def get_bragg_reflections(atoms, in_tags, verbose=False):
     """ sort reflection in allowed and forbidden"""
 
-    zone_hkl = in_tags.get('zone_hkl', None)
+    zone_hkl = in_tags.get('zone_hkl', None)    
     if zone_hkl is None:
         raise ValueError('zone_hkl must be provided in tags')
     hkl_max = in_tags.setdefault('hkl_max', 10)
-    sg_max = in_tags.setdefault('Sg_max', 0.1)  # 1/Ang  maximum allowed excitation error
+    sg_max = in_tags.setdefault('Sg_max', 0.03)  # 1/Ang  maximum allowed excitation error
     acceleration_voltage = in_tags.setdefault('acceleration_voltage', 100e3)
+    mistilt_alpha = in_tags.setdefault('mistilt_alpha', 0)
+    mistilt_beta = in_tags.setdefault('mistilt_beta', 0)
 
-    center_ewald = ewald_sphere_center(acceleration_voltage, atoms, zone_hkl)
-    
-    hkl, g_hkl, sg  = get_all_reflections(atoms, hkl_max, sg_max, center_ewald, verbose=verbose)
-    
-    g, laue_distance = get_projection(atoms, zone_hkl, g_hkl, center_ewald, in_tags)
-    allowed, forbidden, structure_factors = sort_bragg(atoms, g_hkl)
+    k0_magnitude = get_incident_wave_vector(atoms, acceleration_voltage)
 
+    # in zone axis:
+    theta, phi = find_angles(zone_hkl)
+    rotation_matrix = get_rotation_matrix([-phi, theta, 0], in_radians=True)
+    center_rotated = [0, 0, k0_magnitude]
+
+    laue_circle = [np.tan(mistilt_alpha) * k0_magnitude, -np.sin(mistilt_beta) * k0_magnitude]
+
+    # rotate in zone axis
+    g, hkl = get_all_g_vectors(hkl_max, atoms)
+    g_rotated = np.dot(g, rotation_matrix)
+
+    in_tags.update({'ewald_center': center_rotated,
+                    'laue_circle': laue_circle})
+    out_tags = {}
+    
+    # Do we have a mistilt
+    if np.linalg.norm(laue_circle) > 0: 
+        print('mistilt')
+        # Kikuchi first
+        g_kikuchi, hkl_kikuchi, structure_factor_kikuchi, sg_kikuchi = get_reflections(atoms,
+                                                                           g_rotated,
+                                                                           hkl,
+                                                                           in_tags,
+                                                                           zolz_only=True)
+        out_tags['Kikuchi'] = {'g': g_kikuchi,
+                               'hkl': hkl_kikuchi,
+                               'intensities': structure_factor_kikuchi.real**2}
+        # add mistilt
+        mistilt_matrix = get_rotation_matrix([mistilt_beta, mistilt_alpha,0], in_radians=True)
+        g_rotated = np.dot(g_rotated, mistilt_matrix)
+    
+    g_spherical, hkl, structure_factors, sg = get_reflections(atoms, g_rotated, hkl, in_tags, 
+                                                              zolz_only=False)
+    allowed = np.absolute(structure_factors) > 0.000001
+    forbidden = np.logical_not(allowed)
+    
+    f_allowed = structure_factors[allowed]
+    # Weiss Zone Law
+    laue_zone = np.sum(hkl * zone_hkl, axis=1)
     
     if verbose:
         print(f'Of the {hkl.shape[0]} possible reflection {allowed.sum()} are allowed.')
 
-    laue_zone = np.round(g[:, 2] / laue_distance, 1)
     
-    # thickness = tags['thickness']
-    # if thickness > 0.1:
-    #    i_g = np.real(np.pi ** 2 / xi_g**2 * np.sin(np.pi * thickness * sg[allowed])**2
-    #                  / (np.pi * sg[allowed])**2)
-    #    dif['allowed']['Ig'] = i_g
-
-    out_tags = {'allowed': {'hkl': hkl[allowed][:],
-                            'g': g[allowed, :],
-                            'excitation_error': sg[allowed],
-                            'intensities': structure_factors[allowed]**2,
-                            'Laue_Zone': laue_zone[allowed],
-                            'ZOLZ': laue_zone[allowed] == 0,
-                            'FOLZ': laue_zone[allowed] == 1,
-                            'SOLZ': laue_zone[allowed] == 2,
-                            'HOLZ': laue_zone[allowed] > 0,
-                            'HOLZ_plus': laue_zone[allowed] > 2},
-                'forbidden':{'hkl':  hkl[forbidden][:],
-                             'g':  g[forbidden, :],
+        
+    zolz = laue_zone[allowed] == 0
+    out_tags['allowed'] = {'hkl': hkl[allowed][:],
+                           'g': g_spherical[allowed, :],
+                           'excitation_error': sg[allowed],
+                           'intensities': structure_factors[allowed].real**2,
+                           'Laue_Zone': laue_zone[allowed],
+                           'ZOLZ': laue_zone[allowed] == 0,
+                           'FOLZ': laue_zone[allowed] == 1,
+                           'SOLZ': laue_zone[allowed] == 2,
+                           'HOLZ': laue_zone[allowed] > 0,
+                           'HOLZ_plus': laue_zone[allowed] > 2}
+    out_tags['forbidden'] = {'hkl':  hkl[forbidden][:],
+                             'g':  g_spherical[forbidden, :],
                              'Laue_Zone': laue_zone[forbidden],
-                            'ZOLZ': laue_zone[forbidden] == 0,
-                            'HOLZ': laue_zone[forbidden] > 0,},
-                'K_0': np.linalg.norm(center_ewald)}
+                             'ZOLZ': laue_zone[forbidden] == 0,
+                             'HOLZ': laue_zone[forbidden] > 0}
+    out_tags.update({'K_0': k0_magnitude,
+                     'laue_zone': laue_zone,
+                     'Laue_circle': laue_circle,
+                     'allowed_all': allowed})
+                     
+    # Calculate Intensity of beams  Reimer 7.25
+    thickness = in_tags.setdefault('thickness', 0.0)
+    if thickness > 0.1:
+        # Calculate Extinction Distance  Reimer 7.23
+        # - makes only sense for non-zero structure_factor
+        xi_g = np.real(np.pi * atoms.cell.volume * k0_magnitude / f_allowed)
+        s_eff = np.sqrt(sg[allowed]**2 + xi_g**-2)
 
-    laue_zone_f = np.floor(abs(np.dot(hkl[forbidden], zone_hkl)))
-    out_tags['forbidden']['Laue_Zone'] = laue_zone_f
-    out_tags['forbidden']['ZOLZ'] = laue_zone_f == 0
-    out_tags['forbidden']['HOLZ'] = laue_zone_f > 1
-
+        i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
+        out_tags['allowed']['Ig'] = i_g
+        out_tags['thickness'] = thickness
+        
+    out_tags['parameters'] = in_tags
+    if 'Kikuchi' not in out_tags:
+        out_tags['Kikuchi'] = {'hkl': hkl[allowed][zolz],
+                               'g': g_spherical[allowed][zolz],
+                               'intensities': structure_factors[allowed][zolz].real**2}
     if verbose:
         print (f'Of those, there are {out_tags["allowed"]["ZOLZ"].sum()} in ZOLZ',
                f' and {out_tags["allowed"]["HOLZ"].sum()} in HOLZ')
@@ -502,8 +551,9 @@ def find_sorted_bragg_reflections2(atoms, tags, verbose):
         tags['thickness'] = 0.
     thickness = tags['thickness']
     if thickness > 0.1:
-        i_g = np.real(np.pi ** 2 / xi_g**2 * np.sin(np.pi * thickness * sg[allowed])**2
-                      / (np.pi * sg[allowed])**2)
+        s_eff = np.sqrt(sg[allowed]**2 +1/xi_g**2)
+
+        i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
         dif['allowed']['Ig'] = i_g
 
     dif['allowed']['intensities'] = np.real(f_allowed)**2
@@ -656,8 +706,8 @@ def calculate_holz2(atoms, tags):
 def calculate_kikuchi(atoms, tags, verbose):
     """ Calculate Kikuchi lines (of allowed reflections)"""
     tags_kikuchi = tags.copy()
-    tags_kikuchi['mistilt_alpha'] = 0
-    tags_kikuchi['mistilt_beta'] = 0
+    tags_kikuchi.set_default('mistilt_alpha', .0)
+    tags_kikuchi.set_default('mistilt_beta', .0)
     dif = atoms.info['diffraction']
     k_0 = tags['incident_wave_vector']
     k0_vector = tags['k0_vector']

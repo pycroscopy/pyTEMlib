@@ -320,7 +320,6 @@ def warp(diff, center):
 
     # Define new polar grid
     nr = int(min([center[0], center[1], diff.shape[0] - center[0], diff.shape[1] - center[1]]) - 1)
-    print(nr)
     nt = 360 * 3
 
     r = np.linspace(1, nr, nr)
@@ -498,17 +497,21 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
     return fig
 
 
-def plotting_coordinates(g, rotation=0, feature='spot'):
-    """ Convert g-vectors to plotting coordinates"""
-    if feature == 'line':
+def plotting_coordinates(g, rotation=0., laue_circle=[0,0], feature='spot'):
+    if feature == 'HOLZ':
         # Note: d_theta in g{: 3] is negative so we need to rotate phi by 180 degree
         x = g[:, 3] * np.cos(g[:, 1]+np.pi+rotation)*10
         y = g[:, 3] * np.sin(g[:, 1]+np.pi+rotation)*10
         return np.stack((x, y, np.tan(g[:, 1]+rotation-np.pi/2)), axis= 1)
+    elif feature == 'Kikuchi':
+        # Note: d_theta in g{: 3] is negative so we need to rotate phi by 180 degree
+        x = (g[:, 0] * np.cos(g[:, 1]+np.pi+rotation)*10)/2+laue_circle[0]*10
+        y = g[:, 0] * np.sin(g[:, 1]+np.pi+rotation)*10/2+laue_circle[1]*10
+        return np.stack((x, y, np.tan(g[:, 1]+rotation-np.pi/2)), axis= 1)
 
     x = g[:, 0] * np.cos(g[:, 1]+rotation)*10
     y = g[:, 0] * np.sin(g[:, 1]+rotation)*10
-    return np.stack((x, y), axis= 1)
+    return np.stack((x, y), axis= 1) 
 
 
 def plot_lines(lines, color, alpha, linewidth, label, indices=None):
@@ -526,7 +529,7 @@ def plot_lines(lines, color, alpha, linewidth, label, indices=None):
                 plt.text(line[0], line[1], indices[i], fontsize=8)
 
 
-def plot_diffraction_pattern(atoms, diffraction_pattern=None):
+def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
     """
     Plot of spot diffraction pattern with matplotlib
 
@@ -567,27 +570,31 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
 
     laue_zone = tags_out['allowed']['Laue_Zone']
     laue_zones = [zolz, folz, solz, hholz]
-    laue_circle = tags_out.get('Laue_circle', [0,0, 0, 0])
+    laue_circle = tags_out.get('Laue_circle', [0,0])
     hkl_label = tags_out['allowed']['hkl']
     label = tags_out['allowed'].get('label', hkl_label)
 
     rotation = np.radians(tags_out.setdefault('output', {}).get('plot_rotation', 0))  # rad
-    g_vectors = tags_out['allowed']['g'] + laue_circle + [0, rotation, 0 , 0]
+    g_vectors = tags_out['allowed']['g']
     points = plotting_coordinates(g_vectors, feature='spot')
-    lines = plotting_coordinates(g_vectors, feature='line')
-
+    lines = plotting_coordinates(g_vectors, feature='HOLZ')
+    laue_circle = tags_out['Laue_circle']
     tags_out.setdefault('thickness', 0)
     if tags_out['thickness'] > 0.1:
+        print('thickness' , tags_out['thickness'])
         intensity = np.real(tags_out['allowed']['Ig'])
     else:
         intensity = tags_out['allowed']['intensities']
-    radius = tags_out.setdefault('experimental', {}).setdefault('convergence_angle', 0)
-    if radius < 0.1:
-        radius = 2
+    convergence_angle = tags_out.setdefault('parameters', {}).setdefault('convergence_angle', 0)
+    radius = np.tan(convergence_angle/1000)*tags_out['K_0']*10 
+    if verbose:
+        print(f'convergence_angle of {convergence_angle:.1f} is {radius:.2f} 1/nm')
+    if radius < 0.01:
+        radius = 1
 
     if tags_out['output'].setdefault('linewidth_Kikuchi', 1) < 0:
-        if len(intensity[zolz]) > 0:
-            intensity_kikuchi = intensity * 4. / intensity[zolz].max()
+        if len(tags_out['Kikuchi']['intensities']) > 0:
+            intensity_kikuchi = tags_out['Kikuchi']['intensities'] * 4. / tags_out['Kikuchi']['intensities'].max()
         else:
             intensity_kikuchi = intensity
     else:
@@ -659,9 +666,9 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
                     if tags_out['output']['plot_labels']:
                         plt.text(points[zone, 0], points[zone, 1], label[i], fontsize=8)
             # TODO in right coordinates
-            ax.scatter(laue_circle[0], laue_circle[1],
+            ax.scatter(laue_circle[0]*10, laue_circle[1]*10,
                        c=tags_out['output'].setdefault('color_zero', 'blue'), s=100)
-            radius = .2
+            radius = 2
         else:
             if tags_out['output'].setdefault('color_reflections', None) == 'intensity':
                 circles(points[:, 0], points[:, 1], s=radius, c=np.log(intensity[:] + 1),
@@ -677,21 +684,24 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
 
     points_forbidden = plotting_coordinates(tags_out['forbidden']['g'])
     if tags_out['output'].setdefault('plot_dynamically_allowed', False):
-        if 'dynamically_allowed' not in atoms.info['diffraction']['forbidden']:
+        if 'dynamically_activated' not in tags_out['forbidden']:
             print('To plot dynamically allowed reflections you must run the get_dynamically_allowed'
                   'function of kinematic_scattering library first!')
         else:
-            dynamically_allowed = tags_out['forbidden']['dynamically_activated']
-            dyn_allowed = points_forbidden[dynamically_allowed]
+            zolz_forbidden = tags_out['forbidden']['ZOLZ']
+            activated = tags_out['forbidden']['dynamically_activated']  
+            dyn_allowed = points_forbidden[zolz_forbidden][activated]
             color = laue_color[0]
             ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
             if tags_out['output']['plot_labels']:
                 for i in range(len(dyn_allowed)):
-                    dyn_label = tags_out['forbidden']['hkl'][dynamically_allowed, :]
+                    dyn_label = tags_out['forbidden']['hkl'][activated, :]
                     plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
             if tags_out['output'].setdefault('plot_forbidden', False):
-                forbidden_g = points_forbidden[np.logical_not(dynamically_allowed), :]
-                forbidden_hkl = tags_out['forbidden']['hkl'][np.logical_not(dynamically_allowed), :]
+                rest_forbidden = zolz_forbidden.copy()
+                rest_forbidden[zolz_forbidden==True] = np.logical_not(activated)
+                forbidden_g = points_forbidden [rest_forbidden, :]
+                forbidden_hkl = tags_out['forbidden']['hkl'][rest_forbidden, :]
                 ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
                 if tags_out['output']['plot_labels']:
                     for i in range(len(forbidden_g)):
@@ -699,7 +709,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
     elif tags_out['output'].setdefault('plot_forbidden', False):
         forbidden_hkl = tags_out['forbidden']['hkl']
         ax.scatter(points_forbidden[:, 0], points_forbidden[:, 1], c='orange', alpha=0.4, s=70)
-        if atoms.info['output']['plot_labels']:
+        if tags_out['output']['plot_labels']:
             for i, g in enumerate(points_forbidden):
                 plt.text(g[0], g[1], forbidden_hkl[i], fontsize=8)
 
@@ -709,11 +719,14 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
         if i == 0:
             if tags_out['output'].setdefault('plot_Kikuchi',
                                              tags_out['output'].setdefault('plot_HOLZ', False)):
+                kikuchi = plotting_coordinates(tags_out['Kikuchi']['g'], rotation=rotation,
+                                                     laue_circle=np.array(tags_out['Laue_circle']),
+                                                     feature='Kikuchi')
                 if tags_out['output'].setdefault('label_HOLZ', False):
                     label = (hkl_label[zone])[i]
                 else:
                     label = None
-                plot_lines(lines[zone], laue_color[i], 0.5, intensity_kikuchi, 'Kikuchi', label )
+                plot_lines(kikuchi, laue_color[i], 0.5, intensity_kikuchi, 'Kikuchi', label )
         else:
             if tags_out['output'].setdefault('plot_HOLZ', False):
                 zone_names= ['Kiku', 'FOLZ', 'SOLZ', 'higher HOLZ']
@@ -725,14 +738,15 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
                            zone_names[i], label)
 
             if tags_out['output'].setdefault('plot_HOLZ_excess', False):
-                excess_s = tags_out['allowed']['g']
+                """excess_s = tags_out['allowed']['g']
                 excess_s[:, 3] = tags_out['allowed']['g'][:, 1] - tags_out['allowed']['g'][:, 3]
                 excess_s[:, 1] += np.pi
                 lines_excess = plotting_coordinates(excess_s, feature='line')
                 plot_lines(lines_excess[zone], laue_color[i], 0.6-i*0.1,
                            intensity_holz[zone],
                            zone_names[i])
-
+                """
+                pass
 
     """    if atoms.info['output']['plot_Kikuchi']:
             # Beginning and ends of Kikuchi lines
@@ -755,16 +769,17 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None):
     ax.format_coord = format_coord
 
     if tags_out['output'].setdefault('color_ring_zero', None) is not None:
-        ring = plt.Circle(laue_circle, radius, color=tags_out['output']['color_ring_zero'],
+        ring = plt.Circle(laue_circle*10, radius, color=tags_out['output']['color_ring_zero'],
                           fill=False, linewidth=2)
         ax.add_artist(ring)
     if tags_out['output'].setdefault('color_zero', None) is not None:
-        circle = plt.Circle(laue_circle, radius,
-                            color=tags_out['output']['color_zero'],
+        circle = plt.Circle(np.array(laue_circle)*10, radius,
+                            edgecolor=tags_out['output']['color_zero'],
+                            facecolor=None,
                             linewidth=2)
         ax.add_artist(circle)
 
-    plt.axis('equal')
+    plt.gca().set_aspect('equal')
     if tags_out['output'].setdefault('plot_FOV', None):
         l = -tags_out['output']['plot_FOV'] / 2
         r = tags_out['output']['plot_FOV'] / 2

@@ -292,3 +292,8 @@ pyTEMlib/eds_tools/eds_xsections - Copy.py
 pyTEMlib/eds_tools/eds_xsections2.py
 pyTEMlib/eds_tools/eds_xsections-old.py
 pyTEMlib/eds_tools/get_bote_salvat.py
+.virtual_documents/notebooks/0_pyTEMlib.ipynb
+.virtual_documents/notebooks/1_Diffraction_Tools-Copy1.ipynb
+.virtual_documents/notebooks/1_Diffraction_Tools.ipynb
+.virtual_documents/notebooks/2_Image_Tools.ipynb
+.virtual_documents/notebooks/3_Spectroscopy_Tools.ipynb
