@@ -307,7 +307,7 @@ def calculate_holz(dif):
     dif['HOLZ']['HOLZ_plus'] = dif['allowed']['HOLZ_plus']  # even higher HOLZ
     dif['HOLZ']['hkl'] = dif['allowed']['hkl']
     dif['HOLZ']['intensities'] = intensities
-
+    
     return dif
 
 def get_d_theta(g_allowed, k_0):

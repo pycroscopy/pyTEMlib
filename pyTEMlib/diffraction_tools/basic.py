@@ -287,7 +287,7 @@ def ewald_sphere_center(acceleration_voltage, atoms, zone_hkl):
 
 def find_nearest_zone_axis(tags):
     """Test all zone axis up to a maximum of hkl_max"""
-
+  
     hkl_max = 5
     # Make all hkl indices
     zones_hkl = get_all_miller_indices(hkl_max)

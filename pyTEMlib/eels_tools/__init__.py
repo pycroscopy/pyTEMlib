@@ -28,6 +28,7 @@ from .core_loss_tools import auto_id_edges, identify_edges, add_element_to_datas
 from .core_loss_tools import fit_dataset, auto_chemical_composition, make_edges
 from .core_loss_tools import cl_model, core_loss_model, fit_edges, xsec_xrpa
 
+from .interactive_eels import InteractiveEELS, RegionSelector
 
 __all__ = ['major_edges', 'all_edges', 'first_close_edges', 'elements', 'get_wavelength',
            'effective_collection_angle', 'set_default_metadata', 'lorentz', 'gauss',
@@ -41,4 +42,4 @@ __all__ = ['major_edges', 'all_edges', 'first_close_edges', 'elements', 'get_wav
            'find_all_edges', 'find_associated_edges', 'find_white_lines', 'find_edges',
            'assign_likely_edges', 'auto_id_edges', 'identify_edges', 'add_element_to_dataset',
            'fit_dataset', 'auto_chemical_composition', 'make_edges', 'cl_model', 'core_loss_model',
-           'fit_edges', 'xsec_xrpa']
+           'fit_edges', 'xsec_xrpa', 'InteractiveEELS', 'RegionSelector']
