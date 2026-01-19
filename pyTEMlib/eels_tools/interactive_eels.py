@@ -14,11 +14,12 @@ class EdgesAtCursor(object):
         self.label = None
         self.line = None
         self.marker, = ax.plot(energy[0], data[0], marker="o", color="crimson", zorder=3)
-        
-        self.cursor = matplotlib.widgets.Cursor(ax, useblit=True, color='blue', linewidth=2, horizOn=False, alpha=.3)
+        self.cursor = matplotlib.widgets.Cursor(ax, useblit=True, color='blue',
+                                                linewidth=2, horizOn=False, alpha=.3)
         self.cid = ax.figure.canvas.mpl_connect('button_press_event', self.edges_on_click)
 
     def edges_on_click(self, event):
+        """ get edges at cursor position """
         if not event.inaxes:
             return
         x= event.xdata
@@ -27,18 +28,21 @@ class EdgesAtCursor(object):
         if self.line is not None:
             self.line.remove()
         if event.button ==  1:
-            self.label = plt.text(x, plt.gca().get_ylim()[1], pyTEMlib.eels_tools.find_all_edges(x, self.maximal_chemical_shift, True),
-                                      verticalalignment='top')
+            self.label = plt.text(x, plt.gca().get_ylim()[1],
+                                  pyTEMlib.eels_tools.find_all_edges(x, self.maximal_chemical_shift, True),
+                                  verticalalignment='top')
         else:
-            self.label = plt.text(x, plt.gca().get_ylim()[1], pyTEMlib.eels_tools.find_all_edges(x, self.maximal_chemical_shift),
-                                      verticalalignment='top')
+            self.label = plt.text(x, plt.gca().get_ylim()[1],
+                                  pyTEMlib.eels_tools.find_all_edges(x, self.maximal_chemical_shift),
+                                  verticalalignment='top')
         self.line = plt.axvline(x=x, color='gray')
 
 class RegionSelector(object):
     """
         Selects fitting region and the regions that are excluded for each edge.
 
-        Select a region with a spanSelector and then type 'a' for all of the fitting region or a number for the edge
+        Select a region with a spanSelector and then type 'a' for all of the 
+        fitting region or a number for the edge
         you want to define the region excluded from the fit (solid state effects).
 
         see Chapter4 'CH4-Working_with_X-Sections,ipynb' notebook
@@ -114,6 +118,7 @@ class RegionSelector(object):
         self.update()
 
     def set_regions(self, region, start_x, width):
+        """ set regions from dictionary """ 
         if 'fit' in str(region):
             key = '0'
         elif int(region) in [0, 1, 2, 3, 4, 5, 6]:
@@ -138,22 +143,21 @@ class RegionSelector(object):
 
     def get_regions(self):
         tags = {}
-        for key in self.regions:
+        for key, region in self.regions.items():
             if key == '0':
                 area = 'fit_area'
             else:
                 area = key
             tags[area] = {}
-            tags[area]['start_x'] = self.regions[key]['xmin']
-            tags[area]['width_x'] = self.regions[key]['width']
+            tags[area]['start_x'] = region['xmin']
+            tags[area]['width_x'] = region['width']
 
         return tags
 
     def disconnect(self):
-        for key, region in self.regions.items:
+        for region in self.regions.values():
             if 'Rect' in region:
                 region['Rect'].remove()
                 region['Text'].remove()
-        del(self.span)
+        del self.span
         self.ax.figure.canvas.mpl_disconnect(self.cid)
-

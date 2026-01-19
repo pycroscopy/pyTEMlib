@@ -41,7 +41,6 @@ def read_msa(msa_string):
                         data_section = True
         else:
             # Read the data
-
             if len(line) > 0 and line[0] != "#" and line.strip():
                 if parameters['DATATYPE'] == 'XY':
                     xy = line.replace(',', ' ').strip().split()
@@ -72,59 +71,33 @@ def get_spectrum_eels_db(formula=None, edge=None, title=None, element=None):
     if edge is not None and edge not in valid_edges:
         print('edge should be a in ', valid_edges)
 
-    spectrum_type = None
-    author = None
-    min_energy = None
-    max_energy = None
-    resolution = None
-    min_energy_compare = "gt"
-    max_energy_compare = "lt"
-    resolution_compare = "lt"
-    max_n = -1
-    monochromated = None
-    order = None
-    order_direction = "ASC"
-    verify_certificate = True
-    # Verify arguments
-
-    if spectrum_type is not None and spectrum_type not in {'coreloss', 'lowloss', 'zeroloss', 'xrayabs'}:
-        raise ValueError("spectrum_type must be one of \'coreloss\', \'lowloss\', "
-                         "\'zeroloss\', \'xrayabs\'.")
-    # valid_edges = ['K', 'L1', 'L2,3', 'M2,3', 'M4,5', 'N2,3', 'N4,5', 'O2,3', 'O4,5']
-
-    params = {
-        "type": spectrum_type,
-        "title": title,
-        "author": author,
-        "edge": edge,
-        "min_energy": min_energy,
-        "max_energy": max_energy,
-        "resolution": resolution,
-        "resolution_compare": resolution_compare,
-        "monochromated": monochromated,
-        "formula": formula,
-        'element': element,
-        "min_energy_compare": min_energy_compare,
-        "max_energy_compare": max_energy_compare,
-        "per_page": max_n,
-        "order": order,
-        "order_direction": order_direction,
-    }
-
-    request = requests.get('http://api.eelsdb.eu/spectra', params=params, verify=True, timeout=10)
-    # spectra = []
+    params = {"type": None,
+              "title": title,
+              "author": None,
+              "edge": edge,
+              "element": element,
+              "min_energy": None,
+              "max_energy": None,
+              "resolution": None,
+              "resolution_compare": "lt",
+              "monochromated": None,
+              "formula": formula,
+              "min_energy_compare": "gt",
+              "max_energy_compare": "lt",
+              "per_page": -1,
+              "order": None,
+              "order_direction": "ASC"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
+    request = requests.get("https://api.eelsdb.eu/spectra", params=params, verify=True,
+                           headers=headers, timeout=10)
     jsons = request.json()
     if "message" in jsons:
         # Invalid query, EELSdb raises error.
-        raise IOError(
-            f"Please report the following error to the HyperSpy developers: ",
-            f"{jsons['message']}")
+        raise IOError(f"Error: {jsons['message']}")
     reference_spectra = {}
     for json_spectrum in jsons:
         download_link = json_spectrum['download_link']
-        # print(download_link)
-        msa_string = requests.get(download_link, verify=verify_certificate, timeout=10).text
-        # print(msa_string[:100])
+        msa_string = requests.get(download_link, verify=True, headers=headers, timeout=10).text
         parameters = read_msa(msa_string)
         if 'XPERCHAN' in parameters:
             reference_spectra[parameters['TITLE']] = parameters
