@@ -307,7 +307,7 @@ def calculate_holz(dif):
     dif['HOLZ']['HOLZ_plus'] = dif['allowed']['HOLZ_plus']  # even higher HOLZ
     dif['HOLZ']['hkl'] = dif['allowed']['hkl']
     dif['HOLZ']['intensities'] = intensities
-
+    
     return dif
 
 def get_d_theta(g_allowed, k_0):
@@ -337,7 +337,7 @@ def sort_bragg(atoms, g_hkl):
     return allowed, forbidden, structure_factors
 
 
-def get_reflections(atom, g, hkl, tags, zolz_only=False):
+def get_reflections(g, hkl, tags, structure_factors, zolz_only=False):
     """ Get all reflection close to Ewald sphere)"""
 
     k0_magnitude = tags['ewald_center'][2]
@@ -355,27 +355,30 @@ def get_reflections(atom, g, hkl, tags, zolz_only=False):
         zolz = laue_zone == 0
     else:
         zolz = [True]*len(g_hkl[:, 2])
-    structure_factors = get_structure_factors(atom, g_hkl[zolz])
+    
+    structure_factors = np.absolute(structure_factors[reflections])
+    
     
     if zolz_only:
         allowed = np.absolute(structure_factors) > 0.000001
         g = np.array(g_hkl[zolz])[allowed]
         g_spherical = np.stack([np.linalg.norm(g[:, :2], axis=1), np.arctan2(g[:, 1], g[:, 0]), g[:, 2]], axis=-1)
-        return g_spherical, (hkl[zolz])[allowed], structure_factors[allowed], sg
+        return g_spherical, (hkl[zolz])[allowed],  sg, ((structure_factors[zolz])[allowed]).real**2
     else:
         d_theta = get_d_theta(g_hkl, k0_magnitude) # as distance
         g_spherical = (np.stack((np.linalg.norm(g_hkl[:, :2], axis=1), np.arctan2(g_hkl[:, 1], g_hkl[:, 0]), g_hkl[:, 2], d_theta), axis=1))
-        return g_spherical, hkl, structure_factors, sg
+        return g_spherical, hkl, sg, structure_factors
 
 
 def get_bragg_reflections(atoms, in_tags, verbose=False):
     """ sort reflection in allowed and forbidden"""
 
-    zone_hkl = in_tags.get('zone_hkl', None)    
+    zone_hkl = in_tags.get('zone_hkl', None)
     if zone_hkl is None:
         raise ValueError('zone_hkl must be provided in tags')
     hkl_max = in_tags.setdefault('hkl_max', 10)
-    sg_max = in_tags.setdefault('Sg_max', 0.03)  # 1/Ang  maximum allowed excitation error
+    
+    in_tags.setdefault('Sg_max', 0.03)  # 1/Ang  maximum allowed excitation error
     acceleration_voltage = in_tags.setdefault('acceleration_voltage', 100e3)
     mistilt_alpha = in_tags.setdefault('mistilt_alpha', 0)
     mistilt_beta = in_tags.setdefault('mistilt_beta', 0)
@@ -391,42 +394,42 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
 
     # rotate in zone axis
     g, hkl = get_all_g_vectors(hkl_max, atoms)
-    g_rotated = np.dot(g, rotation_matrix)
 
+    structure_factors = get_structure_factors(atoms, g)
+    g_rotated = np.dot(g, rotation_matrix)
     in_tags.update({'ewald_center': center_rotated,
                     'laue_circle': laue_circle})
     out_tags = {}
-    
+
     # Do we have a mistilt
-    if np.linalg.norm(laue_circle) > 0: 
+    if np.linalg.norm(laue_circle) > 0:
         print('mistilt')
         # Kikuchi first
-        g_kikuchi, hkl_kikuchi, structure_factor_kikuchi, sg_kikuchi = get_reflections(atoms,
-                                                                           g_rotated,
-                                                                           hkl,
-                                                                           in_tags,
-                                                                           zolz_only=True)
+        g_kikuchi, hkl_kikuchi, sg_kikuchi, structure_factors_kikuchi = get_reflections(g_rotated,
+                                                hkl, in_tags, structure_factors, zolz_only=True)
         out_tags['Kikuchi'] = {'g': g_kikuchi,
                                'hkl': hkl_kikuchi,
-                               'intensities': structure_factor_kikuchi.real**2}
+                               'intensities': structure_factors_kikuchi.real**2,
+                               'excitation_error': sg_kikuchi}
         # add mistilt
         mistilt_matrix = get_rotation_matrix([mistilt_beta, mistilt_alpha,0], in_radians=True)
         g_rotated = np.dot(g_rotated, mistilt_matrix)
     
-    g_spherical, hkl, structure_factors, sg = get_reflections(atoms, g_rotated, hkl, in_tags, 
-                                                              zolz_only=False)
+
+
+    g_spherical, hkl, sg, structure_factors = get_reflections(g_rotated, hkl, in_tags, 
+                                                              structure_factors, zolz_only=False)
+    
     allowed = np.absolute(structure_factors) > 0.000001
     forbidden = np.logical_not(allowed)
-    
+
     f_allowed = structure_factors[allowed]
     # Weiss Zone Law
     laue_zone = np.sum(hkl * zone_hkl, axis=1)
-    
+
     if verbose:
         print(f'Of the {hkl.shape[0]} possible reflection {allowed.sum()} are allowed.')
 
-    
-        
     zolz = laue_zone[allowed] == 0
     out_tags['allowed'] = {'hkl': hkl[allowed][:],
                            'g': g_spherical[allowed, :],

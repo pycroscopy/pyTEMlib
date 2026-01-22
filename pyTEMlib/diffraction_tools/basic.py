@@ -178,14 +178,17 @@ def vector_norm(g):
     depreciated - use np.linalg.norm
     """
     return np.linalg.norm(g)
-    
+
+
 def intensity_with_thickness(thickness, atoms, k0_magnitude, f_allowed, sg):
     """ Calculate intensity of diffracted beams according to Reimer&Kohl equ.7.25 
-    
+
     Parameters:
     ----------
     thickness: float
         thickness of sample in Angstrom
+    atoms: ase.Atoms
+        structure of crystal
     k0_magnitude: float
         incident wave vector in 1/A
     f_allowed: np.array (1dim)
@@ -197,6 +200,7 @@ def intensity_with_thickness(thickness, atoms, k0_magnitude, f_allowed, sg):
     i_g: np.array (1dim)
         intensities of g vectors at excitation error sg
     """
+
     if thickness < 0:
         return None
     # Calculate Extinction Distance  Reimer 7.23
@@ -204,9 +208,8 @@ def intensity_with_thickness(thickness, atoms, k0_magnitude, f_allowed, sg):
     xi_g = np.real(np.pi * atoms.cell.volume * k0_magnitude / f_allowed)
     s_eff = np.sqrt(sg**2 + xi_g**-2)
 
-    i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
+    i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)
     return i_g
-    
 
 
 def get_all_miller_indices(hkl_max):
@@ -218,9 +221,10 @@ def get_all_miller_indices(hkl_max):
     index_center = np.where(np.linalg.norm(hkl, axis=1) < 1e-6)[0]
     hkl = np.delete(hkl, index_center, axis=0)  # delete [0,0,0]
     return hkl
-    
+
+
 def get_all_g_vectors(hkl_max, atoms):
-    ## get all reflections up to a maximum Miller index
+    """ Get all reflections up to a maximum Miller index"""
     hkl = get_all_miller_indices(hkl_max)
     g = np.dot(hkl, atoms.cell.reciprocal())  # all evaluated reciprocal lattice points
     return g, hkl
@@ -270,7 +274,6 @@ def get_incident_wave_vector(atoms, acceleration_voltage, verbose=False):
 
     # Calculating incident wave vector magnitude 'k0' in material
     wavelength = get_wavelength(acceleration_voltage, unit='A')  # in Angstrom
-    
     incident_wave_vector = np.sqrt(1 / wavelength**2 + u0/volume_unit_cell)  # 1/Ang
     return incident_wave_vector
 
@@ -284,7 +287,7 @@ def ewald_sphere_center(acceleration_voltage, atoms, zone_hkl):
 
 def find_nearest_zone_axis(tags):
     """Test all zone axis up to a maximum of hkl_max"""
-
+  
     hkl_max = 5
     # Make all hkl indices
     zones_hkl = get_all_miller_indices(hkl_max)
@@ -358,7 +361,7 @@ def get_zone_rotation(tags):
     """zone axis in global coordinate system"""
     zone_hkl = tags['zone_hkl']
     zone = np.dot(zone_hkl, tags['reciprocal_unit_cell'])
-    
+
     # angle of zone with Z around x,y:
     alpha, beta = find_angles(zone)
 
@@ -366,7 +369,6 @@ def get_zone_rotation(tags):
     beta = beta + tags['mistilt_beta']
 
     tags['y-axis rotation alpha'] = alpha
-    
     tags['x-axis rotation beta'] = beta
 
     tags['rotation_matrix'] = rotation_matrix = stage_rotation_matrix(alpha, -beta)
@@ -499,7 +501,6 @@ def gaussian(xx, pp):
     s1 = pp[2] / 2.3548
     prefactor = 1.0 / np.sqrt(2 * np.pi * s1 ** 2)
     y = (pp[1] * prefactor) * np.exp(-(xx - pp[0]) ** 2 / (2 * s1 ** 2))
-    
     return y
 
 
