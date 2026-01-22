@@ -349,7 +349,6 @@ def get_reflections(g, hkl, tags, structure_factors, zolz_only=False):
     reflections = abs(s)< tags['Sg_max']
     sg = s[reflections]
     g_hkl = g[reflections]
-    print('kkk')
     hkl = hkl[reflections]
     laue_zone = np.sum(hkl * tags['zone_hkl'], axis=1)
     if zolz_only:
