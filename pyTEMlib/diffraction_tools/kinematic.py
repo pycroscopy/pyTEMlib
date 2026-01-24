@@ -27,19 +27,47 @@ All the input and output is done through a ase.Atoms object and the dictionary i
 import itertools
 
 import numpy as np
-import scipy
 import sidpy
-
 import ase
 
-from .basic import check_sanity, find_angles, get_all_g_vectors
-from .basic import make_pretty_labels, get_all_miller_indices
+from .basic import get_all_g_vectors
+from .basic import make_pretty_labels
 from .basic import get_metric_tensor, get_structure_factors
-from .basic import get_zone_rotation, gaussian, get_unit_cell
-from .basic import output_verbose, form_factor, get_incident_wave_vector
+from .basic import gaussian
 from .basic import get_rotation_matrix, ewald_sphere_center
+from .basic import get_cylinder_coordinates, get_all_miller_indices
 
 from ..utilities import get_wavelength
+
+def get_all_reflections(atoms, hkl_max, sg_max=None, ewald_center=None, verbose=False):
+    """ get all reflections """
+    hkl  = get_all_miller_indices(hkl_max)
+    g = np.dot(hkl, atoms.cell.reciprocal()) # all evaluated reciprocal lattice points
+    g_norm = np.linalg.norm(g, axis=1)
+    indices = np.argsort(g_norm)
+    hkl = hkl[indices]
+    g = g[indices]
+
+    if sg_max is None:
+        return hkl, g
+    # Calculate excitation errors for all reciprocal lattice points
+    ## Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
+    k0_magnitude = np.linalg.norm(ewald_center)
+    excitation_error = ((k0_magnitude**2- np.linalg.norm(g - ewald_center, axis=1)**2)
+                        / (2*k0_magnitude))
+
+    # Determine reciprocal lattice points
+    # with excitation errors less than the maximum allowed one: Sg_max
+    reflections = abs(excitation_error) < sg_max
+
+    sg = excitation_error[reflections]
+    g_hkl = g[reflections]
+    hkl = hkl[reflections]
+    if verbose:
+        print (f'Of the {len(g)} tested reciprocal lattice points',
+               f'{len(g_hkl)} have an excitation error less than {sg_max*10:.2f} 1/nm')
+    return hkl, g_hkl, sg
+
 
 def get_allowed_reflections(structure, verbose=False):
     """ Calculate allowed reflections of a crystal structure"""
@@ -53,7 +81,7 @@ def get_allowed_reflections(structure, verbose=False):
     else:
         raise ValueError('Input must be ase.Atoms or sidpy.Dataset object')
     tags['reciprocal_unit_cell'] = atoms.cell.reciprocal()
-    
+
     hkl, g_hkl = get_all_reflections(atoms, tags.get('hkl_max', 10))
 
     allowed, forbidden, structure_factors = sort_bragg(atoms, g_hkl)
@@ -73,6 +101,14 @@ def get_allowed_reflections(structure, verbose=False):
     g_sorted = g_allowed[ind, :]
     print('here')
     return hkl_sorted, g_sorted, f_sorted
+
+
+def sort_bragg(atoms, g_hkl):
+    """ Sort """
+    structure_factors = get_structure_factors(atoms, g_hkl)
+    allowed = np.absolute(structure_factors) > 0.000001
+    forbidden = np.logical_not(allowed)
+    return allowed, forbidden, structure_factors
 
 
 def get_reflection_families(hkl_sorted, g_sorted, f_sorted, verbose=False):
@@ -156,7 +192,7 @@ def ring_pattern_calculation(structure, verbose=False):
     x_index = [(g_norm / step_size + 0.5).astype(int)]
     intensity[x_index] = np.array(np.real(reflections_f)) * np.array(np.real(reflections_f))
     out_tags['profile_y delta'] = intensity
-  
+
     if tags.get('thickness',0) > 0:
         x = np.linspace(-1024, 1023, 2048) * step_size
         p = [0.0, 1, 2 / tags['thickness']]
@@ -168,24 +204,6 @@ def ring_pattern_calculation(structure, verbose=False):
     hkl_allowed = reflections_m
     hkl_label = make_pretty_labels(hkl_allowed)
     out_tags['allowed']['label'] = hkl_label
-
-
-def zone_rotation(zone, verbose=False):
-    """ Get rotation matrix to zone axis"""
-    #spherical coordinates of zone
-    r = np.linalg.norm(zone)
-    theta = np.arccos(zone[2]/r)
-    if zone[0] < 0:
-        theta = -theta
-    if zone[0] == 0:
-        phi= np.pi/2
-    else: 
-        phi = np.atan2(zone[1], zone[0])
-
-    if verbose:
-        print('Rotation theta ',np.degrees(theta),' phi ',np.degrees(phi))
-    r = get_rotation_matrix([0, -theta, -phi], in_radians=True)
-    return r.T, theta, phi
 
 
 def get_dynamically_activated(out_tags, verbose=False):
@@ -209,63 +227,10 @@ def get_dynamically_activated(out_tags, verbose=False):
               f"{dynamically_activated.sum()} can be dynamically activated.")
 
 
-def get_projection(atoms, zone_hkl, g_hkl, center_ewald, tags):
-    """ Get projection of g_hkl points onto 2D detector plane"""
-    tags['reciprocal_unit_cell'] = atoms.cell.reciprocal()
-    tags.setdefault('mistilt_alpha', 0.)
-    tags.setdefault('mistilt_beta', 0.)
- 
-    rotation_matrix = get_zone_rotation(tags)
-    # rotation_matrix, theta, phi = zone_rotation(zone_vector)
-    center_ewald = np.dot(center_ewald, rotation_matrix)
-    print(center_ewald, rotation_matrix)
-    g_hkl_rotated = np.dot(g_hkl, rotation_matrix)
-    d_theta = get_d_theta(g_hkl_rotated, np.linalg.norm(center_ewald)) # as distance
-
-    g_hkl_spherical = g_hkl_rotated + center_ewald
-    r_spherical = np.linalg.norm(g_hkl_spherical, axis = 1)
-    theta = np.acos(g_hkl_spherical[:, 2] / r_spherical)
-
-    phi = np.atan2(g_hkl_spherical[:, 0], g_hkl_spherical[:, 1])
-    r = np.tan(theta) * center_ewald[2]
-
-    return np.stack((r, phi, g_hkl_rotated[:, 2], d_theta), axis=1), 0
-
-
-def get_all_reflections(atoms, hkl_max, sg_max=None, ewald_center=None, verbose=False):
-    """ get all reflections """
-    hkl  = get_all_miller_indices(hkl_max)
-    g = np.dot(hkl, atoms.cell.reciprocal()) # all evaluated reciprocal lattice points
-    g_norm = np.linalg.norm(g, axis=1)
-    indices = np.argsort(g_norm)
-    hkl = hkl[indices]
-    g = g[indices]
-
-    if sg_max is None:
-        return hkl, g
-    # Calculate excitation errors for all reciprocal lattice points
-    ## Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
-    k0_magnitude = np.linalg.norm(ewald_center)
-    excitation_error = ((k0_magnitude**2- np.linalg.norm(g - ewald_center, axis=1)**2)
-                        / (2*k0_magnitude))
-
-    # Determine reciprocal lattice points 
-    # with excitation errors less than the maximum allowed one: Sg_max
-    reflections = abs(excitation_error) < sg_max
-
-    sg = excitation_error[reflections]
-    g_hkl = g[reflections]
-    hkl = hkl[reflections]
-    if verbose:
-        print (f'Of the {len(g)} tested reciprocal lattice points',
-               f'{len(g_hkl)} have an excitation error less than {sg_max*10:.2f} 1/nm')
-    return hkl, g_hkl, sg
-
 def calculate_holz(dif):
     """ Calculate HOLZ lines (of allowed reflections)"""
     intensities = dif['allowed']['intensities']
     k_0 = dif['K_0']
-    g_norm_allowed = dif['allowed']['g'][:, 0]
 
     # Dynamic Correction
     # Equation Spence+Zuo 3.86a
@@ -273,101 +238,35 @@ def calculate_holz(dif):
     # Equation Spence+Zuo 3.84
     kg = k_0 - k_0*gamma_1/(dif['allowed']['g'][:, 2]+1e-15)
     kg[dif['allowed']['ZOLZ']] = k_0
-    
+
     # Calculate angle between K0 and deficient cone vector
     # For dynamic calculations K0 is replaced by kg
     kg[:] = k_0
-    
-    g_allowed = dif['allowed']['g']
-    d_theta = np.abs(np.arcsin(g_norm_allowed/k_0/2.)
-                     -np.arcsin(np.abs(g_allowed[:,2])/(g_norm_allowed+1e-15)))
 
-    
-    #calculate length of distance of deficient cone to K0 in ZOLZ plane
-    
-    gd_length =2*np.sin(d_theta.real/2 )*k_0
-    
-    # calculate length of distance of deficient cone to K0 in ZOLZ plane
-    
+    g_allowed = dif['allowed']['g']
+    d_theta = np.abs(g_allowed[:,0]-np.arcsin(g_allowed[:,2]/g_allowed[:,3]))
+
     # Calculate nearest point of HOLZ and Kikuchi lines
     g_closest = dif['allowed']['g'].copy()
-    g_closest[:, 0] = 2*np.sin(d_theta.real/2) * k_0
-    g_closest[:, 1] = g_closest[:, 1] + np.pi  # Other side: negative x, y 
+    g_closest[:, 0] = d_theta
+    g_closest[:, 1] = g_closest[:, 1] + np.pi  # Other side: negative x, y
 
     # calculate and save line in Hough space coordinates (distance and theta)
-    g_excess = dif['allowed']['g'].copy()
+    g_excess = g_closest.copy()
     g_excess[:, 0] = g_closest[:, 0] + dif['allowed']['g'][:, 0]
-    #holz = dif['allowed']['HOLZ']
+    holz = dif['allowed']['HOLZ']
+    laue_zones = dif['allowed']['Laue_Zone'][holz]
     dif['HOLZ'] = {}
-    dif['HOLZ']['g_deficient'] = g_closest
-    dif['HOLZ']['g_excess'] = g_excess
-    dif['HOLZ']['ZOLZ'] = dif['allowed']['ZOLZ']
-    dif['HOLZ']['FOLZ'] = dif['allowed']['FOLZ']
-    dif['HOLZ']['SOLZ'] = dif['allowed']['SOLZ']
-    dif['HOLZ']['HOLZ_plus'] = dif['allowed']['HOLZ_plus']  # even higher HOLZ
-    dif['HOLZ']['hkl'] = dif['allowed']['hkl']
-    dif['HOLZ']['intensities'] = intensities
-    
+    dif['HOLZ']['g_deficient'] = g_closest[holz]
+    dif['HOLZ']['g_excess'] = g_excess[holz]
+    dif['HOLZ']['FOLZ'] = laue_zones == 1
+    dif['HOLZ']['SOLZ'] = laue_zones == 2
+    dif['HOLZ']['HOLZ_plus'] = laue_zones > 2  # even higher HOLZ
+    dif['HOLZ']['laue_zones'] = laue_zones
+    dif['HOLZ']['hkl'] = dif['allowed']['hkl'][holz]
+    dif['HOLZ']['intensities'] = intensities[holz]
+
     return dif
-
-def get_d_theta(g_allowed, k_0):
-    """ Calculate HOLZ lines (of allowed reflections)"""
-    g_norm_allowed = np.linalg.norm(g_allowed[:, :3], axis=1)
-    # Dynamic Correction
-    # Equation Spence+Zuo 3.86a
-    #gamma_1 = - 1./(2.*k_0) * (intensities / (2.*k_0*diff_dict['allowed']['excitation_error'])).sum()
-    # Equation Spence+Zuo 3.84
-    #kg = k_0 - k_0*gamma_1/(diff_dict['allowed']['g'][:, 2]+1e-15)
-    #kg[diff_dict['allowed']['ZOLZ']] = k_0
-
-    # Calculate angle between K0 and deficient cone vector
-    # For dynamic calculations K0 is replaced by kg
-    #kg[:] = k_0
-
-    d_theta =(np.arcsin(g_norm_allowed/k_0/2.) 
-              - np.arcsin(np.abs(g_allowed[:,2])/(g_norm_allowed+1e-15) ))
-    return 2.0 * np.sin(d_theta.real/2) * k_0
-     
-
-def sort_bragg(atoms, g_hkl):
-    """ Sort """
-    structure_factors = get_structure_factors(atoms, g_hkl)
-    allowed = np.absolute(structure_factors) > 0.000001
-    forbidden = np.logical_not(allowed)
-    return allowed, forbidden, structure_factors
-
-
-def get_reflections(g, hkl, tags, structure_factors, zolz_only=False):
-    """ Get all reflection close to Ewald sphere)"""
-
-    k0_magnitude = tags['ewald_center'][2]
-    center_rotated=[0,0,k0_magnitude ]
-    # Calculate excitation errors for all reciprocal lattice points
-    ## Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
-    s = (k0_magnitude**2-np.linalg.norm(g - center_rotated, axis=1)**2)/(2*k0_magnitude)
-    # Determine reciprocal lattice points with excitation error less than the maximum allowed one: Sg_max
-    reflections = abs(s)< tags['Sg_max']
-    sg = s[reflections]
-    g_hkl = g[reflections]
-    hkl = hkl[reflections]
-    laue_zone = np.sum(hkl * tags['zone_hkl'], axis=1)
-    if zolz_only:
-        zolz = laue_zone == 0
-    else:
-        zolz = [True]*len(g_hkl[:, 2])
-    
-    structure_factors = np.absolute(structure_factors[reflections])
-    
-    
-    if zolz_only:
-        allowed = np.absolute(structure_factors) > 0.000001
-        g = np.array(g_hkl[zolz])[allowed]
-        g_spherical = np.stack([np.linalg.norm(g[:, :2], axis=1), np.arctan2(g[:, 1], g[:, 0]), g[:, 2]], axis=-1)
-        return g_spherical, (hkl[zolz])[allowed],  sg, ((structure_factors[zolz])[allowed]).real**2
-    else:
-        d_theta = get_d_theta(g_hkl, k0_magnitude) # as distance
-        g_spherical = (np.stack((np.linalg.norm(g_hkl[:, :2], axis=1), np.arctan2(g_hkl[:, 1], g_hkl[:, 0]), g_hkl[:, 2], d_theta), axis=1))
-        return g_spherical, hkl, sg, structure_factors
 
 
 def get_bragg_reflections(atoms, in_tags, verbose=False):
@@ -377,64 +276,74 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     if zone_hkl is None:
         raise ValueError('zone_hkl must be provided in tags')
     hkl_max = in_tags.setdefault('hkl_max', 10)
-    
-    in_tags.setdefault('Sg_max', 0.03)  # 1/Ang  maximum allowed excitation error
+
+    sg_max = in_tags.setdefault('Sg_max', 0.03)  # 1/Ang  maximum allowed excitation error
     acceleration_voltage = in_tags.setdefault('acceleration_voltage', 100e3)
     mistilt_alpha = in_tags.setdefault('mistilt_alpha', 0)
     mistilt_beta = in_tags.setdefault('mistilt_beta', 0)
 
-    k0_magnitude = get_incident_wave_vector(atoms, acceleration_voltage)
-
-    # in zone axis:
-    theta, phi = find_angles(zone_hkl)
-    rotation_matrix = get_rotation_matrix([-phi, theta, 0], in_radians=True)
-    center_rotated = [0, 0, k0_magnitude]
-
-    laue_circle = [np.tan(mistilt_alpha) * k0_magnitude, -np.sin(mistilt_beta) * k0_magnitude]
-
     # rotate in zone axis
-    g, hkl = get_all_g_vectors(hkl_max, atoms)
+    g_non_rot, hkl_all = get_all_g_vectors(hkl_max, atoms)
 
-    structure_factors = get_structure_factors(atoms, g)
-    g_rotated = np.dot(g, rotation_matrix)
-    in_tags.update({'ewald_center': center_rotated,
-                    'laue_circle': laue_circle})
+    ewald_center = ewald_sphere_center(acceleration_voltage, atoms, zone_hkl)
+    k0_magnitude = np.linalg.norm(ewald_center)
+    laue_circle = [mistilt_alpha, -mistilt_beta/np.pi*2.1]
+
+    s = (k0_magnitude**2-np.linalg.norm(g_non_rot - ewald_center, axis=1)**2)/(2*k0_magnitude)
+    reflections = np.abs(s)<sg_max
+
+    g = g_non_rot[reflections]
+    hkl = np.array(hkl_all[reflections])
+    sg = s[reflections]
+    # Weiss Zone Law
+    laue_zone = np.sum(hkl * zone_hkl, axis=1)
+
     out_tags = {}
 
     # Do we have a mistilt
     if np.linalg.norm(laue_circle) > 0:
         print('mistilt')
         # Kikuchi first
-        g_kikuchi, hkl_kikuchi, sg_kikuchi, structure_factors_kikuchi = get_reflections(g_rotated,
-                                                hkl, in_tags, structure_factors, zolz_only=True)
-        out_tags['Kikuchi'] = {'g': g_kikuchi,
-                               'hkl': hkl_kikuchi,
-                               'intensities': structure_factors_kikuchi.real**2,
-                               'excitation_error': sg_kikuchi}
+        zolz = laue_zone == 0
+        g_zolz = g[laue_zone == 0]
+        hkl_zolz = hkl[laue_zone == 0]
+        structure_factors_kikuchi = get_structure_factors(atoms, g_zolz)
+        allowed = np.abs(structure_factors_kikuchi) > 0.000001
+        print(allowed.sum(), len(allowed))
+        g_kikuchi = get_cylinder_coordinates (zone_hkl, g_zolz, k0_magnitude)
+        out_tags['Kikuchi'] = {'g': g_kikuchi[allowed],
+                               'hkl': hkl_zolz[allowed],
+                               'intensities': structure_factors_kikuchi[allowed],
+                               'excitation_error': sg[zolz][allowed],
+                               'laue_circle': laue_circle}
         # add mistilt
         mistilt_matrix = get_rotation_matrix([mistilt_beta, mistilt_alpha,0], in_radians=True)
-        g_rotated = np.dot(g_rotated, mistilt_matrix)
-    
+        g_rotated = np.dot(g_non_rot, mistilt_matrix)
 
+        s = (k0_magnitude**2-np.linalg.norm(g_rotated - ewald_center, axis=1)**2)/(2*k0_magnitude)
+        reflections = np.abs(s)<sg_max
 
-    g_spherical, hkl, sg, structure_factors = get_reflections(g_rotated, hkl, in_tags, 
-                                                              structure_factors, zolz_only=False)
-    
-    allowed = np.absolute(structure_factors) > 0.000001
+        g = g_rotated[reflections]
+        hkl = np.array(hkl_all[reflections])
+        sg = s[reflections]
+        # Weiss Zone Law of new hkl
+        laue_zone = np.sum(hkl * zone_hkl, axis=1)
+
+    structure_factors = get_structure_factors(atoms, g)
+    allowed = np.abs(structure_factors) > 0.000001
     forbidden = np.logical_not(allowed)
 
     f_allowed = structure_factors[allowed]
-    # Weiss Zone Law
-    laue_zone = np.sum(hkl * zone_hkl, axis=1)
+    g_angles = get_cylinder_coordinates (zone_hkl, g, k0_magnitude)
 
     if verbose:
         print(f'Of the {hkl.shape[0]} possible reflection {allowed.sum()} are allowed.')
 
     zolz = laue_zone[allowed] == 0
     out_tags['allowed'] = {'hkl': hkl[allowed][:],
-                           'g': g_spherical[allowed, :],
+                           'g': g_angles[allowed, :],
                            'excitation_error': sg[allowed],
-                           'intensities': structure_factors[allowed].real**2,
+                           'intensities': structure_factors[allowed],
                            'Laue_Zone': laue_zone[allowed],
                            'ZOLZ': laue_zone[allowed] == 0,
                            'FOLZ': laue_zone[allowed] == 1,
@@ -442,15 +351,14 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
                            'HOLZ': laue_zone[allowed] > 0,
                            'HOLZ_plus': laue_zone[allowed] > 2}
     out_tags['forbidden'] = {'hkl':  hkl[forbidden][:],
-                             'g':  g_spherical[forbidden, :],
+                             'g':  g_angles[forbidden, :],
                              'Laue_Zone': laue_zone[forbidden],
                              'ZOLZ': laue_zone[forbidden] == 0,
                              'HOLZ': laue_zone[forbidden] > 0}
     out_tags.update({'K_0': k0_magnitude,
                      'laue_zone': laue_zone,
-                     'Laue_circle': laue_circle,
+                     'aue_circle': laue_circle,
                      'allowed_all': allowed})
-                     
     # Calculate Intensity of beams  Reimer 7.25
     thickness = in_tags.setdefault('thickness', 0.0)
     if thickness > 0.1:
@@ -459,15 +367,17 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
         xi_g = np.real(np.pi * atoms.cell.volume * k0_magnitude / f_allowed)
         s_eff = np.sqrt(sg[allowed]**2 + xi_g**-2)
 
-        i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
+        i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2
+                      / (np.pi * s_eff)**2)
         out_tags['allowed']['Ig'] = i_g
         out_tags['thickness'] = thickness
-        
+
     out_tags['parameters'] = in_tags
     if 'Kikuchi' not in out_tags:
         out_tags['Kikuchi'] = {'hkl': hkl[allowed][zolz],
-                               'g': g_spherical[allowed][zolz],
-                               'intensities': structure_factors[allowed][zolz].real**2}
+                               'g': g_angles[allowed][zolz],
+                               'laue_circle': laue_circle,
+                               'intensities': structure_factors[allowed][zolz]}
     if verbose:
         print (f'Of those, there are {out_tags["allowed"]["ZOLZ"].sum()} in ZOLZ',
                f' and {out_tags["allowed"]["HOLZ"].sum()} in HOLZ')
@@ -476,97 +386,6 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     get_dynamically_activated(out_tags, verbose=verbose)
     return out_tags
 
-def find_sorted_bragg_reflections2(atoms, tags, verbose):
-    """ Find and sort all Bragg reflections within excitation error Sg_max"""
-    # #######################
-    # Find all Miller indices whose reciprocal point lies near the Ewald sphere with radius k_0
-    # within a maximum excitation error sg
-    # #######################
-    k_0 = tags['incident_wave_vector']
-    sg_max = tags['Sg_max']  # 1/Ang  maximum allowed excitation error
-
-    hkl_all = get_all_miller_indices(tags['hkl_max'])
-    # all evaluated reciprocal_unit_cell points
-    g_non_rot = np.dot(hkl_all, tags['reciprocal_unit_cell'])
-    g_norm = np.linalg.norm(g_non_rot, axis=1)   # length of all vectors
-    g = np.dot(g_non_rot, tags['rotation_matrix'])
-
-    # #######################
-    # Calculate excitation errors for all reciprocal_unit_cell points
-    # #######################
-
-    # Zuo and Spence, 'Adv TEM', 2017 -- Eq 3:14
-    #excitation error sg = (k0^2 - |g - k0|^2 ) / 2k0
-    excitation_error = (k_0**2-np.linalg.norm(g - tags['k0_vector'], axis=1)**2)/(2*k_0)
-
-    # #######################
-    # Determine reciprocal_unit_cell points with excitation error
-    # less than the maximum allowed one: Sg_max
-    # #######################
-
-    # This is now a boolean array with True for all possible reflections
-    reflections = abs(excitation_error) < sg_max
-
-    sg = excitation_error[reflections]
-    g_hkl = g[reflections]
-    g_hkl_non_rot = g_non_rot[reflections]
-    hkl = hkl_all[reflections]
-    g_norm = g_norm[reflections]
-
-    if verbose:
-        print(f'Of the {len(g)} tested reciprocal_unit_cell points,'+
-              f' {len(g_hkl)} have an excitation error less than {sg_max:.2f} 1/nm')
-
-    # #################################
-    # Calculate Structure Factors
-    # ################################
-    structure_factor = get_structure_factors(atoms, g_hkl_non_rot)
-
-    # ###########################################
-    # Sort reflection in allowed and forbidden #
-    # ###########################################
-    allowed = np.absolute(structure_factor) > 0.000001    # allowed within numerical erro
-    if verbose:
-        print(f'Of the {hkl.shape[0]} possible reflection {allowed.sum()} are allowed.')
-    # information of allowed reflections
-    f_allowed = structure_factor[allowed]
-
-    atoms.info['diffraction'] = {}
-    dif = atoms.info['diffraction']
-    dif['allowed'] = {}
-    dif['allowed']['sg'] = sg[allowed]
-    dif['allowed']['hkl'] = hkl[allowed][:]
-    dif['allowed']['g'] = g_hkl[allowed][:]
-    dif['allowed']['g_non_rot'] = g_non_rot
-
-    dif['allowed']['structure_factor'] = f_allowed
-
-    # Calculate Extinction Distance  Reimer 7.23
-    # - makes only sense for non-zero structure_factor
-    xi_g = np.real(np.pi * atoms.cell.volume * k_0 / f_allowed)
-
-    # ###########################
-    # Calculate Intensities (of allowed reflections)
-    # ###########################
-
-    # Calculate Intensity of beams  Reimer 7.25
-    if 'thickness' not in tags:
-        tags['thickness'] = 0.
-    thickness = tags['thickness']
-    if thickness > 0.1:
-        s_eff = np.sqrt(sg[allowed]**2 +1/xi_g**2)
-
-        i_g = np.real(np.pi**2 / xi_g**2 * np.sin(np.pi * s_eff * thickness)**2 / (np.pi * s_eff)**2)   
-        dif['allowed']['Ig'] = i_g
-
-    dif['allowed']['intensities'] = np.real(f_allowed)**2
-
-    # information of forbidden reflections
-    forbidden = np.logical_not(allowed)
-    dif['forbidden'] = {}
-    dif['forbidden']['sg'] = sg[forbidden]
-    dif['forbidden']['hkl'] = hkl[forbidden]
-    dif['forbidden']['g'] = g_hkl[forbidden]
 
 def center_of_laue_circle(atoms, tags):
     """ Center of Laue circle in microscope coordinates"""
@@ -577,299 +396,3 @@ def center_of_laue_circle(atoms, tags):
     laue_circle[2] = 0
 
     atoms.info.setdefault('diffraction', {})['Laue_circle'] = laue_circle
-
-
-def calculate_laue_zones(atoms, tags, verbose):
-    """ Calculate Laue Zones (of allowed reflections)
-
-    ###########################
-    Below is the expression given in most books.
-    However, that would only work for orthogonal crystal systems
-    Laue_Zone = abs(np.dot(hkl_allowed,tags['zone_hkl']))  
-    works only for orthogonal systems
-
-    Below expression works for all crystal systems
-    Remember we have already tilted, and so the dot product is trivial
-    and gives only the z-component.
-    """
-    dif = atoms.info['diffraction']
-    length_zone_axis = np.linalg.norm(np.dot(tags['zone_hkl'], tags['unit_cell']))
-    g_norm_allowed =  np.linalg.norm(dif['allowed']['g'])
-    laue_zone = abs(np.dot(dif['allowed']['hkl'], tags['nearest_zone_axis']))
-    dif['allowed']['Laue_Zone'] = laue_zone
-    zolz_forbidden = abs(np.floor(dif['forbidden']['g'][:, 2]
-                                  * length_zone_axis+0.5)) == 0
-    dif['forbidden']['Laue_Zone'] = zolz_forbidden
-    dif['allowed']['ZOLZ'] = laue_zone == 0
-    dif['allowed']['FOLZ'] = laue_zone == 1
-    dif['allowed']['SOLZ'] = laue_zone == 2
-    dif['allowed']['HOLZ'] = laue_zone > 0
-    dif['allowed']['HOLZ_plus'] = dif['allowed']['HHOLZ'] = laue_zone > 2
-
-    if verbose:
-        print(f' There are {(laue_zone == 0).sum()} allowed reflections in the ',
-              "zero order Laue Zone")
-        print(f' There are {(laue_zone == 1).sum()} allowed reflections in the ',
-              "first order Laue Zone")
-        print(f' There are {(laue_zone == 2).sum()} allowed reflections in the ',
-              "second order Laue Zone")
-        print(f' There are {(laue_zone > 2).sum()} allowed reflections in the ',
-              "other higher order Laue Zones")
-        print(f'Length of zone axis vector in real space {length_zone_axis:.3f} nm')
-
-    if verbose == 2:
-        print(' hkl  \t Laue zone \t Intensity (*1 and \t log) \t length \n')
-        for i, hkl in enumerate(dif['allowed']['hkl']):
-            print(f" {hkl} \t {laue_zone[i]} \t {dif['allowed']['intensities'][i]:.3f} \t",
-                  f"  {np.log(dif['allowed']['intensities'][i]+1):.3f} ",
-                  f"\t  {g_norm_allowed[i]:.3f}   ")
-
-
-def get_dynamical_allowed(atoms, verbose):
-    """ Determine which forbidden reflections can be dynamically activated"""
-    dif = atoms.info['diffraction']
-    hkl_allowed = dif['allowed']['hkl']
-    hkl_forbidden = dif['forbidden']['hkl']
-    zolz = dif['allowed']['ZOLZ']
-    zolz_forbidden = dif['forbidden']['Laue_Zone']
-    double_diffraction = (np.sum(np.array(list(itertools.combinations(
-        hkl_allowed[zolz], 2))), axis=1))
-
-    dynamical_allowed = []
-    still_forbidden = []
-    for i, hkl in enumerate(hkl_forbidden):
-        if zolz_forbidden[i]:
-            if hkl.tolist() in double_diffraction.tolist():
-                dynamical_allowed.append(i)
-            else:
-                still_forbidden.append(i)
-    dif['forbidden']['dynamically_activated'] = dynamical_allowed
-    dif['forbidden']['forbidden'] = dynamical_allowed
-    if verbose:
-        print(f'There are {len(dynamical_allowed)} forbidden but',
-              " dynamical activated diffraction spots:")
-        # print(tags['forbidden']['hkl'][dynamical_allowed])
-
-
-def calculate_holz2(atoms, tags):
-    """ Calculate HOLZ lines (of allowed reflections)"""
-    dif = atoms.info['diffraction']
-    intensities = dif['allowed']['intensities']
-    k_0 = tags['incident_wave_vector']
-    g_norm_allowed = np.linalg.norm(dif['allowed']['g'], axis=1)
-
-    # Dynamic Correction
-    # Equation Spence+Zuo 3.86a
-    gamma_1 = - 1./(2.*k_0) * (intensities / (2.*k_0*dif['allowed']['sg'])).sum()
-
-    # Equation Spence+Zuo 3.84
-    kg = k_0 - k_0*gamma_1/(dif['allowed']['g'][:, 2]+1e-15)
-    kg[dif['allowed']['ZOLZ']] = k_0
-
-    # Calculate angle between K0 and deficient cone vector
-    # For dynamic calculations K0 is replaced by kg
-    kg[:] = k_0
-    
-    d_theta = np.arcsin(g_norm_allowed/kg/2.) - (np.arcsin(np.abs(dif['allowed']['g'][:, 2])
-                                                           /g_norm_allowed))
-
-    # calculate length of distance of deficient cone to K0 in ZOLZ plane
-    gd_length = 2*np.sin(d_theta/2) * k_0
-
-    # Calculate nearest point of HOLZ and Kikuchi lines
-    g_closest = dif['allowed']['g'].copy()
-    g_closest = g_closest*(gd_length/np.linalg.norm(g_closest, axis=1))[:, np.newaxis]
-
-    
-
-    # calculate and save line in Hough space coordinates (distance and theta)
-    slope = g_closest[:, 0]/(g_closest[:, 1]+1e-10)
-    distance = gd_length
-    theta = np.arctan2(dif['allowed']['g'][:, 0], dif['allowed']['g'][:, 1])
-
-    dif['HOLZ'] = {}
-    dif['HOLZ']['slope'] = slope
-    # a line is now given by
-
-    dif['HOLZ']['distance'] = distance
-    dif['HOLZ']['theta'] = theta
-    dif['HOLZ']['g_deficient'] = g_closest
-    dif['HOLZ']['g_excess'] = g_closest + dif['allowed']['g']
-    dif['HOLZ']['ZOLZ'] = dif['allowed']['ZOLZ']
-    dif['HOLZ']['HOLZ'] = dif['allowed']['HOLZ']
-    dif['HOLZ']['FOLZ'] = dif['allowed']['FOLZ']
-    dif['HOLZ']['SOLZ'] = dif['allowed']['SOLZ']
-    dif['HOLZ']['HHOLZ'] = dif['allowed']['HHOLZ']  # even higher HOLZ
-    dif['HOLZ']['hkl'] = dif['allowed']['hkl']
-    dif['HOLZ']['intensities'] = intensities
-
-####################################
-# Calculate HOLZ and Kikuchi Lines #
-####################################
-def calculate_kikuchi(atoms, tags, verbose):
-    """ Calculate Kikuchi lines (of allowed reflections)"""
-    tags_kikuchi = tags.copy()
-    tags_kikuchi.set_default('mistilt_alpha', .0)
-    tags_kikuchi.set_default('mistilt_beta', .0)
-    dif = atoms.info['diffraction']
-    k_0 = tags['incident_wave_vector']
-    k0_vector = tags['k0_vector']
-
-    for i in range(1):  # tags['nearest_zone_axes']['amount']):
-        zone_tags = tags['nearest_zone_axes'][str(i)]
-        tags_kikuchi['zone_hkl'] = zone_tags['hkl']
-        if verbose:
-            print('Calculating Kikuchi lines for zone: ', zone_tags['hkl'])
-        tags_kikuchi['Laue_circle'] = dif['Laue_circle']
-        # Rotate to nearest zone axis
-        rotation_matrix = get_zone_rotation(tags_kikuchi)
-
-        g_kikuchi_all = np.dot(dif['allowed']['g_non_rot'], rotation_matrix)
-
-        zolz = abs(np.array(g_kikuchi_all)[:, 2]) < .1
-
-        g_kikuchi = g_kikuchi_all[zolz]
-        excitation_error = (k_0**2-np.linalg.norm(g_kikuchi - k0_vector, axis=1)**2)/(2*k_0)
-        # This is now a boolean array with True for all possible reflections
-        reflections = abs(excitation_error) < .01
-        g_kikuchi = g_kikuchi[reflections]
-        hkl_all = get_all_miller_indices(tags['hkl_max'])
-        hkl_kikuchi = hkl_all[zolz][reflections]
-        structure_factors = get_structure_factors(atoms, g_kikuchi)
-        allowed_kikuchi = np.absolute(structure_factors) > 0.000001
-
-        g_kikuchi = g_kikuchi[allowed_kikuchi]
-        hkl_kikuchi = hkl_kikuchi[allowed_kikuchi]
-
-        gd2 = g_kikuchi / 2.
-        gd2[:, 2] = 0.
-
-        # calculate and save line in Hough space coordinates (distance and theta)
-        slope2 = gd2[:, 0] / (gd2[:, 1] + 1e-20)
-        distance2 = np.sqrt(gd2[:, 0] * gd2[:, 0] + gd2[:, 1] * gd2[:, 1])
-        theta2 = np.arctan(slope2)
-
-        dif['Kikuchi'] = {}
-        dif['Kikuchi']['slope'] = slope2
-        dif['Kikuchi']['distance'] = distance2
-        dif['Kikuchi']['theta'] = theta2
-        dif['Kikuchi']['hkl'] = hkl_kikuchi
-        dif['Kikuchi']['g_hkl'] = g_kikuchi
-        dif['Kikuchi']['g_deficient'] = gd2
-        dif['Kikuchi']['min_dist'] = gd2 + dif['Laue_circle']
-
-def kinematic_scattering(atoms, verbose=False):
-    """
-        All kinematic scattering calculation
-
-        Calculates Bragg spots, Kikuchi lines, excess, and deficient HOLZ lines
-
-        Parameters
-        ----------
-        atoms: ase.Atoms
-            object with crystal structure:
-            and with experimental parameters in info attribute:
-            'acceleration_voltage_V', 'zone_hkl', 'Sg_max', 'hkl_max'
-            Optional parameters are:
-            'mistilt', convergence_angle_mrad', and 'crystal_name'
-            verbose = True will give extended output of the calculation
-        verbose: boolean
-            default is False
-
-        Returns
-        -------
-        atoms:
-            There are three sub_dictionaries in info attribute:
-            ['allowed'], ['forbidden'], and ['HOLZ']
-            ['allowed'] and ['forbidden'] dictionaries contain:
-                ['sg'], ['hkl'], ['g'], ['structure_factor'], ['intensities'],
-                ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], ['HHOLZ'], ['label'], and ['Laue_zone']
-            the ['HOLZ'] dictionary contains:
-                ['slope'], ['distance'], ['theta'], ['g_deficient'], ['g_excess'], 
-                ['hkl'], ['intensities'],
-                ['ZOLZ'], ['FOLZ'], ['SOLZ'], ['HOLZ'], and  ['HHOLZ']
-            Please note that the Kikuchi lines are the HOLZ lines of ZOLZ
-
-            There are also a few parameters stored in the main dictionary:
-                ['wave_length_nm'], ['reciprocal_unit_cell'], ['inner_potential_V'], 
-                ['incident_wave_vector'],['volume'], ['theta'], ['phi'], 
-                and ['incident_wave_vector_vacuum']
-    """
-
-    # Check sanity
-
-    atoms.info.setdefault('output', {})
-    atoms.info.setdefault('experimental', {})
-    output = atoms.info['output']
-    output['SpotPattern'] = True
-
-    if not check_sanity(atoms):
-        print('Input is not complete, stopping')
-        print('Try \'example()\' for example input')
-        return
-
-    tags = atoms.info['experimental']
-
-    tags['wave_length'] = get_wavelength(tags['acceleration_voltage_V'], unit='Å')
-
-    # ###########################################
-    # reciprocal_unit_cell
-    # #########################################
-    get_unit_cell(atoms, tags)
-
-    # ##############################################
-    # Incident wave vector k0 in vacuum and material
-    # ##############################################
-
-    k_0 = get_incident_wave_vector(atoms, tags, verbose)
-    # Incident wave vector K0 in vacuum and material
-    tags['convergence_angle_A-1'] = k_0*np.sin(tags['convergence_angle_mrad']/1000.)
-
-    # ############
-    # Rotate
-    # ############
-
-    # get rotation matrix to rotate zone axis onto z-axis
-    get_zone_rotation(tags)
-
-    # rotate incident wave vector
-    k0_unit_vector = np.array([0, 0, 1])  # incident unit wave vector
-    k0_vector = k0_unit_vector * k_0  # incident  wave vector
-    tags['k0_vector'] = k0_vector
-    dif = get_bragg_reflections(atoms, tags, verbose)
-
-    # ##########################
-    # Make pretty labels
-    # ##########################
-    # dif = atoms.info['diffraction']
-    dif['allowed']['label'] = make_pretty_labels(dif['allowed']['hkl'])
-    dif['forbidden']['label'] = make_pretty_labels(dif['forbidden']['hkl'])
-
-    # Center of Laue Circle
-    center_of_laue_circle(atoms, tags)
-
-    if verbose:
-        output_verbose(atoms, tags)
-
-    # ###########################
-    # Calculate Laue Zones (of allowed reflections)
-    # ###########################
-    calculate_laue_zones(atoms, tags, verbose)
-
-    # ##########################
-    # Dynamically Activated forbidden reflections
-    # ##########################
-    get_dynamical_allowed(atoms, verbose)
-
-    # ###################################
-    # Calculate HOLZ and Kikuchi Lines #
-    # ###################################
-    calculate_holz2(atoms, tags)
-
-    ####################################
-    # Calculate HOLZ and Kikuchi Lines #
-    ####################################
-    calculate_kikuchi(atoms, tags, verbose)
-
-    if verbose:
-        print('pyTEMlib\'s  \"kinematic_scattering\" finished')

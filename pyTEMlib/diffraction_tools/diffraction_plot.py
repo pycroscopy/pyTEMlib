@@ -246,7 +246,6 @@ def circles(x, y, s, c='b', vmin=None, vmax=None, **kwargs):
     (http://opensource.org/licenses/BSD-3-Clause)
     """
 
-    
     if np.isscalar(c):
         kwargs.setdefault('color', c)
         c = None
@@ -401,24 +400,24 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
         tags = atoms
     elif isinstance(atoms, ase.Atoms):
         if 'Ring_Pattern' in atoms.info:
-            tags = atoms.info   
+            tags = atoms.info
         else:
-           raise TypeError('Ring_Pattern information must be in info')
- 
+            raise TypeError('Ring_Pattern information must be in info')
+
     elif hasattr(diffraction_pattern, 'metadata'):
         if diffraction_pattern.metadata.get('Ring_Pattern', {}):
             tags = diffraction_pattern.metadata['Ring_Pattern']
     else:
         raise TypeError('Ring_Pattern info must be in sidpy Dataset or dictionary form')
     if diffraction_pattern is not None:
-        if not(diffraction_pattern, sidpy.Dataset):
+        if not isinstance(diffraction_pattern, sidpy.Dataset):
             print('diffraction_pattern must be a sidpy.Dataset \n -> Ignoring this variable')
             diffraction_pattern = None
     unique = tags['Ring_Pattern']['allowed']['g norm'] *10 # now in 1/nm
     family = tags['Ring_Pattern']['allowed']['hkl']
     intensity = np.array(tags['Ring_Pattern']['allowed']['structure_factor'])
     # label = tags['Ring_Pattern']['allowed']['label']
-    
+
     if diffraction_pattern is not None:
         scale = diffraction_pattern.get_image_dims(return_axis=True)[0].slope
         extent=diffraction_pattern.get_extent([0,1])
@@ -428,7 +427,7 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
     else:
         scale = 0.01  # 1/nm per pixel
         extent = (-256*scale, 256*scale, -256*scale, 256*scale)
-        profile = None  
+        profile = None
     intensity *= extent[1]*0.25 /intensity.max()
 
     tags.setdefault('label_color', 'navy')
@@ -498,6 +497,7 @@ def plot_ring_pattern(atoms, diffraction_pattern=None):
 
 
 def plotting_coordinates(g, rotation=0., laue_circle=[0,0], feature='spot'):
+    """ Calculate plotting coordinates for spots and lines"""
     if feature == 'HOLZ':
         # Note: d_theta in g{: 3] is negative so we need to rotate phi by 180 degree
         x = g[:, 3] * np.cos(g[:, 1]+np.pi+rotation)*10
@@ -505,13 +505,13 @@ def plotting_coordinates(g, rotation=0., laue_circle=[0,0], feature='spot'):
         return np.stack((x, y, np.tan(g[:, 1]+rotation-np.pi/2)), axis= 1)
     elif feature == 'Kikuchi':
         # Note: d_theta in g{: 3] is negative so we need to rotate phi by 180 degree
-        x = (g[:, 0] * np.cos(g[:, 1]+np.pi+rotation)*10)/2+laue_circle[0]*10
-        y = g[:, 0] * np.sin(g[:, 1]+np.pi+rotation)*10/2+laue_circle[1]*10
+        x = (g[:, 0] * np.cos(g[:, 1]+np.pi+rotation))*10/2+laue_circle[0]*10
+        y = (g[:, 0] * np.sin(g[:, 1]+np.pi+rotation))*10/2+laue_circle[1]*10
         return np.stack((x, y, np.tan(g[:, 1]+rotation-np.pi/2)), axis= 1)
 
     x = g[:, 0] * np.cos(g[:, 1]+rotation)*10
     y = g[:, 0] * np.sin(g[:, 1]+rotation)*10
-    return np.stack((x, y), axis= 1) 
+    return np.stack((x, y), axis= 1)
 
 
 def plot_lines(lines, color, alpha, linewidth, label, indices=None):
@@ -586,7 +586,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
     else:
         intensity = tags_out['allowed']['intensities']
     convergence_angle = tags_out.setdefault('parameters', {}).setdefault('convergence_angle', 0)
-    radius = np.tan(convergence_angle/1000)*tags_out['K_0']*10 
+    radius = np.tan(convergence_angle/1000)*tags_out['K_0']*10
     if verbose:
         print(f'convergence_angle of {convergence_angle:.1f} is {radius:.2f} 1/nm')
     if radius < 0.01:
@@ -594,7 +594,8 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
 
     if tags_out['output'].setdefault('linewidth_Kikuchi', 1) < 0:
         if len(tags_out['Kikuchi']['intensities']) > 0:
-            intensity_kikuchi = tags_out['Kikuchi']['intensities'] * 4. / tags_out['Kikuchi']['intensities'].max()
+            intensity_kikuchi = (tags_out['Kikuchi']['intensities'] * 4.0
+                                 / tags_out['Kikuchi']['intensities'].max())
         else:
             intensity_kikuchi = intensity
     else:
@@ -689,7 +690,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
                   'function of kinematic_scattering library first!')
         else:
             zolz_forbidden = tags_out['forbidden']['ZOLZ']
-            activated = tags_out['forbidden']['dynamically_activated']  
+            activated = tags_out['forbidden']['dynamically_activated']
             dyn_allowed = points_forbidden[zolz_forbidden][activated]
             color = laue_color[0]
             ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
@@ -699,7 +700,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, verbose=False):
                     plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
             if tags_out['output'].setdefault('plot_forbidden', False):
                 rest_forbidden = zolz_forbidden.copy()
-                rest_forbidden[zolz_forbidden==True] = np.logical_not(activated)
+                rest_forbidden[zolz_forbidden] = np.logical_not(activated)
                 forbidden_g = points_forbidden [rest_forbidden, :]
                 forbidden_hkl = tags_out['forbidden']['hkl'][rest_forbidden, :]
                 ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)

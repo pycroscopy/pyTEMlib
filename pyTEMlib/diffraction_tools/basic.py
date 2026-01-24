@@ -229,8 +229,32 @@ def get_all_g_vectors(hkl_max, atoms):
     g = np.dot(hkl, atoms.cell.reciprocal())  # all evaluated reciprocal lattice points
     return g, hkl
 
-
 def get_structure_factors(atoms, g_hkl):
+    """ Get structure factors for given reciprocal lattice points g_hkl"""
+
+    form_factor = np.zeros((len(atoms.positions), g_hkl.shape[0]))
+    for symbol in np.unique(atoms.symbols):
+        atom_positions = atoms.symbols==symbol
+        form_factor[(atom_positions)] = get_form_factor(symbol, np.linalg.norm(g_hkl, axis=1))
+    structure_factors = calculate_structure_factors(np.array(g_hkl),
+                                                    form_factor,
+                                                    np.array(atoms.positions))
+    return structure_factors # np.array(structure_factors).sum(axis=0)
+
+def calculate_structure_factors(all_g, form_factor, atom_positions):
+    """ Calculate structure factors for given reciprocal lattice points g_hkl"""
+    structure_factors = np.zeros(len(all_g))
+    for i, g_i in enumerate(all_g):
+        struct_factor = 0.0+0.0*1j
+        for j, f_j in enumerate(form_factor):
+            f_q_j = f_j[i]
+            r_j = atom_positions[j]
+            struct_factor += f_q_j * (np.exp(-2*np.pi*1j*np.dot(g_i, r_j))).sum()
+        structure_factors[i] = (struct_factor*struct_factor.conj()).real/(form_factor[:,i]).sum()
+    return np.array(structure_factors)
+
+
+def get_structure_factors_old(atoms, g_hkl):
     """ Calculate structure factors for given reciprocal lattice points g_hkl"""
     g_norm = np.linalg.norm(g_hkl, axis=1)
     structure_factors = []
@@ -249,7 +273,7 @@ def get_inner_potential(atoms):
     u_0 = 0  # in (Ang)
     # atom form factor of zero reflection angle is the inner potential in 1/A
     for atom in atoms:
-        u_0 += form_factor(atom.symbol, 0)
+        u_0 += get_form_factor(atom.symbol, 0)
     scattering_factor_to_volts = ((scipy.constants.h*1e10)**2
                                   / (2 * np.pi * scipy.constants.m_e * scipy.constants.e)
                                   / atoms.cell.volume)
@@ -261,7 +285,7 @@ def get_incident_wave_vector(atoms, acceleration_voltage, verbose=False):
     # atom form factor of zero reflection angle is the
     # inner potential in 1/A
     for atom in atoms:
-        u0 += form_factor(atom.symbol, 0.0)
+        u0 += get_form_factor(atom.symbol, 0.0)
 
     e = scipy.constants.elementary_charge
     h = scipy.constants.Planck
@@ -285,9 +309,25 @@ def ewald_sphere_center(acceleration_voltage, atoms, zone_hkl):
     center = center / np.linalg.norm(center) * incident_wave_vector
     return center
 
+
+def get_cylinder_coordinates (zone_hkl, g, k0_magnitude):
+    """ Get cylindrical coordinates of g vectors around zone axis"""
+    theta, phi = find_angles(zone_hkl)
+    rotation_matrix = get_rotation_matrix([-phi, theta, 0], in_radians=True)
+    center_rotated = [0, 0, k0_magnitude]
+
+    g_rotated = np.dot(g, rotation_matrix)
+    return  np.stack([np.arccos((g_rotated[:, 2]+k0_magnitude)
+                                /np.linalg.norm(g_rotated+center_rotated, axis=1)),
+                      np.arctan2(g_rotated[:, 1], g_rotated[:, 0]),
+                      g_rotated[:, 2],
+                      np.linalg.norm(g, axis=1)],
+                     axis=-1)
+
+
 def find_nearest_zone_axis(tags):
     """Test all zone axis up to a maximum of hkl_max"""
-  
+
     hkl_max = 5
     # Make all hkl indices
     zones_hkl = get_all_miller_indices(hkl_max)
@@ -587,10 +627,10 @@ def make_pretty_labels(hkls, hex_label=False):
 def feq(element, q):
     """Atomic form factor parametrized in 1/Angstrom"""
     warn('feq is deprecated, please use form_factor instead', DeprecationWarning, stacklevel=2)
-    return form_factor(element, q)
+    return get_form_factor(element, q)
 
 
-def form_factor(element, q):
+def get_form_factor(element, q):
     """Atomic form factor parametrized in 1/Angstrom but converted to 1/Angstrom
 
     The atomic form factor is from reKirkland: Advanced Computing in 
@@ -603,8 +643,8 @@ def form_factor(element, q):
     ----------
     element: string
         element name
-    q: float
-        magnitude of scattering vector in 1/Angstrom -- (=> exp(-i*g.r), 
+    q: float or numpy.ndarray
+        magnitude(s) of scattering vector(s) in 1/Angstrom -- (=> exp(-i*g.r), 
         physics negative convention)
 
     Returns
@@ -620,21 +660,27 @@ def form_factor(element, q):
             raise TypeError('Please use standard convention for element ',
                             'abbreviation with not more than two letters')
         raise TypeError('Element {element} not known to electron diffraction should')
-    if not isinstance(q, (float, int)):
-        raise TypeError('Magnitude of scattering vector has to be a number of type float')
+    if isinstance(q, float):
+        q = np.array([q])
+
+    if not isinstance(q, np.ndarray):
+        raise TypeError('Magnitude of scattering vector has to be a number',
+                        ' or numpy array of type float')
 
     # q is in magnitude of scattering vector in 1/A -- (=> exp(-i*g.r),
     # physics negative convention)
-    param = electronFF[element]
-    f_lorentzian = 0
-    f_gauss = 0
-    for i in range(3):
-        f_lorentzian += param['fa'][i]/(q**2 + param['fb'][i])
-        f_gauss += param['fc'][i]*np.exp(-q**2 * param['fd'][i])
+    parameter_dict = electronFF[element]
+    f_parameter = np.array([parameter_dict[key] for key in ['fa', 'fb', 'fc', 'fd']])
+    q = (np.array([q, q, q])).T
+    f = ((f_parameter[0]/(q**2 + f_parameter[1])).sum(axis=1)
+         + (f_parameter[2]*np.exp(-q**2 * f_parameter[3])).sum(axis=1))
+    # for i in range(3):
+    #    f_lorentzian += param['fa'][i]/(q**2 + param['fb'][i])
+    #    f_gauss += param['fc'][i]*np.exp(-q**2 * param['fd'][i])
 
     # Conversion factor from scattering factors to volts. h^2/(2pi*m0*e),
     # see e.g. Kirkland eqn. C.5
     # !NB RVolume is already in A unlike RPlanckConstant
     # scattering_factor_to_volts=(PlanckConstant**2)*(AngstromConversion**2)
     #                             /(2*np.pi*ElectronMass*ElectronCharge)
-    return f_lorentzian + f_gauss  # * scattering_factor_to_volts
+    return f  # f_lorentzian + f_gauss  # * scattering_factor_to_volts
