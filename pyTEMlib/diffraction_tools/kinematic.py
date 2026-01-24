@@ -262,7 +262,7 @@ def calculate_holz(dif):
     dif['HOLZ']['FOLZ'] = laue_zones == 1
     dif['HOLZ']['SOLZ'] = laue_zones == 2
     dif['HOLZ']['HOLZ_plus'] = laue_zones > 2  # even higher HOLZ
-    dif['HOLZ']['laue_zones'] = laue_zones
+    dif['HOLZ']['Laue_zones'] = laue_zones
     dif['HOLZ']['hkl'] = dif['allowed']['hkl'][holz]
     dif['HOLZ']['intensities'] = intensities[holz]
 
@@ -315,7 +315,7 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
                                'hkl': hkl_zolz[allowed],
                                'intensities': structure_factors_kikuchi[allowed],
                                'excitation_error': sg[zolz][allowed],
-                               'laue_circle': laue_circle}
+                               'Laue_circle': laue_circle}
         # add mistilt
         mistilt_matrix = get_rotation_matrix([mistilt_beta, mistilt_alpha,0], in_radians=True)
         g_rotated = np.dot(g_non_rot, mistilt_matrix)
@@ -356,7 +356,7 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
                              'ZOLZ': laue_zone[forbidden] == 0,
                              'HOLZ': laue_zone[forbidden] > 0}
     out_tags.update({'K_0': k0_magnitude,
-                     'laue_zone': laue_zone,
+                     'Laue_zone': laue_zone,
                      'aue_circle': laue_circle,
                      'allowed_all': allowed})
     # Calculate Intensity of beams  Reimer 7.25
@@ -374,9 +374,12 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
 
     out_tags['parameters'] = in_tags
     if 'Kikuchi' not in out_tags:
+        print('make_kikuchi')
+        g_kikuchi = g_angles[allowed][zolz]
+        g_kikuchi[:,0] /=2
         out_tags['Kikuchi'] = {'hkl': hkl[allowed][zolz],
-                               'g': g_angles[allowed][zolz],
-                               'laue_circle': laue_circle,
+                               'g': g_kikuchi,
+                               'Laue_circle': laue_circle,
                                'intensities': structure_factors[allowed][zolz]}
     if verbose:
         print (f'Of those, there are {out_tags["allowed"]["ZOLZ"].sum()} in ZOLZ',
