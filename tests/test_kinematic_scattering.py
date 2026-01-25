@@ -7,11 +7,11 @@ Created on Tue Feb 14 15:07:16 2021
 
 import unittest
 import matplotlib
-matplotlib.use('Agg')
 import numpy as np
 import ase
-
 import pyTEMlib
+
+matplotlib.use('Agg')
 
 class TestUtilityFunctions(unittest.TestCase):
     """Unittest conversion of pytest-based utility function tests."""
@@ -112,9 +112,9 @@ class TestScatteringFunctions(unittest.TestCase):
 
     def test_feq(self):
         """Test atomic scattering factor calculation."""
-        self.assertAlmostEqual(pyTEMlib.diffraction_tools.form_factor('Au', 0.36), 
+        self.assertAlmostEqual(pyTEMlib.diffraction_tools.get_form_factor('Au', 0.36), 
                                7.43164303450277)
-        self.assertAlmostEqual(pyTEMlib.diffraction_tools.form_factor('Si', 1.26), 
+        self.assertAlmostEqual(pyTEMlib.diffraction_tools.get_form_factor('Si', 1.26), 
                                0.5398190143297035)
 
 
