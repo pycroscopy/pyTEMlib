@@ -243,8 +243,10 @@ def calculate_holz(dif):
     kg[:] = k_0
 
     g_allowed = dif['allowed']['g']
-    d_theta = np.abs(g_allowed[:,0]-np.arcsin(g_allowed[:,2]/g_allowed[:,3]))
+     #  g_allowed[:,0] is 2 Bragg angles theta
+    d_theta = (g_allowed[:,0]/2-np.arcsin(g_allowed[:,2]/g_allowed[:,3]))
 
+    
     # Calculate nearest point of HOLZ and Kikuchi lines
     g_closest = dif['allowed']['g'].copy()
     g_closest[:, 0] = d_theta
@@ -264,6 +266,7 @@ def calculate_holz(dif):
     dif['HOLZ']['Laue_zones'] = laue_zones
     dif['HOLZ']['hkl'] = dif['allowed']['hkl'][holz]
     dif['HOLZ']['intensities'] = intensities[holz]
+    dif['HOLZ']['kg'] = kg[holz]
 
     return dif
 

@@ -313,15 +313,15 @@ def ewald_sphere_center(acceleration_voltage, atoms, zone_hkl):
 def get_cylinder_coordinates (zone_hkl, g, k0_magnitude):
     """ Get cylindrical coordinates of g vectors around zone axis"""
     theta, phi = find_angles(zone_hkl)
-    rotation_matrix = get_rotation_matrix([-phi, theta, 0], in_radians=True)
-    center_rotated = [0, 0, k0_magnitude]
+    rotation_matrix = get_rotation_matrix([-phi, theta, 0],in_radians=True)
+    # center_rotated = [0, 0, k0_magnitude]
 
     g_rotated = np.dot(g, rotation_matrix)
-    return  np.stack([np.arccos((g_rotated[:, 2]+k0_magnitude)
-                                /np.linalg.norm(g_rotated+center_rotated, axis=1)),
+    return  np.stack([np.arctan(np.linalg.norm(g_rotated[:, :2], axis=1)/k0_magnitude),
+                               # /np.linalg.norm(center_rotated, axis=1)),
                       np.arctan2(g_rotated[:, 1], g_rotated[:, 0]),
                       g_rotated[:, 2],
-                      np.linalg.norm(g, axis=1)],
+                      np.linalg.norm(g[:,:3], axis=1)],
                      axis=-1)
 
 
