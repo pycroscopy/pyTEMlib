@@ -1,12 +1,15 @@
 """ default microscope parameters from config file
 
 Read microscope CSV file
-
+For easy access to standard microscope parameters
 for pyTEMLib by Gerd
 
 copyright 2012, Gerd Duscher
 updated 2021
 """
+
+# delete this file?
+
 # -*- coding: utf-8 -*-
 
 import csv
