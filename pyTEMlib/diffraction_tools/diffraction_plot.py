@@ -520,7 +520,6 @@ def plotting_coordinates(g, rotation=0., laue_circle=[0,0], feature='spot', k0=N
     if k0 is None:
         unit_mult =  1000  # mrad
         distance =  g[:, 0]
-        laue_circle = laue_circle
     else:
         unit_mult = 10  # 1/nm to 1/Angstrom
         distance = np.arctan(g[:, 0])*k0   # angle in rad * k0 in 1/A -> distance in 1/A
@@ -548,7 +547,7 @@ def plot_lines(lines, color, alpha, linewidth, label, indices=None):
     line = lines[first]
     plt.axline( (line[0], line[1]), slope=line[2], color=color, alpha=alpha[first],
                label=label, linewidth=linewidth[0])
-    
+
     for i, line in enumerate(lines):
         if i > 0:
             plt.axline( (line[0], line[1]), slope=line[2], color=color,
@@ -589,7 +588,6 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     else:
         raise TypeError('Diffraction info must be in ase.Atoms object or dictionary form')
 
-    
     if unit == '1/nm':
         k0 = tags_out['K_0']  # in 1/nm
         tags_out.setdefault('output', {})['unit'] = '1/nm'
@@ -624,10 +622,10 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     radius = np.tan(convergence_angle/1000)*tags_out['K_0']*10
     if verbose:
         print(f'convergence_angle of {convergence_angle:.1f} is {radius:.2f} 1/nm')
-    
-    tags_out['output'].setdefault('linewidth_Kikuchi', 2) 
-    tags_out.setdefault('output', {}).setdefault('linewidth_HOLZ', 2) 
-    
+
+    tags_out['output'].setdefault('linewidth_Kikuchi', 2)
+    tags_out.setdefault('output', {}).setdefault('linewidth_HOLZ', 2)
+
     # #######
     # Plot #
     # #######
@@ -641,7 +639,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
 
     if diffraction_pattern is not None:
         plt.imshow(diffraction_pattern, extent=diffraction_pattern.get_extent([0, 1]), cmap='gray')
-    
+
     def onpick(event):
         if isinstance(event.artist, Line2D):
             thisline = event.artist
@@ -664,20 +662,20 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
             h, k, l = g_vectors[ind]
 
             print(f'Reflection: [{h:d},{k:d},{l:d}]')
-    
+
     if tags_out['output'].setdefault('plot_reflections', True):
         if radius < 0.01:
             if tags_out['output'].setdefault('color_reflections', None) == 'intensity':
                 ax.scatter(points[:, 0], points[:, 1],
-                               c=np.log(intensity[i] + 1), cmap=cm, s=100)
+                               c=np.log(intensity + 1), cmap=cm, s=100)
 
                 if tags_out['output']['plot_labels']:
-                    plt.text(points[i, 0], points[i, 1], label[i], fontsize=10)
+                    plt.text(points[:, 0], points[:, 1], label[:], fontsize=10)
             else:
-                
+
                 ax.scatter(points[:, 0], points[:, 1], cmap = cm, c=laue_zone, s=100)
                 if tags_out['output'].setdefault('plot_labels', False):
-                    plt.text(points[:, 0], points[:, 1], label[i], fontsize=8)
+                    plt.text(points[:, 0], points[:, 1], label[:], fontsize=8)
             ax.scatter(laue_circle[0]*10, laue_circle[1]*10,
                        c=tags_out['output'].setdefault('color_zero', 'red'), s=100)
             radius = 2
@@ -691,7 +689,6 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
                             alpha=0.9, edgecolor=None, picker=5)  #
                     #plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
 
-    
     tags_out['output'].setdefault('plot_forbidden', False)
 
     points_forbidden = plotting_coordinates(tags_out['forbidden']['g'], k0=k0)
@@ -703,7 +700,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
             zolz_forbidden = tags_out['forbidden']['ZOLZ']
             activated = tags_out['forbidden']['dynamically_activated']
             dyn_allowed = points_forbidden[zolz_forbidden][activated]
-           
+
             ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
             if tags_out['output']['plot_labels']:
                 for i in range(len(dyn_allowed)):
@@ -725,13 +722,12 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
             for i, g in enumerate(points_forbidden):
                 plt.text(g[0], g[1], forbidden_hkl[i], fontsize=8)
 
-    
-   
+
     if tags_out['output'].setdefault('plot_Kikuchi',
                                         tags_out['output'].setdefault('plot_HOLZ', False)):
         kikuchi = plotting_coordinates(tags_out['Kikuchi']['g'], rotation=rotation,
-                                                laue_circle=np.array(tags_out['Kikuchi']['Laue_circle']),
-                                                feature='line', k0=k0)
+                                       laue_circle=np.array(tags_out['Kikuchi']['Laue_circle']),
+                                       feature='line', k0=k0)
         if tags_out['output'].setdefault('label_HOLZ', False):
             label = (hkl_label[zone])[i]
         else:
@@ -739,7 +735,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
         alpha =tags_out['Kikuchi']['intensities']/ tags_out['Kikuchi']['intensities'].max()*.5
         plot_lines(kikuchi, 'red', alpha, 2, 'Kikuchi', label )
     if tags_out['output'].setdefault('plot_HOLZ', False):
-        zone_names= ['FOLZ', 'SOLZ', 'higher HOLZ']
+        # zone_names= ['FOLZ', 'SOLZ', 'higher HOLZ']
         if tags_out['output'].setdefault('label_HOLZ', False):
             label = (hkl_label[zone])[i]
         else:
@@ -753,7 +749,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
         plot_lines(holz[folz], 'blue', alpha[folz], 2, 'FOLZ', label)
         plot_lines(holz[solz], 'orange', alpha[solz], 2, 'SOLZ', label)
         plot_lines(holz[holz_plus], 'green', alpha[holz_plus], 2, 'higher HOLZ', label)
-        
+
         if tags_out['output'].setdefault('plot_HOLZ_excess', False):
             """excess_s = tags_out['allowed']['g']
             excess_s[:, 3] = tags_out['allowed']['g'][:, 1] - tags_out['allowed']['g'][:, 3]
