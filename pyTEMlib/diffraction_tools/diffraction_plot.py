@@ -520,9 +520,11 @@ def plotting_coordinates(g, rotation=0., laue_circle=[0,0], feature='spot', k0=N
     if k0 is None:
         unit_mult =  1000  # mrad
         distance =  g[:, 0]
+        laue_circle = laue_circle
     else:
         unit_mult = 10  # 1/nm to 1/Angstrom
-        distance = np.arctan(g[:, 0])*k0   # angle in rad * k0 in 1/nm -> distance in 1/nm
+        distance = np.arctan(g[:, 0])*k0   # angle in rad * k0 in 1/A -> distance in 1/A
+        laue_circle = np.arctan(laue_circle)*k0# convert to 1/Angstrom
 
     if feature == 'line':
         x = ((distance * np.cos(g[:, 1] + np.pi + rotation))+laue_circle[0]) * unit_mult
@@ -540,7 +542,8 @@ def plot_lines(lines, color, alpha, linewidth, label, indices=None):
         alpha = [alpha] * len(lines)
     if isinstance(linewidth, (float, int)):
         linewidth = [linewidth] * len(lines)
-    
+    if len(alpha) == 0:
+        return
     first = np.argmax(alpha)
     line = lines[first]
     plt.axline( (line[0], line[1]), slope=line[2], color=color, alpha=alpha[first],
@@ -586,9 +589,8 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     else:
         raise TypeError('Diffraction info must be in ase.Atoms object or dictionary form')
 
-    print(unit)
+    
     if unit == '1/nm':
-        print(unit)
         k0 = tags_out['K_0']  # in 1/nm
         tags_out.setdefault('output', {})['unit'] = '1/nm'
     else:
@@ -608,7 +610,6 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     hkl_label = tags_out['allowed']['hkl']
     label = tags_out['allowed'].get('label', hkl_label)
 
-    print(tags_out['output'])
     rotation = np.radians(tags_out['output'].setdefault('plot_rotation', 0))  # rad
     g_vectors = tags_out['allowed']['g']
     points = plotting_coordinates(g_vectors, feature='spot', k0=k0)

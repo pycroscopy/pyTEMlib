@@ -30,7 +30,7 @@ import numpy as np
 import sidpy
 import ase
 
-from .basic import get_all_g_vectors
+from .basic import find_angles, get_all_g_vectors
 from .basic import make_pretty_labels
 from .basic import get_metric_tensor, get_structure_factors
 from .basic import gaussian
@@ -99,7 +99,6 @@ def get_allowed_reflections(structure, verbose=False):
     hkl_sorted = hkl_allowed[ind][:]
     f_sorted = f_allowed[ind]
     g_sorted = g_allowed[ind, :]
-    print('here')
     return hkl_sorted, g_sorted, f_sorted
 
 
@@ -287,8 +286,8 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
 
     ewald_center = ewald_sphere_center(acceleration_voltage, atoms, zone_hkl)
     k0_magnitude = np.linalg.norm(ewald_center)
-    laue_circle = [mistilt_alpha, -mistilt_beta/np.pi*2.1]
-
+    laue_circle = [mistilt_alpha, -mistilt_beta]
+    
     s = (k0_magnitude**2-np.linalg.norm(g_non_rot - ewald_center, axis=1)**2)/(2*k0_magnitude)
     reflections = np.abs(s)<sg_max
 
@@ -297,7 +296,7 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     sg = s[reflections]
     # Weiss Zone Law
     laue_zone = np.sum(hkl * zone_hkl, axis=1)
-
+    g_angles = get_cylinder_coordinates (zone_hkl, g, k0_magnitude)
     out_tags = {}
 
     # Do we have a mistilt
@@ -309,7 +308,6 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
         hkl_zolz = hkl[laue_zone == 0]
         structure_factors_kikuchi = get_structure_factors(atoms, g_zolz)
         allowed = np.abs(structure_factors_kikuchi) > 0.000001
-        print(allowed.sum(), len(allowed))
         g_kikuchi = get_cylinder_coordinates (zone_hkl, g_zolz, k0_magnitude)
         out_tags['Kikuchi'] = {'g': g_kikuchi[allowed],
                                'hkl': hkl_zolz[allowed],
@@ -317,10 +315,17 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
                                'excitation_error': sg[zolz][allowed],
                                'Laue_circle': laue_circle}
         # add mistilt
-        mistilt_matrix = get_rotation_matrix([mistilt_beta, mistilt_alpha,0], in_radians=True)
-        g_rotated = np.dot(g_non_rot, mistilt_matrix)
 
-        s = (k0_magnitude**2-np.linalg.norm(g_rotated - ewald_center, axis=1)**2)/(2*k0_magnitude)
+        theta, phi = find_angles(zone_hkl)
+        rotation_matrix = get_rotation_matrix([-phi, theta, 0],in_radians=True)
+        center_rotated = [0, 0, k0_magnitude]
+
+        g_rotated = np.dot(g_non_rot, rotation_matrix)
+        
+        mistilt_matrix = get_rotation_matrix([mistilt_beta, mistilt_alpha,0], in_radians=True)
+        g_rotated = np.dot(g_rotated, mistilt_matrix)
+
+        s = (k0_magnitude**2-np.linalg.norm(g_rotated - center_rotated, axis=1)**2)/(2*k0_magnitude)
         reflections = np.abs(s)<sg_max
 
         g = g_rotated[reflections]
@@ -328,8 +333,9 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
         sg = s[reflections]
         # Weiss Zone Law of new hkl
         laue_zone = np.sum(hkl * zone_hkl, axis=1)
+        zone_hkl = [0,0,1]  # after tilt, we changed zone axis to z direction
 
-    structure_factors = get_structure_factors(atoms, g)
+    structure_factors = get_structure_factors(atoms, g_non_rot[reflections])
     allowed = np.abs(structure_factors) > 0.000001
     forbidden = np.logical_not(allowed)
 
@@ -357,7 +363,7 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
                              'HOLZ': laue_zone[forbidden] > 0}
     out_tags.update({'K_0': k0_magnitude,
                      'Laue_zone': laue_zone,
-                     'aue_circle': laue_circle,
+                     'Laue_circle': laue_circle,
                      'allowed_all': allowed})
     # Calculate Intensity of beams  Reimer 7.25
     thickness = in_tags.setdefault('thickness', 0.0)
@@ -374,7 +380,6 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
 
     out_tags['parameters'] = in_tags
     if 'Kikuchi' not in out_tags:
-        print('make_kikuchi')
         g_kikuchi = g_angles[allowed][zolz]
         g_kikuchi[:,0] /=2
         out_tags['Kikuchi'] = {'hkl': hkl[allowed][zolz],
