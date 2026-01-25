@@ -13,6 +13,7 @@ Supports the conversion of DFT data to simulated EELS spectra
 import numpy as np
 from lxml import etree
 
+# move to EELS tools?
 
 def exciting_get_spectra(file):
     """get EELS spectra from exciting calculation"""
