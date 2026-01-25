@@ -737,7 +737,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     if tags_out['output'].setdefault('plot_HOLZ', False):
         # zone_names= ['FOLZ', 'SOLZ', 'higher HOLZ']
         if tags_out['output'].setdefault('label_HOLZ', False):
-            label = (hkl_label[zone])[i]
+            label = (hkl_label[:])[i]
         else:
             label = None
         holz = plotting_coordinates(tags_out['HOLZ']['g_deficient'], feature='line', rotation=rotation, k0=k0)
