@@ -775,6 +775,3 @@ def apply_absorption_correction(spectrum, thickness):
         absorb = lines.get('absorption', 1)
         lines['corrected-atom%'] = lines.get('atom%', 0) / absorb / atom_sum * 100
         lines['corrected-weight%'] = lines.get('weight%', 0) / absorb / weight_sum * 100
-
-
-

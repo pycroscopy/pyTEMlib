@@ -610,7 +610,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
 
     rotation = np.radians(tags_out['output'].setdefault('plot_rotation', 0))  # rad
     g_vectors = tags_out['allowed']['g']
-    points = plotting_coordinates(g_vectors, feature='spot', k0=k0)
+    points = plotting_coordinates(g_vectors, feature='spot', rotation=rotation, k0=k0)
     laue_circle = tags_out['Laue_circle']
     tags_out.setdefault('thickness', 0)
     if tags_out['thickness'] > 0.1:
@@ -669,7 +669,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
                 ax.scatter(points[:, 0], points[:, 1],
                                c=np.log(intensity + 1), cmap=cm, s=100)
 
-                if tags_out['output']['plot_labels']:
+                if tags_out['output'].setdefault('plot_labels', False):
                     plt.text(points[:, 0], points[:, 1], label[:], fontsize=10)
             else:
 
@@ -684,14 +684,13 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
                 circles(points[:, 0], points[:, 1], s=radius, c=np.log(intensity[:] + 1),
                         cmap=cm, alpha=0.9, edgecolor=None, picker=5)
             else:
-                for i, zone in enumerate(laue_zones):
-                    circles(points[zone, 0], points[zone, 1], s=radius, c=laue_zone, cmap=cm,
+                circles(points[:, 0], points[:, 1], s=radius, c=laue_zone, cmap=cm,
                             alpha=0.9, edgecolor=None, picker=5)  #
                     #plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
 
     tags_out['output'].setdefault('plot_forbidden', False)
 
-    points_forbidden = plotting_coordinates(tags_out['forbidden']['g'], k0=k0)
+    points_forbidden = plotting_coordinates(tags_out['forbidden']['g'], rotation=rotation, k0=k0)
     if tags_out['output'].setdefault('plot_dynamically_allowed', False):
         if 'dynamically_activated' not in tags_out['forbidden']:
             print('To plot dynamically allowed reflections you must run the get_dynamically_allowed'
@@ -702,7 +701,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
             dyn_allowed = points_forbidden[zolz_forbidden][activated]
 
             ax.scatter(dyn_allowed[:, 0], dyn_allowed[:, 1], c='blue', alpha=0.4, s=70)
-            if tags_out['output']['plot_labels']:
+            if tags_out['output'].setdefault('plot_labels', False):
                 for i in range(len(dyn_allowed)):
                     dyn_label = tags_out['forbidden']['hkl'][activated, :]
                     plt.text(dyn_allowed[i, 0], dyn_allowed[i, 1], dyn_label[i], fontsize=8)
@@ -712,13 +711,13 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
                 forbidden_g = points_forbidden [rest_forbidden, :]
                 forbidden_hkl = tags_out['forbidden']['hkl'][rest_forbidden, :]
                 ax.scatter(forbidden_g[:, 0], forbidden_g[:, 1], c='orange', alpha=0.4, s=70)
-                if tags_out['output']['plot_labels']:
+                if tags_out['output'].setdefault('plot_labels', False):
                     for i in range(len(forbidden_g)):
                         plt.text(forbidden_g[i, 0], forbidden_g[i, 1], forbidden_hkl[i], fontsize=8)
     elif tags_out['output'].setdefault('plot_forbidden', False):
         forbidden_hkl = tags_out['forbidden']['hkl']
         ax.scatter(points_forbidden[:, 0], points_forbidden[:, 1], c='orange', alpha=0.4, s=70)
-        if tags_out['output']['plot_labels']:
+        if tags_out['output'].setdefault('plot_labels', False):
             for i, g in enumerate(points_forbidden):
                 plt.text(g[0], g[1], forbidden_hkl[i], fontsize=8)
 
@@ -729,7 +728,7 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
                                        laue_circle=np.array(tags_out['Kikuchi']['Laue_circle']),
                                        feature='line', k0=k0)
         if tags_out['output'].setdefault('label_HOLZ', False):
-            label = (hkl_label[zone])[i]
+            label = (hkl_label[:])[i]
         else:
             label = None
         alpha =tags_out['Kikuchi']['intensities']/ tags_out['Kikuchi']['intensities'].max()*.5
@@ -737,10 +736,11 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     if tags_out['output'].setdefault('plot_HOLZ', False):
         # zone_names= ['FOLZ', 'SOLZ', 'higher HOLZ']
         if tags_out['output'].setdefault('label_HOLZ', False):
-            label = (hkl_label[zone])[i]
+            label = (hkl_label[:])[i]
         else:
             label = None
-        holz = plotting_coordinates(tags_out['HOLZ']['g_deficient'], feature='line', k0=k0)
+        holz = plotting_coordinates(tags_out['HOLZ']['g_deficient'], feature='line', 
+                                    rotation=rotation, k0=k0)
         alpha =tags_out['HOLZ']['intensities']/ tags_out['HOLZ']['intensities'].max()*.5
         folz = tags_out['HOLZ']['FOLZ']
         solz = tags_out['HOLZ']['SOLZ']

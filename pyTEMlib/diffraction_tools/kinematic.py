@@ -243,7 +243,8 @@ def calculate_holz(dif):
     kg[:] = k_0
 
     g_allowed = dif['allowed']['g']
-    d_theta = np.abs(g_allowed[:,0]-np.arcsin(g_allowed[:,2]/g_allowed[:,3]))
+     #  g_allowed[:,0] is 2 Bragg angles theta
+    d_theta = (g_allowed[:,0]/2-np.arcsin(g_allowed[:,2]/g_allowed[:,3]))
 
     # Calculate nearest point of HOLZ and Kikuchi lines
     g_closest = dif['allowed']['g'].copy()
@@ -264,6 +265,7 @@ def calculate_holz(dif):
     dif['HOLZ']['Laue_zones'] = laue_zones
     dif['HOLZ']['hkl'] = dif['allowed']['hkl'][holz]
     dif['HOLZ']['intensities'] = intensities[holz]
+    dif['HOLZ']['kg'] = kg[holz]
 
     return dif
 
@@ -287,7 +289,7 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
     ewald_center = ewald_sphere_center(acceleration_voltage, atoms, zone_hkl)
     k0_magnitude = np.linalg.norm(ewald_center)
     laue_circle = [mistilt_alpha, -mistilt_beta]
-    
+
     s = (k0_magnitude**2-np.linalg.norm(g_non_rot - ewald_center, axis=1)**2)/(2*k0_magnitude)
     reflections = np.abs(s)<sg_max
 
@@ -321,7 +323,7 @@ def get_bragg_reflections(atoms, in_tags, verbose=False):
         center_rotated = [0, 0, k0_magnitude]
 
         g_rotated = np.dot(g_non_rot, rotation_matrix)
-        
+
         mistilt_matrix = get_rotation_matrix([mistilt_beta, mistilt_alpha,0], in_radians=True)
         g_rotated = np.dot(g_rotated, mistilt_matrix)
 
