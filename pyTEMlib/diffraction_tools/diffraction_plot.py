@@ -684,7 +684,6 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
                 circles(points[:, 0], points[:, 1], s=radius, c=np.log(intensity[:] + 1),
                         cmap=cm, alpha=0.9, edgecolor=None, picker=5)
             else:
-                
                 circles(points[:, 0], points[:, 1], s=radius, c=laue_zone, cmap=cm,
                             alpha=0.9, edgecolor=None, picker=5)  #
                     #plt.text(points[i, 0], points[i, 1], label[i], fontsize=8)
@@ -740,7 +739,8 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
             label = (hkl_label[:])[i]
         else:
             label = None
-        holz = plotting_coordinates(tags_out['HOLZ']['g_deficient'], feature='line', rotation=rotation, k0=k0)
+        holz = plotting_coordinates(tags_out['HOLZ']['g_deficient'], feature='line', 
+                                    rotation=rotation, k0=k0)
         alpha =tags_out['HOLZ']['intensities']/ tags_out['HOLZ']['intensities'].max()*.5
         folz = tags_out['HOLZ']['FOLZ']
         solz = tags_out['HOLZ']['SOLZ']
