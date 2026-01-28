@@ -619,10 +619,14 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     else:
         intensity = tags_out['allowed']['intensities']
     convergence_angle = tags_out.setdefault('parameters', {}).setdefault('convergence_angle', 0)
-    radius = np.tan(convergence_angle/1000)*tags_out['K_0']*10
-    if verbose:
-        print(f'convergence_angle of {convergence_angle:.1f} is {radius:.2f} 1/nm')
-
+    if unit == '1/nm':
+        radius = np.tan(convergence_angle/1000)*tags_out['K_0']*10
+        if verbose:
+            print(f'convergence_angle of {convergence_angle:.1f} is {radius:.2f} 1/nm')
+    else:
+        radius = convergence_angle  # in mrad
+        if verbose:
+            print(f'convergence_angle of {convergence_angle:.1f} mrad used for plotting radius')
     tags_out['output'].setdefault('linewidth_Kikuchi', 2)
     tags_out.setdefault('output', {}).setdefault('linewidth_HOLZ', 2)
 
