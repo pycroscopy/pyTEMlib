@@ -115,13 +115,16 @@ def find_associated_edges(dataset: sidpy.Dataset) -> None:
         if key.isdigit():
             onsets.append(edge['onset'])
             core_loss[key]['associated_peaks'] = {}
-        peaks = dataset.metadata['peak_fit'].get('peaks', [])
-        for key, peak in enumerate(peaks):
-            distances  = (onsets-peak[0]) * -1
-            distances[distances < -0.3] = 1e6
-            if np.min(distances) < 50:
-                index = np.argmin(distances)
-                core_loss[str(index)]['associated_peaks'][key] = peak
+            
+    peaks = dataset.metadata['peak_fit'].get('peak_out_list', [])
+    onsets = np.array(onsets)
+    print(peaks)
+    for key, peak in enumerate(peaks):
+        distances  = (onsets-float(peak[0])) * -1
+        distances[distances < -0.3] = 1e6
+        if np.min(distances) < 50:
+            index = np.argmin(distances)
+            core_loss[str(index)]['associated_peaks'][key] = peak
 
 
 def find_white_lines(dataset: sidpy.Dataset) -> Union[None, dict]:

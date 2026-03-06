@@ -173,9 +173,14 @@ def detect_peaks(dataset, minimum_number_of_peaks=30, prominence=10):
 
     minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
 
-    while len(minor_peaks) > minimum_number_of_peaks:
-        prominence+=10
-        minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
+    if len(minor_peaks) < minimum_number_of_peaks:
+        while len(minor_peaks) < minimum_number_of_peaks:
+            prominence/=10
+            minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
+    else:
+        while len(minor_peaks) > minimum_number_of_peaks:
+            prominence+=10
+            minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
     return np.array(minor_peaks)+start
 
 def peaks_element_correlation(spectrum, minor_peaks):

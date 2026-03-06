@@ -244,7 +244,7 @@ def calculate_holz(dif):
 
     g_allowed = dif['allowed']['g']
      #  g_allowed[:,0] is 2 Bragg angles theta
-    d_theta = (g_allowed[:,0]/2-np.arcsin(g_allowed[:,2]/g_allowed[:,3]))
+    d_theta = g_allowed[:,0]/2-np.arcsin(g_allowed[:,2]/g_allowed[:,3])
 
     # Calculate nearest point of HOLZ and Kikuchi lines
     g_closest = dif['allowed']['g'].copy()
