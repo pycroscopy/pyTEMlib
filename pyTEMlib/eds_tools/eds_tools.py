@@ -173,9 +173,14 @@ def detect_peaks(dataset, minimum_number_of_peaks=30, prominence=10):
 
     minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
 
-    while len(minor_peaks) > minimum_number_of_peaks:
-        prominence+=10
-        minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
+    if len(minor_peaks) < minimum_number_of_peaks:
+        while len(minor_peaks) < minimum_number_of_peaks:
+            prominence/=10
+            minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
+    else:
+        while len(minor_peaks) > minimum_number_of_peaks:
+            prominence+=10
+            minor_peaks, _  = scipy.signal.find_peaks(new_spectrum, prominence=prominence)
     return np.array(minor_peaks)+start
 
 def peaks_element_correlation(spectrum, minor_peaks):
@@ -468,6 +473,7 @@ def fit_model(spectrum, use_detector_efficiency=False):
     def residuals(pp, yy):
         """ residuals for fit"""
         model = np.zeros(len(yy))
+        pp = np.abs(pp)
         for i in range(len(pp)-4):
             model += peaks[i]*pp[i]
         if use_detector_efficiency:
@@ -481,8 +487,8 @@ def fit_model(spectrum, use_detector_efficiency=False):
     y = np.array(spectrum)  # .compute()
     [p, _] = scipy.optimize.leastsq(residuals, pin, args=(y,), maxfev=10000)
 
-    update_fit_values(spectrum.metadata['EDS'], peaks, p)
-    return np.array(peaks), np.array(p)
+    update_fit_values(spectrum.metadata['EDS'], peaks, np,abs(p))
+    return np.array(peaks), np.abs(p)
 
 
 def update_fit_values(out_tags, peaks, p):

@@ -58,7 +58,8 @@ def model_smooth(x: np.ndarray,
 # ################################################################
 
 @jit
-def gauss(x, p):
+def gauss(x: np.ndarray, 
+          p: list[float]) -> np.ndarray:
     """Gaussian Function
 
         p[0]==mean, p[1]= amplitude p[2]==fwhm
@@ -79,19 +80,21 @@ def gmm(x, p):
     for i in range(number_of_peaks):
         index = i*3
         p[index + 1] = p[index + 1]
-        # print(p[index + 1])
         p[index + 2] = abs(p[index + 2])
         y = y + gauss(x, p[index:index+3])
     return y
 
 @jit
-def residuals3(pp, xx, yy):
+def residuals3(pp: list[float],
+               xx: np.ndarray,
+               yy: np.ndarray) -> np.ndarray:
     """Residuals for Gaussian Mixture Model"""
     err = yy - gmm(xx, pp)
     return err
 
 
-def find_maxima(y, number_of_peaks):
+def find_maxima(y: np.ndarray, 
+                number_of_peaks: int) -> np.ndarray:
     """ find the first most prominent peaks
 
     peaks are then sorted by energy
@@ -117,7 +120,8 @@ def find_maxima(y, number_of_peaks):
     return peaks[peak_indices]
 
 
-def find_peaks(dataset, energy_scale):  #, fit_start, fit_end, sensitivity=2):
+def find_peaks(dataset: sidpy.Dataset| np.ndarray,
+               energy_scale: np.ndarray) -> list[list[float]]:
     """find peaks in spectrum"""
 
     peaks, _ = scipy.signal.find_peaks(np.abs(dataset)+1, width=5)
