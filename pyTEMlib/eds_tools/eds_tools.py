@@ -488,7 +488,7 @@ def fit_model(spectrum, use_detector_efficiency=False):
     [p, _] = scipy.optimize.leastsq(residuals, pin, args=(y,), maxfev=10000)
 
     update_fit_values(spectrum.metadata['EDS'], peaks, np,abs(p))
-    return np.array(peaks), np.abs(p))
+    return np.array(peaks), np.abs(p)
 
 
 def update_fit_values(out_tags, peaks, p):
