@@ -656,6 +656,7 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
         actual last used name of dictionary key
     """
     datasets2 = open_file(filename=filename)
+    print('opened')
     first_dataset = datasets2[list(datasets2)[0]]
     if isinstance(first_dataset, sidpy.Dataset):
         index = 0
@@ -667,12 +668,12 @@ def add_dataset_from_file(datasets, filename=None, key_name='Log', single_datase
             datasets[key_name+f'_{index:03}'] = first_dataset
         else:
             for key, dataset in datasets2.items():
-                print(key)
+                #print(key)
                 if isinstance(dataset, sidpy.Dataset):
                     datasets[key_name+f'_{index:03}'] = dataset
                     index += 1
                 else:
-                    print(key)
+                    #print(key)
                     datasets[key] = dataset
             index -= 1
     else:

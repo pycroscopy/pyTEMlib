@@ -118,13 +118,14 @@ def find_associated_edges(dataset: sidpy.Dataset) -> None:
             
     peaks = dataset.metadata['peak_fit'].get('peak_out_list', [])
     onsets = np.array(onsets)
-    print(peaks)
+    
     for key, peak in enumerate(peaks):
         distances  = (onsets-float(peak[0])) * -1
         distances[distances < -0.3] = 1e6
         if np.min(distances) < 50:
             index = np.argmin(distances)
             core_loss[str(index)]['associated_peaks'][key] = peak
+            print (peak, index)
 
 
 def find_white_lines(dataset: sidpy.Dataset) -> Union[None, dict]:
@@ -166,8 +167,14 @@ def find_white_lines(dataset: sidpy.Dataset) -> Union[None, dict]:
         reference_counts = edge['areal_density'] * core_loss['xsections'][int(index)].sum()
         key = f"{edge['element']}-{white_lines[0]}+{white_lines[1]}"
         white_lines_out['sum'][key] = (white_line_areas[0] + white_line_areas[1])/reference_counts
+        key1 = f"{edge['element']}-{white_lines[0]}+{white_lines[1]}"
         key = f"{edge['element']}-{white_lines[0]}/{white_lines[1]}"
-        white_lines_out['ratio'][key] = white_line_areas[0] / white_line_areas[1]
+        if white_line_areas[1] > 0:
+            white_lines_out['ratio'][key] = white_line_areas[0] / white_line_areas[1]
+        else:
+            white_lines_out['ratio'][key] =  0
+            
+        print(f"{key}, sum: {white_lines_out['sum'][key1]*100:.2f}%, ratio: {white_lines_out['ratio'][key]:.2f}")
     return white_lines_out
 
 
@@ -428,7 +435,8 @@ def make_cross_sections(edges:dict, energy_scale:np.ndarray, e_0:float,
             edges[key]['data'] = xsec_xrpa(energy_scale, e_0 / 1000., edges[key]['z'], coll_angle,
                                            edges[key]['chemical_shift']) / 1e10
             if low_loss is not None:
-                low_loss = np.roll(np.array(low_loss), 1024 - np.argmax(np.array(low_loss)))
+                shift = int(len(low_loss)/2) - np.argmax(np.array(low_loss))
+                low_loss = np.roll(np.array(low_loss), shift)
                 edges[key]['data'] = scipy.signal.convolve(edges[key]['data'],
                                                            low_loss/low_loss.sum(), mode='same')
 
