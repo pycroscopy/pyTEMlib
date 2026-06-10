@@ -11,6 +11,7 @@ collected in directory 12/2025
 
 import os
 import json
+from typing import Union
 import numpy as np
 import scipy
 import csv
@@ -21,9 +22,10 @@ from ..utilities import elements as elements_list
 from ..utilities import get_z
 
 import pyTEMlib
+import sidpy
 
 
-def get_atomic_number(z):
+def get_atomic_number(z: Union[int, str]):
     """Returns the atomic number independent of input as a string or number"""
     return str(get_z(z))
 
@@ -123,27 +125,24 @@ def get_bote_salvat_dict(acceleration_voltage, z=0):
     return x_sections
 
 
-def get_families(spectrum):
+def get_families(spectrum: sidpy.Dataset):
     """Get the line families for all elements in the spectrum."""
-    spectrum.metadata['EDS'].setdefault('GUI', {})
-    for key in spectrum.metadata['EDS']:
-        if key in ['detector', 'quantification']:
-            pass
-        elif isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
-            family = spectrum.metadata['EDS'][key].get('GUI', {}).get('symmetry', None)
-            if family is None:
-                if 'K-family' in spectrum.metadata['EDS'][key]:
-                    family = 'K-family'
-                elif 'L-family' in spectrum.metadata['EDS'][key]:
-                    family = 'L-family'
-                elif 'M-family' in spectrum.metadata['EDS'][key]:
-                    family = 'M-family'
-            spectrum.metadata['EDS']['GUI'][key] = {'symmetry': family}
-    return spectrum.metadata['EDS']['GUI']
+    spectrum.metadata['EDS'].setdefault('elements', {})
+    for key, line in spectrum.metadata['EDS']['elements'].items():
+        family = line.get('symmetry', None)
+        if family is None:
+            if 'K-family' in line:
+                family = 'K-family'
+            elif 'L-family' in line:
+                family = 'L-family'
+            elif 'M-family' in line:
+                family = 'M-family'
+            line['symmetry'] = family
+    return spectrum.metadata['EDS']['elements']
 
-def quantify_cross_section(spectrum, mask=None):
+def quantify_cross_section(spectrum, value_table= None, mask=None):
     """Calculate quantification for EDS spectrum with cross sections."""
-    spectrum.metadata['EDS'].setdefault('GUI', {})
+    spectrum.metadata['EDS'].setdefault('elements', {})
     acceleration_voltage = spectrum.metadata.get('experiment', {}).get('acceleration_voltage',
                                                                        200000)
     families = get_families(spectrum)
@@ -153,99 +152,70 @@ def quantify_cross_section(spectrum, mask=None):
     for key, family in families.items():
         if key in mask:
             continue
-        amu = spectrum.metadata['EDS'][key]['atomic_weight']
-        intensity  = spectrum.metadata['EDS'][key][family['symmetry']].get('areal_density', 0)
+        amu = family['atomic_weight']
+        intensity  = family[family['symmetry']].get('areal_density', 0)
         z = get_atomic_number(key)
         x_sect = family_ionization(z, family['symmetry'][0], acceleration_voltage)*1e23
 
-        spectrum.metadata['EDS']['GUI'][key]['cross_section'] = x_sect
-        spectrum.metadata['EDS']['GUI'][key]['composition_counts'] = intensity/x_sect
+        family['cross_section'] = x_sect
+        family['composition_counts'] = intensity/x_sect
         total += intensity / x_sect
         total_amu += intensity / x_sect * amu
 
     for key, family in families.items():
-        intensity  = spectrum.metadata['EDS'][key][family['symmetry']].get('areal_density', 0)
         if key in mask:
-            spectrum.metadata['EDS']['GUI'][key] = {'atom%': 0,
-                                                    'weight%': 0,
-                                                    'excluded': True,
-                                                    'intensity': intensity,
-                                                    'symmetry': family['symmetry']}
+            family['atom%'] = 0
+            family['weight%'] = 0
+            family['excluded'] = True
+            
             continue
-        amu = spectrum.metadata['EDS'][key]['atomic_weight']
-        x_sect = spectrum.metadata['EDS']['GUI'][key]['cross_section']
-        spectrum.metadata['EDS']['GUI'][key] = {'atom%': intensity/x_sect/total*100,
-                                                'weight%': intensity/x_sect*amu/total_amu*100,
-                                                'excluded': False,
-                                                'intensity': intensity,
-                                                'symmetry': family['symmetry']}
-        element = spectrum.metadata['EDS']['GUI'][key]
-        out_text = f"{key:2}: {element['atom%']:.2f} at% {element['weight%']:.2f} wt%"
+        intensity  = family[family['symmetry']].get('areal_density', 0)
+        
+        family['atom%'] = intensity/family['cross_section']/total*100
+        family['weight%'] = intensity/family['cross_section']*family['atomic_weight']/total_amu*100
+        family['excluded'] = False
+        out_text = f"{key:2}: {family['atom%']:.2f} at% {family['weight%']:.2f} wt%"
         print(out_text)
 
 
 def quantification_k_factors(spectrum, mask=None):
     """Calculate quantification for EDS spectrum with k-factors."""
-    tags = {}
-    if not isinstance(mask, list) or mask is None:
-        mask = []
+    families = get_families(spectrum)
     atom_sum = 0.
     weight_sum  = 0.
-    spectrum.metadata['EDS'].setdefault('GUI', {})
-    for key in spectrum.metadata['EDS']:
+    for key, family in families.items():
         intensity = 0.
         k_factor = 0.
-        if key in ['detector', 'quantification']:
-            pass
-        elif isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
-            family = spectrum.metadata['EDS'].get('GUI', {}).get(key, {}).get('symmetry', None)
-            if family is None:
-                if 'K-family' in spectrum.metadata['EDS'][key]:
-                    family = 'K-family'
-                elif 'L-family' in spectrum.metadata['EDS'][key]:
-                    family = 'L-family'
-                elif 'M-family' in spectrum.metadata['EDS'][key]:
-                    family = 'M-family'
-            spectrum.metadata['EDS']['GUI'][key] = {'symmetry': family}
-            intensity = spectrum.metadata['EDS'][key][family].get('areal_density', 0)
-            k_factor = spectrum.metadata['EDS'][key][family].get('k_factor', 0)
-            atomic_weight = spectrum.metadata['EDS'][key]['atomic_weight']
-            if key in mask:
-                spectrum.metadata['EDS']['GUI'][key] = {'atom%': 0,
-                                                        'weight%': 0,
-                                                        'excluded': True,
-                                                        'symmetry': family,
-                                                        'k_factor': k_factor,
-                                                        'intensity': intensity}
-                continue
-
-            tags[key] =  {'atom%': intensity*k_factor/ atomic_weight,
-                          'weight%': (intensity*k_factor) ,
-                          'k_factor': k_factor,
-                          'intensity': intensity,
-                          'family': family,
-                          'excluded': False}
-            atom_sum += intensity*k_factor/ atomic_weight
-            weight_sum += intensity*k_factor
-        tags['sums'] = {'atom%': atom_sum, 'weight%': weight_sum}
-
-    spectrum.metadata['EDS']['quantification'] = tags
-    eds_dict = spectrum.metadata['EDS']
-    for key in eds_dict['quantification']:
-        if key != 'sums':
-            tags = eds_dict['quantification']
-            out_string = f"{key:2}: {tags[key]['atom%']/tags['sums']['atom%']*100:.2f} at%"
-            out_string += f" {tags[key]['weight%']/tags['sums']['weight%']*100:.2f} wt%"
-            if key in eds_dict['GUI']:
-                eds_dict['GUI'][key]['atom%'] = tags[key]['atom%']/tags['sums']['atom%']*100
-                eds_dict['GUI'][key]['weight%'] = tags[key]['weight%']/tags['sums']['weight%']*100
-                print(out_string)
-                eds_dict['GUI'][key]['excluded'] = tags[key]['excluded']
-                eds_dict['GUI'][key]['k_factor'] = tags[key]['k_factor']
-                eds_dict['GUI'][key]['intensity'] = tags[key]['intensity']
+        atomic_weight = family['atomic_weight']    
+        
+        if key in mask:
+            family['atom%'] = 0
+            family['weight%'] = 0
+            family['excluded'] = True
+            # family.setdefault('symmetry', 'K-family')
+            family['k_factor'] = k_factor
+            family['intensity'] = intensity
+            continue
+        intensity  = family.setdefault(family['symmetry'], {}).get('areal_density', 0)
+        k_factor = family[family['symmetry']].get('k_factor', 0)
+        
+        family['atom%'] =  intensity*k_factor / atomic_weight
+        family['weight%'] = intensity*k_factor
+        family['k_factor'] = k_factor
+        family['intensity'] = intensity
+        family['excluded'] = False
+        atom_sum += intensity*k_factor/ atomic_weight
+        weight_sum += intensity*k_factor
+        
+    for key, family in families.items():
+        out_string = f"{key:2}: {family['atom%']/atom_sum*100:.2f} at%"
+        out_string += f" {family['weight%']/weight_sum*100:.2f} wt%"
+        family['relative_atom%'] = family['atom%']/atom_sum*100
+        family['relative_weight%'] = family['weight%']/weight_sum*100
+        print(out_string)
     print('excluded from quantification ', mask)
 
-    return tags
+    return 
 
 def family_ionization(element_z, family='K', acceleration_voltage=200000):
     """Calculate ionization cross sections for all subshells in a line family."""

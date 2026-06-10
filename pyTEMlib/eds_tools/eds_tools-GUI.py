@@ -29,6 +29,7 @@ import sidpy
 
 import pyTEMlib
 import pyTEMlib.file_reader
+from ..utilities import elements as elements_list
 from .eds_xsections import quantify_cross_section, quantification_k_factors
 
 
@@ -228,85 +229,8 @@ def peaks_element_correlation(spectrum, minor_peaks):
                         accounted_peaks.add(ind)
     return list(element_list)
 
-def get_elements(spectrum, senstivity=3.):
-    """ Get the elments in a EDS spectrum based on an interative approach of 
-    - finding the main peak, 
-    - identifying the element and then 
-    - subtracting the peaks of that element from the spectrum. 
-    The process is repeated until no peaks above a certain threshold are left (sigma * sensitivity).
-    
-    Parameters:
-    -----------
-        spectrum: sidpy.Dataset
-        senstivity: float
-    Returns:
-    --------
-        element_dict: dict
-    """
-    if not hasattr(spectrum, 'values'):
-        spectrum.values = np.array(spectrum)
-    new_spectrum =  scipy.ndimage.gaussian_filter(spectrum.values, 2)
-    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
-    start = np.searchsorted(energy_scale, 120)
-    new_spectrum[:start] = 0
-    element_dict = {}
-    spectrum_max = np.max(new_spectrum)
-    for i in range(12):
-        main_peak =  np.argmax(new_spectrum)
-        element2 = peak_element_correlation(energy_scale, new_spectrum,[main_peak])
-        element_dict[element2] = pyTEMlib.eds_tools.get_x_ray_lines(spectrum, [element2])[element2]
-        line_array = get_lines(element_dict[element2], energy_scale)
-        new_spectrum = new_spectrum - scipy.ndimage.gaussian_filter(line_array, 5)*2
-        if new_spectrum.max() < np.sqrt(spectrum_max)*senstivity:
-            break
-    spectrum.metadata.setdefault('EDS', {})['elements'] = element_dict
-    return element_dict
 
-def peak_element_correlation(energy_scale: np.ndarray,
-                             spec2: np.ndarray,
-                             peak: float) -> list:
-    """ correlate peak position with a major line of an element
-    Parameters:
-        energy_scale: 1D numpy ndarray
-        spec2:  1D numpy ndarray
-        peak: float
-
-    """
-    element = ''
-    for z in range(5, 82):
-        edge_info  = pyTEMlib.eels_tools.get_x_sections(z)
-        lines = edge_info.get('lines', {})
-        if abs(lines.get('K-L3', {}).get('position', 0) - energy_scale[peak]) <40:
-            element = edge_info['name']
-            break
-        # This is a special case for boron and carbon
-        elif abs(lines.get('K-L2', {}).get('position', 0) - energy_scale[peak]) <30:
-            element = edge_info['name']
-            break
-        elif abs(lines.get('L3-M5', {}).get('position', 0) - energy_scale[peak]) <50:
-            element = edge_info['name']
-            break
-    return element
-
-def get_lines(line_dict, energy_scale):
-    model = np.zeros(len(energy_scale))
-    out_tags = {}
-    for key, family in line_dict.items():
-        if 'family' in key:
-            model_f = np.zeros(len(energy_scale))
-            if family.get('weight', 0) > 0:
-                model_f = np.zeros(len(energy_scale))
-                height =  family['height']
-                out_tags[f'{key}-family']={'height': height/family['weight']}
-                for key in family['lines']:
-                    model_f += pyTEMlib.eds_tools.get_peak(family[key]['position'], energy_scale)*family[key]['weight']
-                model_f *= height / model_f.max() 
-                family['peaks'] = model_f
-            model += model_f
-    return model
-
-
-def get_elements2(spectrum, minimum_number_of_peaks=10, verbose=False):
+def get_elements(spectrum, minimum_number_of_peaks=10, verbose=False):
     """ Get the elments in a EDS spectrum 
     Parameters:
     -----------
@@ -325,13 +249,15 @@ def get_elements2(spectrum, minimum_number_of_peaks=10, verbose=False):
 
     minor_peaks = detect_peaks(spectrum, minimum_number_of_peaks=minimum_number_of_peaks)
 
-    if 'elements' in spectrum.metadata['EDS']:
-        del spectrum.metadata['EDS']['elements']
+    keys = list(spectrum.metadata['EDS'].keys())
+    for key in keys:
+        if len(key) < 3:
+            del spectrum.metadata['EDS'][key]
 
     elements = peaks_element_correlation(spectrum, minor_peaks)
     if verbose:
         print(elements)
-    spectrum.metadata['EDS']['elements'] = get_x_ray_lines(spectrum, elements)
+    spectrum.metadata['EDS'].update(get_x_ray_lines(spectrum, elements))
     return elements
 
 
@@ -341,14 +267,10 @@ def add_element(spectrum, elements):
         elements = [elements]
     if not isinstance(elements, list):
         raise ValueError("elements must be a string or a list of strings")
-    new_elements = get_x_ray_lines(spectrum, elements)
-    for key, item in new_elements.items():
-         spectrum.metadata['EDS']['elements'][key] = item
-    # does not work for nested dictionaries
-    # spectrum.metadata['EDS']['elements'].update(get_x_ray_lines(spectrum, elements))
+    spectrum.metadata['EDS'].update(get_x_ray_lines(spectrum, elements))
 
 
-def get_x_ray_lines(spectrum, elements):
+def get_x_ray_lines(spectrum, element_list):
     """
     Analyze the given spectrum to identify and characterize the X-ray emission lines
     associated with the specified elements.
@@ -361,15 +283,23 @@ def get_x_ray_lines(spectrum, elements):
     - A dictionary where each key is an element symbol and each value is another dictionary
       containing information about the X-ray lines detected for that element.
     
+    alpha_k = 1e6
+    alpha_l = 6.5e7
+    alpha_m = 8*1e8  # 2.2e10
+    # My Fit
+    alpha_K = .9e6
+    alpha_l = 6.e7
+    alpha_m = 6*1e8 #  2.2e10
+    # omega_K = Z**4/(alpha_K+Z**4)
+    # omega_L = Z**4/(alpha_l+Z**4)
+    # omega_M = Z**4/(alpha_m+Z**4)
     """
 
-    if not hasattr(spectrum, 'values'):
-        spectrum.values = np.array(spectrum)
     out_tags = {}
     x_sections = pyTEMlib.xrpa_x_sections.x_sections
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
-    for element in elements:
-        atomic_number = pyTEMlib.utilities.get_atomic_number(element)
+    for element in element_list:
+        atomic_number = elements_list.index(element)
         out_tags[element] ={'Z': atomic_number}
         lines = pyTEMlib.xrpa_x_sections.x_sections.get(str(atomic_number), {}).get('lines', {})
         if not lines:
@@ -396,12 +326,12 @@ def get_x_ray_lines(spectrum, elements):
             if family['weight'] > 0:
                 out_tags[element].setdefault(f'{key}-family', {}).update(family)
                 position = x_sections[str(atomic_number)]['lines'][family['main']]['position']
-                height = spectrum.values[np.searchsorted(energy_scale, position)]
+                height = spectrum[np.searchsorted(energy_scale, position)].compute()
                 out_tags[element][f'{key}-family']['height'] = height/family['weight']
                 z = str(atomic_number)
                 for key in family['lines']:
                     out_tags[element][f'{key[0]}-family'][key] = x_sections[z]['lines'][key]
-        spectrum.metadata.setdefault('EDS', {})['elements'] = out_tags
+        spectrum.metadata.setdefault('EDS', {}).update(out_tags)
     return out_tags
 
 
@@ -428,11 +358,12 @@ def get_peak(energy: float, energy_scale: np.ndarray,
 
 def initial_model_parameter(spectrum):
     """ Initialize model parameters based on the spectrum's metadata.""" 
+    tags = spectrum.metadata['EDS']
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0]
     p = []
     peaks = []
     keys = []
-    for element, lines in spectrum.metadata['EDS']['elements'].items():
+    for element, lines in tags.items():
         if 'K-family' in lines:
             model = np.zeros(len(energy_scale))
             for line, info in lines['K-family'].items():
@@ -481,21 +412,22 @@ def get_model(spectrum):
     - model: The constructed model spectrum as a numpy array.
     """
     model = np.zeros(len(np.array(spectrum)))
-    for key, element in spectrum.metadata['EDS']['elements'].items():
-        for family_key, family in element.items():
-            if '-family' in family_key:
-                intensity  = family.get('areal_density', 0)
-                peaks = family.get('peaks', np.zeros(len(model)))
-                if peaks.sum() <0.1:
-                    print('no intensity',key, family_key)
-                model += peaks * intensity
+    for key in spectrum.metadata['EDS']:
+        if isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
+            for family in spectrum.metadata['EDS'][key]:
+                if '-family' in family:
+                    intensity  = spectrum.metadata['EDS'][key][family].get('areal_density', 0)
+                    peaks = spectrum.metadata['EDS'][key][family].get('peaks', np.zeros(len(model)))
+                    if peaks.sum() <0.1:
+                        print('no intensity',key, family)
+                    model += peaks * intensity
 
     if 'detector_efficiency' in spectrum.metadata['EDS']['detector'].keys():
         detector_efficiency = spectrum.metadata['EDS']['detector']['detector_efficiency']
     else:
         detector_efficiency = None
     e_0 = spectrum.metadata['experiment']['acceleration_voltage']
-    pp = spectrum.metadata['EDS'].setdefault('bremsstrahlung', [0, 0, 0])
+    pp = spectrum.metadata['EDS']['bremsstrahlung']
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
 
     if detector_efficiency is not None:
@@ -513,7 +445,7 @@ def fit_model(spectrum, use_detector_efficiency=False):
     - spectrum: The EDS spectrum to fit.
     - elements: List of elements to consider in the fit.
     - use_detector_efficiency: Whether to include detector efficiency in the model.
-556
+
     Returns:
     - peaks: The fitted peak shapes.
     - p: The fitted parameters.
@@ -569,7 +501,7 @@ def update_fit_values(out_tags, peaks, p):
     - p: Array of fitted parameters.
     """
     index = 0
-    for lines in out_tags['elements'].values():
+    for lines in out_tags.values():
         if 'K-family' in lines:
             lines['K-family']['areal_density'] = p[index]
             lines['K-family']['peaks'] = peaks[index]
@@ -636,6 +568,7 @@ def plot_phases(dataset, image=None, survey_image=None):
     if survey_image is not None:
         im = axes[0].imshow(survey_image.T)
         axis_index += 1
+
     if 'kmeans' not in dataset.metadata:
         raise ValueError('No phase information found, run get_phases first')
     phase_spectra = dataset.metadata['kmeans']['means']
@@ -747,27 +680,32 @@ def add_k_factors(element_dict, element, k_factors):
         line = k_factors.get(element, {}).get('Ma1', False)
         if line:
             print('using M k-factor for', element)
-    
     family['k_factor'] = float(line)
 
 
 def quantify_eds(spectrum, quantification_dict=None, mask=None ):
     """Calculate quantification for EDS spectrum with either k-factors or cross sections."""
 
-    if quantification_dict is None:
+    for key in spectrum.metadata['EDS']:
+        element = 0
+        if isinstance(spectrum.metadata['EDS'][key], dict) and key in elements_list:
+            element = spectrum.metadata['EDS'][key].get('Z', 0)
+        if element < 1:
+            continue
+        if quantification_dict is None:
             quantification_dict = {}
-    for key, element in spectrum.metadata['EDS']['elements'].items():
-        edge_info = pyTEMlib.eels_tools.get_x_sections(element['Z'])
-        element['atomic_weight'] = edge_info['atomic_weight']
-        element['nominal_density'] = edge_info['nominal_density']
+
+        edge_info = pyTEMlib.eels_tools.get_x_sections(element)
+        spectrum.metadata['EDS'][key]['atomic_weight'] = edge_info['atomic_weight']
+        spectrum.metadata['EDS'][key]['nominal_density'] = edge_info['nominal_density']
 
         for family, item in edge_info['fluorescent_yield'].items():
-            if element.get(f"{family}-family", {}):
-                element[f"{family}-family"]['fluorescent_yield'] = item
+            if spectrum.metadata['EDS'][key].get(f"{family}-family", {}):
+                spectrum.metadata['EDS'][key][f"{family}-family"]['fluorescent_yield'] = item
         if quantification_dict.get('metadata', {}).get('type', '') == 'k_factor':
             k_factors = quantification_dict.get('table', {})
-            add_k_factors(element, key, k_factors)
-    if not quantification_dict:
+            add_k_factors(spectrum.metadata['EDS'][key], key, k_factors)
+    if quantification_dict is None:
         print('using cross sections for quantification')
         quantify_cross_section(spectrum, mask=mask)
     elif not isinstance(quantification_dict, dict):
@@ -783,6 +721,7 @@ def quantify_eds(spectrum, quantification_dict=None, mask=None ):
         quantify_cross_section(spectrum, mask=mask)
 
 
+
 def get_absorption_correction(spectrum, thickness=50):
     """
     Calculate absorption correction for all elements in the spectrum based on thickness t in nm
@@ -796,26 +735,22 @@ def get_absorption_correction(spectrum, thickness=50):
     start_channel = np.searchsorted(spectrum.energy_scale.values, 120)
     absorption = spectrum.energy_scale.values[start_channel:]*0.
     take_off_angle = spectrum.metadata['EDS']['detector'].get('ElevationAngle', 0)
-    path_length = thickness *2 / np.cos(take_off_angle) * 1e-10 # /2?    in m
+    path_length = thickness *2 / np.cos(take_off_angle) * 1e-9 # /2?    in m
     count = 1
-    for element, lines in spectrum.metadata['EDS']['elements'].items():
-        
-        part = lines['atom%']/100
-        if part > 0.01:
-            count += 1
-            absorption += get_absorption(pyTEMlib.utilities.get_atomic_number(element),
-                                        path_length*part,
-                                        spectrum.energy_scale[start_channel:])
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        if element in elements_list:
+            part = lines['atom%']/100
+            if part > 0.01:
+                count += 1
+                absorption += get_absorption(pyTEMlib.utilities.get_atomic_number(element),
+                                            path_length*part,
+                                            spectrum.energy_scale[start_channel:])
 
-    for element, lines in spectrum.metadata['EDS']['elements'].items():
-        
-        if lines['excluded']:
-            print("no symmetry")
-            continue
-        symmetry = lines.get('symmetry', False)
+    for element, lines in spectrum.metadata['EDS']['GUI'].items():
+        symmetry =  lines['symmetry']
         peaks = []
-        if symmetry in lines:
-            peaks = lines[symmetry].get('peaks', [])
+        if symmetry in spectrum.metadata['EDS'][element]:
+            peaks = spectrum.metadata['EDS'][element][symmetry].get('peaks', [])
         if len(peaks) > 0:
             peaks = peaks[start_channel:]
             lines['absorption'] = (peaks * absorption / count).sum()
@@ -839,10 +774,10 @@ def apply_absorption_correction(spectrum, thickness):
 
     atom_sum = 0.
     weight_sum = 0.
-    for lines in spectrum.metadata['EDS']['elements'].values():
+    for lines in spectrum.metadata['EDS']['GUI'].values():
         atom_sum += lines.get('atom%', 0) / lines.get('absorption', 1)
         weight_sum += lines.get('weight%', 0) / lines.get('absorption', 1)
-    for lines in spectrum.metadata['EDS']['elements'].values():
+    for lines in spectrum.metadata['EDS']['GUI'].values():
         absorb = lines.get('absorption', 1)
         lines['corrected-atom%'] = lines.get('atom%', 0) / absorb / atom_sum * 100
         lines['corrected-weight%'] = lines.get('weight%', 0) / absorb / weight_sum * 100

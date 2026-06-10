@@ -218,7 +218,7 @@ def get_resolution_functions(dataset: sidpy.Dataset, start_fit_energy: float=-1,
         guess_amplitude = np.sqrt(fit_dset.max())
         guess_params = get_good_guess(zl_func, fit_energy,
                                       fit_dset.sum(axis=0)/fit_dset.shape[0])
-    elif len(dataset.shape) == 1:
+    elif dataset.ndim == 1:
         fit_dset = dataset[start_fit_pixel:end_fit_pixel]
         fit_energy = energy[start_fit_pixel:end_fit_pixel]
         guess_amplitude = np.sqrt(fit_dset.max())
