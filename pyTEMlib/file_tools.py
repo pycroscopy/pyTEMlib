@@ -490,7 +490,10 @@ def open_file(filename, write_hdf_file=False,
             dset = {'Channel_000': dset}
 
         for key in dset:
-            read_dm_annotation(dset[key])
+            try:
+                read_dm_annotation(dset[key])
+            except:
+                pass
 
     elif extension == '.emd':
         if not sum_eds:
