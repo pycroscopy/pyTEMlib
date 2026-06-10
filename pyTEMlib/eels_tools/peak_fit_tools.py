@@ -133,7 +133,27 @@ def find_peaks(dataset: sidpy.Dataset| np.ndarray,
                           results_half[i]*disp] for i in range(len(peaks))])
     return p_in  # model, p_in
 
-
+def find_relevant_peaks(spectrum, number_of_peaks=9):
+    """Find relevant peaks in the gaussian mixture model."""
+    peak_dict = spectrum.metadata['peak_fit']
+    model = peak_dict['peak_model']
+    number_of_peaks = min(number_of_peaks, len(peak_dict['peak_gmm_list']))
+    noise_level = np.std((spectrum-model)[300:])/10
+    print(noise_level)
+    peaks = {'peaks': {}}
+    new_number_of_peaks = 0
+    peak_dict['peak_out_list'] = []
+    for i in range(number_of_peaks):
+        p = peak_dict['peak_gmm_list'][i]
+        if abs(p[1])>noise_level:
+            peak_dict['peak_out_list'].append(p)
+            new_peak = {'position': p[0], 'amplitude': p[1], 'width': p[2],
+                        'type': 'Gauss', 'asymmetry': 0}
+            peaks['peaks'][str(new_number_of_peaks)] = new_peak
+            new_number_of_peaks += 1
+    return new_number_of_peaks
+    
+    
 def gaussian_mixture_model(dataset, p_in=None):
     """Fit a Gaussian mixture model to a spectrum or a spectrum image"""
     peak_model = None
@@ -177,3 +197,69 @@ def sort_peaks(p, peak_shape):
     peak_shape = np.array(peak_shape)[sort_pin].tolist()
 
     return p, peak_shape
+
+def fit_peaks(spectrum):
+    """Fit spectrum with peaks given in peaks dictionary"""
+    
+    peak_dict = spectrum.metadata['peak_fit']
+    model = peak_dict['start_model']
+    full_energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    start_channel = np.searchsorted(full_energy_scale, peak_dict['fit_area']['fit_start'])
+    end_channel = np.searchsorted(full_energy_scale, peak_dict['fit_area']['fit_end'])
+
+    energy_scale = full_energy_scale[start_channel:end_channel]
+    # select the core loss model if it exists. Otherwise, we will fit to the full spectrum.
+    # if we have a core loss model we will only fit the difference
+    # between the model and the data.
+    diff = np.array(spectrum[start_channel:end_channel] - model[start_channel:end_channel])
+    p_in =  peak_dict['peak_out_list'] #peak_gmm_list[:]
+    # find the optimum fitting parameters
+
+    [p_out, _] = scipy.optimize.leastsq(residuals3,
+                                        np.array(p_in, dtype=np.float64),
+                                        args=(energy_scale, diff))  # , False))
+    # construct the fit data from the optimized parameters
+    peak_model = gmm(full_energy_scale, p_out)  # , False)
+
+    if 'parameter' not in spectrum.metadata['peak_fit']:
+        if spectrum.data_type.name == 'SPECTRUM':
+            spectrum.metadata['peak_fit']['parameter'] = np.zeros([1,1, len(p_out)])
+        else:
+            spectrum.metadata['peak_fit']['parameter'] = np.zeros([spectrum.shape[0],
+                                                                   spectrum.shape[1],
+                                                                       len(p_out)])
+    peak_dict['peaks'] = {}
+    for index in range(int(len(p_out)/3)):
+        p_index = index *3
+        peak_dict['peaks'][index] = {'position': p_out[p_index],
+                                       'amplitude': p_out[p_index+1],
+                                       'width': p_out[p_index+2],
+                                       'type': 'Gauss',
+                                       'associated_edge': ''}    
+    spectrum.metadata['peak_fit']['peak_model'] = peak_model
+    print(p_out)
+    p_out = np.reshape(p_out, [len(p_out) // 3, 3])
+    spectrum.metadata['peak_fit']['peak_out_list']  = p_out
+    #spectrum.metadata['peak_fit']['peaks'] = peaks.copy()
+
+    
+    
+def get_gmm(spectrum, start_model=None):
+    if start_model is not None:
+        peak_model, peak_out_list = gaussian_mixture_model(spectrum-start_model)
+    else:
+        peak_model, peak_out_list = gaussian_mixture_model(spectrum)
+    new_list = np.reshape(peak_out_list, [len(peak_out_list) // 3, 3])
+    area = np.sqrt(2 * np.pi) * np.abs(new_list[:, 1])
+    area *= np.abs(new_list[:, 2] / np.sqrt(2 * np.log(2)))
+    arg_list = np.argsort(area)[::-1]
+    area = area[arg_list]
+    peak_out_list = new_list[arg_list]
+    
+    number_of_peaks = np.searchsorted(area * -1, -np.average(area))
+    spectrum.metadata.setdefault('peak_fit', {})
+    spectrum.metadata['peak_fit']['start_model'] = spectrum.metadata['core_loss']['model']['spectrum']
+    spectrum.metadata['peak_fit']['peak_model'] = peak_model
+    spectrum.metadata['peak_fit']['peak_gmm_list'] = peak_out_list
+    
+    return number_of_peaks

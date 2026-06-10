@@ -125,19 +125,22 @@ def find_associated_edges(dataset: sidpy.Dataset) -> None:
         if np.min(distances) < 50:
             index = np.argmin(distances)
             core_loss[str(index)]['associated_peaks'][key] = peak
-            print (peak, index)
+            dataset.metadata['peak_fit']['peaks'][key]['associated_edge']=core_loss[str(index)]['element']
+            #print (peak[0], index)
+    
 
 
 def find_white_lines(dataset: sidpy.Dataset) -> Union[None, dict]:
-    """Find white lines in the dataset"""
     white_lines_out ={'sum': {}, 'ratio': {}}
     white_lines = []
     peaks = dataset.metadata.get('peak_fit', {}).get('peaks', [])
     core_loss = dataset.metadata.get('core_loss', {})
     for index, edge in core_loss.get('edges', {}).items():
+        
         if not index.isdigit():
             continue
         peaks = edge.get('associated_peaks', {})
+        
         if edge['symmetry'][-2:] == 'L3' and 'L3' in edge['all_edges']:
             onset_l3 = edge['all_edges']['L3']['onset']
             onset_l2 = edge['all_edges']['L2']['onset']
@@ -153,18 +156,20 @@ def find_white_lines(dataset: sidpy.Dataset) -> Union[None, dict]:
         else:
             continue
         white_line_areas = [0., 0.]
+       
         for key, peak in peaks.items():
             if not str(key).isdigit():
+                continue
+            if peak[2] > 10 or peak[1]< 0:
                 continue
             area = np.sqrt(2 * np.pi) * peak[1] * np.abs(peak[2]/np.sqrt(2 * np.log(2)))
             if peak[0] < end_range1:
                 white_line_areas[0] += area
             elif peak[0] < end_range2:
                 white_line_areas[1] += area
-
         edge['white_lines'] = {white_lines[0]: white_line_areas[0],
                                white_lines[1]: white_line_areas[1]}
-        reference_counts = edge['areal_density'] * core_loss['xsections'][int(index)].sum()
+        reference_counts = edge['areal_density'] * edge['data'].sum()
         key = f"{edge['element']}-{white_lines[0]}+{white_lines[1]}"
         white_lines_out['sum'][key] = (white_line_areas[0] + white_line_areas[1])/reference_counts
         key1 = f"{edge['element']}-{white_lines[0]}+{white_lines[1]}"
@@ -175,6 +180,7 @@ def find_white_lines(dataset: sidpy.Dataset) -> Union[None, dict]:
             white_lines_out['ratio'][key] =  0
             
         print(f"{key}, sum: {white_lines_out['sum'][key1]*100:.2f}%, ratio: {white_lines_out['ratio'][key]:.2f}")
+    return white_lines_out
     return white_lines_out
 
 
@@ -308,10 +314,9 @@ def add_element_to_dataset(dataset: sidpy.Dataset, z: Union[int, str]):
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0]
 
     zz = get_z(z)
-    if 'edges' not in dataset.metadata:
-        dataset.metadata['edges'] = {'model': {}, 'use_low_loss': False}
+    dataset.metadata.setdefault('core_loss',  {'model': {}, 'use_low_loss': False})
     index = 0
-    for key, edge in dataset.metadata['edges'].items():
+    for key, edge in dataset.metadata['core_loss'].setdefault('edges', {}).items():
         if not key.isdigit():
             continue
         index += 1
@@ -339,7 +344,7 @@ def add_element_to_dataset(dataset: sidpy.Dataset, z: Union[int, str]):
         print(f'Could not find no edge of {zz} in spectrum')
         return False
 
-    edge = dataset.metadata['edges'].setdefault(str(index), {})
+    edge = dataset.metadata['core_loss']['edges'].setdefault(str(index), {})
 
     start_exclude = x_section[key]['onset'] - x_section[key]['excl before']
     end_exclude = x_section[key]['onset'] + x_section[key]['excl after']
@@ -351,6 +356,7 @@ def add_element_to_dataset(dataset: sidpy.Dataset, z: Union[int, str]):
     edge['chemical_shift'] = 0.0
     edge['areal_density'] = 0.0
     edge['original_onset'] = edge['onset']
+    # edge['x_section'] = get_x_sections(edge['z'])
     return True
 
 
@@ -511,40 +517,42 @@ def get_mask(energy_scale, edges):
 
     mask[0:start_bgd] = 0.0
     mask[end_bgd:-1] = 0.0
-    for key in edges:
+    for key in edges['edges']:
         if not key.isdigit():
             continue
-        start_exclude = np.searchsorted(energy_scale, edges[key]['start_exclude'])
-        end_exclude = np.searchsorted(energy_scale, edges[key]['end_exclude'])
+        start_exclude = np.searchsorted(energy_scale, edges['edges'][key]['start_exclude'])
+        end_exclude = np.searchsorted(energy_scale, edges['edges'][key]['end_exclude'])
         if start_bgd+1 < start_exclude < end_bgd-2 and end_exclude < end_bgd:
             start_exclude = max (start_exclude, 2)
             mask[start_exclude:end_exclude] = 0.0
     return mask
 
-def fit_edges2(spectrum, energy_scale, edges):
+def fit_edges2(spectrum, energy_scale, core_loss):
     """ Fit edges in a spectrum """
-    mask = get_mask(energy_scale, edges)
+    mask = get_mask(energy_scale, core_loss)
 
-    ########################
+    # #######################
     # Background Fit
-    ########################
-    bgd_fit_area = [edges['fit_area']['fit_start'], edges['fit_area']['fit_end']]
+    # #######################
+    bgd_fit_area = [core_loss['fit_area']['fit_start'], core_loss['fit_area']['fit_end']]
     _, [amplitude, r] = power_law_background(spectrum, energy_scale, bgd_fit_area, verbose=False)
 
-    #######################
+    # ######################
     # Edge Fit
-    #######################
+    # ######################
 
     blurred = scipy.ndimage.gaussian_filter(spectrum, sigma=5)
     blurred[np.where(blurred < 1e-8)] = 1e-8
 
     xsec = []
     number_of_edges = 0
-    for key in edges:
+    for key, edge in core_loss['edges'].items():
         if key.isdigit():
-            xsec.append(edges[key]['data'])
+            xsec.append(edge['data'])
             number_of_edges += 1
+
     xsec = np.array(xsec)
+    
 
     def model(xx, pp):
         yy = pp[0] *  xx**pp[1] +  pp[2] + pp[3] * xx + pp[4] * xx**2
@@ -559,15 +567,16 @@ def fit_edges2(spectrum, energy_scale, edges):
 
     scale = blurred[100]
     pin = np.array([amplitude, -r, 10., 1., 0.00] + [scale/5] * number_of_edges)
-    [p, _] = scipy.optimize.leastsq(residuals, pin, args=(energy_scale, blurred))
+    [p, _] = scipy.optimize.leastsq(residuals, pin, args=(energy_scale, blurred), maxfev=10000)
 
-    for key in edges:
+    for key, edge in core_loss['edges'].items():
         if key.isdigit():
-            edges[key]['areal_density'] = p[int(key)+5]
+            edge['areal_density'] = p[int(key)+5]
     # print(p)
+    
     background = p[0] * np.power(energy_scale, -p[1])
     background += p[2] + energy_scale**p[3] + p[4]*energy_scale**2
-    edges['model'] = {'background': background,
+    core_loss['model'] = {'background': background,
                       'background-poly_0': p[2],
                       'background-poly_1': p[3],
                       'background-poly_2': p[4],
@@ -577,38 +586,39 @@ def fit_edges2(spectrum, energy_scale, edges):
                       'blurred': blurred,
                       'mask': mask,
                       'fit_parameter': p,
-                      'fit_area_start': edges['fit_area']['fit_start'],
-                      'fit_area_end': edges['fit_area']['fit_end'],
+                      'fit_area_start': core_loss['fit_area']['fit_start'],
+                      'fit_area_end': core_loss['fit_area']['fit_end'],
                       'xsec': xsec}
-    return edges
+    return core_loss
 
 def fit_dataset(dataset: sidpy.Dataset):
     """Fit edges in a sidpy.Dataset"""
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
-    dataset.metadata['edges'].setdefault('fit_area', {})
-    dataset.metadata['edges']['fit_area'].setdefault('fit_start', energy_scale[50])
-    dataset.metadata['edges']['fit_area'].setdefault('fit_end', energy_scale[-2])
-    dataset.metadata['edges'].setdefault('use_low_loss', False)
+    dataset.metadata['core_loss'].setdefault('fit_area', {})
+    dataset.metadata['core_loss']['fit_area'].setdefault('fit_start', energy_scale[50])
+    dataset.metadata['core_loss']['fit_area'].setdefault('fit_end', energy_scale[-2])
+    dataset.metadata['core_loss'].setdefault('use_low_loss', False)
 
+    
+    
     exp = dataset.metadata.get('experiment', {})
     alpha  = exp.get('convergence_angle', None)
     if alpha is None:
         raise ValueError('need a convergence_angle in experiment of metadata dictionary ')
     beta = exp.get('collection_angle', 0)
     beam_kv = exp.get('acceleration_voltage', 0)
-    eff_beta = effective_collection_angle(energy_scale, alpha, beta, beam_kv)
-    edges = make_cross_sections(dataset.metadata['edges'], energy_scale, beam_kv, eff_beta)
-    dataset.metadata['edges'] = fit_edges2(dataset, energy_scale, edges)
+    eff_beta = 30 # pyTEMlib.eels_tools.effective_collection_angle(energy_scale, alpha, beta, beam_kv)
+    core_loss = make_cross_sections(dataset.metadata['core_loss']['edges'], energy_scale, beam_kv, eff_beta)
+    dataset.metadata['core_loss']= fit_edges2(dataset, energy_scale, dataset.metadata['core_loss'])
     areal_density = []
     element_list = []
-    for key in edges:
-        if key.isdigit():  # only edges have numbers in that dictionary
-            element_list.append(edges[key]['element'])
-            areal_density.append(edges[key]['areal_density'])
+    for edge in dataset.metadata['core_loss']['edges'].values():
+        element_list.append(edge['element'])
+        areal_density.append(edge['areal_density'])
     areal_density = np.array(areal_density)
     out_string = '\nRelative composition: \n'
     for i, element in enumerate(element_list):
-        out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.1f}%  '
+        out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.3f}%  '
     print(out_string)
 
 

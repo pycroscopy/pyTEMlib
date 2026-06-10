@@ -300,3 +300,6 @@ pyTEMlib/eds_tools/get_bote_salvat.py
 pyTEMlib/diffraction_tools/kinematic copy.py
 example_data/01-EELS Acquire_STO.hf5
 example_data/01-EELS Acquire_STO-1.hf5
+# pixi environments
+.pixi/*
+!.pixi/config.toml

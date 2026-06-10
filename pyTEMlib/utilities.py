@@ -178,55 +178,60 @@ def effective_collection_angle(energy_scale: np.ndarray,
     #       Phone : (33-1) 69 41 53 68
     #
     """
-    if beam_ev == 0:
-        beam_ev = 100.0 * 1e3
+    z1 = beam_ev  # eV
+    z2 = energy_scale[0]
+    z3 = energy_scale[-1]
+    z4 = 100.0
+    z5 = alpha*0.001   # rad
+    z6 = beta*0.001    # rad
+    z7 = 500          # number of integration steps to be modified at will
 
-    if alpha == 0:
-        return beta
+    # main loop on energy loss
+    
+    for  zx in range(int(z2),int(z3),int(z4)): #! zx = current energy loss
+        eta=0.0;
+        x0=float(zx)*(z1+511060.)/(z1*(z1+1022120.));  # x0 = relativistic theta-e
+        x1 = np.pi/(2.*x0);
+        x2=x0*x0+z5*z5;
+        x3=z5/x0*z5/x0;
+        x4=0.1*np.sqrt(x2);
+        dtheta=(z6-x4)/z7;
+        #
+        # calculation of the analytical expression
+        #
+        for zi in range(1, int(z7)):
+            theta=x4+dtheta*float(zi);
+            x5=theta*theta;
+            x6=4.*x5*x0*x0;
+            x7=x2-x5;
+            x8=np.sqrt(x7*x7+x6);
+            x9=(x8+x7)/(2.*x0*x0);
+            x10=2.*theta*dtheta*np.log(x9);
+            eta=eta+x10;
+    
+              
+    
+        eta=eta+x2/100.*np.log(1.+x3)   ;  # addition of the central contribution
+        x4=z5*z5*np.log(1.+x1*x1);         # normalisation
+        eta=eta/x4;
+        #
+        #        correction by geometrical factor (beta/alpha)**2
+        #
+        if (z6<z5):
+            x5=z5/z6;
+            eta=eta*x5*x5;
+    
+        etha2=eta*100.;
+        #
+        #        calculation of beta *
+        #
+        x6=np.power((1.+x1*x1),eta);
+        x7=x0*np.sqrt(x6-1.);
+        y=x7*1000.;
 
-    if beta == 0:
-        return alpha
+    
+    return y
 
-    alpha = alpha * 0.001  # rad
-    beta = beta * 0.001  # rad
-    z7 = 500.0  # number of integration steps to be modified at will
-
-    #       main loop on energy loss
-    for zx in range(int(energy_scale[0]), int(energy_scale[-1]), 100):
-        # ! zx = current energy loss
-        eta = 0.0
-        # x0 = relativistic theta-e
-        x0 = float(zx) * (beam_ev + 511060.) / (beam_ev * (beam_ev + 1022120.))
-        dtheta = (beta - 0.1 * np.sqrt((x0**2 + alpha**2))) / 500  # integration steps
-    #
-    #        calculation of the analytical expression
-    #
-    for zi in range(1, int(z7)):
-        theta = 0.1 * np.sqrt((x0**2 + alpha**2)) + dtheta * float(zi)
-        x5 = theta**2
-        x6 = 4. * x5 * x0 * x0
-        x7 = (x0**2 + alpha**2) - x5
-        eta += 2. * theta * dtheta * np.log((np.sqrt(x7**2 + x6) + x7) / (2. * x0**2))
-    # addition of the central contribution
-    eta = eta + (x0**2 + alpha**2) / 100. * np.log(1. + alpha**2/x0**2)
-    # normalisation
-    eta = eta / alpha * alpha * np.log(1. + np.pi**2 / (4. * x0**2))
-    #
-    #        correction by geometrical factor (beta/alpha)**2
-    #
-    if beta < alpha:
-        x5 = alpha / beta
-        eta = eta * x5**2
-
-    #  etha2 = eta * 100.
-    #
-    #        calculation of beta *
-    #
-    x6 = np.power((1. + (1. + np.pi**2 / (4. * x0**2))), eta)
-    x7 = x0 * np.sqrt(x6 - 1.)
-    beta = x7 * 1000.  # in mrad
-
-    return beta
 
 def set_default_metadata(current_dataset: sidpy.Dataset) -> None:
     """sets default metadata for the dataset"""
