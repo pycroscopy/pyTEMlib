@@ -107,3 +107,8 @@ test = { features = ["test"], solve-group = "default" }
 [tool.pixi.dependencies]
 ipython = ">=9.13.0,<10"
 ipympl = ">=0.10.0,<0.11"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]

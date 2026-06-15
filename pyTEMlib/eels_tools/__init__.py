@@ -9,14 +9,14 @@ from ..utilities import major_edges, all_edges, first_close_edges, elements
 from ..utilities import get_wavelength, effective_collection_angle, set_default_metadata
 from ..utilities import lorentz, gauss, get_x_sections, get_z, get_spectrum
 
-from .zero_loss_tools import zero_loss_function, get_resolution_functions
+from .zero_loss_tools import zero_loss_function, get_resolution_functions, get_resolution_function
 from .zero_loss_tools import get_zero_loss_energy, shift_energy, align_zero_loss
 
 from .low_loss_tools import drude_simulation, kroeger_core
 from .low_loss_tools import get_plasmon_losses, drude, drude_lorentz
 from .low_loss_tools import energy_loss_function, angle_correction, fit_plasmon
-from .low_loss_tools import fit_multiple_scattering, multiple_scattering
-from .low_loss_tools import inelastic_mean_free_path, model3, add_peaks
+from .low_loss_tools import fit_multiple_scattering, multiple_scattering, get_anglog
+from .low_loss_tools import inelastic_mean_free_path, model3, add_peaks, estimate_thickness
 
 from .peak_fit_tools import model_smooth, gaussian_mixture_model, find_peaks, find_maxima
 from .peak_fit_tools import sort_peaks
@@ -33,10 +33,10 @@ from .eels_database import get_spectrum_eels_db
 __all__ = ['major_edges', 'all_edges', 'first_close_edges', 'elements', 'get_wavelength',
            'effective_collection_angle', 'set_default_metadata', 'lorentz', 'gauss',
            'get_x_sections', 'get_z', 'get_spectrum', 'zero_loss_function',
-           'get_resolution_functions', 'get_zero_loss_energy', 'shift_energy', 'align_zero_loss',
-           'drude_simulation', 'kroeger_core','get_plasmon_losses', 'drude', 'drude_lorentz',
+           'get_resolution_functions', 'get_resolution_function', 'get_zero_loss_energy', 'shift_energy', 'align_zero_loss',
+           'drude_simulation', 'kroeger_core','get_plasmon_losses', 'drude', 'drude_lorentz', 'get_anglog',
            'energy_loss_function', 'angle_correction', 'fit_plasmon', 'fit_multiple_scattering', 
-           'multiple_scattering', 'inelastic_mean_free_path', 'model3', 'add_peaks',
+           'multiple_scattering', 'inelastic_mean_free_path', 'model3', 'add_peaks', 'estimate_thickness',
            'model_smooth', 'gaussian_mixture_model', 'find_peaks', 'find_maxima', 'sort_peaks',
            'make_cross_sections', 'fit_edges2', 'power_law_background', 'list_all_edges',
            'find_all_edges', 'find_associated_edges', 'find_white_lines', 'find_edges',

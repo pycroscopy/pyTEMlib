@@ -51,14 +51,12 @@ class TestFileFunctions(unittest.TestCase):
         """Test finding elements in EDS spectrum"""     
         minor_peaks = pyTEMlib.eds_tools.detect_peaks(spectrum, minimum_number_of_peaks=10)
 
-        keys = list(spectrum.metadata['EDS'].keys())
-        for key in keys:
-            if len(key) < 3:
-                del spectrum.metadata['EDS'][key]
+        spectrum.metadata.setdefault('EDS', {}).setdefault('elements', {})
+        del spectrum.metadata['EDS']['elements']
 
         elements = pyTEMlib.eds_tools.peaks_element_correlation(spectrum, minor_peaks)
         spectrum.metadata['EDS'].update(pyTEMlib.eds_tools.get_x_ray_lines(spectrum, elements))
-        print(spectrum.metadata['EDS'].keys())
+        
         self.assertIsInstance(elements, list)
         self.assertTrue('Ti' in elements)
 
@@ -73,18 +71,18 @@ class TestFileFunctions(unittest.TestCase):
     def test_quantify_xsection(self):
         """Test quantification using cross sections"""
         pyTEMlib.eds_tools.quantify_eds(spectrum, mask=['Cu'])
-        self.assertIn('GUI', spectrum.metadata['EDS'])
-        self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
+        self.assertIn('elements', spectrum.metadata['EDS'])
+        self.assertIn('Cu', spectrum.metadata['EDS']['elements'])
 
     def test_quantify_kfactors(self):
         """Test quantification using k-factors"""
         q_dict = pyTEMlib.eds_tools.load_k_factors()
         pyTEMlib.eds_tools.quantify_eds(spectrum, q_dict, mask=['Cu'])
         self.assertIsInstance(q_dict, dict)
-        self.assertIn('GUI', spectrum.metadata['EDS'])
-        self.assertIn('Cu', spectrum.metadata['EDS']['GUI'])
+        self.assertIn('elements', spectrum.metadata['EDS'])
+        self.assertIn('Cu', spectrum.metadata['EDS']['elements'])
 
     def test_r_absorption(self):
         """Test absorption correction"""
         pyTEMlib.eds_tools.apply_absorption_correction(spectrum, 30)
-        self.assertIn('corrected-atom%', spectrum.metadata['EDS']['GUI']['Ti'])
+        self.assertIn('corrected-atom%', spectrum.metadata['EDS']['elements']['Ti'])

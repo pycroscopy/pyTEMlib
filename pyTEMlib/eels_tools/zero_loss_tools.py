@@ -152,6 +152,18 @@ def get_zero_losses(energy, z_loss_params):
     return z_loss_dset
 
 
+def get_resolution_function(dataset: sidpy.Dataset) -> np.ndarray:
+    """
+    Analyze and fit low-loss EELS data within a specified energy range to determine zero-loss peaks.
+    """
+    def residuals(parameters, energy, data):
+        return data - zero_loss_function(energy, parameters)
+
+    guess = np.array([.2, 10000, .1, -0.2, 10000, .1])
+    fit_p = scipy.optimize.least_squares(residuals, guess, args=(dataset.energy_loss.values, np.array(dataset)),method='lm')
+    dataset.metadata.setdefault('zero_loss', {})['fit'] ={'parameters': fit_p['x'], 'function': 'product of lorentzians'}
+    
+    return zero_loss_function(dataset.energy_loss.values, fit_p['x'])
 
 
 def get_resolution_functions(dataset: sidpy.Dataset, start_fit_energy: float=-1,
