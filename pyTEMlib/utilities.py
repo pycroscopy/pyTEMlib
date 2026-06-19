@@ -179,7 +179,7 @@ def effective_collection_angle(energy_scale: np.ndarray,
     #
     """
     z1 = beam_ev  # eV
-    z2 = energy_scale[0]
+    z2 = np.max([energy_scale[0], 1.0])
     z3 = energy_scale[-1]
     z4 = 100.0
     z5 = alpha*0.001   # rad
@@ -191,11 +191,11 @@ def effective_collection_angle(energy_scale: np.ndarray,
     for  zx in range(int(z2),int(z3),int(z4)): #! zx = current energy loss
         eta=0.0;
         x0=float(zx)*(z1+511060.)/(z1*(z1+1022120.));  # x0 = relativistic theta-e
-        x1 = np.pi/(2.*x0);
-        x2=x0*x0+z5*z5;
-        x3=z5/x0*z5/x0;
-        x4=0.1*np.sqrt(x2);
-        dtheta=(z6-x4)/z7;
+        x1 = np.pi/(2.*x0)
+        x2=x0*x0+z5*z5
+        x3=z5/x0*z5/x0
+        x4=0.1*np.sqrt(x2)
+        dtheta=(z6-x4)/z7
         #
         # calculation of the analytical expression
         #
@@ -225,10 +225,9 @@ def effective_collection_angle(energy_scale: np.ndarray,
         #
         #        calculation of beta *
         #
-        x6=np.power((1.+x1*x1),eta);
-        x7=x0*np.sqrt(x6-1.);
-        y=x7*1000.;
-
+        x6=np.power((1.+x1*x1),eta)
+        x7=x0*np.sqrt(x6-1.)
+        y=x7*1000.
     
     return y
 
