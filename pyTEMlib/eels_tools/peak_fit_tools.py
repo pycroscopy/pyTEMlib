@@ -71,9 +71,32 @@ def gauss(x: np.ndarray,
         return x * 0.
     return p[1] * np.exp(-(x - p[0])**2 / (2.0 * (p[2] / 2.3548)**2))
 
-
 @jit
 def gmm(x, p):
+    """Gaussian Mixture Model - vectorized
+
+    Parameters:
+    -----------
+    x : np.ndarray (1dim)
+        energy scale
+    p:  np.ndarray (1dim)
+        parameters of Gaussians (center, amplitude, width, center, amplitude, ... )
+    Returns:
+    sum of gaussians: np.ndarray (1dim) 
+    """    
+    parameters = p.reshape(-1,3)
+    
+    centers = parameters[:,0]
+    amplitudes = parameters[:,1]
+    sigmas = parameters[:, 2] * 2.3548
+    
+    gaussians =  np.exp(-0.5 * ((x[:, None] - centers) / sigmas)**2)  # Shape: (M, NumPeaks)
+    
+    # Sum across the peaks (columns) to get total model of spectrum: here as a dot product!
+    return gaussians @ amplitudes
+
+@jit
+def gmm2(x, p):
     """Gaussian Mixture Model"""    
     y = np.zeros(len(x))
     number_of_peaks= int(len(p)/3)
@@ -172,7 +195,7 @@ def gaussian_mixture_model(dataset, p_in=None):
         spectrum = np.array(dataset)
         energy_scale = np.arange(len(spectrum))
     spectrum = np.array(spectrum)
-    #spectrum -= np.min(spectrum)-1
+    
     if p_in is None:
         p_in = find_peaks(spectrum, energy_scale)
 
@@ -183,8 +206,10 @@ def gaussian_mixture_model(dataset, p_in=None):
 
 def fit_gmm(x, y, pin):
     """fit a Gaussian mixture model to a spectrum"""
-    [p, _] = scipy.optimize.leastsq(residuals3, pin, args=(x, y),maxfev = 10000)
-    return p
+    p = scipy.optimize.least_squares(residuals3, 
+                                          pin, 
+                                          args=(x, y), xtol=1e-3, method='lm')#  maxfev = 10000)
+    return p.x
 
 
 def sort_peaks(p, peak_shape):
@@ -214,10 +239,10 @@ def fit_peaks(spectrum):
     diff = np.array(spectrum[start_channel:end_channel] - model[start_channel:end_channel])
     p_in =  peak_dict['peak_out_list'] #peak_gmm_list[:]
     # find the optimum fitting parameters
-
+    print(p)
     [p_out, _] = scipy.optimize.leastsq(residuals3,
                                         np.array(p_in, dtype=np.float64),
-                                        args=(energy_scale, diff))  # , False))
+                                        args=(energy_scale, diff),)  # , False))
     # construct the fit data from the optimized parameters
     peak_model = gmm(full_energy_scale, p_out)  # , False)
 

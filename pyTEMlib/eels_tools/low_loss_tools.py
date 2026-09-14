@@ -9,8 +9,57 @@ from sidpy.proc.fitter import SidFitter
 
 from ..utilities import get_wavelength, effective_collection_angle
 from ..utilities import gauss, lorentz
-from .zero_loss_tools import zl
+from .zero_loss_tools import zl, get_resolution_function, align_zero_loss
+from .peak_fit_tools import gaussian_mixture_model
 
+
+def analyse_low_loss(spectrum, gmm=False, verbose=False):
+    """ Do the full analysis of low loss EELS spectrum"""
+    shifted_low_loss = align_zero_loss(spectrum)
+    zero_loss = get_resolution_function(shifted_low_loss)
+
+    if spectrum.metadata['experiment']['convergence_angle'] + spectrum.metadata['experiment']['collection_angle'] == 0:
+        print('Warning: convergence angle is zero setting to 10 mrad')
+        spectrum.metadata['experiment']['convergence_angle'] = 10
+        print('Warning: collection angle is zero setting to 30 mrad')
+        spectrum.metadata['experiment']['collection_angle'] = 30
+
+    acceleration_voltage = spectrum.metadata['experiment']['acceleration_voltage']*1
+    energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
+    eff_beta = effective_collection_angle(energy_scale,
+                                          spectrum.metadata['experiment']['convergence_angle'],
+                                          spectrum.metadata['experiment']['collection_angle'],
+                                          acceleration_voltage)
+    anglog = get_anglog(energy_scale, acceleration_voltage, eff_beta)
+    plasmon_start = np.searchsorted(energy_scale, 10)
+    plasmon_peak = np.argmax(np.array(shifted_low_loss-zero_loss)[plasmon_start:])+plasmon_start
+    start_fit_energy = shifted_low_loss.energy_loss.values[plasmon_peak]-5
+    end_fit_energy = shifted_low_loss.energy_loss.values[plasmon_peak]+5
+
+    plasmon, fit_p= fit_plasmon(shifted_low_loss, start_fit_energy, end_fit_energy)
+
+    plasmon = energy_loss_function(shifted_low_loss.energy_loss.values, fit_p, anglog)
+    epsilon = drude(shifted_low_loss.energy_loss.values, fit_p)
+    multiple_scattering = fit_multiple_scattering(shifted_low_loss-zero_loss, anglog, end_fit_energy=55, )   
+    shifted_low_loss.metadata['zero_loss']['array'] = zero_loss
+    shifted_low_loss.metadata['plasmon']['array'] = plasmon
+    shifted_low_loss.metadata['plasmon']['multiple_scattering_array'] = multiple_scattering
+    shifted_low_loss.metadata.setdefault('plot', {})['additional_spectra'] = {'zero_loss': "metadata['zero_loss']['array']",
+                                                                            'multiple_scattering': "metadata['plasmon']['multiple_scattering_array']",
+                                                                            'model': 'zero_loss+multiple_scattering'}
+    if gmm:
+        residual = shifted_low_loss - multiple_scattering - zero_loss
+        peak_model, p = gaussian_mixture_model(residual, p_in=None)
+
+        print(f'using {int(len(p)/3)} Gaussians for fit')
+        shifted_low_loss.metadata['gmm'] ={'parameter': p,
+                                           'model': peak_model,
+                                           'mode': 'low_loss_residual'}
+        shifted_low_loss.metadata.setdefault('plot', {}).setdefault('additional_spectra', {})['model'] = "zero_loss+multiple_scattering+metadata['gmm']['model]"
+    if verbose:
+        _,_ = estimate_thickness(shifted_low_loss, anglog, verbose=verbose)
+
+    return shifted_low_loss
 
 def drude(energy_scale: np.ndarray, parameters: list) -> np.ndarray:
     """dielectric function according to Drude theory"""
@@ -92,7 +141,7 @@ def fit_plasmon(spectrum, start_fit_energy, end_fit_energy):
     start_fit_pixel = np.searchsorted(energy, start_fit_energy)
     end_fit_pixel = np.searchsorted(energy, end_fit_energy)
     zero_pixel = np.searchsorted(energy, 0)
-    print(zero_pixel, start_fit_pixel, end_fit_pixel)
+    #print(zero_pixel, start_fit_pixel, end_fit_pixel)
     acceleration_eV = spectrum.metadata['experiment']['acceleration_voltage']
     convergence_angle = spectrum.metadata['experiment']['convergence_angle']
 
@@ -360,19 +409,27 @@ def fit_multiple_scattering(spectrum, anglog=1, end_fit_energy=55):
     energy_scale = spectrum.energy_loss.values
     p0 = list(spectrum.metadata['plasmon']['single_scattering_fit']['parameters'])+[.37]
     
-    def errf_multi(p, y, x):
+    def errf_multi(p, y, x, mask):
         elf = multiple_scattering(x, p, anglog[:endFit])
-        return np.abs(y - elf)  # /np.sqrt(y)
-    
+        return np.abs(y - elf)*mask  # /np.sqrt(y)
+    zero_loss = np.searchsorted(energy_scale, 0)
+    plasmon_fit = spectrum.metadata['plasmon']['single_scattering_fit']['parameters']
+    plasmon = np.searchsorted(energy_scale, plasmon_fit[0]) 
+    mask = np.zeros(len(energy_scale))
+    midle = np.searchsorted(energy_scale, plasmon_fit[0])
+    width = int(np.searchsorted(energy_scale, plasmon_fit[1])/2)
+    mask[midle-width:midle+width] = 1
+    midle = (np.searchsorted(energy_scale, plasmon_fit[0])-zero_loss)*2+zero_loss
+    mask[midle-width:midle+width] = 1
     endFit = np.searchsorted(energy_scale, end_fit_energy)
 
     p2 = scipy.optimize.least_squares(errf_multi, p0, 
                                            args=(np.array(spectrum)[:endFit], 
-                                                 energy_scale[:endFit]),
+                                                 energy_scale[:endFit], mask[:endFit]),
                                                  method='lm')
     p2 = p2['x']
     cts = multiple_scattering(energy_scale, p2, anglog)
-    # print(f"relative thickness t/lambda: {p2[4]:.3f}")
+    print(f"relative thickness t/lambda: {p2[4]:.3f}")
     spectrum.metadata['plasmon']['multiple_scattering_fit'] = {'parameters': p2,
                                                     'tmfp': p2[4]}
     return cts
@@ -430,7 +487,7 @@ def fit_multiple_scattering2(dataset: Union[sidpy.Dataset, np.ndarray],
     return multi
 
 
-def estimate_thickness(spectrum, anglog):
+def estimate_thickness(spectrum, anglog, verbose=True):
     "estimate thickness from plasmon fit"
     energy_scale = spectrum.get_spectral_dims(return_axis=True)[0].values
     p2 = spectrum.metadata['plasmon']['multiple_scattering_fit']['parameters']
@@ -449,12 +506,17 @@ def estimate_thickness(spectrum, anglog):
     tgt = 1000*e0*(1022.12 + e0)/(511.06 + e0);# %eV  Appendix E p 427 
     lambda_pv = tnm/Pv; #% does NOT depend on free-electron approximation (no damping). 
     lambda_fe = 4.0*0.05292*T/ep/np.log(1+(beta* tgt / ep) **2); #% Eq.(3.44) approximation
-
-    print(f'Volume-plasmon MFP = {lambda_pv:.2f} nm') 
-    print(f'Free-electron MFP = {lambda_fe:.2f} nm')
-    print('--------------------------------')
-    print(f"relative thickness t/lambda: {tnm:.3f}")
-    print(f'estimated thickness = {lambda_fe*tnm:.2f} nm\n')
+    if verbose:
+        print(f'Volume-plasmon MFP = {lambda_pv:.2f} nm') 
+        print(f'Free-electron MFP = {lambda_fe:.2f} nm')
+        print('--------------------------------')
+        print(f"relative thickness t/lambda: {tnm:.3f}")
+        print(f'estimated thickness = {lambda_fe*tnm:.2f} nm\n')
+    spectrum.metadata['plasmon']['multiple_scattering_fit']['MFP_volume_plasmon'] = lambda_pv * tnm
+    spectrum.metadata['plasmon']['multiple_scattering_fit']['MFP_free_electron'] = lambda_fe
+    spectrum.metadata['plasmon']['multiple_scattering_fit']['thickness'] = lambda_fe * tnm
+    spectrum.metadata['plasmon']['multiple_scattering_fit']['relative_thickness'] = tnm
+            
     return lambda_pv, lambda_fe,
 
 
