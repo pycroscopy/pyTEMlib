@@ -27,6 +27,7 @@ from .core_loss_tools import find_white_lines, find_edges, assign_likely_edges
 from .core_loss_tools import auto_id_edges, identify_edges, add_element_to_dataset
 from .core_loss_tools import fit_dataset, auto_chemical_composition, make_edges
 from .core_loss_tools import cl_model, core_loss_model, fit_edges, xsec_xrpa
+from .core_loss_tools import analyse_core_loss
 
 from .interactive_eels import EdgesAtCursor, RegionSelector
 from .eels_database import get_spectrum_eels_db
@@ -43,4 +44,4 @@ __all__ = ['major_edges', 'all_edges', 'first_close_edges', 'elements', 'get_wav
            'assign_likely_edges', 'auto_id_edges', 'identify_edges', 'add_element_to_dataset',
            'fit_dataset', 'auto_chemical_composition', 'make_edges', 'cl_model', 'core_loss_model',
            'fit_edges', 'xsec_xrpa', 'EdgesAtCursor', 'RegionSelector', 'get_spectrum_eels_db',
-           'analyse_low_loss']
+           'analyse_low_loss', 'analyse_core_loss']
