@@ -303,3 +303,7 @@ example_data/01-EELS Acquire_STO-1.hf5
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+uv.lock
+example_data/GOLD-NP-DIFF-2-12.hf5
+main.py
+pyTEMlib/17576831.zip
