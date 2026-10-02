@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
 from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+from matplotlib import mathtext as _mathtext
 
 import ase
 import numpy as np
@@ -16,6 +17,7 @@ import scipy
 import sidpy
 import skimage
 
+from . kinematic import get_allowed_reflections
 
 
 def scattering_profiles(diff_pattern, center):
@@ -811,3 +813,227 @@ def plot_diffraction_pattern(atoms, diffraction_pattern=None, unit='mrad', verbo
     # plt.title( tags_out['crystal'])
     plt.xlabel(f"angle ({tags_out['output']['unit']})")
     return fig
+
+
+# ###############
+# Kikuchi Map
+# ###############
+
+
+def normalize(v):
+    v = np.atleast_2d(np.asarray(v, dtype=float))
+    return v / np.linalg.norm(v, axis=1, keepdims=True)
+
+def stereographic(v):
+    v = normalize(v)
+    return np.stack([v[:, 0] / (1 + v[:, 2]), v[:, 1] / (1 + v[:, 2])], axis=1)
+
+def in_triangle(v, margin_deg=0.0, tol=1e-9):
+    """Directions inside the standard triangle, optionally widened.
+
+    ``margin_deg`` swings each bounding plane outward by that angle.  A band
+    whose centre line runs *along* an edge then keeps both of its Bragg cones
+    inside the drawn region instead of losing the outer one.  With
+    ``margin_deg=0`` this is exactly the classic test 0 <= x <= y <= z.
+    """
+    EDGE_NORMALS = normalize([[1, 0, 0], [-1, 1, 0], [0, -1, 1]])
+    v = normalize(v)
+    limit = np.sin(np.radians(margin_deg)) + tol
+    return (v @ EDGE_NORMALS.T >= -limit).all(axis=1)
+def angle_between(u, v):
+    u, v = normalize(u)[0], normalize(v)[0]
+    return np.degrees(np.arccos(np.clip(u @ v, -1, 1)))
+
+def cone_about(normal, alpha, n_points=4000):
+    """Points on the unit sphere at angle *alpha* from *normal*."""
+    n = normalize(normal)[0]
+    tmp = np.array([0., 0., 1.]) if abs(n[2]) < 0.9 else np.array([1., 0., 0.])
+    e1 = np.cross(n, tmp); e1 /= np.linalg.norm(e1)
+    e2 = np.cross(n, e1)
+    t = np.linspace(0, 2 * np.pi, n_points)
+    return (np.cos(alpha) * n[None, :]
+            + np.sin(alpha) * (np.cos(t)[:, None] * e1 + np.sin(t)[:, None] * e2))
+
+
+def masked_projection(points, margin_deg=0.0):
+    """Project, keeping only the upper hemisphere inside the (widened) triangle.
+
+    Returns ``None`` when nothing survives.  Points outside become NaN so that
+    matplotlib breaks the line rather than closing it across the figure.
+    """
+    points = np.atleast_2d(points)
+    mask = in_triangle(points, margin_deg) & (points[:, 2] > 1e-9)
+    if not mask.any():
+        return None
+    xy = stereographic(points)
+    xy[~mask] = np.nan
+    return xy
+
+
+def unique_bands(reflections=None, g_length=None):
+    """g and -g describe the same band; keep one representative of each."""
+    seen = {}
+    for index, hkl in enumerate(np.atleast_2d(reflections)):
+        hkl = np.asarray(hkl, dtype=int)
+        key = tuple(hkl if tuple(hkl) > tuple(-hkl) else -hkl)
+        seen[key] = g_length[index]
+    return seen
+
+def bragg_angle(g, wavelength):
+    return np.arcsin(np.clip(wavelength * np.asarray(g) / 2.0, -1, 1))
+def pretty_plain(hkl):
+    """Plain-text (no mathtext) index label, safe in titles and print()."""
+    return '[' + ','.join('%d' % i for i in np.asarray(hkl).astype(int)) + ']'
+
+def mathtext_ok(label):
+    """True if *label* can be parsed by matplotlib's mathtext engine."""
+    try:
+        _MATH_PARSER.parse(label, 100, None)
+        return True
+    except Exception:
+        return False
+def pretty(hkl, brackets='()'):
+    """Mathtext label for a Miller index triple, negatives as overbars.
+
+    Built locally rather than with ``dift.make_pretty_labels``: that helper
+    returns a string with unbalanced braces and an interior '$', which makes
+    matplotlib raise a mathtext ParseException as soon as the text extent is
+    needed (e.g. inside plt.tight_layout).  Indices with two or more digits
+    are comma separated so that e.g. (1,10,2) is not confused with (1,1,0,2).
+    """
+    idx = np.asarray(hkl).astype(int)
+    parts = [(r'\bar{%d}' % -i) if i < 0 else ('%d' % i) for i in idx]
+    sep = ',' if np.abs(idx).max() > 9 else ''
+    label = '$%s%s%s$' % (brackets[0], sep.join(parts), brackets[1])
+    if not mathtext_ok(label):                      # last-resort plain text
+        label = '%s%s%s' % (brackets[0], ','.join('%d' % i for i in idx), brackets[1])
+    return label
+
+
+MARGIN_DEG = 2.0        # how far outside the triangle the map is drawn
+
+POLES = [[0,0,1],[0,1,1],[1,1,1],[0,1,2],[1,1,2],[1,2,2],
+         [0,1,3],[1,1,3],[0,2,3],[1,2,3],[1,3,3],[2,3,3]]
+
+
+def triangle_outline(n=400, corners=None):
+    """The three edges of the strict triangle, as great-circle arcs."""
+    arcs = []
+    keys = list(corners.values())
+    for p, q in [(keys[0], keys[1]), (keys[1], keys[2]), (keys[2], keys[0])]:
+        p, q = normalize(p)[0], normalize(q)[0]
+        t = np.linspace(0, 1, n)[:, None]
+        arc = normalize(p[None, :] * (1 - t) + q[None, :] * t)
+        arcs.append(stereographic(arc))
+    return arcs
+
+def kikuchi_map(bands, corners, wavelength, acceleration_voltage, 
+                margin_deg=MARGIN_DEG, label_bands=True,
+                figsize=(9.5, 9.5), ax=None):
+    """Draw the map, overscanning *margin_deg* beyond the triangle edges.
+
+    Each Bragg cone is clipped independently: a band whose centre line runs
+    along an edge keeps its outer cone, which the strict mask threw away.
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure()
+
+    n_drawn = 0
+    extent = []
+    for hkl, g in sorted(bands.items(), key=lambda kv: kv[1]):
+        theta = bragg_angle(g, wavelength)
+        pieces = []
+        for alpha in (np.pi/2 - theta, np.pi/2 + theta):
+            xy = masked_projection(cone_about(hkl, alpha), margin_deg)
+            if xy is not None:
+                pieces.append(xy)
+        mid = masked_projection(cone_about(hkl, np.pi/2), margin_deg)
+        if not pieces and mid is None:
+            continue
+        n_drawn += 1
+        for xy in pieces:
+            ax.plot(xy[:, 0], xy[:, 1], lw=0.6, color='0.25',
+                    solid_capstyle='butt', zorder=2)
+            extent.append(xy)
+        if mid is not None:
+            ax.plot(mid[:, 0], mid[:, 1], lw=0.4, color='tab:red',
+                    alpha=0.55, zorder=1)
+            extent.append(mid)
+            if label_bands and g < 0.75:
+                ok = np.where(~np.isnan(mid[:, 0]))[0]
+                p = mid[ok[len(ok) // 2]]
+                ax.annotate(pretty(hkl), p, fontsize=7, color='tab:red',
+                            ha='center', va='center', zorder=6,
+                            bbox=dict(fc='white', ec='none', alpha=0.7, pad=0.4))
+
+    for arc in triangle_outline(400, corners):
+        ax.plot(arc[:, 0], arc[:, 1], lw=1.4, color='tab:green',
+                alpha=0.9, zorder=4)
+
+    for v in POLES:
+        if not in_triangle(v)[0]:
+            continue
+        p = stereographic(v)[0]
+        ax.plot(*p, 'o', ms=4.5, color='tab:blue', zorder=5)
+        ax.annotate(pretty(v, '[]'), p, textcoords='offset points',
+                    xytext=(6, 5), fontsize=8.5, color='tab:blue', zorder=5)
+
+    # frame from what was actually drawn, so the overscan is never cut off
+    xy = np.vstack(extent)
+    x0, y0 = np.nanmin(xy, axis=0)
+    x1, y1 = np.nanmax(xy, axis=0)
+    pad = 0.03 * max(x1 - x0, y1 - y0)
+    ax.set_xlim(x0 - pad, x1 + pad)
+    ax.set_ylim(y0 - pad, y1 + pad)
+    print('%d of %d bands reach the drawn region (%.1f deg overscan)'
+                % (n_drawn, len(bands), margin_deg))
+    
+    return fig, ax
+
+
+def draw_kikuchi_map(atoms):
+    
+    hkl, g, F = get_allowed_reflections(atoms)
+    g_max = atoms.info['experimental']['g_max']
+    hkl_max = atoms.info['experimental']['hkl_max']
+    acceleration_voltage = atoms.info['experimental']['acceleration_voltage']
+    wavelength = atoms.info['experimental']['wavelength']
+    zone_axes_to_consider = np.linalg.norm(g, axis=1)< g_max
+    len(zone_axes_to_consider)
+    reflections = hkl[zone_axes_to_consider]
+    g = g[zone_axes_to_consider]
+    structure_factor = F[zone_axes_to_consider]
+    g_length =  np.linalg.norm(g, axis=1)
+    print('%d allowed reflections with |g| <= %.2f 1/A' % (len(reflections), g_max))
+
+    EDGE_NORMALS = normalize([[1, 0, 0], [-1, 1, 0], [0, -1, 1]])
+    EDGE_LABELS = ['(100)', '(-110)', '(0-11)']
+    # margin_deg=0 must reproduce the inequality form it replaces
+    _rng = np.random.default_rng(0)
+    _v = normalize(_rng.normal(size=(20000, 3)))
+    _v = _v[_v[:, 2] > 0]
+    _x, _y, _z = _v[:, 0], _v[:, 1], _v[:, 2]
+    _classic = (_x >= -1e-9) & (_x <= _y + 1e-9) & (_y <= _z + 1e-9)
+    assert (in_triangle(_v) == _classic).sum() >= len(_v) - 2, 'margin=0 must match 0<=x<=y<=z'
+    print('%d of %d random directions in the triangle (expect ~1/48 of z>0)'
+        % (_classic.sum(), len(_v)))
+
+    corners = {'[001]': [0,0,1], '[011]': [0,1,1], '[111]': [1,1,1]}
+    for name, v in corners.items():
+        assert in_triangle(v)[0], name
+    print('all three corners inside (the [111] corner sits on all three planes '
+        'and needs the tolerance)\n')
+    bands = unique_bands(reflections, g_length)
+    print('%d unique bands from %d reflections' % (len(bands), len(reflections)))
+
+    fig, ax = kikuchi_map(bands, corners, wavelength, acceleration_voltage)
+    margin_deg=MARGIN_DEG
+    ax.set_aspect('equal'); ax.axis('off')
+    ax.set_title(f'{atoms.info['name']} Kikuchi map, {acceleration_voltage/1e3:.0f} kV, $|g| \\leq {g_max:.2f}\\ \\AA^{-1}$'
+                    '\nband widths to scale, {margin_deg:.1f}$^\\circ$ overscan beyond the triangle')
+    
+    plt.tight_layout()
+    plt.show()
+    return fig, ax

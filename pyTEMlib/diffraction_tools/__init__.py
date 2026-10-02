@@ -20,6 +20,7 @@ from .diffraction_plot import plot_diffraction_pattern, plot_ring_pattern, warp
 from .diffraction_plot import plot_saed_parameter, plot_cbed_parameter, plot_holz_parameter
 from .diffraction_plot import plot_kikuchi, plot_reciprocal_unit_cell_2d
 from .diffraction_plot import scattering_profiles, set_center, plotting_coordinates
+from .diffraction_plot import draw_kikuchi_map
 
 from .dynamic import potential_1dim, potential_2dim, interaction_parameter
 from .dynamic import get_transmission, get_propagator, multi_slice, make_chi
@@ -39,4 +40,4 @@ __all__ = ['read_poscar', 'example', 'zone_mistilt', 'check_sanity', 'get_all_g_
            'plot_kikuchi', 'plot_reciprocal_unit_cell_2d', 'scattering_profiles',
            'set_center', 'potential_1dim', 'potential_2dim', 'interaction_parameter', 
            'get_transmission', 'get_propagator', 'multi_slice', 'make_chi', 
-           'objective_lens_function']
+           'objective_lens_function', 'draw_kikuchi_map']

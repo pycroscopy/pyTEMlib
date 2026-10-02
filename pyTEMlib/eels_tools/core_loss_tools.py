@@ -29,10 +29,88 @@ import numpy as np
 import scipy
 import sidpy
 
+from build.lib.build.lib.build.lib.build.lib.pyTEMlib.eels_tools.core_loss_tools import fit_dataset
+
 from ..utilities import major_edges, all_edges, elements
 from ..utilities import effective_collection_angle
 from ..utilities import get_z, get_x_sections, second_derivative
+from .low_loss_tools import analyse_low_loss 
 
+def core_loss_output(dataset, atoms):
+    edges = dataset.metadata['core_loss']['edges']
+    element = []
+    areal_density = []
+
+    for key, edge in edges.items():
+        if key.isdigit():
+            element.append(edge['element'])
+            areal_density.append(edge['areal_density'])
+        
+    print('Relative chemical composition of ', dataset.title)
+
+    for i in range(len(element)):
+        
+        out_string = f'{element[i]}: {areal_density[i]/np.sum(areal_density)*100:.3f} %'
+        if 'intentsity_scale_ppm' not in dataset.metadata['experiment']:
+            print(out_string)
+            continue
+        out_string += f"areal_density: {areal_density[i]*dataset.metadata['experiment']['intentsity_scale_ppm']*1e-6:.2f}atoms/nm^2"
+        
+        if atoms is not None:
+            elements, counts = np.unique(atoms.symbols, return_counts=True)
+            atom_index = np.where(elements==element[i])[0]
+            if atom_index.size > 0:
+                if any(atoms.cell.lengths() == 0):
+                    # print('Warning: cell volume is zero, assuming 2D')
+                    density = (counts[atom_index[0]]/atoms.cell.area(np.where(atoms.cell.lengths() == 0)[0])*100)
+                    out_string += f" = {areal_density[i]*dataset.metadata['experiment']['intentsity_scale_ppm']*1e-6/density:.2f}layers"
+                else:
+                    density = (counts[atom_index[0]]/atoms.cell.volume*1000)
+                    out_string += f"thickness:  {areal_density[i]*dataset.metadata['experiment']['intentsity_scale_ppm']*1e-6/density:.2f} nm"
+        print(out_string)
+
+def set_exposure_time(spectrum, counts_per_second=None):
+    exposure_time = spectrum.metadata['experiment']['single_exposure_time'] *spectrum.metadata['experiment']['number_of_frames']
+    dispersion = spectrum.energy_loss.slope
+    title =spectrum.title
+    if not counts_per_second:
+        counts_per_second = spectrum.sum()/exposure_time
+    flux = counts_per_second * exposure_time
+        
+    spectrum.metadata['experiment']['flux'] = flux
+    spectrum.metadata['experiment']['intentsity_scale_ppm'] = 1/flux *1e6 * dispersion
+    spectrum.metadata['experiment']['incident_beam_current_counts'] = counts_per_second
+    spectrum *= spectrum.metadata['experiment']['intentsity_scale_ppm'] 
+    spectrum.title = title+ '_calibrated'
+    spectrum.quantity = 'inelastic scattering probability'
+    spectrum. units = 'ppm'
+    return spectrum
+    
+    
+def analyse_core_loss(core_loss, low_loss=None, elements=[], atoms=None, verbose=True):
+    """
+    Analyse core loss spectrum using low loss spectrum for reference and atoms for quantification.
+    """
+    if low_loss is not None:
+        low_loss.metadata['experiment']['collection_angle'] = core_loss.metadata['experiment']['collection_angle']
+        low_loss.metadata['experiment']['convergence_angle'] = core_loss.metadata['experiment']['convergence_angle']
+        analyzed_low_loss = analyse_low_loss(low_loss, gmm=False, verbose=True)
+        set_exposure_time(low_loss)
+        core_loss_spectrum = set_exposure_time(core_loss, counts_per_second=low_loss.metadata['experiment']['incident_beam_current_counts'])
+    else:
+        core_loss_spectrum = core_loss
+
+    core_loss.metadata.setdefault('core_loss', {})['edges'] ={}
+    for element in elements:
+        add_element_to_dataset(core_loss, element)
+    core_loss.metadata['core_loss'].setdefault('fit_area',{})['fit_start'] = core_loss.energy_loss.values[100]
+    fit_dataset(core_loss, verbose=False)
+    core_loss_output(core_loss, atoms)
+    
+    if verbose:
+        print("Core loss analysis complete.")
+    
+    return core_loss_spectrum
 
 
 def list_all_edges(z: Union[str, int]=0, verbose=False)->list[str, dict]:
@@ -591,7 +669,7 @@ def fit_edges2(spectrum, energy_scale, core_loss):
                       'xsec': xsec}
     return core_loss
 
-def fit_dataset(dataset: sidpy.Dataset):
+def fit_dataset(dataset: sidpy.Dataset, verbose: bool=False) -> None:
     """Fit edges in a sidpy.Dataset"""
     energy_scale = dataset.get_spectral_dims(return_axis=True)[0].values
     dataset.metadata['core_loss'].setdefault('fit_area', {})
@@ -619,7 +697,7 @@ def fit_dataset(dataset: sidpy.Dataset):
     out_string = '\nRelative composition: \n'
     for i, element in enumerate(element_list):
         out_string += f'{element}: {areal_density[i] / areal_density.sum() * 100:.3f}%  '
-    print(out_string)
+    if verbose:print(out_string)
 
 
 def core_loss_model(energy_scale, pp, number_of_edges, xsec):

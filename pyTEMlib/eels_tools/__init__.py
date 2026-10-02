@@ -12,7 +12,7 @@ from ..utilities import lorentz, gauss, get_x_sections, get_z, get_spectrum
 from .zero_loss_tools import zero_loss_function, get_resolution_functions, get_resolution_function
 from .zero_loss_tools import get_zero_loss_energy, shift_energy, align_zero_loss
 
-from .low_loss_tools import drude_simulation, kroeger_core
+from .low_loss_tools import drude_simulation, kroeger_core, analyse_low_loss
 from .low_loss_tools import get_plasmon_losses, drude, drude_lorentz
 from .low_loss_tools import energy_loss_function, angle_correction, fit_plasmon
 from .low_loss_tools import fit_multiple_scattering, multiple_scattering, get_anglog
@@ -27,6 +27,7 @@ from .core_loss_tools import find_white_lines, find_edges, assign_likely_edges
 from .core_loss_tools import auto_id_edges, identify_edges, add_element_to_dataset
 from .core_loss_tools import fit_dataset, auto_chemical_composition, make_edges
 from .core_loss_tools import cl_model, core_loss_model, fit_edges, xsec_xrpa
+from .core_loss_tools import analyse_core_loss
 
 from .interactive_eels import EdgesAtCursor, RegionSelector
 from .eels_database import get_spectrum_eels_db
@@ -42,4 +43,5 @@ __all__ = ['major_edges', 'all_edges', 'first_close_edges', 'elements', 'get_wav
            'find_all_edges', 'find_associated_edges', 'find_white_lines', 'find_edges',
            'assign_likely_edges', 'auto_id_edges', 'identify_edges', 'add_element_to_dataset',
            'fit_dataset', 'auto_chemical_composition', 'make_edges', 'cl_model', 'core_loss_model',
-           'fit_edges', 'xsec_xrpa', 'EdgesAtCursor', 'RegionSelector', 'get_spectrum_eels_db']
+           'fit_edges', 'xsec_xrpa', 'EdgesAtCursor', 'RegionSelector', 'get_spectrum_eels_db',
+           'analyse_low_loss', 'analyse_core_loss']

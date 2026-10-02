@@ -35,7 +35,12 @@ import scipy.sparse
 import spglib
 
 import matplotlib.pylab as plt  # basic plotting
+import sidpy
 
+from . import version
+
+# Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
+jmol_colors = ase.data.colors.jmol_colors
 
 def get_dictionary(atoms: ase.Atoms) -> dict[str, typing.Any]:
     """
@@ -295,9 +300,56 @@ def plot_unit_cell(atoms, extend=1, ax=None):
     ax.set_zlabel('z [Å]')
     return ax.get_figure()
 
+def get_Gaussian_image(atoms: ase.Atoms, super_cell=[1,1,1], pixel_size=0, axes=(0,1), sigma=1):
+    """ Places Gaussians at atomic position to approximate a projected potential
+       Intensity (amplitude) of Gaussians is atomic number squared for Z-contrast
+    
+    Parameters:
+    -----------
+    atoms: ase.Atoms
+       ase atoms structure
+    super_cell: list
+       multiplicator of structure in the different directions
+    pixel_size: float
+       pixel_size of resulting image to add scale
+    axes: list
+       axes for projection
+    sigma: float
+       size of atoms, this is the resolution of the image
+    
+    Returns:
+    -------
+    image: sidpy.dataset
 
-# Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
-jmol_colors = ase.data.colors.jmol_colors
+    """
+    crystal = atoms*np.array(super_cell)
+    if pixel_size == 0:
+        pixel_size = crystal.cell[axes[1], axes[1]]/512
+    size_x = int(crystal.cell[axes[1], axes[1]] / pixel_size)
+    size_y = int(crystal.cell[axes[0], axes[0]] / pixel_size)
+    coords_x = np.arange(size_x) * pixel_size
+    coords_y = np.arange(size_y) * pixel_size
+    image = np.zeros([size_x, size_y])
+    xx, yy = np.meshgrid(coords_y, coords_x)
+    positions = crystal.get_positions()[:,axes]
+    atomic_numbers = crystal.get_atomic_numbers()
+    for (x0, y0) , atomic_number in zip(positions, atomic_numbers):
+        #if rim_min < x <rim_max and rim_min < y <rim_max :
+        image += np.exp(-(((xx - x0) ** 2 + (yy - y0) ** 2) / (2 * sigma))) *  atomic_number**2  
+    
+    dataset = sidpy.Dataset.from_array(image.T)
+    dataset.units = 'Z^2'
+    dataset.quantity = 'intensity'
+    dataset.add_provenance('pyTEMlib:crystal_tools:', 'get_Gaussian_image', version.__version__)
+    dataset.set_dimension(0, sidpy.Dimension(np.arange(dataset.shape[0]), 
+                                          name='x', units='nm', quantity='length',
+                                          dimension_type='spatial'))
+    dataset.set_dimension(1, sidpy.Dimension(np.arange(dataset.shape[1]), 
+                                          name='y', units='nm', quantity='length',
+                                          dimension_type='spatial'))
+    dataset.data_type = 'image'
+    dataset.title = atoms.get_chemical_formula()
+    return dataset
 
 
 def structure_by_name(crystal_name: str) -> ase.Atoms | None:
