@@ -61,11 +61,6 @@ dependencies = [
     "ollama>=0.6.2",
     "nest-asyncio>=1.6.0",
     "torch>=2.14.0",
-    "pyqtgraph>=0.14.0",
-    "pyqt6>=6.11.0",
-    "jupyter-rfb>=1.0.2",
-    "fastplotlib[notebook]>=0.6.1",
-    "imgui-bundle>=1.92.900",
 ]
 
 [project.urls]
