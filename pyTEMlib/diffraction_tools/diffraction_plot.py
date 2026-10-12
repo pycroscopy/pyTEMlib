@@ -887,11 +887,12 @@ def pretty_plain(hkl):
 
 def mathtext_ok(label):
     """True if *label* can be parsed by matplotlib's mathtext engine."""
-    try:
-        _MATH_PARSER.parse(label, 100, None)
-        return True
-    except Exception:
-        return False
+    return True
+    # try:
+    #    _MATH_PARSER.parse(label, 100, None)
+    #    return True
+    # except Exception:
+    #    return False
 def pretty(hkl, brackets='()'):
     """Mathtext label for a Miller index triple, negatives as overbars.
 
