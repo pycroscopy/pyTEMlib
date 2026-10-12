@@ -7,6 +7,7 @@ import matplotlib.patches as patches
 import pyTEMlib.crystal_tools
 from tqdm.auto import tqdm, trange
 
+
 def breadth_first_search(graph, initial_node_index, projected_crystal):
     """ breadth first search of atoms viewed as a graph
 
@@ -467,19 +468,9 @@ def undistort_stack_sitk(distortion_matrix, image_stack):
 
     nimages = image_stack.shape[0]
 
-    if QT_available:
-        progress = pyTEMlib.sidpy_tools.ProgressDialog("Correct Scan Distortions", nimages)
-
-    for i in range(nimages):
-        if QT_available:
-            progress.setValue(i)
+    for i in trange(nimages):
         out = resampler.Execute(sitk.GetImageFromArray(image_stack[i]))
         interpolated[i] = sitk.GetArrayFromImage(out)
-
-    progress.setValue(nimages)
-
-    if QT_available:
-        progress.setValue(nimages)
 
     return interpolated
 
