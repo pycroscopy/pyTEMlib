@@ -1031,8 +1031,8 @@ def draw_kikuchi_map(atoms):
     fig, ax = kikuchi_map(bands, corners, wavelength, acceleration_voltage)
     margin_deg=MARGIN_DEG
     ax.set_aspect('equal'); ax.axis('off')
-    ax.set_title(f'{atoms.info['name']} Kikuchi map, {acceleration_voltage/1e3:.0f} kV, $|g| \\leq {g_max:.2f}\\ \\AA^{-1}$'
-                    '\nband widths to scale, {margin_deg:.1f}$^\\circ$ overscan beyond the triangle')
+    ax.set_title(f"{atoms.info['name']} Kikuchi map, {acceleration_voltage/1e3:.0f} kV, $|g| \\leq {g_max:.2f}\\ \\AA^{-1}$"
+                    "\nband widths to scale, {margin_deg:.1f}$^\\circ$ overscan beyond the triangle")
     
     plt.tight_layout()
     plt.show()
