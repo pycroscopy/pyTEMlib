@@ -322,3 +322,6 @@ notebooks/Spectroscopy/rust_test.ipynb
 notebooks/Spectroscopy/S2-Analyse_CoreLoss_EELS copy.ipynb
 src/main.rs
 Untitled1.ipynb
+example_data/GOLD-NP-DIFF-2-13.hf5
+example_data/GOLD-NP-DIFF-2-14.hf5
+example_data/GOLD-NP-DIFF-2-15.hf5

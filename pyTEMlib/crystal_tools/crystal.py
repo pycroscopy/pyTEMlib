@@ -37,11 +37,9 @@ import spglib
 import matplotlib.pylab as plt  # basic plotting
 import sidpy
 
-from . import version
-
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
 jmol_colors = ase.data.colors.jmol_colors
-
+version = "2026.10"
 def get_dictionary(atoms: ase.Atoms) -> dict[str, typing.Any]:
     """
     structure dictionary from ase.Atoms object

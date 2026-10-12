@@ -10,7 +10,7 @@ import matplotlib.patches as patches
 import pyTEMlib.crystal_tools
 from tqdm.auto import tqdm, trange
 
-from .graph_viz import *
+from .visualize import *
 QT_available = False
 
 ###########################################################################
