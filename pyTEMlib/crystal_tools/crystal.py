@@ -40,6 +40,8 @@ import sidpy
 # Jmol colors.  See: http://jmol.sourceforge.net/jscolors/#color_U
 jmol_colors = ase.data.colors.jmol_colors
 version = "2026.10"
+
+
 def get_dictionary(atoms: ase.Atoms) -> dict[str, typing.Any]:
     """
     structure dictionary from ase.Atoms object
@@ -134,14 +136,14 @@ def get_projection(crystal: ase.Atoms, layers: int = 1) -> ase.Atoms:
     projected_crystal = ase.build.surface(crystal, zone_axis, vacuum=.0, layers=layers)
 
     scaled = projected_crystal.get_scaled_positions()
-    projected_crystal.positions[scaled[:,0]>0.95, 0] = 0
-    projected_crystal.positions[scaled[:,1]>0.95, 1] = 0
+    projected_crystal.positions[scaled[:, 0] > 0.95, 0] = 0
+    projected_crystal.positions[scaled[:, 1] > 0.95, 1] = 0
     # do not change this because we did not add a vacuum
     # projected_crystal.positions[scaled[:,2]>0.95, 2] = 0
 
-    projected_crystal.positions[scaled[:,0]<0.05, 0] = 0
-    projected_crystal.positions[scaled[:,1]<0.05, 1] = 0
-    projected_crystal.positions[scaled[:,2]<0.05, 2] = 0
+    projected_crystal.positions[scaled[:, 0] < 0.05, 0] = 0
+    projected_crystal.positions[scaled[:, 1] < 0.05, 1] = 0
+    projected_crystal.positions[scaled[:, 2] < 0.05, 2] = 0
 
     element_tree = scipy.spatial.KDTree(projected_crystal.positions[:, 0:2])
     done = []

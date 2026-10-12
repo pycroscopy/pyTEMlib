@@ -29,8 +29,6 @@ import numpy as np
 import scipy
 import sidpy
 
-from build.lib.build.lib.build.lib.build.lib.pyTEMlib.eels_tools.core_loss_tools import fit_dataset
-
 from ..utilities import major_edges, all_edges, elements
 from ..utilities import effective_collection_angle
 from ..utilities import get_z, get_x_sections, second_derivative
