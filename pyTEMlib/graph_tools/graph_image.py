@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 import skimage
+import SimpleITK as sitk
 
 import matplotlib.patches as patches
 
