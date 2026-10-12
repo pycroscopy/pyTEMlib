@@ -2,6 +2,7 @@ import numpy as np
 import scipy
 import skimage
 import SimpleITK as sitk
+import ase
 
 import matplotlib.patches as patches
 
@@ -505,7 +506,7 @@ def undistort_stack(distortion_matrix, data):
     done = 0
 
     for i in trange(nimages):
-        interpolated[i, :, :] = griddata(corrected, intensity_values[i, :], (grid_x, grid_y), method='linear')
+        interpolated[i, :, :] = scipy.interpolate.griddata(corrected, intensity_values[i, :], (grid_x, grid_y), method='linear')
 
     print(':-)')
     print('You have successfully completed undistortion of image stack')
