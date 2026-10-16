@@ -854,3 +854,109 @@ def model3(x, p, number_of_peaks, peak_shape, p_zl, pin=None, restrict_pos=0, re
         else:
             y = y + gauss(x, p[index:])
     return y
+
+
+import numpy as np
+from scipy.signal import fftconvolve
+from scipy.optimize import least_squares
+
+def gaussian_peak(energy_axis, amp, center, sigma):
+    """Generates a generic Gaussian profile to model any arbitrary excitation."""
+    return amp * np.exp(-0.5 * ((energy_axis - center) / sigma) ** 2)
+
+def compute_forward_model(params, energy_axis, zlp_experimental, num_peaks):
+    """
+    Constructs the full forward model consisting of:
+    I_total = ZLP + SSD + 1/2!(SSD * SSD) + 1/3!(SSD * SSD * SSD)
+    """
+    # 1. Parse the optimization parameters
+    # The first parameter is the thickness scaling factor (y = t/lambda)
+    y = params[0]
+    
+    # Extract peak parameters for the generalized SSD configuration
+    peak_params = params[1:]
+    ssd = np.zeros_like(energy_axis)
+    
+    for i in range(num_peaks):
+        amp = peak_params[i*3]
+        center = peak_params[i*3 + 1]
+        sigma = peak_params[i*3 + 2]
+        ssd += gaussian_peak(energy_axis, amp, center, sigma)
+        
+    # Enforce physical constraint: no negative energy losses
+    ssd[energy_axis < 0] = 0.0
+
+    # 2. Compute higher-order self-convolutions using FFT
+    # Note: 'same' ensures the returned array matches the energy axis size
+    ssd_x_ssd = fftconvolve(ssd, ssd, mode='same')
+    ssd_x_ssd_x_ssd = fftconvolve(ssd_x_ssd, ssd, mode='same')
+    
+    # 3. Scale by Poisson statistics weights
+    i1 = ssd
+    i2 = (y / 2.0) * ssd_x_ssd
+    i3 = ((y**2) / 6.0) * ssd_x_ssd_x_ssd
+    
+    # Combine everything with the experimental Zero-Loss Peak
+    total_model = zlp_experimental + i1 + i2 + i3
+    return total_model, i1, i2, i3
+
+def residuals(params, energy_axis, zlp_experimental, i_experimental, num_peaks):
+    """Calculates the absolute error vector between model and experiment."""
+    total_model, _, _, _ = compute_forward_model(params, energy_axis, zlp_experimental, num_peaks)
+    return total_model - i_experimental
+
+# ==========================================
+# SIMULATED SETUP & EXECUTION PIPELINE
+# ==========================================
+
+# 1. Generate an energy axis (e.g., 0.1 eV steps from -5 to 65 eV)
+energy_axis = np.linspace(-5, 65, 700)
+
+# 2. Simulate an experimental ZLP (e.g., full-width at half-max ~ 0.5 eV)
+zlp_experimental = gaussian_peak(energy_axis, amp=1000, center=0.0, sigma=0.2)
+
+# 3. Simulate a complex material with multiple arbitrary low-energy excitations:
+# Exciton / Interband transition @ 4 eV, Bulk Broad Feature @ 23 eV, Surface Feature @ 15 eV
+true_ssd = (gaussian_peak(energy_axis, amp=20, center=4.0, sigma=0.5) +   # Sharp low-energy
+            gaussian_peak(energy_axis, amp=15, center=15.0, sigma=2.0) +  # Surface plasmon/interband
+            gaussian_peak(energy_axis, amp=50, center=23.0, sigma=4.0))   # Main bulk excitation
+
+# True thickness scaling factor (y = t / \lambda)
+true_y = 0.4 
+
+# Generate mock data with Poisson self-convolution terms + artificial noise
+true_i2 = (true_y / 2.0) * fftconvolve(true_ssd, true_ssd, mode='same')
+true_i3 = ((true_y**2) / 6.0) * fftconvolve(true_i2, true_ssd, mode='same')
+noise = np.random.normal(0, 1.5, size=energy_axis.shape)
+i_experimental = zlp_experimental + true_ssd + true_i2 + true_i3 + noise
+
+# 4. Optimization Configuration
+# Guess parameters structure: [y, amp1, center1, sigma1, amp2, center2, sigma2, ...]
+num_peaks_to_fit = 3
+initial_guess = [
+    0.2,               # Initial guess for relative thickness (y)
+    10.0, 3.5, 1.0,    # Peak 1 guess
+    10.0, 12.0, 3.0,   # Peak 2 guess
+    30.0, 25.0, 5.0    # Peak 3 guess
+]
+
+# Set bounding arrays to keep values physically meaningful
+# Structure: [min_y, min_amp1, min_center1, min_sigma1, ...]
+lower_bounds = [0.0] + [0.0, 0.0, 0.1] * num_peaks_to_fit
+upper_bounds = [5.0] + [5000.0, 60.0, 15.0] * num_peaks_to_fit
+
+# 5. Run the Non-Linear Fitting Loop
+result = least_squares(
+    residuals, 
+    initial_guess, 
+    bounds=(lower_bounds, upper_bounds),
+    args=(energy_axis, zlp_experimental, i_experimental, num_peaks_to_fit),
+    method='trf'  # Trust Region Reflective algorithm
+)
+
+# 6. Extract Optimized Components
+fitted_params = result.x
+fit_total, fit_i1, fit_i2, fit_i3 = compute_forward_model(fitted_params, energy_axis, zlp_experimental, num_peaks_to_fit)
+
+print(f"Optimization Converged Successfully: {result.success}")
+print(f"Extracted Relative Thickness (t/λ): {fitted_params[0]:.3f} (True: {true_y})")

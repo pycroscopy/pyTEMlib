@@ -303,3 +303,25 @@ example_data/01-EELS Acquire_STO-1.hf5
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+uv.lock
+example_data/GOLD-NP-DIFF-2-12.hf5
+main.py
+pyTEMlib/17576831.zip
+
+
+# Added by cargo
+
+/target
+Cargo.lock
+Cargo.toml
+notebooks/Imaging/atomic_image.tif
+notebooks/Imaging/atomic_image.tiff
+notebooks/Imaging/low_drift.npy
+notebooks/Imaging/medium_drift.npy
+notebooks/Spectroscopy/rust_test.ipynb
+notebooks/Spectroscopy/S2-Analyse_CoreLoss_EELS copy.ipynb
+src/main.rs
+Untitled1.ipynb
+example_data/GOLD-NP-DIFF-2-13.hf5
+example_data/GOLD-NP-DIFF-2-14.hf5
+example_data/GOLD-NP-DIFF-2-15.hf5

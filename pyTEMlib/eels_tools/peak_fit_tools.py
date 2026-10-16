@@ -238,8 +238,8 @@ def fit_peaks(spectrum):
     # between the model and the data.
     diff = np.array(spectrum[start_channel:end_channel] - model[start_channel:end_channel])
     p_in =  peak_dict['peak_out_list'] #peak_gmm_list[:]
+    
     # find the optimum fitting parameters
-    print(p)
     [p_out, _] = scipy.optimize.leastsq(residuals3,
                                         np.array(p_in, dtype=np.float64),
                                         args=(energy_scale, diff),)  # , False))
