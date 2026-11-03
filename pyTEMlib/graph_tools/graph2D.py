@@ -3,6 +3,84 @@ import matplotlib.patches as patches
 import numpy as np
 import scipy
 import sklearn
+import typing
+
+def circum_center(vertex_pos: np.ndarray, tol: float = 1e-4) -> tuple[np.ndarray, float]:
+    """
+    Function finds the center and the radius of the circumsphere of every simplex.
+    Reference:
+    Fiedler, Miroslav. Matrices and graphs in geometry. No. 139. Cambridge University Press, 2011.
+    (p.29 bottom: example 2.1.11)
+    Code started from https://github.com/spatala/gbpy
+    with help of 
+    https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
+
+    Parameters
+    -----------------
+    vertex_pos : numpy array
+        The position of vertices of a tetrahedron
+    tol : float
+        Tolerance defined  to identify co-planar tetrahedrons
+    Returns
+    ----------
+    circum_center : numpy array
+        The center of the circumsphere
+    circum_radius : float
+        The radius of the circumsphere
+    """
+
+    # Make Cayley-Menger Matrix
+    number_vertices = len(vertex_pos)
+    matrix_c = np.identity(number_vertices+1)*-1+1
+    distances = scipy.spatial.distance.pdist(np.asarray(vertex_pos, dtype=float),
+                                             metric='sqeuclidean')
+    matrix_c[1:, 1:] = scipy.spatial.distance.squareform(distances)
+    det_matrix_c = np.linalg.det(matrix_c)
+    if abs(det_matrix_c) < tol:
+        return np.array(vertex_pos[0]*0), 0
+    matrix = -2 * np.linalg.inv(matrix_c)
+
+    center = vertex_pos[0, :]*0
+    for i in range(number_vertices):
+        center += matrix[0, i+1] * vertex_pos[i, :]
+    center /= np.sum(matrix[0, 1:])
+
+    circum_radius = np.sqrt(matrix[0, 0]) / 2
+
+    return np.array(center), circum_radius
+
+def interstitial_sphere_center(vertex_pos: np.ndarray, atom_radii: np.ndarray,
+                               optimize: bool = True) -> typing.Tuple[np.ndarray, float]:
+    """
+        Function finds center and radius of the largest interstitial sphere of a simplex.
+        Which is the center of the cirumsphere if all atoms have the same radius,
+        but differs for differently sized atoms.
+        In the last case, the circumsphere center is used as starting point for refinement.
+
+        Parameters
+        ----------
+        vertex_pos : numpy array
+            The position of vertices of a tetrahedron
+        atom_radii : float
+            bond radii of atoms
+        optimize: boolean
+            whether atom bond lengths are optimized or not
+        Returns
+        -------
+        new_center : numpy array
+            The center of the largest interstitial sphere
+        radius : float
+            The radius of the largest interstitial sphere
+        """
+    center, radius = circum_center(vertex_pos, tol=1e-4)
+
+    def distance_deviation(sphere_center):
+        return np.std(np.linalg.norm(vertex_pos - sphere_center, axis=1) - atom_radii)
+
+    if np.std(atom_radii) == 0 or not optimize:
+        return center, radius-atom_radii[0]
+    center_new = scipy.optimize.minimize(distance_deviation, center)
+    return center_new.x, np.linalg.norm(vertex_pos[0]-center_new.x)-atom_radii[0]
 
 
 def get_polygons(positions, min_voronoi_distance=1.):
@@ -20,7 +98,8 @@ def get_polygons(positions, min_voronoi_distance=1.):
 
 def get_new_vertices2(vor, min_voronoi_distance = 1.2):
     """
-    Averages voronoi vertces that are too close together
+    Averages voronoi vertices that are too close together
+    Not used
     """
     
     vorTree   = scipy.spatial.cKDTree(vor.vertices)

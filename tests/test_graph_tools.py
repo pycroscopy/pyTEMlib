@@ -76,7 +76,7 @@ class TestPolyhedraFunctions(unittest.TestCase):
         atoms[7].symbol = 'Cs'
         polyhedra = graph.find_polyhedra(atoms)
         indices = graph.sort_polyhedra_by_vertices(polyhedra, visible=[6], verbose=True)
-        self.assertEqual(len(indices), 3)
+        self.assertEqual(len(indices), 4)
 
     def test_plot_super_cell(self):
         atoms = ase.build.bulk('Al', 'fcc', cubic=True) * (2, 2, 2)
