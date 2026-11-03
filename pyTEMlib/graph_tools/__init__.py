@@ -17,7 +17,7 @@ from .visualize import plot_bonds, get_boundary_polyhedra, plot_with_polyhedra
 from .visualize import plot_supercell, plot_supercell_bonds, plot_supercell_polyhedra
 from .visualize import show_polyhedra
 
-from .graph2D import get_polygons
+from .graph2D import get_polygons, circum_center, interstitial_sphere_center
 
 __all__ = [circumsphere_center,  get_voronoi,  get_voronoi,
            voronoi_volumes, find_interstitial_clusters, make_polygons, make_polyhedrons,
@@ -28,4 +28,5 @@ __all__ = [circumsphere_center,  get_voronoi,  get_voronoi,
            undistort_stack_sitk, undistort_stack,
            get_plot_bonds, plot_atoms, plot_super_cell, plot_polyhedron,
            plot_bonds, get_boundary_polyhedra, plot_with_polyhedra, plot_supercell, plot_supercell_bonds,
-           plot_supercell_polyhedra, show_polyhedra, get_polygons]
+           plot_supercell_polyhedra, show_polyhedra, get_polygons, circum_center,
+           interstitial_sphere_center]

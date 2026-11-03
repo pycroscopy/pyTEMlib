@@ -110,7 +110,7 @@ def get_voronoi(tetrahedra, atoms):
     voronoi_tetrahedrons = []
     r_vv = []
     r_aa = []
-    for vertices in tetrahedra.vertices:
+    for vertices in tetrahedra.simplices:
         voronoi, radius = circumsphere_center(atoms.positions[vertices])
         
         #crude approximation of weighted circumscribe sphere
@@ -462,7 +462,7 @@ def find_polyhedra(atoms, cheat=1.0):
 
     overlapping_pairs = find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=cheat)
 
-    clusters, visited_all = find_intertitial_clusters(overlapping_pairs)
+    clusters, visited_all = find_interstitial_clusters(overlapping_pairs)
 
     if positions.shape[1] < 3:
         rings = get_polygons(atoms, clusters, voronoi_tetrahedrons)
@@ -470,6 +470,11 @@ def find_polyhedra(atoms, cheat=1.0):
     else:
         polyhedra = make_polyhedrons(atoms, voronoi_vertices, voronoi_tetrahedrons, clusters, visited_all)
     return polyhedra
+
+def in_hull(point, hull):
+    return all(
+        (np.dot(eq[:-1], point) + eq[-1] <= tolerance)
+        for eq in hull.equations)
 
 
 def polygon_sort(corners):
