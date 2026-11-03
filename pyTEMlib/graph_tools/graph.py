@@ -1,9 +1,11 @@
 """
+This file is part of the pycroscopy ecosystem for the pyTEMlib package
+It is placed the graph_tools directory 10/2026
 
 """
 import numpy as np
 import scipy
-import skimage
+
 
 import matplotlib.patches as patches
 
@@ -11,54 +13,18 @@ import pyTEMlib.crystal_tools
 from tqdm.auto import tqdm, trange
 
 from .visualize import *
-QT_available = False
 
 ###########################################################################
 # utility functions
 ###########################################################################
 
-def interstitial_sphere_center(vertex_pos, atom_radii, optimize=True):
+def circumsphere_center(vertex_pos, tol=1e-3):
     """
-        Function finds center and radius of the largest interstitial sphere of a simplex.
-        Which is the center of the cirumsphere if all atoms have the same radius,
-        but differs for differently sized atoms.
-        In the last case, the circumsphere center is used as starting point for refinement.
-
-        Parameters
-        -----------------
-        vertex_pos : numpy array
-            The position of vertices of a tetrahedron
-        atom_radii : float
-            bond radii of atoms
-        optimize: boolean
-            whether atom bond lengths are optimized or not
-        Returns
-        ----------
-        new_center : numpy array
-            The center of the largest interstitial sphere
-        radius : float
-            The radius of the largest interstitial sphere
-        """
-    center, radius = circum_center(vertex_pos, tol=1e-4)
-
-    def distance_deviation(sphere_center):
-        return np.std(np.linalg.norm(vertex_pos - sphere_center, axis=1) - atom_radii)
-
-    if np.std(atom_radii) == 0 or not optimize:
-        return center, radius-atom_radii[0]
-    else:
-        center_new = scipy.optimize.minimize(distance_deviation, center)
-        return center_new.x, np.linalg.norm(vertex_pos[0]-center_new.x)-atom_radii[0]
-
-
-def circum_center(vertex_pos, tol=1e-4):
-    """
-    Function finds the center and the radius of the circumsphere of every simplex.
+    Function finds the center and the radius of the circumsphere of every tetrahedron.
     Reference:
     Fiedler, Miroslav. Matrices and graphs in geometry. No. 139. Cambridge University Press, 2011.
     (p.29 bottom: example 2.1.11)
-    Code started from https://github.com/spatala/gbpy
-    with help of https://codereview.stackexchange.com/questions/77593/calculating-the-volume-of-a-tetrahedron
+    Code (slightly modified) from https://github.com/spatala/gbpy
 
     Parameters
     -----------------
@@ -74,124 +40,60 @@ def circum_center(vertex_pos, tol=1e-4):
         The radius of the circumsphere
     """
 
-    # Make Cayley-Menger Matrix
-    number_vertices = len(vertex_pos)
-    matrix_c = np.identity(number_vertices+1)*-1+1
-    distances = scipy.spatial.distance.pdist(np.asarray(vertex_pos, dtype=float), metric='sqeuclidean')
-    matrix_c[1:, 1:] = scipy.spatial.distance.squareform(distances)
+    dis_ij = scipy.spatial.distance.pdist(np.array(vertex_pos), 'euclidean')
+    sq_12, sq_13, sq_14, sq_23, sq_24, sq_34 = np.power(dis_ij, 2)
+
+    matrix_c = np.array([[0, 1, 1, 1, 1], [1, 0, sq_12, sq_13, sq_14], [1, sq_12, 0, sq_23, sq_24],
+                         [1, sq_13, sq_23, 0, sq_34], [1, sq_14, sq_24, sq_34, 0]])
+
     det_matrix_c = (np.linalg.det(matrix_c))
-    if abs(det_matrix_c) < tol:
-        return np.array(vertex_pos[0]*0), 0
-    matrix = -2 * np.linalg.inv(matrix_c)
 
-    center = vertex_pos[0, :]*0
-    for i in range(number_vertices):
-        center += matrix[0, i+1] * vertex_pos[i, :]
-    center /= np.sum(matrix[0, 1:])
+    if det_matrix_c < tol:
+        return np.array([0, 0, 0]), 0
+    else:
+        matrix = -2 * np.linalg.inv(matrix_c)
+        circum_center = (matrix[0, 1] * vertex_pos[0, :] + matrix[0, 2] * vertex_pos[1, :] +
+                         matrix[0, 3] * vertex_pos[2, :] +
+                         matrix[0, 4] * vertex_pos[3, :]) / (matrix[0, 1] + matrix[0, 2] + matrix[0, 3] + matrix[0, 4])
+        circum_radius = np.sqrt(matrix[0, 0]) / 2
 
-    circum_radius = np.sqrt(matrix[0, 0]) / 2
-
-    return np.array(center), circum_radius
+    return np.array(circum_center), circum_radius
 
 
-def voronoi_volumes(atoms):
+def voronoi_volumes(points):
     """
     Volumes of voronoi  cells from
     https://stackoverflow.com/questions/19634993/volume-of-voronoi-cell-python
     """
-    points = atoms.positions
+
     v = scipy.spatial.Voronoi(points)
     vol = np.zeros(v.npoints)
     for i, reg_num in enumerate(v.point_region):
         indices = v.regions[reg_num]
-        if -1 in indices:  # some regions can be opened
-            vol[i] = 0
+        if -1 in indices: # some regions can be opened
+            vol[i] = np.inf
         else:
             try:
-                hull = scipy.spatial.ConvexHull(v.simplices[indices])
+                hull = scipy.spatial.ConvexHull(v.vertices[indices])
                 vol[i] = hull.volume
             except:
                 vol[i] = 0.
-
-    if atoms.info is None:
-        atoms.info = {}
-    # atoms.info.update({'volumes': vol})
     return vol
 
 
-def get_bond_radii(atoms, bond_type='bond'):
-    """ get all bond radii from Kirkland 
-    Parameter:
-    ----------
-    atoms ase.Atoms object
-        structure information in ase format
-    type: str
-        type of bond 'covalent' or 'metallic'
-    """
-    
-    r_a = []
-    for atom in atoms:
-        if atom.symbol == 'X':
-            r_a.append(1.2)
-        else:
-            if bond_type == 'covalent':
-                r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][0])
-            else:
-                r_a.append(pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][1])
-    if atoms.info is None:
-        atoms.info = {}
-    atoms.info['bond_radii'] = r_a
-    return r_a
-
-
-def set_bond_radii(atoms, bond_type='bond'):
-    """ set certain or all bond-radii taken from Kirkland 
-    
-    Bond_radii are also stored in atoms.info
-    
-    Parameter:
-    ----------
-    atoms ase.Atoms object
-        structure information in ase format
-    type: str
-        type of bond 'covalent' or 'metallic'
-    Return:
-    -------
-    r_a: list
-        list of atomic bond-radii 
-        
-    """
-    if atoms.info is None:
-        atoms.info = {}
-    if 'bond_radii' in atoms.info:
-        r_a = atoms.info['bond_radii']
-    else:
-        r_a = np.ones(len(atoms))
-        
-    for atom in atoms:
-        if bond_type == 'covalent':
-            r_a[atom.index] = (pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][0])
-        else:
-            r_a[atom.index] = (pyTEMlib.crystal_tools.electronFF[atom.symbol]['bond_length'][1])
-    atoms.info['bond_radii'] = r_a
-    return r_a
-
-
-def get_voronoi(tetrahedra, atoms, bond_radii=None, optimize=True):
+def get_voronoi(tetrahedra, atoms):
     """
     Find Voronoi vertices and keep track of associated tetrahedrons and interstitial radii
-
+    
     Used in find_polyhedra function
-
+    
     Parameters
     ----------
     tetrahedra: scipy.spatial.Delaunay object
         Delaunay tesselation
     atoms: ase.Atoms object
         the structural information
-    optimize: boolean
-        whether to use different atom radii or not
-
+  
     Returns
     -------
     voronoi_vertices: list
@@ -203,43 +105,25 @@ def get_voronoi(tetrahedra, atoms, bond_radii=None, optimize=True):
     """
 
     extent = atoms.cell.lengths()
-    print('extent', extent)
 
-    if np.abs(atoms.positions[:, 2]).sum() <= 0.01:
-        positions = atoms.positions[:, :2]
-        extent = extent[:2]
-    else:
-        positions = atoms.positions
-
-    if atoms.info is None:
-        atoms.info = {}
-
-    if bond_radii is not None:
-        bond_radii = [bond_radii]*len(atoms)
-    elif 'bond_radii' in atoms.info:
-        bond_radii = atoms.info['bond_radii']
-    
-    else:
-        bond_radii = get_bond_radii(atoms)
-        
     voronoi_vertices = []
     voronoi_tetrahedrons = []
     r_vv = []
     r_aa = []
-    print('Find interstitials (finding centers for different elements takes a bit)')
-    for vertices in tqdm(tetrahedra.simplices):
+    for vertices in tetrahedra.vertices:
+        voronoi, radius = circumsphere_center(atoms.positions[vertices])
+        
+        #crude approximation of weighted circumscribe sphere
         r_a = []
         for vert in vertices:
-            r_a.append(bond_radii[vert])
-        voronoi, radius = interstitial_sphere_center(positions[vertices], r_a, optimize=optimize)
-    
+            r_a.append(pyTEMlib.crystal_tools.electronFF[atoms.symbols[vert]]['bond_length'][1])
         r_a = np.average(r_a)  # np.min(r_a)
         r_aa.append(r_a)
 
         if (voronoi >= 0).all() and (extent - voronoi > 0).all() and radius > 0.01:
             voronoi_vertices.append(voronoi)
             voronoi_tetrahedrons.append(vertices)
-            r_vv.append(radius)
+            r_vv.append(radius - r_a)
     return voronoi_vertices, voronoi_tetrahedrons, r_vv, np.max(r_aa)
 
 
@@ -264,6 +148,7 @@ def find_interstitial_clusters(overlapping_pairs):
     """
     visited_all = []
     clusters = []
+
     for initial in overlapping_pairs[:, 0]:
         if initial not in visited_all:
             # breadth first search
@@ -423,6 +308,10 @@ def get_non_periodic_supercell(super_cell):
     return atoms
 
 def get_connectivity_matrix(crystal, atoms, polyhedra):
+    """ 
+    Conectivity matrix give the distances between atoms 
+    based on intertials centered polyhedrons
+    """
     crystal_tree = scipy.spatial.KDTree(crystal.positions)
     
     
@@ -539,24 +428,19 @@ def get_bonds(crystal, shift= 0., verbose = False, cheat=1.0):
     return atoms    
 
 
-
-
-
-def find_polyhedra(atoms, optimize=True, cheat=1.0, bond_radii=None):
+def find_polyhedra(atoms, cheat=1.0):
     """ get polyhedra information from an ase.Atoms object
 
     This is following the method of Banadaki and Patala
     http://dx.doi.org/10.1038/s41524-017-0016-0
-
-    We are using the bond radius according to Kirkland, which is tabulated in
+    
+    We are using the bond radius according to Kirkland, which is tabulated in 
         - pyTEMlib.crystal_tools.electronFF[atoms.symbols[vert]]['bond_length'][1]
 
     Parameter
     ---------
     atoms: ase.Atoms object
         the structural information
-    cheat: float
-        does not exist
 
     Returns
     -------
@@ -571,15 +455,14 @@ def find_polyhedra(atoms, optimize=True, cheat=1.0, bond_radii=None):
         print('2D')
     else:
         positions = atoms.positions
+    
     tetrahedra = scipy.spatial.Delaunay(positions)
 
-    voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms, optimize=optimize, bond_radii=bond_radii)
-    
-    if positions.shape[1] < 3:
-        r_vv = np.array(r_vv)*1.
+    voronoi_vertices, voronoi_tetrahedrons, r_vv, r_a = get_voronoi(tetrahedra, atoms)
+
     overlapping_pairs = find_overlapping_spheres(voronoi_vertices, r_vv, r_a, cheat=cheat)
 
-    clusters, visited_all = find_interstitial_clusters(overlapping_pairs)
+    clusters, visited_all = find_intertitial_clusters(overlapping_pairs)
 
     if positions.shape[1] < 3:
         rings = get_polygons(atoms, clusters, voronoi_tetrahedrons)
