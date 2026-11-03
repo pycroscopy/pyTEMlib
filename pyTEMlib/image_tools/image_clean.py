@@ -131,7 +131,7 @@ def decon_lr(o_image, resolution=0.1, verbose=False):
     image_dimensions = o_image.get_image_dims(return_axis=True)
     scale_x = image_dimensions[0].slope
     gauss_diameter = resolution/scale_x
-    print(gauss_diameter, resolution, scale_x)
+    # print(gauss_diameter, resolution, scale_x)
     probe = make_gauss(o_image.shape[0], o_image.shape[1], gauss_diameter)
 
     probe_c = np.ones(probe.shape, dtype=np.complex64)
@@ -143,7 +143,7 @@ def decon_lr(o_image, resolution=0.1, verbose=False):
     source.real = o_image
 
     response_ft = np.fft.fft2(probe_c)
-
+    
     # dx = scale_x
     # dk = 1.0 / float(image_dimensions[0][-1])  # last value of x axis is field of view
     # screen_width = 1 / dx
@@ -161,7 +161,6 @@ def decon_lr(o_image, resolution=0.1, verbose=False):
     tp1 = t_xv ** 2 + t_yv ** 2 >= o_image.shape[0]*4/5 ** 2
     aperture[tp1.T] = 0.
     # print(app_ratio, screen_width, dk)
-
 
     progress = tqdm(total=500)
     # de = 100

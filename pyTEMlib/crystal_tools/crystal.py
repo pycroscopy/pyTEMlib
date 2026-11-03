@@ -130,20 +130,13 @@ def get_projection(crystal: ase.Atoms, layers: int = 1) -> ase.Atoms:
     if 'zone_axis' not in crystal.info['experimental']:
         raise ValueError("Zone axis must be specified in the crystal.info['experimental'] dictionary.")
     zone_axis = crystal.info['experimental']['zone_axis']
+ 
     angle = crystal.info['experimental']['angle']
-    if 'layers' in crystal.info['structure']:
+    if 'layers' in crystal.info.setdefault('structure', {}):
         layers = crystal.info['structure']['layers']
+    else:
+        layers = int((np.array(zone_axis)**2).sum())
     projected_crystal = ase.build.surface(crystal, zone_axis, vacuum=.0, layers=layers)
-
-    scaled = projected_crystal.get_scaled_positions()
-    projected_crystal.positions[scaled[:, 0] > 0.95, 0] = 0
-    projected_crystal.positions[scaled[:, 1] > 0.95, 1] = 0
-    # do not change this because we did not add a vacuum
-    # projected_crystal.positions[scaled[:,2]>0.95, 2] = 0
-
-    projected_crystal.positions[scaled[:, 0] < 0.05, 0] = 0
-    projected_crystal.positions[scaled[:, 1] < 0.05, 1] = 0
-    projected_crystal.positions[scaled[:, 2] < 0.05, 2] = 0
 
     element_tree = scipy.spatial.KDTree(projected_crystal.positions[:, 0:2])
     done = []
@@ -664,6 +657,46 @@ cdb['pdse2'] = {'crystal_name': 'PdSe2',
                                   [0.888700, 0.619356, 0.585891],
                                   [0.388700, 0.880644, 0.414109]]),
                 'reference': '', 'link': ''}
+
+cdb['rco'] = {'crystal_name': 'RCO Ce3Mn1Al20(CuNiAl)12',
+              'symmetry': 'primitive',
+              'unit_cell': np.identity(3) * 8.3951597214,
+              'elements': ['Ce'] * 3 + ['Mn'] + ['Al'] * 20 + ['Ca']*12,
+              'base': np.array([[0.5, 0.5, 0.0], [0.0, 0.5, 0.5],  [0.5, 0., 0.5], [0, 0 , 0],
+                                [0.329699993, 0.329699993, 0.329699993],
+                                [0.670300007, 0.670300007, 0.670300007],
+                                [0.670300007, 0.67030000, 0.329699993],
+                                [0.329699993, 0.329699993, 0.670300007],
+                                [0.670300007, 0.329699993, 0.670300007],
+                                [0.329699993, 0.670300007, 0.329699993],
+                                [0.329699993, 0.670300007, 0.670300007],
+                                [0.670300007, 0.329699993, 0.329699993],
+                                [0.000000000, 0.231600001, 0.231600001],
+                                [0.000000000, 0.768400013, 0.768400013],
+                                [0.000000000, 0.768400013, 0.231600001],
+                                [0.000000000, 0.231600001, 0.768400013],
+                                [0.231600001, 0.000000000, 0.231600001],
+                                [0.768400013, 0.000000000, 0.768400013],
+                                [0.231600001, 0.000000000, 0.768400013],
+                                [0.768400013, 0.000000000, 0.231600001],
+                                [0.231600001, 0.231600001, 0.000000000],
+                                [0.768400013, 0.768400013, 0.000000000],
+                                [0.768400013, 0.231600001, 0.000000000],
+                                [0.231600001, 0.768400013, 0.000000000],
+                                [0.500000000, 0.153099999, 0.153099999],
+                                [0.500000000, 0.846899986, 0.846899986],
+                                [0.500000000, 0.846899986, 0.153099999],
+                                [0.500000000, 0.153099999, 0.846899986],
+                                [0.153099999, 0.500000000, 0.153099999],
+                                [0.846899986, 0.500000000, 0.846899986],
+                                [0.153099999, 0.500000000, 0.846899986],
+                                [0.846899986, 0.500000000, 0.153099999],
+                                [0.153099999, 0.153099999, 0.500000000],
+                                [0.846899986, 0.846899986, 0.500000000],
+                                [0.846899986, 0.153099999, 0.500000000],
+                                [0.153099999, 0.846899986, 0.500000000]]),
+              'reference': '', 'link': ''}
+
 
 crystal_data_base = cdb
 

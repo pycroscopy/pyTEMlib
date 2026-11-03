@@ -10,9 +10,9 @@ def get_atomic_pseudo_potential(fov, atoms, size=512, rotation=0):
 
     pixel_size = fov / size
     max_size = int(size * np.sqrt(2) + 1)  # Maximum size to accommodate rotation
-
+    print(fov, pixel_size)
     # Create unit cell potential
-    positions = atoms.get_positions()[:, :2]
+    positions = atoms.get_positions()[:, :2]/10
     atomic_numbers = atoms.get_atomic_numbers()
     unit_cell_size = atoms.cell.cellpar()[:2]
 
@@ -20,7 +20,7 @@ def get_atomic_pseudo_potential(fov, atoms, size=512, rotation=0):
     for pos, atomic_number in zip(positions, atomic_numbers):
         x = pos[0] / pixel_size
         y = pos[1] / pixel_size
-        atom_width = 0.5  # Angstrom
+        atom_width = 0.05  # Angstrom
         # important for images at various fov.  Room for improvement with theory
         gauss_width = atom_width/pixel_size
         gauss = pyTEMlib.probe_tools.make_gauss(max_size, max_size,
